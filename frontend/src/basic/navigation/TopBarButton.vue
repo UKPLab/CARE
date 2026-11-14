@@ -1,7 +1,7 @@
 <template>
   <button
     :title="title"
-    class="btn"
+    class="btn care-focus-ring"
     type="button"
     :disabled="disabled"
     @click="action"
@@ -44,7 +44,10 @@ export default {
     },
     documentId: { 
       default: () => null 
-    } 
+    },
+    studyStepId: {
+      default: () => null
+    }
   },
   props: {
     icon: {
@@ -91,7 +94,8 @@ export default {
             ...(this.props ? { props: this.props } : {}),
             ...(this.studySessionId ? { studySessionId: this.studySessionId } : {}),
             ...(this.currentStudyStep?.id ? { currentStudyStepId: this.currentStudyStep.id } : {}),
-            ...(this.documentId ? { documentId: this.documentId } : {})
+            ...(this.documentId ? { documentId: this.documentId } : {}),
+            ...(this.studyStepId ? { studyStepId: this.studyStepId } : {})
             }
         });
       }

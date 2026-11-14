@@ -1,0 +1,29 @@
+{
+    "title": "Paramètres",
+    "changeUserSettings": "Modifier les paramètres utilisateur",
+    "exportJson": "Exporter au format JSON",
+    "importJson": "Importer un fichier JSON",
+    "saveSettings": "Enregistrer les paramètres",
+    "saveSettingsUnsaved": "Enregistrer les paramètres (modifications non enregistrées)",
+    "importSettings": "Importer des paramètres",
+    "importDescription": "Sélectionnez un fichier de paramètres téléchargé précédemment. Seules les clés existantes seront mises à jour.",
+    "messages": {
+        "settingsLoaded": "Paramètres chargés",
+        "settingsLoadedMessage": "Les paramètres ont été chargés.",
+        "settingsSavedSuccessfully": "Paramètres enregistrés.",
+        "settingsImported": "Paramètres importés",
+        "updatedSettings": "{count} paramètre(s) existant(s) mis à jour.",
+        "unsavedChangesWarning": "Vos paramètres contiennent des modifications non enregistrées. Voulez-vous vraiment quitter sans enregistrer ?"
+    },
+    "rememberToSave": "Pensez à cliquer sur {save} après vos modifications.",
+    "noneUseDefaultEmail": "Aucun (utiliser l'e-mail par défaut)",
+    "pickColor": "Choisir une couleur",
+    "triggerQueue": {
+        "group": "Déclencheurs",
+        "queue": "File d'attente",
+        "pollInterval": {
+            "displayName": "Intervalle de vérification de la file des déclencheurs (minutes)",
+            "description": "Fréquence, en minutes, à laquelle le service de la file des déclencheurs recherche des tâches en attente. Les nouvelles tâches démarrent quand même immédiatement lorsqu'un événement se produit. Nécessite un redémarrage du serveur."
+        }
+    }
+}

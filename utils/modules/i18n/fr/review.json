@@ -1,0 +1,9 @@
+{
+    "evaluateSession": "Évaluer cette session",
+    "sessionNotFinishedYet": "Cette session n'est pas encore terminée. Veuillez attendre sa clôture !",
+    "thankYouForEvaluating": "Merci d'avoir évalué cette session !",
+    "sessionAlreadyEvaluated": "Cette session a déjà été évaluée.",
+    "makeDecision": "Prenez une décision à partir de cette session d'étude.",
+    "comment": "Commentaire",
+    "acceptance": "Accepter"
+}

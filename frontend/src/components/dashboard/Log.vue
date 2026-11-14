@@ -40,7 +40,6 @@ export default {
           itemsPerPage: 10,
           itemsPerPageList: [10, 25, 50, 100],
           total: 0,
-          showPages: 3,
         },
       },
       data: [],
@@ -90,13 +89,13 @@ export default {
     },
     getBugColor(level) {
       if (level === "error") {
-        return "#ff0000";
+        return "var(--bs-danger)";
       } else if (level === "warn") {
-        return "#ff9900";
+        return "var(--bs-warning)";
       } else if (level === "info") {
-        return "#0000ff";
+        return "var(--bs-blue)";
       } else {
-        return "#000000";
+        return "var(--bs-secondary-color)";
       }
     },
   }

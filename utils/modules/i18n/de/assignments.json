@@ -31,6 +31,10 @@
     "notifyOnSubmissionUpload": {
       "label": "Bei Submission-Upload benachrichtigen:",
       "help": "Wenn aktiviert, wird eine E-Mail gesendet, wenn ein Studierender eine Submission hochlädt oder erneut hochlädt."
+    },
+    "submissionWarning":{
+      "label": "Warnung vor dem Hochladen:",
+      "help": "Wenn gefüllt, wird dem Nutzer diese Nachricht als Warnung vor dem Hochladen angezeigt. Falls leer, wird keine Warnung gezeigt"
     }
   },
   "dashboard": {
@@ -107,10 +111,10 @@
       }
     },
     "submissions": {
-      "activeTitle": "Aktive Assignments",
-      "noActive": "Sie haben keine aktiven Assignments.",
-      "closedTitle": "Geschlossene Assignments",
-      "noClosed": "Sie haben keine geschlossenen Assignments.",
+      "activeTitle": "Meine Aufgaben",
+      "noActive": "Sie haben keine aktiven Aufgaben.",
+      "closedTitle": "Geschlossene Aufgaben",
+      "noClosed": "Sie haben keine geschlossenen Aufgaben.",
       "noDueDate": "kein Fälligkeitsdatum",
       "unlimited": "Unbegrenzt",
       "remainingLeft": "{count} Submission(s) übrig",
@@ -178,7 +182,7 @@
     "submissionsTable": {
       "columns": {
         "name": "Submission-Name",
-        "studyUsageCount": "Verwendet in Studien"
+        "updatedAt": "Aktualisiert am"
       },
       "actions": {
         "replace": "Submission ersetzen",

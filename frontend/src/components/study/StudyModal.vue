@@ -2,10 +2,10 @@
   <Modal
       ref="modal"
       :props="$props"
-      disable-keyboard
-      lg
-      name="studyStart"
-      :remove-close="!studyClosed"
+      :disable-keyboard="!infoOnly"
+      :size="showSessions ? 'lg' : 'md'"
+      :name="infoOnly ? 'studyInfo' : 'studyStart'"
+      :remove-close="!studyClosed && !infoOnly"
   >
     <template #title>
       <span v-if="showSessions">
@@ -94,11 +94,11 @@
         </span>
       </span>
     </template>
-    <template #footer>
+    <template v-if="!infoOnly" #footer>
       <BasicButton
           class="btn btn-outline-secondary"
           :text="$t('studies.returnToDashboard')"
-          @click="$router.push('/dashboard')"
+          @click="returnToDashboard"
       />
       <vr/>
       <div
@@ -143,7 +143,7 @@ import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loading.vue";
 import BasicTable from "@/basic/Table.vue";
 import Editor from "@/basic/editor/Editor.vue";
-import { resolveApiMessage, formatLocalizedDateTime } from "@/assets/utils";
+import { resolveApiMessage, formatLocalizedDateTime, returnToDashboard as returnToDashboardHelper } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -173,6 +173,11 @@ export default {
       type: Number,
       required: false,
       default: 0,
+    },
+    infoOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
     }
   },
   emits: ["start", "finish"],
@@ -358,31 +363,46 @@ export default {
   methods: {
     formatLocalizedDateTime,
     open() {
-      this.$refs.modal.open();
+      this.$refs.modal?.open();
     },
     close() {
-      this.$refs.modal.close();
+      this.$refs.modal?.close();
     },
+    /**
+     * Starts a study session and reports the result of the server with a toast.
+     *
+     * The session update can reach the parent before the acknowledgement and unmount this modal, which also
+     * removes $t from it. So the toasts only rely on values captured here, while Vue clears the ref to the
+     * modal and ignores the emit of an unmounted component.
+     * @param {number|null} studyId The study to start a session for, null to start an existing session
+     * @param {number} studySessionId The existing session to start, 0 to start a new one
+     */
     startStudy(studyId = null, studySessionId) {
-
+      const eventBus = this.eventBus;
+      const startedToast = {
+        title: this.$t('studies.messages.studyStarted'),
+        message: this.$t('studies.messages.enjoy'),
+        variant: "success"
+      };
+      const errorTitle = this.$t('errors.studies.studyCannotStart');
       this.$socket.emit("studySessionStart",
           {studyId: studyId, studySessionId: studySessionId}, (response) => {
             if (response.success) {
+              // Close before emitting: the parent may unmount this modal in response to "start".
+              this.$refs.modal?.close();
               this.$emit("start", {studySessionId: response.data.id});
-              this.$refs.modal.close();
-              this.eventBus.emit('toast', {
-                title: this.$t('studies.messages.studyStarted'),
-                message: this.$t('studies.messages.enjoy'),
-                variant: "success"
-              });
+              eventBus.emit('toast', startedToast);
             } else {
-              this.eventBus.emit('toast', {
-                title: this.$t('errors.studies.studyCannotStart'),
+              eventBus.emit('toast', {
+                title: errorTitle,
                 message: resolveApiMessage(response),
                 variant: "danger"
               });
             }
           });
+    },
+    async returnToDashboard() {
+      await returnToDashboardHelper(this.$router);
     },
     start() {
       this.startStudy(this.studyId, this.studySessionId);

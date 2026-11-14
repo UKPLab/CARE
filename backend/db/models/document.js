@@ -2,6 +2,7 @@
 const MetaModel = require("../MetaModel.js");
 const path = require("path");
 const fs = require('fs')
+const JSZip = require("jszip");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const TranslatableError = require("../../utils/TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
@@ -289,6 +290,49 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Reads a document's backing file from disk by hash and extension.
+         *
+         * @param {object} doc - The document record (must include `hash`).
+         * @param {string} extension - File extension including the dot (e.g. ".pdf").
+         * @returns {Promise<Buffer|null>} File buffer, or null if the file is missing.
+         */
+        static async readDocumentFile(doc, extension) {
+            const filePath = path.join(UPLOAD_PATH, `${doc.hash}${extension}`);
+            try {
+                return await fs.promises.readFile(filePath);
+            } catch {
+                return null;
+            }
+        }
+
+        /**
+         * Extracts specific files from a zip buffer by regex pattern.
+         * Each spec carries a logical `name` (used as the result key) and a `pattern`
+         * (the validation-config regex that matches the actual filename inside the zip,
+         * e.g. "Expose\\.tex$"). Falls back to exact/basename match when pattern is absent.
+         *
+         * @param {Buffer} buffer - Raw zip bytes.
+         * @param {{name: string, pattern: string|null}[]} fileSpecs - Files to extract.
+         * @returns {Promise<Object>} Map of spec.name → text content for each found file.
+         */
+        static async extractZipFiles(buffer, fileSpecs) {
+            const zip = await JSZip.loadAsync(buffer);
+            const result = {};
+            for (const {name, pattern} of fileSpecs) {
+                //If pattern exists, turn it into a regular expression.
+                const regex = pattern ? new RegExp(pattern) : null;
+                const entry = Object.values(zip.files).find(f =>
+                    !f.dir && (regex ? regex.test(f.name) : (f.name === name || f.name.split("/").pop() === name))
+                );
+                if (entry) {
+                    //entry is a JSZip file object. JSZip gives each file entry methods  (e.g. async)
+                    result[name] = await entry.async("string");
+                }
+            }
+            return result;
+        }
+
+        /**
          * Resolve the file path for a document and return its content as base64.
          *
          * @param {object} doc - The document record from the database.
@@ -380,24 +424,42 @@ module.exports = (sequelize, DataTypes) => {
             modelName: 'document',
             tableName: 'document',
             hooks: {
+                beforeUpdate: (document, options) => {
+                    // User updates copy the payload into context and always set currentUserId.
+                    // Only a cascade context, which has the flag and no currentUserId, may delete.
+                    if (options.context?.allowSubmissionDocumentDelete && options.context.currentUserId == null) {
+                        return;
+                    }
+                    const previousSubmissionId = document._previousDataValues.submissionId;
+                    const becomingDeleted = document.deleted && !document._previousDataValues.deleted;
+                    const submissionId = previousSubmissionId != null ? previousSubmissionId : document.submissionId;
+                    const unlinkingSubmission = previousSubmissionId != null && document.submissionId !== previousSubmissionId;
+                    // A plain Documents delete has no flag. Clearing submissionId first would
+                    // make the next delete look like a normal document.
+                    if ((becomingDeleted && submissionId != null) || unlinkingSubmission) {
+                        throw new TranslatableError("errors.documents.submissionFileNotDeletable");
+                    }
+                },
                 afterDestroy: async (document, options) => {
                     await Document.deleteDocumentFile(document);
                 },
                 afterUpdate: async (document, options) => {
                     // If the document is deleted, we should also delete the associated db columns
                     if (document.deleted && !document._previousDataValues.deleted) {
+                        const txn = {transaction: options.transaction};
+
                         // delete associated studies
-                        const study_steps = await sequelize.models.study_step.getAllByKey("documentId", document.id);
+                        const study_steps = await sequelize.models.study_step.getAllByKey("documentId", document.id, txn);
                         const uniqueStudyIds = [...new Set(study_steps.map(study => study.studyId))];
 
                         for (const studyId of uniqueStudyIds) {
-                            await sequelize.models["study"].deleteById(studyId);
+                            await sequelize.models["study"].deleteById(studyId, txn);
                         }
 
                         // delete associated document_data
-                        const documentDataRows = await sequelize.models.document_data.getAllByKey("documentId", document.id);
+                        const documentDataRows = await sequelize.models.document_data.getAllByKey("documentId", document.id, txn);
                         for (const documentDataRow of documentDataRows) {
-                            await sequelize.models["document_data"].deleteById(documentDataRow.id);
+                            await sequelize.models["document_data"].deleteById(documentDataRow.id, txn);
                         }
 
                         // delete associated annotations and comments
@@ -405,29 +467,31 @@ module.exports = (sequelize, DataTypes) => {
                             // get document edits
                             const documentEdits = await sequelize.models.document_edit.getAllByKey(
                                 "documentId",
-                                document.id
+                                document.id,
+                                txn
                             );
                             const uniqueDocumentEditIds = [
                                 ...new Set(documentEdits.map((documentEdit) => documentEdit.id)),
                             ];
                             for (const documentEditId of uniqueDocumentEditIds) {
-                                await sequelize.models["document_edit"].deleteById(documentEditId);
+                                await sequelize.models["document_edit"].deleteById(documentEditId, txn);
                             }
                         } else if (document.type === Document.docTypes.DOC_TYPE_PDF) {
                             // get unique annotations and comments ids
                             const annotations = await sequelize.models.annotation.getAllByKey(
                                 "documentId",
-                                document.id
+                                document.id,
+                                txn
                             );
                             const uniqueAnnotationIds = [...new Set(annotations.map((annotation) => annotation.id))];
                             for (const annotationId of uniqueAnnotationIds) {
-                                await sequelize.models["annotation"].deleteById(annotationId);
+                                await sequelize.models["annotation"].deleteById(annotationId, txn);
                             }
 
-                            const comments = await sequelize.models["comment"].getAllByKey("documentId", document.id);
+                            const comments = await sequelize.models["comment"].getAllByKey("documentId", document.id, txn);
                             const uniqueCommentIds = [...new Set(comments.map((comment) => comment.id))];
                             for (const commentId of uniqueCommentIds) {
-                                await sequelize.models["comment"].deleteById(commentId);
+                                await sequelize.models["comment"].deleteById(commentId, txn);
                             }
                         }
                     }

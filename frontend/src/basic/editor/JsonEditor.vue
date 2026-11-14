@@ -8,7 +8,7 @@
   >
     <div
         ref="content"
-        class="bg-light border-start"
+        class="bg-body-tertiary border-start"
         @dblclick="toEditMode(true)"
     >
       <div v-show="showControls" class="button-group position-absolute top-0 end-0 opacity-50 pe-1">

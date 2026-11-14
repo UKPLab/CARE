@@ -1,0 +1,24 @@
+{
+    "documentNote": "Remarque sur le document",
+    "createdByUser": "Créé par l'utilisateur {userId}",
+    "annotations": "Annotations",
+    "submitReview": "Envoyer l'évaluation",
+    "report": "Rapport",
+    "accept": "Accepter",
+    "reject": "Rejeter",
+    "hideStudyComments": "Masquer les commentaires de l'étude",
+    "showStudyComments": "Afficher les commentaires de l'étude",
+    "deactivateNlpSupport": "Désactiver l'assistance NLP",
+    "activateNlpSupport": "Activer l'assistance NLP",
+    "downloadAnnotations": "Télécharger les annotations",
+    "documentSubscribeError": "Erreur d'abonnement au document",
+    "pdfPage": {
+        "loadingPage": "Chargement de la page {pageNumber}"
+    },
+    "readOnlyMode": "Mode lecture seule",
+    "annotationsViewOnly": "Les annotations sont en lecture seule",
+    "card": {
+        "markedCheckedClickToUncheck": "Marqué comme vérifié - Cliquez pour annuler",
+        "clickToMarkChecked": "Cliquez pour marquer comme vérifié"
+    }
+}

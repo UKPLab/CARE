@@ -41,6 +41,7 @@
 <script>
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
+import { applyTheme, getContrastColor, resolveTheme, shadeColor } from "@/assets/utils";
 import Loader from "@/basic/Loading.vue";
 import {createTable} from "@/store/utils";
 import axios from "axios";
@@ -70,6 +71,7 @@ export default {
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),
+      setStatsContext: this.setStatsContext,
     }
   },
   data() {
@@ -82,6 +84,7 @@ export default {
       },
       disconnected: false,
       behaviorLogger: null,
+      statsContext: {},
       postLoginModalFlowToken: 0,
     }
   },
@@ -210,6 +213,26 @@ export default {
     }
   },
   watch: {
+    "$store.state.settings": {
+      handler() {
+        const saved = this.$store.getters["settings/getValue"]("app.theme.mode");
+        if (saved) {
+          applyTheme(saved);
+        }
+        const accent = this.$store.getters["settings/getValue"]("theme.dark.accentColor");
+        if (accent) {
+          document.documentElement.style.setProperty("--care-accent", accent);
+          document.documentElement.style.setProperty("--care-on-accent", getContrastColor(accent));
+          document.documentElement.style.setProperty("--care-accent-hover", shadeColor(accent, 0.12));
+          document.documentElement.style.setProperty("--care-accent-active", shadeColor(accent, 0.2));
+          const knob = `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23${accent.replace('#','')}'/%3e%3c/svg%3e")`;
+          document.documentElement.style.setProperty("--care-switch-knob", knob);
+          const knobOn = `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23${getContrastColor(accent).replace('#','')}'/%3e%3c/svg%3e")`;
+          document.documentElement.style.setProperty("--care-switch-knob-on", knobOn);
+        }
+      },
+      deep: true,
+    },
     $route: {
       handler(to, from) {
         this.syncLocaleForRoute(to);
@@ -241,6 +264,15 @@ export default {
     appLoaded() {
       this.syncPostLoginModalFlow();
     },
+    // Consent can change at runtime (consent modal, preferences modal)
+    acceptStats(accepted) {
+      if (accepted && this.loaded.settings) {
+        this.initializeBehaviorLogger();
+      } else if (this.behaviorLogger) {
+        this.behaviorLogger.destroy();
+        this.behaviorLogger = null;
+      }
+    },
     // Initialize logger after settings are loaded because we access the settings table
     'loaded.settings': {
       handler(isLoaded) {
@@ -255,6 +287,7 @@ export default {
     this.connect();
   },
   async mounted() {
+    this.initTheme();
     if (this.$route.meta.checkLogin) {
       await this.runCheckLoginFlow();
     }
@@ -265,6 +298,9 @@ export default {
     }
   },
   methods: {
+    initTheme() {
+      applyTheme(resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")));
+    },
     async runCheckLoginFlow() {
       const response = await axios.get(getServerURL() + "/auth/check", {
         withCredentials: true,
@@ -299,9 +335,21 @@ export default {
     },
     initializeBehaviorLogger() {
       if (this.acceptStats && !this.behaviorLogger) {
-        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
+        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime, {
+          getContext: () => this.statsContext,
+        });
         this.behaviorLogger.init();
+        // The $route watcher ran before the logger existed, so log the page the logger starts on
+        this.behaviorLogger.reportRouteChange(null, this.$route);
       }
+    },
+    /**
+     * Adds or changes keys of the study context that the behavior logger adds to its events.
+     * Set a key to null to remove it.
+     * @param {Object} partial The context keys to set, e.g. {studySessionId: 7}.
+     */
+    setStatsContext(partial) {
+      this.statsContext = {...this.statsContext, ...partial};
     },
     syncLocaleForRoute(route) {
       if (route.meta.requireAuth) {

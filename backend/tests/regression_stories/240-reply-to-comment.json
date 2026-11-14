@@ -1,0 +1,969 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:36:00.266Z",
+  "traceCount": 42,
+  "recording": {
+    "name": "240-reply-to-comment",
+    "status": "finished",
+    "startTime": "2026-08-10T23:26:37.987Z",
+    "userId": 3,
+    "participantSocketIds": [
+      "o2D2-TTZMejvegnsAAAR"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:27:03.231Z"
+  },
+  "traces": [
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 14,
+          "name": "Recording 8/11/2026, 1:26:37 AM",
+          "status": "recording",
+          "userId": 3,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:26:37.988Z",
+          "startTime": "2026-08-10T23:26:37.987Z",
+          "updatedAt": "2026-08-10T23:26:37.988Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "o2D2-TTZMejvegnsAAAR"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:38.006Z",
+      "endTime": "2026-08-10T23:26:38.006Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:39.015Z",
+      "endTime": "2026-08-10T23:26:39.015Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "text": "tween humans and texts,how they translate into NLP tasks, and ",
+          "documentId": 1,
+          "studyStepId": null,
+          "eventClientX": 792,
+          "eventClientY": 474,
+          "studySessionId": null
+        },
+        "action": "onTextSelect"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:44.665Z",
+      "endTime": "2026-08-10T23:26:44.665Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 792,
+          "clientY": 474,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:44.942Z",
+      "endTime": "2026-08-10T23:26:44.942Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 853,
+          "clientY": 424,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:46.208Z",
+      "endTime": "2026-08-10T23:26:46.208Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Weakness",
+          "documentId": 1
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:46.783Z",
+      "endTime": "2026-08-10T23:26:46.783Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 3,
+        "anonymous": false,
+        "selectors": {
+          "target": [
+            {
+              "selector": [
+                {
+                  "end": 3260,
+                  "type": "TextPositionSelector",
+                  "start": 3198
+                },
+                {
+                  "type": "TextQuoteSelector",
+                  "exact": "tween humans and texts,how they translate into NLP tasks, and ",
+                  "prefix": "bout thehands-on interactions be",
+                  "suffix": "how theimpact of NLP-based assis"
+                },
+                {
+                  "type": "PagePositionSelector",
+                  "number": 1
+                }
+              ]
+            }
+          ]
+        },
+        "documentId": 1,
+        "studyStepId": null,
+        "studySessionId": null
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:46.785Z",
+      "endTime": "2026-08-10T23:26:46.785Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:46.796Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:26:46.796Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 4,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:46.799Z",
+      "endTime": "2026-08-10T23:26:46.799Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "text": "tween humans and texts,how they translate into NLP tasks, and ",
+          "draft": true,
+          "tagId": 3,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:46.789Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 3260,
+                    "type": "TextPositionSelector",
+                    "start": 3198
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "tween humans and texts,how they translate into NLP tasks, and ",
+                    "prefix": "bout thehands-on interactions be",
+                    "suffix": "how theimpact of NLP-based assis"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:26:46.789Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:46.800Z",
+      "endTime": "2026-08-10T23:26:46.800Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "text": "tween humans and texts,how they translate into NLP tasks, and ",
+          "draft": true,
+          "tagId": 3,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:46.789Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 3260,
+                    "type": "TextPositionSelector",
+                    "start": 3198
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "tween humans and texts,how they translate into NLP tasks, and ",
+                    "prefix": "bout thehands-on interactions be",
+                    "suffix": "how theimpact of NLP-based assis"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:26:46.789Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:46.801Z",
+      "endTime": "2026-08-10T23:26:46.801Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:46.796Z",
+          "updatedAt": "2026-08-10T23:26:46.796Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 4,
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:46.801Z",
+      "endTime": "2026-08-10T23:26:46.801Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:46.805Z",
+      "endTime": "2026-08-10T23:26:46.805Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:46.805Z",
+      "endTime": "2026-08-10T23:26:46.805Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:46.805Z",
+      "endTime": "2026-08-10T23:26:46.805Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 853,
+          "clientY": 424,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:46.820Z",
+      "endTime": "2026-08-10T23:26:46.820Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1162,
+          "clientY": 651,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:48.426Z",
+      "endTime": "2026-08-10T23:26:48.426Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentUpdate",
+      "payload": {
+        "tags": "[]",
+        "text": "haha",
+        "commentId": 4
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:52.299Z",
+      "endTime": "2026-08-10T23:26:52.299Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "serviceRequest",
+      "payload": {
+        "data": {
+          "id": 4,
+          "data": {
+            "text": "haha"
+          },
+          "name": "sentiment_classification"
+        },
+        "service": "NLPService"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:52.299Z",
+      "endTime": "2026-08-10T23:26:52.299Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 3,
+        "annotationId": 4
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:52.298Z",
+      "endTime": "2026-08-10T23:26:52.298Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "floppy-fill",
+          "props": {
+            "commentId": 4
+          },
+          "title": "Save"
+        },
+        "action": "clickSidebarButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:52.307Z",
+      "endTime": "2026-08-10T23:26:52.307Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "serviceRefresh",
+      "payload": {
+        "data": {
+          "id": 4,
+          "data": {
+            "label": "pos",
+            "score": 0.9
+          },
+          "fallback": true
+        },
+        "type": "skillResults",
+        "service": "NLPService"
+      },
+      "direction": false,
+      "startTime": "2026-08-10T23:26:52.302Z",
+      "endTime": "2026-08-10T23:26:52.302Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "text": "tween humans and texts,how they translate into NLP tasks, and ",
+          "draft": false,
+          "tagId": 3,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:46.789Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 3260,
+                    "type": "TextPositionSelector",
+                    "start": 3198
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "tween humans and texts,how they translate into NLP tasks, and ",
+                    "prefix": "bout thehands-on interactions be",
+                    "suffix": "how theimpact of NLP-based assis"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:26:52.317Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:52.324Z",
+      "endTime": "2026-08-10T23:26:52.324Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "text": "tween humans and texts,how they translate into NLP tasks, and ",
+          "draft": false,
+          "tagId": 3,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:46.789Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 3260,
+                    "type": "TextPositionSelector",
+                    "start": 3198
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "tween humans and texts,how they translate into NLP tasks, and ",
+                    "prefix": "bout thehands-on interactions be",
+                    "suffix": "how theimpact of NLP-based assis"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:26:52.317Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:52.325Z",
+      "endTime": "2026-08-10T23:26:52.325Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "tags": "[]",
+          "text": "haha",
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:46.796Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:26:52.327Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 4,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:52.330Z",
+      "endTime": "2026-08-10T23:26:52.330Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 4,
+          "tags": "[]",
+          "text": "haha",
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:46.796Z",
+          "updatedAt": "2026-08-10T23:26:52.327Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 4,
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:52.331Z",
+      "endTime": "2026-08-10T23:26:52.331Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_vote"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:52.334Z",
+      "endTime": "2026-08-10T23:26:52.334Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1364,
+          "clientY": 743,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:52.691Z",
+      "endTime": "2026-08-10T23:26:52.691Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "reply-fill",
+          "props": {
+            "commentId": 4
+          },
+          "title": "Reply"
+        },
+        "action": "clickSidebarButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:53.970Z",
+      "endTime": "2026-08-10T23:26:53.970Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentUpdate",
+      "payload": {
+        "anonymous": false,
+        "documentId": 1,
+        "studyStepId": null,
+        "studySessionId": null,
+        "parentCommentId": 4
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:53.969Z",
+      "endTime": "2026-08-10T23:26:53.969Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:53.977Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:26:53.977Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": null,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": 4
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:53.985Z",
+      "endTime": "2026-08-10T23:26:53.985Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:53.977Z",
+          "updatedAt": "2026-08-10T23:26:53.977Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": null,
+          "studySessionId": null,
+          "parentCommentId": 4
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:53.987Z",
+      "endTime": "2026-08-10T23:26:53.987Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1273,
+          "clientY": 736,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:54.358Z",
+      "endTime": "2026-08-10T23:26:54.358Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentUpdate",
+      "payload": {
+        "tags": "[]",
+        "text": "hehe",
+        "commentId": 5
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:58.116Z",
+      "endTime": "2026-08-10T23:26:58.116Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "serviceRequest",
+      "payload": {
+        "data": {
+          "id": 5,
+          "data": {
+            "text": "hehe"
+          },
+          "name": "sentiment_classification"
+        },
+        "service": "NLPService"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:58.117Z",
+      "endTime": "2026-08-10T23:26:58.117Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "serviceRefresh",
+      "payload": {
+        "data": {
+          "id": 5,
+          "data": {
+            "label": "pos",
+            "score": 0.9
+          },
+          "fallback": true
+        },
+        "type": "skillResults",
+        "service": "NLPService"
+      },
+      "direction": false,
+      "startTime": "2026-08-10T23:26:58.121Z",
+      "endTime": "2026-08-10T23:26:58.121Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "save-fill",
+          "props": {
+            "edit": false,
+            "level": 1,
+            "commentId": 5
+          },
+          "title": "Save (Ctrl+Enter)"
+        },
+        "action": "clickSidebarButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:58.117Z",
+      "endTime": "2026-08-10T23:26:58.117Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "tags": "[]",
+          "text": "hehe",
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:53.977Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:26:58.138Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": null,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": 4
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:58.143Z",
+      "endTime": "2026-08-10T23:26:58.143Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "tags": "[]",
+          "text": "hehe",
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:26:53.977Z",
+          "updatedAt": "2026-08-10T23:26:58.138Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": null,
+          "studySessionId": null,
+          "parentCommentId": 4
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:26:58.153Z",
+      "endTime": "2026-08-10T23:26:58.153Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_vote"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:58.155Z",
+      "endTime": "2026-08-10T23:26:58.155Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1364,
+          "clientY": 713,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:26:58.290Z",
+      "endTime": "2026-08-10T23:26:58.290Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1117,
+          "clientY": 5,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:00.941Z",
+      "endTime": "2026-08-10T23:27:00.941Z"
+    },
+    {
+      "recordingId": 14,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:02.127Z",
+      "endTime": "2026-08-10T23:27:02.127Z"
+    }
+  ]
+}

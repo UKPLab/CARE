@@ -207,12 +207,12 @@ export default {
 
 <style scoped>
 .alert {
-  border-left: 4px solid #0dcaf0;
+  border-left: 4px solid var(--bs-info, #0dcaf0);
 }
 
 .form-text {
   font-size: 0.875rem;
-  color: #6c757d;
+  color: var(--bs-secondary-color, #6c757d);
 }
 
 .spinner-border-sm {

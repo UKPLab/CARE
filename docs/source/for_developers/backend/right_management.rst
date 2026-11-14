@@ -119,6 +119,24 @@ Below is a list of the roles currently available in CARE, along with additional 
 Current Rights
 --------------
 
+Document uploads
+~~~~~~~~~~~~~~~~
+
+``frontend.dashboard.documents.upload`` controls the Upload document button
+in both the Documents page and the Home dashboard. The ``documentAdd`` socket
+event enforces the same right. Assignment submissions and Moodle uploads use
+their existing access checks.
+
+The migration grants this right to all existing, active roles, including custom
+roles, to preserve upload access. Administrators can remove it in Users > Rights
+Management. Rights are combined across assigned roles: to restrict a user,
+remove the right from every role assigned to that user, including the base
+``user`` role. Admins retain full access. New roles must be granted the right
+explicitly.
+
+Rights by role
+~~~~~~~~~~~~~~
+
 This table shows which rights are assigned to which roles.  
 Admins can do everything, so they are not listed separately in each row.
 
@@ -145,6 +163,30 @@ Admins can do everything, so they are not listed separately in each row.
    * - View My Sessions dashboard
      - ``frontend.dashboard.my_sessions.view``
      - guest, user
+
+   * - View AI Log dashboard
+     - ``frontend.dashboard.ai_log.view``
+     - user
+
+   * - View AI Models and Credentials dashboard
+     - ``frontend.dashboard.ai_models.view``
+     - user
+
+   * - View AI Hooks dashboard
+     - ``frontend.dashboard.ai_hooks.view``
+     - user
+
+   * - View AI Budget dashboard
+     - ``frontend.dashboard.ai_budget.view``
+     - user
+
+   * - Manage Triggers
+     - ``frontend.dashboard.triggers.view``
+     - None (admin only)
+
+   * - View Trigger Logs
+     - ``frontend.dashboard.trigger_logs.view``
+     - None (admin only)
 
    * - View Studies
      - ``frontend.dashboard.studies.view``

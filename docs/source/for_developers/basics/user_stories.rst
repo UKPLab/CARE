@@ -317,7 +317,8 @@ Consent and Terms
      platform.
 
    :Settings:
-     ``app.register.terms``, ``app.register.requestStats``, ``app.register.requestData``
+     ``app.register.terms``, ``app.register.requestStats``, ``app.register.requestData``,
+     ``app.register.combineResearchConsent``
 
    :Acceptance:
      - On first login a modal appears showing the platform terms and optional checkboxes for
@@ -325,6 +326,14 @@ Consent and Terms
        enabled).
      - I must accept the terms to proceed. The optional checkboxes are pre-set to their
        configured default values but I can change them.
+     - In Settings, under User Registration / Consent options, administrators can enable
+       "Combine research consent checkboxes" (off by default). When both permissions are
+       requested, registration, first-login consent, and Preferences show one optional
+       checkbox that saves both ``acceptStats`` and ``acceptDataSharing``. New consent
+       starts unchecked in combined mode, regardless of the separate defaults.
+     - Preferences shows an indeterminate checkbox for existing mixed permissions and
+       preserves those permissions until the participant changes the checkbox.
+     - Terms acceptance remains separate. This setting does not change export filtering.
      - After accepting, my preferences are saved and I am granted access to the app.
      - I can later update my consent preferences via the same modal accessible from my account
        menu.
@@ -486,6 +495,8 @@ Rename and Delete a Document
 
      - When I try to rename a document to an empty name, I see a validation error.
      - When I cancel the delete confirmation dialog, the document is not deleted.
+     - When the document is a submission file, Documents does not offer delete. A delete
+       does not remove the document.
 
 -----
 
@@ -961,6 +972,57 @@ Start a Study Session
 
 -----
 
+Look Back at an Earlier Step
+-----------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to look at an earlier step of my study session while I am in a
+     later one, so that I can use my earlier work without leaving my current step.
+
+   :Settings:
+     ``app.study.enabled``
+
+   :Acceptance:
+     - During a session, a workflow bar under the top bar shows every step with its number and
+       type. Finished steps have a tick and my current step is marked.
+     - I can hide the workflow bar and show it again with a button in the top bar.
+     - I can open an earlier step that "Previous" could reach. It is shown read-only, its label
+       has a lock, and the sidebar opens on its annotations or assessment.
+     - The sidebar only shows the tabs of the steps on screen.
+     - Clicking my current step in the workflow bar brings it back.
+     - Previous and Next show the name of the step they lead to, and a button in the top bar
+       shows the study description again.
+
+     **Negative cases:**
+
+     - Steps that the workflow does not allow going back to cannot be opened.
+     - I cannot change an earlier step's document, annotations or assessment.
+
+-----
+
+Compare an Earlier Step Side by Side
+-------------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to see an earlier step next to my current step, so that I can
+     refer to it while I work.
+
+   :Settings:
+     ``app.study.enabled``
+
+   :Acceptance:
+     - I can show an earlier step side by side with my current step, or one above the other.
+     - I can swap the two documents and drag the line between them to share the room
+       differently.
+     - My current step stays editable, while the earlier step is read-only.
+     - Choosing the same split again closes it.
+
+-----
+
 Close a Study
 --------------
 
@@ -1166,6 +1228,8 @@ Complete an Assessment During a Session
        the defined criteria.
      - For each criterion I can select a score and add a comment.
      - My responses are saved automatically as I complete the rubric.
+     - I can complete the rubric using only the keyboard: Enter or Space opens a panel,
+       Ctrl/Cmd+Enter commits my text, and Esc cancels the edit.
 
 -----
 
@@ -1464,6 +1528,96 @@ Anonymise Author in ZIP Export
        anonymise author information.
      - When enabled, ``\author{}`` fields in ``.tex`` files within the ZIP are replaced
        with anonymised names.
+
+-----
+
+AI and Automation
+~~~~~~~~~~~~~~~~~
+
+-----
+
+Manage AI Credentials and Models
+--------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to configure AI provider credentials and models, so that
+     I can use approved models in CARE.
+
+   :Acceptance:
+     - I can create, edit, disable, and delete my credentials and models.
+     - I can test a model before using it and share a model with users or roles.
+     - Only the owner can change a credential, model, or its sharing.
+
+-----
+
+Configure and Monitor AI Use
+----------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to configure AI hooks and spending limits and inspect AI
+     usage, so that model calls are controlled and auditable.
+
+   :Acceptance:
+     - I can create a hook from a prompt template, choose ordered models, and set its output
+       type.
+     - I can manage cost limits for models, hooks, studies, and study steps.
+     - The AI log shows request status, token usage, and cost.
+     - Authorized offline and context-length failures are recorded without invented
+       token usage or cost. Existing access, spending, and pending-request checks apply.
+     - With statistics consent, Dialogue records question copies, paste lengths, and
+       aggregate answer composition totals with question and follow-up identifiers.
+       Copied text is not added to these statistics.
+     - A hook cannot be saved without a prompt template and at least one model.
+
+-----
+
+Use AI Assistance in a Study
+---------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want Chat and Dialogue to recover predictably, so that
+     I can continue my study without losing an answer or submitting it twice.
+
+   :Acceptance:
+     - Assessment and Feedback hooks receive the configured annotation or comment
+       input key when that data is available.
+     - Reopening a Chat restores its last completed answer's available model and the
+       corresponding context warning. A new conversation uses the default model.
+     - A context-length rejection preserves my draft and offers a new conversation.
+     - A Chat loading timeout retries once automatically, then offers manual Retry.
+       Recovery preserves my draft and does not submit a message.
+     - Stopping Dialogue settles the cancelled request so Retry can run immediately
+       with the saved answer. An answered stopped turn has no editable Submit field.
+     - Streaming Chat responses preserve my position when I scroll up. Jump to latest
+       returns to the newest content and resumes following the response.
+
+-----
+
+Automate Events with Triggers
+-----------------------------
+
+.. container:: user-story
+
+   :Story:
+     As an **Admin**, I want to run configured actions when CARE events occur, so that
+     recurring work can be automated.
+
+   :Acceptance:
+     - I can create, edit, enable, disable, and delete a trigger by selecting an event and
+       action.
+     - Trigger Logs shows each run, its status, attempts, and any error message.
+     - I can cancel pending or running jobs, retry failed or cancelled jobs, and re-run
+       completed jobs.
+     - I can set how often the trigger queue worker polls for leftover jobs in Settings.
+       The default is 5 minutes. New jobs still start when the event fires. A server
+       restart is required after changing this setting.
+     - Non-admin users cannot manage triggers or trigger logs.
 
 -----
 
@@ -1892,6 +2046,27 @@ View Study Sessions as Coordinator
      - All editing options are disabled.
      - If I have the right to view private user information, participant real names are
        shown in the session table; otherwise they are not visible.
+
+-----
+
+Import and Export Content Templates
+-----------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Participant**, I want to export a content template to a file and import
+     it on another CARE instance, so that I can reuse the email, document, or prompt
+     text.
+
+   :Acceptance:
+     - From Dashboard → Templates I can export one template, or every template on
+       my list. A public template I have not copied is not included.
+     - Import reads JSON and YAML.
+     - The file includes the saved text for each language.
+     - Import creates a new template that I own, with that text, and it is not published.
+     - I can publish it afterwards with the existing publish action.
+     - Only an admin can import an email template.
 
 -----
 

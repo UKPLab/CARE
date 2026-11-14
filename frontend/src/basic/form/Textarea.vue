@@ -9,6 +9,7 @@
           class="form-control"
           :placeholder="translatedPlaceholder"
           :disabled="(options.readOnly !== undefined || options.disabled !== undefined)"
+          :rows="options.rows"
           @blur="blur(currentData)"
       />
     </template>

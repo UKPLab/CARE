@@ -2,13 +2,13 @@
   <div class="card my-3">
     <div class="card-header step-card-header section-header" style="cursor: pointer" @click="toggleCollapse">
       <LoadIcon :icon-name="isCollapsed ? 'arrow-right-short' : 'arrow-down-short'" class="me-1" />
-      {{ title }}
+      {{ translateMaybeKey(title) }}
     </div>
     <div v-if="!isCollapsed" class="card-body mx-4 my-4">
       <template v-for="(subsection, idx) in visibleSubsections" :key="subsection.title || idx">
         <FormCollapsible
           v-if="subsection.title"
-          :title="subsection.title"
+          :title="translateMaybeKey(subsection.title)"
           :collapsed="false"
           class="mb-3"
         >
@@ -45,6 +45,7 @@
 import LoadIcon from "@/basic/Icon.vue";
 import FormCollapsible from "@/basic/form/Collapsible.vue";
 import SettingItem from "@/components/dashboard/settings/SettingItem.vue";
+import { translateMaybeKey } from "@/assets/utils";
 
 /**
  * SettingsSection - Renders a collapsible settings section with subsections.
@@ -81,6 +82,7 @@ export default {
     },
   },
   methods: {
+    translateMaybeKey,
     toggleCollapse() {
       this.isCollapsed = !this.isCollapsed;
     },

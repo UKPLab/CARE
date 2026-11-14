@@ -466,6 +466,7 @@ export default {
           this.$socket.emit("stats", {
             action: "textPasted",
             data: {
+              ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
               documentId: this.documentId,
               studySessionId: this.studySessionId,
               studyStepId: this.studyStepId,
@@ -482,6 +483,7 @@ export default {
           this.$socket.emit("stats", {
             action: "textCopied",
             data: {
+              ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
               from: "editor",
               documentId: this.documentId,
               studySessionId: this.studySessionId,
@@ -591,11 +593,11 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: #f3f3f3;
-  border: 1px solid #ccc;
+  background-color: var(--bs-tertiary-bg, #f3f3f3);
+  border: 1px solid var(--bs-border-color, #ccc);
   border-radius: 4px;
   margin-bottom: 0px;
-  color: #666;
+  color: var(--bs-secondary-color, #666);
   font-size: 14px;
 }
 .readonly-toolbar-text {

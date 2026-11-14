@@ -1,0 +1,229 @@
+{
+    "title": "Profileur de sockets",
+    "actions": {
+        "startRecording": "Démarrer l'enregistrement",
+        "stopRecording": "Arrêter l'enregistrement",
+        "import": "Importer",
+        "importTooltip": "Importer un enregistrement depuis un fichier JSON",
+        "replayRecording": "Rejouer l'enregistrement",
+        "exportRecording": "Exporter l'enregistrement",
+        "editRecording": "Modifier l'enregistrement",
+        "deleteRecording": "Supprimer l'enregistrement"
+    },
+    "import": {
+        "title": "Importer un enregistrement",
+        "selectFile": "Sélectionnez un fichier d'enregistrement (JSON) :",
+        "selected": "Sélectionné : {name}",
+        "previewIntro": "Importer l'enregistrement suivant depuis",
+        "traceCount": "Nombre de traces",
+        "exportedAt": "Exporté le",
+        "confirmOwnership": "L'enregistrement sera créé sous votre compte utilisateur. Les ID et les références de sockets de la machine source ne seront pas repris.",
+        "confirmDurationBefore": "L'importation de",
+        "confirmDurationAfter": "trace(s), une à une, peut prendre quelques secondes pour les enregistrements volumineux.",
+        "parseFailed": "Impossible d'analyser le fichier : {message}",
+        "readFailed": "Impossible de lire le fichier",
+        "steps": {
+            "fileSelection": "Sélection du fichier",
+            "preview": "Aperçu",
+            "confirmation": "Confirmation"
+        },
+        "errors": {
+            "notJsonObject": "Objet JSON invalide",
+            "unsupportedSchema": "schemaVersion non pris en charge : {version}. Valeur attendue : 1.",
+            "missingRecording": "Objet 'recording' manquant",
+            "missingTraces": "Tableau 'traces' manquant",
+            "traceAction": "Une trace n'a pas d''action' valide",
+            "traceDirection": "Une trace n'a pas de 'direction' valide",
+            "traceStartTime": "Une trace n'a pas de 'startTime'"
+        },
+        "toasts": {
+            "failed": "Échec de l'importation",
+            "success": "Importation réussie",
+            "successBody": "Enregistrement importé avec {count} trace(s)"
+        }
+    },
+    "startReplay": {
+        "title": "Démarrer la relecture",
+        "startWithCount": "Démarrer la relecture ({count} enregistrement(s))",
+        "recordingsLabel": "Enregistrements à rejouer",
+        "recordingsHint": "L'enregistrement sur lequel vous avez cliqué est présélectionné. Les sessions des enregistrements sélectionnés sont regroupées dans un pool ; l'itération K exécute K copies complètes de ce pool en parallèle.",
+        "iterationsInvalid": "Saisissez un entier positif pour le nombre maximal d'itérations.",
+        "estimate": {
+            "poolLabel": "Taille du pool :",
+            "poolUnit": "session(s).",
+            "peakLabel": "Pic :",
+            "peakUnit": "socket(s) en parallèle à l'itération {iteration}.",
+            "cumulativeLabel": "Cumul :",
+            "cumulativeUnit": "exécutions de sockets au total sur l'ensemble de la relecture."
+        },
+        "fields": {
+            "mode": "Mode",
+            "modeScaling": "Scaling : regroupe les sessions, ajoute un pool complet à chaque itération",
+            "modeLoad": "Mode charge (bientôt disponible)",
+            "speed": "Vitesse",
+            "speedFast": "Rapide : aucun délai entre les traces",
+            "speedRealtime": "Temps réel : conserve le minutage d'origine dans chaque session",
+            "maxIterations": "Itérations max.",
+            "maxIterationsPlaceholder": "Saisissez un entier positif (obligatoire)",
+            "ackTimeout": "Délai d'accusé de réception (ms)",
+            "ackTimeoutHelp": "Durée pendant laquelle la relecture attend que le serveur accuse réception de chaque trace avant de la considérer comme échouée (100–30000 ms).",
+            "continueOnFailure": "Continuer malgré les échecs",
+            "continueOnFailureHelp": "Exécuter toutes les itérations de scaling même si certaines échouent, au lieu de s'arrêter à la première itération échouée."
+        },
+        "columns": {
+            "sessions": "Sessions"
+        }
+    },
+    "replayResults": {
+        "title": "Résultats de la relecture",
+        "viewSessions": "Voir les sessions de l'itération",
+        "summary": {
+            "iterations": "Itérations",
+            "totalTraces": "Total des traces",
+            "passed": "Réussies",
+            "failed": "Échouées"
+        },
+        "columns": {
+            "iteration": "Itération",
+            "sessions": "Sessions",
+            "passed": "Réussies",
+            "failed": "Échouées",
+            "avgLatency": "Latence moy.",
+            "maxLatency": "Latence max.",
+            "duration": "Durée",
+            "status": "Statut"
+        }
+    },
+    "recording": {
+        "title": "Sauvegarder l'enregistrement",
+        "nameLabel": "Nom de l'enregistrement",
+        "namePlaceholder": "Saisissez un nom pour cet enregistrement",
+        "traceEvents": "Événements tracés",
+        "traceEventsHint": "Sélectionnez les événements à supprimer. Les événements non sélectionnés seront conservés.",
+        "discard": "Abandonner l'enregistrement",
+        "save": "Sauvegarder l'enregistrement",
+        "columns": {
+            "seq": "#",
+            "action": "Action",
+            "direction": "Direction",
+            "time": "Heure",
+            "elapsed": "Écoulé"
+        },
+        "ops": {
+            "rename": "renommer",
+            "deleteTraces": "supprimer des traces"
+        },
+        "toasts": {
+            "discarded": "Enregistrement abandonné",
+            "discardedBody": "L'enregistrement a été supprimé",
+            "discardFailed": "Impossible d'abandonner l'enregistrement",
+            "saved": "Enregistrement sauvegardé",
+            "savedBody": "L'enregistrement a été sauvegardé",
+            "saveFailed": "Impossible de sauvegarder l'enregistrement"
+        }
+    },
+    "sessionTraces": {
+        "title": "Traces de la session",
+        "passedCount": "{passed}/{total} réussie(s)",
+        "viewDbChanges": "Voir les modifications de la base de données",
+        "columns": {
+            "seq": "#",
+            "action": "Action",
+            "status": "Statut",
+            "latency": "Latence (ms)",
+            "details": "Détails",
+            "db": "BD"
+        },
+        "filters": {
+            "passed": "Réussies",
+            "failed": "Échouées"
+        }
+    },
+    "iterationSessions": {
+        "title": "Sessions de l'itération",
+        "subtitle": "Itération {level} — {sessions} session(s)",
+        "sessionLabel": "Session {index} sur {total}",
+        "recordingFallback": "Enregistrement {id}",
+        "viewTraces": "Voir les traces de la session",
+        "columns": {
+            "session": "Session",
+            "recording": "Enregistrement",
+            "user": "Utilisateur",
+            "passed": "Réussies",
+            "failed": "Échouées",
+            "avgLatency": "Latence moy.",
+            "maxLatency": "Latence max."
+        }
+    },
+    "dbChanges": {
+        "title": "Modifications de la base de données",
+        "empty": "Aucune modification de la base de données pour cette trace.",
+        "columns": {
+            "table": "Table",
+            "recordIds": "ID des enregistrements",
+            "fields": "Champs modifiés",
+            "records": "Enregistrements"
+        }
+    },
+    "startRecording": {
+        "title": "Démarrer l'enregistrement",
+        "selectSessions": "Sélectionnez les sessions à enregistrer",
+        "selectSessionsHint": "Chaque ligne correspond à une connexion active. Seules les sessions sélectionnées seront enregistrées. Les nouvelles connexions qui apparaissent pendant l'enregistrement ne sont pas incluses automatiquement.",
+        "excludeEvents": "Exclure des événements",
+        "excludeEventsHint": "Les événements cochés ne seront pas enregistrés. Décochez-les pour les inclure.",
+        "customEventPlaceholder": "Ajouter un nom d'événement personnalisé à exclure",
+        "recordButton": "Enregistrer {count} session(s)",
+        "thisTab": "(cet onglet)",
+        "columns": {
+            "userId": "ID utilisateur",
+            "username": "Nom d'utilisateur",
+            "session": "Session",
+            "connected": "Connecté"
+        },
+        "toasts": {
+            "started": "Enregistrement démarré",
+            "startedBody": "Enregistrement de {sessions} session(s), {events} type(s) d'événement exclu(s)",
+            "startFailed": "Impossible de démarrer l'enregistrement"
+        }
+    },
+    "toasts": {
+        "stopped": "Enregistrement arrêté",
+        "stoppedBody": "{count} enregistrement(s) arrêté(s). Gérez-les dans le tableau ci-dessous.",
+        "stopFailed": "Impossible d'arrêter l'enregistrement",
+        "exportFailed": "Échec de l'export",
+        "exportNotFound": "Enregistrement introuvable dans le store",
+        "exportAborted": "Export interrompu",
+        "exportAbortedBody": "L'export supprimerait les données de {count} trace(s) ({actions}). Annulé pour éviter un fichier corrompu.",
+        "exportSuccess": "Export réussi",
+        "exportSuccessBody": "Enregistrement exporté avec {count} trace(s)",
+        "loadTracesFailed": "Impossible de charger les traces",
+        "replayStarted": "Relecture démarrée",
+        "replayStartedBody": "Relecture de {count} enregistrement(s)",
+        "replayFailed": "Échec de la relecture",
+        "deleted": "Enregistrement supprimé",
+        "deletedBody": "L'enregistrement a été supprimé",
+        "deleteFailed": "Impossible de supprimer l'enregistrement"
+    },
+    "columns": {
+        "id": "ID",
+        "name": "Nom",
+        "status": "Statut",
+        "startTime": "Heure de début",
+        "endTime": "Heure de fin"
+    },
+    "status": {
+        "recording": "Enregistrement en cours",
+        "finished": "Terminé",
+        "disconnected": "Déconnecté",
+        "interrupted": "Interrompu"
+    },
+    "replay": {
+        "passed": "RÉUSSI",
+        "failed": "ÉCHOUÉ"
+    },
+    "trace": {
+        "toBackend": "→ backend",
+        "toFrontend": "→ frontend",
+        "hasDbChanges": "Oui"
+    }
+}

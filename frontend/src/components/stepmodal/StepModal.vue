@@ -51,7 +51,7 @@
           />
           <!-- Button for the last step -->
           <BasicButton
-            v-if="isLastStep && !readOnly"
+            v-if="isLastStep && !readOnly && !studySessionFinished"
             :title="studyStep?.configuration?.finishButtonText || $t('modals.finishStudy')"
             :class="studyStep?.configuration?.finishButtonClass || 'btn btn-danger'"
             @click="closeModal({ endStudy: true })"
@@ -64,9 +64,9 @@
             icon="cloud-arrow-down"
             @click="exportStudyData"
           />
-          <!-- Button for returning to the dashboard when in read-only mode -->
+          <!-- Return when the session is finished or the study is read-only -->
           <BasicButton
-            v-if="isLastStep && readOnly"
+            v-if="isLastStep && (readOnly || studySessionFinished)"
             :title="$t('modals.returnToStudies')"
             :class="'btn btn-primary'"
             @click="$router.push('/dashboard/studies')"
@@ -108,6 +108,11 @@ export default {
       default: null
     },
     readOnly: {
+      type: Boolean,
+      required: false,
+      default: false,
+    },
+    studySessionFinished: {
       type: Boolean,
       required: false,
       default: false,
@@ -279,7 +284,7 @@ export default {
 .feedback-container {
   max-height: 400px;
   overflow-y: auto;
-  background: #f8f9fa;
+  background: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 0.5rem;
 }
 
@@ -293,15 +298,15 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--care-primary) !important;
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .text-muted {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .fw-bold {

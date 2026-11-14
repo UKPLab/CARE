@@ -177,8 +177,15 @@ export default {
         return true;
       });
     },
+    workflowStep() {
+      return this.workflowSteps.find(s => s.id === this.studyStepId);
+    },
     generalFields() {
-      return this.workflowSteps.find(s => s.id === this.studyStepId)?.configuration?.settings?.fields || [];
+      return this.workflowStep?.configuration?.settings?.fields || [];
+    },
+    // Editor steps may start from a new empty document; Dialogue steps have none.
+    allowsNoDocument() {
+      return [2, 4].includes(this.workflowStep?.stepType);
     },
   },
   mounted() {
@@ -188,7 +195,7 @@ export default {
     openModal(evt) {
       evt.preventDefault();
       const isTemplateMode = this.formData?.isTemplateMode || false;
-      if (!this.documentId && !isTemplateMode) {
+      if (!this.documentId && !isTemplateMode && !this.allowsNoDocument) {
         this.eventBus.emit("toast", {
           title: this.$t('errors.documents.documentError'),
           message: this.$t('errors.documents.noDocumentSelected'),
@@ -247,16 +254,16 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--care-primary) !important;
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 
 .short-preview {
-  background: #f8f9fa;
-  border: 1px solid #ddd;
+  background: var(--bs-tertiary-bg, #f8f9fa);
+  border: 1px solid var(--bs-border-color, #ddd);
   border-radius: 0.5rem;
   font-size: 14px;
 }

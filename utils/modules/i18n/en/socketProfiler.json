@@ -1,0 +1,229 @@
+{
+  "title": "Socket Profiler",
+  "actions": {
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "import": "Import",
+    "importTooltip": "Import recording from JSON",
+    "replayRecording": "Replay recording",
+    "exportRecording": "Export recording",
+    "editRecording": "Edit recording",
+    "deleteRecording": "Delete recording"
+  },
+  "import": {
+    "title": "Import Recording",
+    "selectFile": "Select recording file (JSON):",
+    "selected": "Selected: {name}",
+    "previewIntro": "Import the following recording from",
+    "traceCount": "Trace Count",
+    "exportedAt": "Exported At",
+    "confirmOwnership": "The recording will be created under your user account. IDs and socket references from the source machine will not be carried over.",
+    "confirmDurationBefore": "Importing",
+    "confirmDurationAfter": "trace(s) one at a time can take a few seconds for large recordings.",
+    "parseFailed": "Failed to parse file: {message}",
+    "readFailed": "Failed to read file",
+    "steps": {
+      "fileSelection": "File Selection",
+      "preview": "Preview",
+      "confirmation": "Confirmation"
+    },
+    "errors": {
+      "notJsonObject": "Not a valid JSON object",
+      "unsupportedSchema": "Unsupported schemaVersion: {version}. Expected 1.",
+      "missingRecording": "Missing 'recording' object",
+      "missingTraces": "Missing 'traces' array",
+      "traceAction": "A trace is missing a valid 'action'",
+      "traceDirection": "A trace is missing a valid 'direction'",
+      "traceStartTime": "A trace is missing 'startTime'"
+    },
+    "toasts": {
+      "failed": "Import failed",
+      "success": "Import successful",
+      "successBody": "Imported recording with {count} trace(s)"
+    }
+  },
+  "startReplay": {
+    "title": "Start Replay",
+    "startWithCount": "Start Replay ({count} recordings)",
+    "recordingsLabel": "Recordings to replay",
+    "recordingsHint": "The recording you clicked is pre-selected. Selected recordings' sessions are combined into one pool — iteration K runs K full copies of that pool in parallel.",
+    "iterationsInvalid": "Enter a positive integer for max iterations.",
+    "estimate": {
+      "poolLabel": "Pool size:",
+      "poolUnit": "session(s).",
+      "peakLabel": "Peak:",
+      "peakUnit": "parallel socket(s) at iteration {iteration}.",
+      "cumulativeLabel": "Cumulative:",
+      "cumulativeUnit": "total socket-runs across the whole replay."
+    },
+    "fields": {
+      "mode": "Mode",
+      "modeScaling": "Scaling — pool sessions, add one full pool per iteration",
+      "modeLoad": "Load mode (coming soon)",
+      "speed": "Speed",
+      "speedFast": "Fast — no delays between traces",
+      "speedRealtime": "Realtime — preserve original timing within each session",
+      "maxIterations": "Max iterations",
+      "maxIterationsPlaceholder": "Enter a positive integer (required)",
+      "ackTimeout": "Ack timeout (ms)",
+      "ackTimeoutHelp": "How long the replay waits for the server to acknowledge each trace before counting it as failed (100–30000 ms).",
+      "continueOnFailure": "Continue past failures",
+      "continueOnFailureHelp": "Run all scaling iterations even if some fail, instead of stopping at the first failed iteration."
+    },
+    "columns": {
+      "sessions": "Sessions"
+    }
+  },
+  "replayResults": {
+    "title": "Replay Results",
+    "viewSessions": "View iteration sessions",
+    "summary": {
+      "iterations": "Iterations",
+      "totalTraces": "Total Traces",
+      "passed": "Passed",
+      "failed": "Failed"
+    },
+    "columns": {
+      "iteration": "Iteration",
+      "sessions": "Sessions",
+      "passed": "Passed",
+      "failed": "Failed",
+      "avgLatency": "Avg Latency",
+      "maxLatency": "Max Latency",
+      "duration": "Duration",
+      "status": "Status"
+    }
+  },
+  "recording": {
+    "title": "Save Recording",
+    "nameLabel": "Recording Name",
+    "namePlaceholder": "Enter a name for this recording",
+    "traceEvents": "Trace Events",
+    "traceEventsHint": "Select events you want to remove. Unselected events will be kept.",
+    "discard": "Discard Recording",
+    "save": "Save Recording",
+    "columns": {
+      "seq": "#",
+      "action": "Action",
+      "direction": "Direction",
+      "time": "Time",
+      "elapsed": "Elapsed"
+    },
+    "ops": {
+      "rename": "rename",
+      "deleteTraces": "delete traces"
+    },
+    "toasts": {
+      "discarded": "Recording discarded",
+      "discardedBody": "Recording has been deleted",
+      "discardFailed": "Failed to discard recording",
+      "saved": "Recording saved",
+      "savedBody": "Recording has been saved successfully",
+      "saveFailed": "Failed to save recording"
+    }
+  },
+  "sessionTraces": {
+    "title": "Session Traces",
+    "passedCount": "{passed}/{total} passed",
+    "viewDbChanges": "View DB changes",
+    "columns": {
+      "seq": "#",
+      "action": "Action",
+      "status": "Status",
+      "latency": "Latency (ms)",
+      "details": "Details",
+      "db": "DB"
+    },
+    "filters": {
+      "passed": "Passed",
+      "failed": "Failed"
+    }
+  },
+  "iterationSessions": {
+    "title": "Iteration Sessions",
+    "subtitle": "Iteration {level} — {sessions} session(s)",
+    "sessionLabel": "Session {index} of {total}",
+    "recordingFallback": "Recording {id}",
+    "viewTraces": "View session traces",
+    "columns": {
+      "session": "Session",
+      "recording": "Recording",
+      "user": "User",
+      "passed": "Passed",
+      "failed": "Failed",
+      "avgLatency": "Avg Latency",
+      "maxLatency": "Max Latency"
+    }
+  },
+  "dbChanges": {
+    "title": "DB Changes",
+    "empty": "No database changes for this trace.",
+    "columns": {
+      "table": "Table",
+      "recordIds": "Record IDs",
+      "fields": "Fields Modified",
+      "records": "Records"
+    }
+  },
+  "startRecording": {
+    "title": "Start Recording",
+    "selectSessions": "Select Sessions to Record",
+    "selectSessionsHint": "Each row is one active connection. Only the selected sessions will be recorded. New connections that appear during recording are not auto-included.",
+    "excludeEvents": "Exclude Events",
+    "excludeEventsHint": "Checked events will not be recorded. Uncheck to include them.",
+    "customEventPlaceholder": "Add custom event name to exclude",
+    "recordButton": "Record {count} Session(s)",
+    "thisTab": "(this tab)",
+    "columns": {
+      "userId": "User ID",
+      "username": "Username",
+      "session": "Session",
+      "connected": "Connected"
+    },
+    "toasts": {
+      "started": "Recording started",
+      "startedBody": "Recording {sessions} session(s), excluding {events} event type(s)",
+      "startFailed": "Failed to start recording"
+    }
+  },
+  "toasts": {
+    "stopped": "Recording stopped",
+    "stoppedBody": "Stopped {count} recording(s). Manage them in the table below.",
+    "stopFailed": "Failed to stop recording",
+    "exportFailed": "Export failed",
+    "exportNotFound": "Recording not found in store",
+    "exportAborted": "Export aborted",
+    "exportAbortedBody": "Export would drop payloads for {count} trace(s) ({actions}). Cancelled to avoid a broken file.",
+    "exportSuccess": "Export successful",
+    "exportSuccessBody": "Recording exported with {count} trace(s)",
+    "loadTracesFailed": "Failed to load traces",
+    "replayStarted": "Replay started",
+    "replayStartedBody": "Replaying {count} recording(s)",
+    "replayFailed": "Replay failed",
+    "deleted": "Recording deleted",
+    "deletedBody": "Recording has been deleted",
+    "deleteFailed": "Failed to delete recording"
+  },
+  "columns": {
+    "id": "ID",
+    "name": "Name",
+    "status": "Status",
+    "startTime": "Start Time",
+    "endTime": "End Time"
+  },
+  "status": {
+    "recording": "Recording",
+    "finished": "Finished",
+    "disconnected": "Disconnected",
+    "interrupted": "Interrupted"
+  },
+  "replay": {
+    "passed": "PASSED",
+    "failed": "FAILED"
+  },
+  "trace": {
+    "toBackend": "→ backend",
+    "toFrontend": "→ frontend",
+    "hasDbChanges": "Yes"
+  }
+}

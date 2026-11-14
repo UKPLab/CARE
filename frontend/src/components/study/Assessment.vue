@@ -7,6 +7,7 @@
           <span
               v-if="configuration && configuration.rubrics && configuration.rubrics.length"
               class="badge"
+              :class="(computedReadOnly || areAllCriteriaSaved) ? 'bg-success' : 'bg-secondary'"
           >
             {{ $t('assessment.totalPoints', { points: totalPoints, maxPoints: totalMaxPoints }) }}
           </span>
@@ -34,6 +35,7 @@
                   :rubric="rubric"
                   :group-index="groupIndex"
                   :is-expanded="!!expandedGroups[groupIndex]"
+                  :ref="el => { if (el) rubricRefs[groupIndex] = el; }"
                   :assessment-state="assessmentState"
                   :read-only="computedReadOnly"
                   :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
@@ -77,6 +79,10 @@
 import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
 import AssessmentRubric from "@/components/study/assessment/AssessmentRubric.vue";
 import { buildScoresFromState, calculateAssessmentScore } from "assessment-score";
+import {
+  ASSESSMENT_RESULT_KEY,
+  getAssessmentResultKeyCandidates,
+} from "@/assets/serviceDocumentDataKeys.js";
 
 export default {
   name: "AssessmentSidebar",
@@ -84,13 +90,16 @@ export default {
     AssessmentRubric,
     FloatingInfoPanel,
   },
-  subscribeTable: [{
-    table: "configuration",
-    filter: [{
-      key: "type",
-      value: 0
-    }],
-  }],
+  subscribeTable: [
+    {
+      table: "configuration",
+      filter: [{
+        key: "type",
+        value: 0
+      }],
+    },
+    "ai_hook",
+  ],
   inject: {
     documentId: {
       type: Number,
@@ -132,11 +141,12 @@ export default {
       default: null,
     },
   },
-  emits: ["state-changed", "assessment-ready-changed", "update:data"],
+  emits: ["state-changed", "assessment-ready-changed", "update:data", "assessment-advance-past-end"],
   data() {
     return {
       error: null,
       expandedGroups: {},
+      rubricRefs: {},
       assessmentState: {},
       showInfoPanel: false,
       selectedCriterion: null,
@@ -186,35 +196,26 @@ export default {
       const cfg = this.config || this.studyStep?.configuration;
       if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
 
-      // Try to find the exact NLP assessment service
       const svc =
           cfg.services.find(
               (s) =>
-                  s.skill && (
-                      s.name === "nlpAssessment" ||
-                      s.type === "nlpRequest"
-                  )
+                 ((s.skill || s.hookId) && (
+                s.name === "nlpAssessment" &&
+                s.type === "nlpRequest"
+            )) 
           ) || cfg.services[0];
 
       return svc || null;
     },
-
     preprocessedAssessmentKeyCandidates() {
       const svc = this.nlpService;
-      if (!svc || !svc.skill) return [];
-
-      const keys = [
-        svc.name && svc.skill ? `${svc.name}_${svc.skill}_assessment` : null,
-        svc.type && svc.skill ? `${svc.type}_${svc.skill}_assessment` : null,
-      ].filter(Boolean);
-
-      return keys;
+      return getAssessmentResultKeyCandidates(svc);
     },
     preprocessedAssessmentRaw() {
       if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {
         return null;
       }
-      const items = Object.keys(this.documentData).filter(item =>
+      const items = Object.keys(this.documentData || {}).filter(item =>
           this.preprocessedAssessmentKeyCandidates.includes(item)
       );
 
@@ -232,18 +233,30 @@ export default {
       return null;
     },
     assessmentDataKey() {
-      return "assessment_result";
+      return ASSESSMENT_RESULT_KEY;
     },
-    areAllCriteriaSaved() {
-      if (!this.configuration || !this.configuration.rubrics) return false;
+    unsavedCriterionNames() {
+      if (!this.configuration || !this.configuration.rubrics) return [];
+      const names = [];
       for (const rubric of this.configuration.rubrics) {
         if (!rubric.criteria) continue;
         for (const c of rubric.criteria) {
+          if (!c || !c.name) continue;
           const st = this.assessmentState[c.name];
-          if (!st || st.isSaved !== true) return false;
+          if (!st || st.isSaved !== true) names.push(c.name);
         }
       }
-      return true;
+      return names;
+    },
+    areAllCriteriaSaved() {
+      return this.unsavedCriterionNames.length === 0 && !!(this.configuration && this.configuration.rubrics);
+    },
+    assessmentReadyPayload() {
+      const ready = this.isAssessmentComplete;
+      return {
+        ready,
+        missing: ready ? [] : this.unsavedCriterionNames,
+      };
     },
     isAssessmentComplete() {
       if (!this.isLoaded) {
@@ -285,9 +298,9 @@ export default {
       },
       immediate: true,
     },
-    isAssessmentComplete: {
-      handler(v) {
-        this.$emit("assessment-ready-changed", v);
+    assessmentReadyPayload: {
+      handler(payload) {
+        this.$emit("assessment-ready-changed", payload);
       },
       immediate: true,
     },
@@ -300,6 +313,11 @@ export default {
         this.loadSavedAssessmentData();
       },
       immediate: true,
+    },
+    preprocessedAssessmentRaw: {
+      handler() {
+        this.loadSavedAssessmentData();
+      },
     },
   },
   mounted() {
@@ -582,6 +600,11 @@ export default {
             },
             (response) => {
               if (response && response.success) {
+                // Keep the loaded document data up to date, so an Assessment that is created again shows these answers
+                const documentData = this.studyData[this.studyStepId]?.data;
+                if (documentData) {
+                  documentData[this.assessmentDataKey] = value;
+                }
                 resolve(response);
               } else {
                 reject(response);
@@ -589,8 +612,12 @@ export default {
             }
         );
         this.$emit("update:data", value);
-      }).catch((err) => {
-        console.error("Failed to save assessment data", err);
+      }).catch(() => {
+        this.eventBus.emit("toast", {
+          title: this.$t("assessment.save.failedTitle"),
+          message: this.$t("assessment.save.failedMessage"),
+          variant: "danger",
+        });
       });
     },
     onFocusNextRubric(currentGroupIndex) {
@@ -604,8 +631,10 @@ export default {
         const newExpanded = {};
         newExpanded[nextIndex] = true;
         this.expandedGroups = newExpanded;
+        this.$nextTick(() => this.rubricRefs[nextIndex]?.focusFirstCriterion());
       } else {
         this.expandedGroups = {};
+        this.$emit("assessment-advance-past-end", () => this.rubricRefs[currentGroupIndex]?.focusHeader());
       }
     },
   },
@@ -616,21 +645,15 @@ export default {
 /* Layout */
 .assessment-section {
   padding: 1rem;
-  height: calc(100vh - 70px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .assessment-content-container {
-  flex: 1;
-  overflow-y: auto;
   padding-right: 5px;
 }
 
 /* Criteria Groups */
 .criteria-group-card {
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--bs-border-color, #dee2e6);
   border-radius: 8px;
 }
 
@@ -654,12 +677,12 @@ export default {
 }
 
 .assessment-text strong {
-  color: #333;
+  color: var(--bs-body-color, #333);
   font-weight: 600;
 }
 
 .assessment-text p {
-  color: #666;
+  color: var(--bs-secondary-color, #666);
   margin-top: 4px;
 }
 
@@ -689,16 +712,6 @@ export default {
 .assessment-actions .btn-success:hover {
   background-color: #218838;
   border-color: #1e7e34;
-}
-
-.assessment-actions .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
-}
-
-.assessment-actions .btn-outline-primary:hover {
-  background-color: #007bff;
-  color: white;
 }
 
 .assessment-actions .btn-secondary {

@@ -130,7 +130,7 @@
       </div>
       <div
         v-if="history.length > 0 && history.length > configEditor.defaultShowCount"
-        class="w-100 text-center bg-light"
+        class="w-100 text-center bg-body-tertiary"
         :title="showHistory ? $t('common.hideMore') : $t('common.showMore')"
         @click="showHistory=!showHistory"
       >

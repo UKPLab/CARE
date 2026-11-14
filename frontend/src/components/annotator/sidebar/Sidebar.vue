@@ -30,14 +30,23 @@
     </div>
   </div>
   <!-- Annotations Section: Always visible unless edits exist -->
-  <ul v-if="showAnnotations" id="anno-list" class="list-group">
-    <li v-if="componentReadOnly" class="readonly-notice">
+  <!-- ARIA feed: Page Down / Page Up move between annotation cards -->
+  <ul
+    v-if="showAnnotations"
+    id="anno-list"
+    class="list-group"
+    role="feed"
+    :aria-label="$t('annotator.annotations')"
+    @keydown.page-down.exact="moveToCard($event, 1)"
+    @keydown.page-up.exact="moveToCard($event, -1)"
+  >
+    <li v-if="componentReadOnly" class="readonly-notice" role="none">
       <div class="card border-secondary mb-2">
         <div class="card-body text-center py-2">
           <LoadIcon
             icon-name="lock-fill"
             :size="20"
-            color="#6c757d"
+            color="var(--bs-secondary-color)"
             class="mb-1"
           />
           <h6 class="card-title mb-0">{{ $t('annotator.readOnlyMode') }}</h6>
@@ -46,10 +55,13 @@
       </div>
     </li>
     <li
-      v-for="comment in documentComments"
+      v-for="(comment, index) in documentComments"
       :id="'comment-' + comment.id"
       :key="'documentComment-' + comment.id"
       class="list-group-i"
+      role="article"
+      :aria-posinset="index + 1"
+      :aria-setsize="documentComments.length"
       @mouseleave="unhover(comment.annotationId)"
       @mouseover="hover(comment.annotationId)"
     >
@@ -62,7 +74,7 @@
       />
     </li>
 
-    <li v-if="!componentReadOnly" id="addPageNote">
+    <li v-if="!componentReadOnly" id="addPageNote" role="none">
       <BasicButton
         class="btn btn-light"
         icon="plus-lg"
@@ -91,6 +103,14 @@ export default {
   subscribeTable: ["comment", "annotation"],
   components: {SideCard, AnnoCard, LoadIcon, BasicButton},
   inject: {
+    // Whether the study step this sidebar belongs to is on screen; outside a study always true
+    isStepShown: {
+      default: true,
+    },
+    // Shows the sidebar tab that holds an element (basic/Sidebar.vue)
+    showSidebarTabOf: {
+      default: () => () => false,
+    },
     documentId: {
       type: Number,
       required: true,
@@ -276,12 +296,31 @@ export default {
   },
   mounted() {
     this.originalWidth = this.width;
-    this.eventBus.on('sidebarScroll', (annotationId) => {
-      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
-        .find(comm => comm.parentCommentId === null);
-      // in case the comment might not be loaded yet
-      if (!comment) {
+    this.eventBus.on('sidebarScroll', this.onSidebarScroll);
+  },
+  beforeUnmount() {
+    this.eventBus.off('sidebarScroll', this.onSidebarScroll);
+  },
+  methods: {
+    /**
+     * Scrolls to the comment of a clicked annotation and logs it. Several sidebars can be mounted at once (hidden study
+     * steps, look-back tabs), so only one that lists the annotation and belongs to a step on screen handles it.
+     * @param {number} annotationId - the clicked annotation
+     */
+    async onSidebarScroll(annotationId) {
+      // in case the comment might not be loaded yet, or belongs to another document or step
+      const comment = this.documentComments.find(comm => comm.annotationId === annotationId);
+      if (!comment || !this.isStepShown) {
         return;
+      }
+      const context = {
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      };
+      // The card may be in a tab that is not open, e.g. an earlier step's tab next to the current one: open it first,
+      // so the scroll goes to a card on screen
+      if (this.showSidebarTabOf(this.$refs["annocard" + comment.id]?.[0]?.$el)) {
+        await this.$nextTick();
       }
 
       this.sidebarScrollTo(comment.id);
@@ -289,16 +328,30 @@ export default {
         this.$socket.emit("stats", {
           action: "sidebarScroll",
           data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
+            ...context,
             annotationId: annotationId
           }
         });
       }
-    })
-  },
-  methods: {
+    },
+    /**
+     * Moves focus to the next or previous annotation card header (ARIA feed pattern).
+     * Ignored while typing, so Page Up/Down still scroll text fields and dropdowns.
+     * @param {KeyboardEvent} event - the Page Up / Page Down keydown on the feed
+     * @param {number} direction - 1 for the next card, -1 for the previous card
+     * @returns {void}
+     */
+    moveToCard(event, direction) {
+      if (event.target.closest('textarea, input, select, [contenteditable="true"]')) return;
+      const cards = [...event.currentTarget.querySelectorAll(':scope > li[role="article"]')];
+      const index = cards.indexOf(event.target.closest('li[role="article"]'));
+      const next = index === -1 ? cards[direction > 0 ? 0 : cards.length - 1] : cards[index + direction];
+      // The chevron is hidden while a card is being edited, so fall back to its first control
+      const header = next && (next.querySelector('.card-focusable') || next.querySelector('textarea, button'));
+      if (!header) return;
+      event.preventDefault();
+      header.focus();
+    },
     handleEditClick(edit) {
       this.$emit("add-edit", edit.text);
     },
@@ -387,7 +440,7 @@ export default {
 
 #addPageNote .btn {
   border: none;
-  color: #575757;
+  color: var(--bs-secondary-color, #575757);
 }
 
 .readonly-notice {
@@ -396,7 +449,7 @@ export default {
 }
 
 .readonly-notice .card {
-  background-color: #f8f9fa;
+  background-color: var(--bs-tertiary-bg, #f8f9fa);
   border-radius: 6px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -406,7 +459,7 @@ export default {
 }
 
 .readonly-notice .card-title {
-  color: #495057;
+  color: var(--bs-body-color, #495057);
   font-weight: 600;
   font-size: 0.875rem;
 }
@@ -417,7 +470,7 @@ export default {
 
 .edits-section {
   padding: 10px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--bs-border-color, #ddd);
   margin-bottom: 10px;
 }
 

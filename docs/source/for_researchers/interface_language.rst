@@ -54,7 +54,7 @@ After you log in, your saved preference from **Preferences** takes over.
 Which languages are available?
 ------------------------------
 
-That depends on how your CARE instance was set up. Common options are **English** and **German**.
+That depends on how your CARE instance was set up. Common options are **English**, **German**, and **French**.
 If a translation for a particular label is missing, you may see English text or a short technical label as a fallback.
 
 Restricting who can change the language

@@ -18,7 +18,9 @@
           :fields="dataSelectionFields"
       />
     </template>
+
     <template #step-2>
+
       <div v-if="dataSelection.exportType === 'reviewerList'">
         <p>{{ $t('dashboard.projects.exportStudySessions') }}</p>
         <p>
@@ -26,13 +28,14 @@
           {{ $t('dashboard.projects.totalStudySessions') }} {{ studySessions.length }}
         </p>
       </div>
-      <div v-else-if="['submissions', 'grades'].includes(dataSelection.exportType)">
-        <StepSelectStudents 
+      <div v-else-if="wizardExportTypes.includes(dataSelection.exportType)">
+        <StepSelectUsers
           v-if="dataSelection.projectId"
-          v-model="submissionSelection" 
-          :project-id="dataSelection.projectId" 
+          :project-id="dataSelection.projectId"
+          :export-type="dataSelection.exportType"
+          v-model="userSelection"
         />
-        <!-- We send the project ID and get the selected students back -->
+        <!-- We send the project ID and get the selected users back -->
       </div>
       <div v-else>
         <p>{{ $t('dashboard.projects.exportingAllData') }}</p>
@@ -50,11 +53,11 @@
         </p>
       </div>
     </template>
-    <template 
-      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
-      #step-3 
-    >
-      <StepOptions 
+
+    
+    <template #step-3>
+      <StepOptions
+        v-if="wizardExportTypes.includes(dataSelection.exportType)"
         v-model:generate-aliases="generateAliases"
         v-model:faker-seed="fakerSeed"
         v-model:grade-format="gradeFormat"
@@ -62,18 +65,44 @@
         :show-grade-format="dataSelection.exportType === 'grades'"
       />
       <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
+      <div v-if="['documents'].includes(dataSelection.exportType)">
+        <StepOptionsDocuments
+          v-model:selectedTypes="selectedDocumentTypes"
+          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
+          v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
+        />
+        <!-- We get the desired document types as well as if non consenting users' edits should be included  -->
+      </div>
+      <div v-else-if="['studies'].includes(dataSelection.exportType)">
+        <StepOptionsStudies
+          :project-id="dataSelection.projectId"
+          v-model:selectedWorkflowIds="selectedWorkflowIds"
+          v-model:includeEmptyStudies="includeEmptyStudies"
+          v-model:includeDocumentFiles="includeStudyDocumentFiles"
+          v-model:includeScores="includeStudyGrades"
+          v-model:includeAiScores="includeStudyIncludeAiScores"
+          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
+          v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
+        />
+      </div>
+      <div v-else-if="['userBehaviour'].includes(dataSelection.exportType)">
+        <StepOptionsUserBehaviour
+          v-model:outputFormat="behaviourOutputFormat"
+          v-model:fileFormat="behaviourFileFormat"
+        />
+      </div>
     </template>
+
     <template 
-      v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+      v-if="wizardExportTypes.includes(dataSelection.exportType)"
       #step-4
     >
-      <StepConfirmDownload 
-        v-if="['submissions', 'grades'].includes(dataSelection.exportType)"
+      <StepConfirmDownload
         :wait="wait"
         :generate-aliases="generateAliases"
-        :submission-selection="submissionSelection"
+        :user-selection="userSelection"
+        :export-type="dataSelection.exportType"
       />
-      <!-- We send the info the generateAliases because it is needed to show the warning talking about the mapping CSV -->
     </template>
   </StepperModal>
 </template>
@@ -87,20 +116,26 @@ import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import Quill from "quill";
 import {dbToDelta} from "editor-delta-conversion";
-import StepSelectStudents from "@/components/dashboard/projects/export/StepSelectStudents.vue";
+import StepSelectUsers from "@/components/dashboard/projects/export/StepSelectUsers.vue";
 import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
+import StepOptionsDocuments from "@/components/dashboard/projects/export/StepOptionsDocuments.vue";
+import StepOptionsStudies from "@/components/dashboard/projects/export/StepOptionsStudies.vue";
+import StepOptionsUserBehaviour from "@/components/dashboard/projects/export/StepOptionsUserBehaviour.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
 import getServerURL from "@/assets/serverUrl.js";
 
+// Export types that go through the full wizard (select users, options, confirm download)
+// rather than the plain "select project" flow (reviewerList, all).
+const WIZARD_EXPORT_TYPES = ['submissions', 'grades', 'documents', 'studies', 'userBehaviour'];
 
 /**
  * ProjectModal - modal component for adding and editing projects
  *
- * @author Dennis Zyska, Mélissa Loew, Linyin Huang
+ * @author Dennis Zyska, Mélissa Loew
  */
 export default {
   name: "ExportProjectModal",
-  components: { StepperModal, BasicForm, StepSelectStudents, StepOptions, StepConfirmDownload },
+  components: { StepperModal, BasicForm, StepSelectUsers, StepOptions, StepOptionsDocuments, StepOptionsStudies, StepOptionsUserBehaviour, StepConfirmDownload },
   subscribeTable: [{
     table: "document",
   }, {
@@ -119,6 +154,18 @@ export default {
     table: "tag_set",
   }, {
     table: "tag"
+  }, {
+      table: "document_data",
+  }, {
+      table: "study_step",
+  }, {
+      table: "configuration",
+  }, {
+      table: "workflow",
+  }, {
+    table: "user_role",
+  }, {
+      table: "user_role_matching",
   }
   ],
   provide() {
@@ -128,6 +175,7 @@ export default {
   },
   data() {
     return {
+      wizardExportTypes: WIZARD_EXPORT_TYPES,
       dataSelection: {
         projectId: null,
         exportType: "reviewerList",
@@ -135,11 +183,21 @@ export default {
       filter: [],
       wait: false,
       // Data for Export Submissions
-      submissionSelection: [],
+      userSelection: [],
       generateAliases:false,
       fakerSeed: 846569412,
       gradeFormat: "json",
-      mergeCsvFiles: false
+      mergeCsvFiles: false,
+      selectedDocumentTypes: [0, 1, 2, 4],
+      excludeNonConsentingEdits: false,
+      excludeNonConsentingAnnotations: false,
+      selectedWorkflowIds: [],
+      includeStudyDocumentFiles: true,
+      includeStudyGrades: true,
+      includeStudyIncludeAiScores: true,
+      includeEmptyStudies: true,
+      behaviourOutputFormat: 'single',
+      behaviourFileFormat: 'json',
     };
   },
   computed: {
@@ -147,9 +205,30 @@ export default {
       if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
         return [
           !!this.dataSelection.projectId && !!this.dataSelection.exportType, // must select a valid project and export type 
-          this.submissionSelection.length > 0, // must select at least one student
+          this.userSelection.length > 0, // must select at least one student
           true,
           true
+        ];
+      } else if (this.dataSelection.exportType === "documents") {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          this.userSelection.length > 0,
+          this.selectedDocumentTypes.length > 0,
+          true,
+        ];
+      } else if (this.dataSelection.exportType === 'studies') {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          this.userSelection.length > 0,
+          this.selectedWorkflowIds.length > 0,
+          true,
+        ];
+      } else if (this.dataSelection.exportType === 'userBehaviour') {
+        return [
+          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
+          this.userSelection.length > 0,
+          true,
+          true,
         ];
       }
       return [
@@ -158,7 +237,7 @@ export default {
       ];
     },
     steps() {
-      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
+      if (this.wizardExportTypes.includes(this.dataSelection.exportType)) {
         return [
           { title: this.$t('settings.title') },
           { title: this.$t('dashboard.projects.exportModal.steps.selectStudent') },
@@ -192,6 +271,9 @@ export default {
             {name: this.$t('dashboard.projects.exportModal.exportReviewers'), value: "reviewerList"},
             {name: this.$t('dashboard.projects.exportModal.exportSubmissions'), value: "submissions"},
             {name: this.$t('dashboard.projects.exportModal.exportGrades'), value: "grades"},
+            {name: this.$t('dashboard.projects.exportModal.exportDocuments'), value: "documents"},
+            {name: this.$t('dashboard.projects.exportModal.exportStudies'), value: "studies"},
+            ...(this.$store.getters["auth/isAdmin"] ? [{name: this.$t('dashboard.projects.exportModal.exportUserBehaviour'), value: "userBehaviour"}] : []),
             {name: this.$t('common.all'), value: "all"},
           ],
           required: true,
@@ -250,13 +332,40 @@ export default {
       return this.$store.getters["table/project/getAll"];
     },
   },
+  watch: {
+    'dataSelection.exportType'() {
+      this.resetOptions();
+    },
+    'dataSelection.projectId'() {
+      this.resetOptions();
+    }
+  },
   methods: {
+    resetOptions() {
+      this.filter = [];
+      this.userSelection = [];
+      this.generateAliases = false;
+      this.fakerSeed = 846569412;
+      this.gradeFormat = "json";
+      this.mergeCsvFiles = false;
+      this.selectedDocumentTypes = [0, 1, 2, 4];
+      this.excludeNonConsentingEdits = false;
+      this.excludeNonConsentingAnnotations = false;
+      this.selectedWorkflowIds = [];
+      this.includeStudyDocumentFiles = true;
+      this.includeStudyGrades = true;
+      this.includeStudyIncludeAiScores = true;
+      this.includeEmptyStudies = true;
+      this.behaviourOutputFormat = 'single';
+      this.behaviourFileFormat = 'json';
+    },
     open(projectId) {
       this.dataSelection.projectId = projectId;
       this.$refs.exportStepper.open();
     },
     hide() {
-      this.filter = [];
+      this.resetOptions();
+      this.wait = false;
     },
     downloadData() {
       if (this.dataSelection.exportType === "reviewerList") {
@@ -265,6 +374,12 @@ export default {
         this.downloadSubmissions();
       } else if (this.dataSelection.exportType === "grades") {
         this.downloadGrades();
+      } else if (this.dataSelection.exportType === "documents") {
+        this.downloadDocuments();
+      } else if (this.dataSelection.exportType === 'studies') {
+        this.downloadStudies();
+      } else if (this.dataSelection.exportType === 'userBehaviour') {
+        this.downloadUserBehaviour();
       } else {
         this.downloadAllData();
       }
@@ -325,41 +440,58 @@ export default {
 
       return results;
     },
-    async downloadSubmissions() {
+    // Shared by all download* methods below: builds the common payload (projectId,
+    // exportType, userIds, alias settings), merges in the export-type-specific fields,
+    // and handles the shared error/close behavior.
+    async downloadStream(exportType, extraPayload = {}) {
       try {
-        // get the selected student's user ids
-        const selectedUserIds = this.submissionSelection.map(row => row.userId);
-        // call helper function to trigger the stream download
+        const selectedUserIds = this.userSelection.map(row => row.userId);
         this.triggerStreamDownload({
           projectId: this.dataSelection.projectId,
-          exportType: 'submissions',
-          userIds: selectedUserIds,
-          generateAliases: this.generateAliases,
-          fakerSeed: this.generateAliases ? this.fakerSeed : null
-        });
-        this.$refs.exportStepper.close();
-      } catch (error) {
-        console.error("Streaming error:", error);
-        this.$toast.error("An error occurred starting the stream. Please try again.");
-      }
-    },
-    async downloadGrades() {
-      try {
-        const selectedUserIds = this.submissionSelection.map(row => row.userId);
-        this.triggerStreamDownload({
-          projectId: this.dataSelection.projectId,
-          exportType: 'grades',
+          exportType,
           userIds: selectedUserIds,
           generateAliases: this.generateAliases,
           fakerSeed: this.generateAliases ? this.fakerSeed : null,
-          gradeFormat: this.gradeFormat,
-          mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
+          ...extraPayload
         });
         this.$refs.exportStepper.close();
       } catch (error) {
         console.error("Streaming error:", error);
-        this.$toast.error("An error occurred starting the stream. Please try again.");
+        this.$toast.error(this.$t('dashboard.projects.export.streamError'));
       }
+    },
+    async downloadSubmissions() {
+      await this.downloadStream('submissions');
+    },
+    async downloadGrades() {
+      await this.downloadStream('grades', {
+        gradeFormat: this.gradeFormat,
+        mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
+      });
+    },
+    async downloadDocuments() {
+      await this.downloadStream('documents', {
+        documentTypes: this.selectedDocumentTypes,
+        excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+      });
+    },
+    async downloadStudies() {
+      await this.downloadStream('studies', {
+        workflowIds: this.selectedWorkflowIds,
+        includeEmptyStudies: this.includeEmptyStudies,
+        includeDocumentFiles: this.includeStudyDocumentFiles,
+        includeGrades: this.includeStudyGrades,
+        excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
+        includeAiScores: this.includeStudyIncludeAiScores
+      });
+    },
+    async downloadUserBehaviour() {
+      await this.downloadStream('userBehaviour', {
+        behaviourOutputFormat: this.behaviourOutputFormat,
+        behaviourFileFormat: this.behaviourFileFormat
+      });
     },
     async downloadAllData() {
       this.wait = true;

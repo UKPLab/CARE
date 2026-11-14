@@ -8,11 +8,14 @@
     "hideSidebar": "Seitenleiste ausblenden",
     "showSidebar": "Seitenleiste einblenden",
     "moreActions": "Weitere Aktionen",
-    "sidebarSection": "Seitenleistenbereich"
+    "sidebarSection": "Seitenleistenbereich",
+    "currentStepTab": "{title} (aktueller Schritt)"
   },
   "topbar": {
     "goBack": "Zurück...",
     "projectTitle": "Projekt: {name}",
-    "signedInAs": "Angemeldet als {username}"
+    "signedInAs": "Angemeldet als {username}",
+    "lightMode": "Heller Modus",
+    "darkMode": "Dunkler Modus"
   }
 }

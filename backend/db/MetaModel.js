@@ -1,4 +1,5 @@
 const {Model, Op} = require("sequelize");
+const TranslatableError = require("../utils/TranslatableError");
 const {v4: uuidv4} = require("uuid");
 
 module.exports = class MetaModel extends Model {
@@ -12,10 +13,81 @@ module.exports = class MetaModel extends Model {
     static accessMap = [];
 
     /**
+     * Optional queryTable hooks (on autoTable models):
+     * - static getQueryTableInjects(ctx) → inject specs for handleInjections (count, parent, …)
+     * - static getCompanionBroadcasts(rows, operation) → related table deltas after txn commit
+     * - static getQueryTableSearchConditions(needle) → extra OR clauses for search (computed columns)
+     * - static getQueryTableViewSearchFields() → sidecar-view columns to STRPOS in search
+     * - static getQueryTableSearchColumns(ctx) → whitelist of searchable keys
+     * - static getQueryTableFilterColumns(ctx) → filterable keys for the table search bar
+     * - static getQueryTableSortColumns() → { [uiKey]: { field } } JOIN sort via a sidecar view
+     * - static getQueryTableViewJoin({usesStateView}) → refresh the sidecar view and return
+     *   { sortModel, join } (required when sort / filter / search reads view columns)
+     * - static resolveAppDataResult({data, transaction, context, entry}) → custom appDataUpdate payload; default is entry.id
+     */
+
+    /**
      * Fields for frontend
      * @type {[]}
      */
     static fields = [];
+
+    /**
+     * Lets appDataUpdate accept a foreign userId when the requester owns the parent row.
+     * @type {{column: string, table: string}|null}
+     */
+    static foreignOwner = null;
+
+    /**
+     * Checks whether `requesterId` owns the parent row referenced by `foreignOwner.column`.
+     * Called generically from AppSocket#updateData's foreign-userId guard.
+     * @param {Object} payload Incoming appDataUpdate payload.
+     * @param {number} requesterId The socket's authenticated user id.
+     * @param {import("sequelize").Transaction} [transaction]
+     * @returns {Promise<boolean>}
+     */
+    static async validateForeignUserId(payload, requesterId, transaction) {
+        if (!this.foreignOwner) return false;
+        const {column, table} = this.foreignOwner;
+
+        let fkValue = payload[column];
+        if (!fkValue && payload.id) {
+            const existing = await this.findByPk(payload.id, {transaction});
+            fkValue = existing?.[column];
+        }
+        if (!fkValue) return false;
+
+        const parent = await this.sequelize.models[table].findOne({
+            where: {id: fkValue, deleted: false},
+            transaction,
+        });
+        return Boolean(parent) && Number(parent.userId) === Number(requesterId);
+    }
+
+    /**
+     * Blocks socket writes to `foreignOwner` tables unless the requester owns the parent.
+     * appDataUpdate always sets context.currentUserId. Trusted backend paths omit it.
+     *
+     * @param {Object} payload Incoming add/update fields (must include the parent FK or an id).
+     * @param {Object} [options={}]
+     * @param {Object} [options.context]
+     * @param {number} [options.context.currentUserId]
+     * @param {import("sequelize").Transaction} [options.transaction]
+     * @returns {Promise<void>}
+     */
+    static async assertForeignOwnerWrite(payload, options = {}) {
+        if (!this.foreignOwner) {
+            return;
+        }
+        const currentUserId = Number(options?.context?.currentUserId);
+        if (!Number.isInteger(currentUserId) || currentUserId <= 0) {
+            return;
+        }
+        const allowed = await this.validateForeignUserId(payload, currentUserId, options.transaction);
+        if (!allowed) {
+            throw new TranslatableError("errors.common.accessDenied");
+        }
+    }
 
     /**
      * Filter object by keys
@@ -208,6 +280,7 @@ module.exports = class MetaModel extends Model {
      */
     static async add(data, options = {}) {
         try {
+            await this.assertForeignOwnerWrite(data, options);
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updatedAt', 'deleted', 'deletedAt', 'creator_name'].includes(key));
 
             if ("hash" in this.getAttributes()) {
@@ -215,6 +288,7 @@ module.exports = class MetaModel extends Model {
             }
 
             const createdObject = await this.create(this.subselectFields(data, possibleFields), options);
+            if (this.cache) this.cache.clear();
             return createdObject.get({plain: true});
 
         } catch (err) {
@@ -279,6 +353,7 @@ module.exports = class MetaModel extends Model {
      */
     static async updateById(id, data, additionalOptions = {}) {
         try {
+            await this.assertForeignOwnerWrite({ ...data, id }, additionalOptions);
             const possibleFields = Object.keys(this.getAttributes()).filter(key => !['id', 'createdAt', 'updatedAt', 'passwordHash', 'lastLoginAt', 'salt'].includes(key));
 
             if (data.deleted) {

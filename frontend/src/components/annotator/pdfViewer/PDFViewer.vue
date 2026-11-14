@@ -5,6 +5,7 @@
   <div
     v-if="pdf"
     :id="'pdfContainer-' + documentId"
+    ref="pdfContainerEl"
     class="has-transparent-text-layer"
     @copy="onCopy"
   >
@@ -13,7 +14,8 @@
       :id="'pdfToolbar-' + documentId"
       v-model="toolbarVisible"
       :zoom-form-data="zoomFormData"
-      :is-zooming="isZooming"
+      :pdf-dark-mode="pdfDarkMode"
+      @toggle-pdf-theme="togglePdfTheme"
       @update:zoom-form-data="zoomFormData = $event"
       @zoom-in="zoomIn"
       @zoom-out="zoomOut"
@@ -25,11 +27,12 @@
       :key="'PDFPageKey' + page"
       :page-number="page"
       :render="renderCheck[page - 1]"
-      :class="'scrolling-page'"
+      :class="['scrolling-page', { 'pdf-dark': pdfDarkMode }]"
+      :container-width="containerWidth"
       :zoom-value="scale"
       @update-visibility="updateVisibility"
     />
-    <Adder v-if="!readOnly && !componentReadOnly"/>
+    <Adder :read-only="readOnly || componentReadOnly"/>
   </div>
 </template>
 
@@ -46,6 +49,7 @@ import BasicLoading from "@/basic/Loading.vue";
 import PDFToolbar from "./PDFToolbar.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import { resolveApiMessage } from "@/assets/utils";
+import debounce from "lodash.debounce";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -89,6 +93,11 @@ export default {
     acceptStats: {
       default: () => false
     },
+    hiddenStudyStepId: {
+      type: Number,
+      required: false,
+      default: null,
+    },
   },
   provide() {
     return {
@@ -96,32 +105,45 @@ export default {
       readOnly: computed(() => this.readOnly),
     }
   },
-  emits: ['copy'],
+  emits: ['copy', 'loaded'],
   data() {
     return {
       pdf: null,
       observer: undefined,
       pdfContainer: null,
+      containerWidth: 0,
+      resizeDebounced: undefined,
+      // Starts with page 1 so the first pages render before any page has reported its visibility.
       visiblePages: [1],
+      lastVisibility: {},
+      pageStatsContext: {},
       scale: 1.0,
       originalScale: null,
       DEFAULT_SCALE: 1.0,
       MIN_SCALE: 0.25,
       MAX_SCALE: 10.0,
       DEFAULT_SCALE_DELTA: 1.1,
-      isZooming: false,
       toolbarVisible: false,
       zoomFormData: {
         zoom: 1.0,
       },
+      pdfDarkMode: localStorage.getItem("care.pdfDark") !== null
+        ? localStorage.getItem("care.pdfDark") === "true"
+        : document.documentElement.getAttribute("data-bs-theme") === "dark",
     }
   },
   computed: {
+    appTheme() {
+      return this.$store.getters["settings/getValue"]("app.theme.mode");
+    },
     renderCheck() {
       let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
 
       return [...Array(this.pdf.pageCount).keys()].map((page) => (page + 1 >= minPage && page + 1 <= maxPage));
+    },
+    isHidden() {
+      return this.studyStepId !== null && this.studyStepId === this.hiddenStudyStepId;
     },
     componentReadOnly() {
       if(!this.readOnly) {
@@ -131,6 +153,11 @@ export default {
     },
   },
   watch: {
+    appTheme(newVal, oldVal) {
+      if (oldVal === undefined) return;
+      this.pdfDarkMode = newVal === "dark";
+      localStorage.removeItem("care.pdfDark");
+    },
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
@@ -138,21 +165,32 @@ export default {
     },
     zoomFormData: {
       handler(newZoom) {
-        if (!this.isZooming) {
-          this.isZooming = true;
+        if (this.scale !== newZoom.zoom) {
           this.scale = newZoom.zoom;
-          setTimeout(() => {
-            this.isZooming = false;
-          }, 1000);
         }
       },
       deep: true,
+    },
+    isHidden(hidden) {
+      // Hidden pages are not on screen, even though the browser still counts them as visible
+      this.sendVisiblePages(!hidden);
     },
     scale(newScale) {
       // Keep form data in sync with scale
       if (this.zoomFormData.zoom !== newScale) {
         this.zoomFormData.zoom = newScale;
       }
+    },
+    pdf: {
+      handler(value) {
+        if (!value) {
+          this.disconnectContainerObserver();
+          this.containerWidth = 0;
+          return;
+        }
+        this.watchContainer();
+      },
+      flush: "post",
     },
   },
   mounted() {
@@ -165,11 +203,12 @@ export default {
       },
       (res) => {
         if (res.success) {
-          const loadingTask = pdfjsLib.getDocument(res['data']['file']);
+          const loadingTask = pdfjsLib.getDocument({ data: res['data']['file'] });
           loadingTask.promise
             .then((pdf) => {
               this.pdf = new PDF();
               this.pdf.setPDF(pdf);
+              this.$emit('loaded', this.pdf);
             })
             .catch(_response => {
               this.eventBus.emit('toast', {
@@ -190,67 +229,142 @@ export default {
       }
     );
   },
+  beforeUnmount() {
+    // Pages still on screen would otherwise never get their "hidden" event; a hidden viewer already sent it
+    if (!this.isHidden) {
+      this.sendVisiblePages(false);
+    }
+  },
   unmounted() {
+    this.disconnectContainerObserver();
     this.pdf = null;
   },
   methods: {
+    /**
+     * Watch the PDF column and publish its width.
+     * Returns immediately when the column element is not in the page.
+     * A later size change under 2 pixels, or a width of 0, is ignored.
+     *
+     * @returns {void}
+     */
+    watchContainer() {
+      const el = this.$refs.pdfContainerEl;
+      if (!el) {
+        return;
+      }
+      this.disconnectContainerObserver();
+      this.containerWidth = el.clientWidth;
+      // One watch for the column. Pages read the width instead of searching for this div's id.
+      this.resizeDebounced = debounce((context) => {
+        const node = this.$refs.pdfContainerEl;
+        if (!node) {
+          return;
+        }
+        const next = node.clientWidth;
+        if (next <= 0 || Math.abs(next - this.containerWidth) < 2) {
+          return;
+        }
+        this.containerWidth = next;
+        if (this.acceptStats) {
+          this.$socket.emit("stats", {
+            action: "pdfPageResizeChange",
+            data: {...context, width: next}
+          });
+        }
+      }, 200);
+      this.observer = new ResizeObserver(() => this.resizeDebounced(this.studyContext()));
+      this.observer.observe(el);
+    },
+    /**
+     * Stop watching the PDF column and cancel a pending width update.
+     * Does nothing when no watch is running.
+     *
+     * @returns {void}
+     */
+    disconnectContainerObserver() {
+      if (this.observer) {
+        this.observer.disconnect();
+        this.observer = undefined;
+      }
+      if (this.resizeDebounced) {
+        this.resizeDebounced.cancel();
+        this.resizeDebounced = undefined;
+      }
+    },
+    togglePdfTheme() {
+      this.pdfDarkMode = !this.pdfDarkMode;
+      localStorage.setItem("care.pdfDark", this.pdfDarkMode);
+    },
     zoomIn() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       let newScale = this.scale * this.DEFAULT_SCALE_DELTA;
       this.scale = Math.min(this.MAX_SCALE, Math.round(newScale * 10) / 10);
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000); // Match the debounce timeout
     },
     zoomOut() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       let newScale = this.scale / this.DEFAULT_SCALE_DELTA;
       this.scale = Math.max(this.MIN_SCALE, Math.round(newScale * 10) / 10);
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000); // Match the debounce timeout
     },
     resetZoom() {
-      if (this.isZooming) return;
-      this.isZooming = true;
       this.scale = this.originalScale || this.DEFAULT_SCALE;
-      setTimeout(() => {
-        this.isZooming = false;
-      }, 1000);
     },
+    /**
+     * Update the pages to render and log the page state when it changed.
+     * A page never reported before counts as not visible, so its first visible report is logged.
+     *
+     * @param {Object} page The reported page
+     * @param {number} page.pageNumber The page number
+     * @param {boolean} page.isVisible Whether the page is visible
+     * @param {number} page.offset The vertical offset of the page
+     * @returns {void}
+     */
     updateVisibility(page) {
-      let stateChanged = false;
       if (page.isVisible) {
         if (!this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.push(page.pageNumber);
-          stateChanged = true;
         }
       } else {
         if (this.visiblePages.includes(page.pageNumber)) {
           this.visiblePages.splice(this.visiblePages.indexOf(page.pageNumber), 1);
-          stateChanged = true;
         }
       }
-      if (stateChanged && this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "pdfPageVisibilityChange",
-          data: {
-            documentId: this.documentId,
-            readOnly: this.readOnly,
-            visibility: page,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-          }
-        })
+      const stateChanged = Boolean(this.lastVisibility[page.pageNumber]?.isVisible) !== page.isVisible;
+      this.lastVisibility[page.pageNumber] = page;
+      if (stateChanged && !this.isHidden) {
+        this.sendVisibility(page);
       }
+    },
+    sendVisibility(page) {
+      if (!this.acceptStats) return;
+      const context = page.isVisible ? {...this.studyContext(), readOnly: this.readOnly}
+          : this.pageStatsContext[page.pageNumber] || {...this.studyContext(), readOnly: this.readOnly};
+      if (page.isVisible) this.pageStatsContext[page.pageNumber] = context;
+      else delete this.pageStatsContext[page.pageNumber];
+      this.$socket.emit("stats", {
+        action: "pdfPageVisibilityChange",
+        data: {...context, visibility: page},
+      });
+    },
+    // Sends the visibility of every page the browser counts as visible
+    sendVisiblePages(isVisible) {
+      this.visiblePages.forEach((pageNumber) => {
+        if (this.lastVisibility[pageNumber]) {
+          this.sendVisibility({...this.lastVisibility[pageNumber], isVisible});
+        }
+      });
+    },
+    /** Returns the study context before a delayed or paired event is emitted. */
+    studyContext() {
+      return {
+        documentId: this.documentId,
+        ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+        ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      };
     },
     onCopy(event) {
       this.$emit('copy', event);
     },
   },
-
+  
 }
 </script>
 

@@ -1,32 +1,39 @@
 <template>
   <Teleport to="#topbarCenterPlaceholder">
-  <div
-    v-show="templateId && readOnlyOverwrite"
-    :title="$t('common.readOnly')"
-  >
-    <span :style="{ color: '#800000', fontWeight: 'bold' }">
-      {{ $t('common.readOnly') }}
-    </span>
-    <LoadIcon
-      :size="22"
-      :color="'#800000'"
-      icon-name="lock-fill"
-    />
-  </div>
-</Teleport>
+    <div
+      v-show="templateId && readOnlyOverwrite"
+      :title="$t('common.readOnly')"
+    >
+      <span :style="{ color: 'var(--bs-danger-text-emphasis)', fontWeight: 'bold' }">
+        {{ $t('common.readOnly') }}
+      </span>
+      <LoadIcon
+        :size="22"
+        :color="'var(--bs-danger-text-emphasis)'"
+        icon-name="lock-fill"
+      />
+    </div>
+  </Teleport>
   <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
     <div class="row flex-grow-1 overflow-hidden">
       <div id="editorContainer" class="editor-container flex-grow-1">
         <Editor v-if="!templateId" ref="editor" @update:data="$emit('update:data', $event)"/>
-        <TemplateEditor v-else ref="templateEditor" @update:data="$emit('update:data', $event)"/>
+        <TemplateEditor
+          v-else
+          ref="templateEditor"
+          @update:data="$emit('update:data', $event)"
+          @preview-mode-change="onTemplatePreviewModeChange"
+        />
       </div>
       <BasicSidebar
           v-if="!sidebarDisabled"
           ref="sidebar"
-          :is-shown="isShown"
+          :is-shown="sidebarToggleShown"
           :buttons="sidebarButtons"
           :side-bar-width="350"
-          :active-side-bar="defaultActiveSidebar"
+          :active-side-bar="activeSidebar || defaultActiveSidebar"
+          :is-tab-shown="isSidebarTabShown"
+          :is-tab-current="isSidebarTabCurrent"
           :default-visible="!!defaultActiveSidebar"
           class="sidebar-container"
           :show-toggle-button="true"
@@ -47,7 +54,7 @@
             </template>
           </SidebarTemplate>
         </template>
-        <template v-if="templateId && template && !readOnlyOverwrite && hasPlaceholders" #templateConfigurator>
+        <template v-if="showTemplateConfigurator" #templateConfigurator>
           <SidebarTemplate icon="gear-fill" :title="$t('editor.placeholders')">
             <template #content>
               <TemplateConfigurator/>
@@ -81,7 +88,9 @@ import {computed} from "vue";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
 import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
+import { emailTemplateTypes } from "@/assets/templateTypes";
 import { resolveApiMessage } from "@/assets/utils";
+import {isCurrentStepTab, isLookBackTabShown, lookBackPaneProps} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "EditorView",
@@ -100,6 +109,7 @@ export default {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
+      isStepShown: computed(() => this.isShown),
       readOnly: computed(() => this.readOnlyOverwrite),
       templateId: computed(() => this.templateId),
     }
@@ -147,6 +157,7 @@ export default {
       required: false,
       default: null,
     },
+    ...lookBackPaneProps,
     withoutHistory: {
       type: Boolean,
       required: false,
@@ -159,6 +170,8 @@ export default {
       isSidebarVisible: false,
       hasHistory: false,
       sidebarContent: null,
+      templatePreviewMode: false,
+      sidebarOpenBeforePreview: false,
     };
   },
   computed: {
@@ -172,10 +185,31 @@ export default {
       }
       // Only show template configurator if template is loaded, not read-only, and has placeholders
       // Document templates (types 4, 5) have no placeholders, so no sidebar needed
-      if (this.templateId && this.template && !this.readOnlyOverwrite && this.hasPlaceholders) {
+      if (this.showTemplateConfigurator) {
         return 'templateConfigurator';
       }
+      if (this.$slots.additionalSidebars) {
+        return 'additionalSidebars';
+      }
+      if (this.$slots.aiConversation) {
+        return 'aiConversation';
+      }
       return null;
+    },
+    showTemplateConfigurator() {
+      return (
+        this.templateId &&
+        this.template &&
+        !this.readOnlyOverwrite &&
+        this.hasPlaceholders &&
+        !this.templatePreviewMode
+      );
+    },
+    sidebarToggleShown() {
+      if (this.templateId && this.templatePreviewMode) {
+        return false;
+      }
+      return this.isShown;
     },
     sidebarButtons() {
       // Don't show download button for templates
@@ -203,12 +237,15 @@ export default {
       return null;
     },
     hasPlaceholders() {
-      // Only email templates (types 1, 2, 3, 6, 7) have placeholders
+      // Email templates (types 1, 2, 3, 6, 7) and prompt templates (type 8) have placeholders
       // Document templates (types 4, 5) have no placeholders
       if (!this.template) return false;
-      return [1, 2, 3, 6, 7].includes(this.template.type);
+      return emailTemplateTypes.includes(this.template.type) || this.template.type === 8;
     },
     readOnlyOverwrite() {
+      if (this.forceReadOnly) {
+        return true;
+      }
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
       }
@@ -245,6 +282,13 @@ export default {
     },
   },
   methods: {
+    // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
+    isSidebarTabShown(slotName) {
+      return isLookBackTabShown(slotName, this.lookBackTabs, this.shownLookBackStepId, this.ownTabsHidden);
+    },
+    isSidebarTabCurrent(slotName) {
+      return isCurrentStepTab(slotName, this.lookBackTabs);
+    },
     addText(text) {
       if (this.templateId) {
         this.$refs.templateEditor?.addText(text);
@@ -283,7 +327,26 @@ export default {
     },
     handleSidebarVisibilityChange(visible) { 
       this.isSidebarVisible = visible;
-    },  
+    },
+    onTemplatePreviewModeChange(isPreview) {
+      if (!this.templateId) {
+        return;
+      }
+      this.templatePreviewMode = !!isPreview;
+      const sidebar = this.$refs.sidebar;
+      if (!sidebar) {
+        return;
+      }
+      if (this.templatePreviewMode) {
+        if (sidebar.isSidebarVisible) {
+          this.sidebarOpenBeforePreview = true;
+          sidebar.toggleSidebar();
+        }
+      } else if (this.sidebarOpenBeforePreview && this.showTemplateConfigurator) {
+        sidebar.toggleSidebar();
+        this.sidebarOpenBeforePreview = false;
+      }
+    },
     toggleHistory() {
       if (this.hasHistory) {
         this.hasHistory = false;
@@ -335,5 +398,7 @@ export default {
 
 .sidebar-container {
   margin-top: 60px;
+  min-height: 0;
+  align-self: stretch;
 }
 </style>

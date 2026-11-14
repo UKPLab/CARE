@@ -6,6 +6,9 @@ on:
       - dev
       - main
   pull_request:
+  # Lets the weekly dependency workflow start CI on its bot PRs: PRs opened with
+  # GITHUB_TOKEN do not trigger pull_request runs, workflow_dispatch is the exception.
+  workflow_dispatch:
 
 env:
   DOCKER_TLS_CERTDIR: ""
@@ -100,6 +103,7 @@ jobs:
           npm ci --prefix backend --ignore-scripts
           npm ci --prefix utils/modules/editor-delta-conversion --ignore-scripts
           npm ci --prefix utils/modules/assessment-score --ignore-scripts
+          npm ci --prefix utils/modules/placeholder-tokens --ignore-scripts
       - name: Run npm audit
         run: make audit
 

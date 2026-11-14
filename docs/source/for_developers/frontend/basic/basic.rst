@@ -3,7 +3,7 @@ Basic
 
 CARE comes with a range of easy-to-use and function rich base components that you can find under
 ``frontend/src/basic``. Using these components ensures a consistent design throughout the application
-and makes your live as a developer much easier.
+and makes your life as a developer much easier.
 
 In this brief chapter we outline the toolbox of basic components in a high-level fashion. For the details
 of each base component, please refer to the documentation within each of them.
@@ -348,6 +348,69 @@ Import this component if you need a modal prompted to the user. You can customiz
       - Boolean
       - False
 
+.. _details:
+
+Details
+-------
+
+Read-only label/value list for review steps and overview modals. Pass a flat
+``items`` array, or ``sections`` with ``{ title, items }``. Extra content
+(tables, JSON) goes in the default slot.
+
+Each item is ``{ key, label, value, type, class, visible }``.
+``type`` is ``text`` (default), ``badge``, ``code``, or ``list``.
+
+.. code-block:: html
+
+    <BasicDetails
+      heading="Review AI Hook"
+      :items="items"
+      note="Please confirm these settings before saving."
+    />
+
+.. code-block:: javascript
+
+    import BasicDetails from '@/basic/Details.vue';
+
+    export default {
+        name: 'DetailsExample',
+        components: {
+            BasicDetails,
+        },
+        data() {
+            return {
+                items: [
+                    { key: "name", label: "Name", value: "Assessment Feedback" },
+                    { key: "status", label: "Status", value: "Enabled", type: "badge", class: "bg-success" },
+                ],
+            };
+        },
+    };
+
+.. list-table:: Details properties
+    :header-rows: 1
+
+    * - Prop
+      - Description
+      - Default
+      - Type
+    * - heading
+      - Optional heading above the list
+      - None
+      - String
+    * - items
+      - Flat list of detail rows
+      - ``[]``
+      - Array
+    * - sections
+      - Grouped rows with optional section titles
+      - ``[]``
+      - Array
+    * - note
+      - Optional review hint shown under the list
+      - None
+      - String
+
 .. _table:
 
 Table
@@ -508,7 +571,7 @@ application:
     this.eventBus.emit('toast', {title: "title", message: "Message", variant: "warning", delay: 3000});
 
 This produces a toast with the title 'title' and showing the short message 'Message' for 3000ms before disappearing
-again. By providing the ``variant`` attribute as either of the `boostrap badge color <https://getbootstrap.com/docs/5.0/components/badge/#pill-badges>`_
+again. By providing the ``variant`` attribute as either of the `Bootstrap badge color <https://getbootstrap.com/docs/5.0/components/badge/#pill-badges>`_
 keywords, you can define the color of the prompt. For consistency, you should use the badge types consistently to their
 semantics; e.g. use the "danger" keyword for errors.
 
@@ -520,4 +583,3 @@ request, you can also use the ``Socket`` class' ``sendToast`` method:
 .. code-block:: javascript
 
     this.sendToast("Example Error Title", "Example Error Message", "danger");
-

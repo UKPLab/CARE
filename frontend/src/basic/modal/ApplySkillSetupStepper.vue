@@ -342,6 +342,6 @@ export default {
 }
 
 .text-primary {
-  color: #007bff !important;
+  color: var(--care-primary) !important;
 }
 </style>

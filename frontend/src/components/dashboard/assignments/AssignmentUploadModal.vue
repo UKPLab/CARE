@@ -38,6 +38,15 @@
         v-model="files"
         :fields="fileFields"
       />
+      <!--
+        Declared here (and identically in step-3 below) inside the step's own slot content,
+        not as a sibling of StepperModal, so it renders as a genuine descendant of the
+        stepper's BasicModal — BasicModal's own parentModal/nested-suspended mechanism then
+        greys out the stepper automatically while this dialog is open. Whichever step is
+        actually last for the current user (step-2 here, or step-3 for an admin selecting
+        someone else's user) is the one mounted when uploadSubmission() needs it.
+      -->
+      <ConfirmModal ref="warningModal" />
     </template>
 
     <!-- Step 3 (admins without preselected user only): file upload -->
@@ -46,6 +55,7 @@
         v-model="files"
         :fields="fileFields"
       />
+      <ConfirmModal ref="warningModal" />
     </template>
   </StepperModal>
 </template>
@@ -54,6 +64,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 /**
@@ -64,7 +75,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "AssignmentUploadModal",
-  components: { BasicForm, BasicTable, StepperModal },
+  components: { BasicForm, BasicTable, StepperModal, ConfirmModal },
   subscribeTable: ["user", "assignment", "configuration"],
   data() {
     return {
@@ -123,6 +134,9 @@ export default {
     },
     assignmentDescription() {
       return this.assignment?.description || this.$t("assignments.dashboard.uploadModal.noDescription");
+    },
+    submissionWarning() {
+      return this.assignment?.submissionWarning?.trim() || null;
     },
     projectId() {
       return parseInt(this.$store.getters["settings/getValue"]("projects.default"));
@@ -207,7 +221,6 @@ export default {
         description: submission?.description
       };
 
-      console.log("submission", submission);
       // Preselect assignment validator, if available.
       const assignment = assignmentId
         ? this.$store.getters["table/assignment/get"](assignmentId)
@@ -261,7 +274,30 @@ export default {
         return this.files[format] && this.files[format] instanceof File;
       });
     },
+    /**
+     * Handles the stepper's submit event. If the assignment defines a submission warning,
+     * shows a confirmation dialog before uploading; otherwise uploads immediately.
+     */
     uploadSubmission() {
+      if (!this.submissionWarning) {
+        this.doUpload();
+        return;
+      }
+
+      // Warning text is instructor-authored — pass it as the `warning` slot, which escapes
+      // it. The `message` slot renders with v-html and would be a stored XSS vector.
+      this.$refs.warningModal.open(
+        "Submission",
+        "Please confirm before uploading:",
+        this.submissionWarning,
+        (confirmed) => { if (confirmed) this.doUpload(); }
+      );
+    },
+    /**
+     * Validates the selected files and target user, then emits the submission upload to the
+     * server and closes the stepper on success.
+     */
+    doUpload() {
       if (!this.files) {
         this.eventBus.emit("toast", {
           title: this.$t("dashboard.uploadModal.invalidFiles"),

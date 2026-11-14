@@ -29,6 +29,7 @@
   </div>
   <div
     v-if="!collapseComment"
+    ref="commentBody"
     :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
     class="comment card-text blockquote pb-1"
   >
@@ -38,11 +39,14 @@
         v-model="comment.text"
         class="form-control"
         :placeholder="$t('components.comment.enterText')"
-        @keydown.ctrl.enter="saveOnDeactivated(false)"
+        @keydown.ctrl.enter.exact.prevent="saveOnDeactivated(false)"
+        @keydown.meta.enter.exact.prevent="saveOnDeactivated(false)"
+        @keydown.esc.exact.prevent="cancelOnEscape"
+        @copy="onCopy"
         @paste="onPaste"
       />
     </div>
-    <div v-else-if="comment.text != null && comment.text.length > 0">
+    <div v-else-if="comment.text != null && comment.text.length > 0" @copy="onCopy">
       {{ comment.text }}
     </div>
     <div v-else>
@@ -91,14 +95,14 @@
             <SidebarButton
               :loading="false"
               :props="$props"
-              icon="save-fill"
+              icon="floppy"
               :title="$t('components.comment.saveCommand')"
               @click="save"
             />
             <SidebarButton
               :loading="false"
               :props="$props"
-              icon="x-square-fill"
+              icon="x-square"
               :title="$t('common.cancel')"
               @click="cancel"
             />
@@ -115,13 +119,14 @@
               v-if="settingResponse && !readOnly"
               :loading="false"
               :props="$props"
-              icon="reply-fill"
+              icon="reply"
               :title="$t('common.reply')"
               @click="reply(); maxComments = numChildComments+1"
             />
             <VoteButtons :comment="comment"/>
             <SidebarButton
               v-if="comment.userId === userId && !readOnly"
+              ref="editButton"
               :loading="false"
               :props="$props"
               icon="pencil-square"
@@ -134,7 +139,7 @@
               :props="$props"
               icon="trash3"
               :title="$t('common.delete')"
-              @click="remove"
+              @click="moveFocusToNextCard(); remove()"
             />
           </div>
         </div>
@@ -154,6 +159,7 @@
     <div class="btn-group">
       <BasicButton
         v-if="showExtenderButton"
+        ref="showMore"
         class="btn btn-light btn-sm"
         :text="$t('common.showMore')"
         @click="maxComments+=5"
@@ -162,7 +168,7 @@
         v-if="!showExtenderButton && numChildComments > defaultNumComments"
         class="btn btn-light btn-sm"
         :text="$t('common.showLess')"
-        @click="maxComments=defaultNumComments"
+        @click="showLess"
       />
       <BasicButton
         v-if="maxComments > defaultNumComments"
@@ -183,7 +189,7 @@ import LoadIcon from "@/basic/Icon.vue"
 import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
 import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
-import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import { focusNextAnnotationCard, formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -197,6 +203,7 @@ export default {
   name: "CommentCard",
   components: {VoteButtons, TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration, BasicButton},
   inject: {
+    currentStudyStep: {type: Object, required: false, default: null},
     documentId: {
       type: Number,
       required: true,
@@ -244,7 +251,7 @@ export default {
       default: 1,
     }
   },
-  emits: ["saveCard"],
+  emits: ["saveCard", "cancelCard"],
   data() {
     return {
       awaitingNlpResult: false,
@@ -252,6 +259,8 @@ export default {
       collapseComment: true,
       listeningToFocus: false,
       maxComments: 1,
+      commentTextBeforeEdit: null,
+      returnFocusEl: null,
     }
   },
   computed: {
@@ -345,7 +354,23 @@ export default {
     },
     openedTextarea(newVal) {
       if (newVal) {
+        this.commentTextBeforeEdit = this.comment?.text || "";
+        const opener = document.activeElement;
+        this.returnFocusEl = opener && opener !== document.body ? opener : null;
         this.$nextTick(() => this.$refs.textarea.focus());
+      } else {
+        // Runs before the editor closes, so we can tell if the keyboard was in this comment
+        const body = this.$refs.commentBody;
+        const hadFocus = body && body.contains(document.activeElement);
+        const opener = this.returnFocusEl;
+        this.returnFocusEl = null;
+        if (hadFocus) {
+          this.$nextTick(() => {
+            // Back to the button that opened the editor; Edit is replaced while editing, so use the new one
+            if (opener && opener.isConnected) opener.focus();
+            else if (this.$refs.editButton) this.$refs.editButton.$el.focus();
+          });
+        }
       }
     },
     editedByMyself(newVal) {
@@ -367,6 +392,7 @@ export default {
     }
 
     if (this.editedByMyself) {
+      this.commentTextBeforeEdit = this.comment?.text || "";
       this.listenOnActive({action: this.saveOnDeactivated, id: this.commentId, level: this.level});
       this.listeningToFocus = true;
     }
@@ -389,6 +415,8 @@ export default {
     formatLocalizedDate,
     save() {
       if (this.commentId && this.comment) {
+        const previousText = this.commentTextBeforeEdit === null ? this.comment.text : this.commentTextBeforeEdit;
+        const updatedText = this.comment.text;
         this.$socket.emit('commentUpdate', {
           "commentId": this.commentId,
           "tags": JSON.stringify(this.comment.tags.sort()),
@@ -400,6 +428,9 @@ export default {
               message: resolveApiMessage(res),
               variant: "danger",
             });
+          } else {
+            this.logCommentUpdate(previousText, updatedText);
+            this.commentTextBeforeEdit = updatedText;
           }
         });
         if (this.$refs.collab) {
@@ -440,7 +471,25 @@ export default {
       if (this.$refs.collab) {
         this.$refs.collab.removeCollab();
       }
+      this.commentTextBeforeEdit = null;
       this.editMode = null;
+    },
+    /**
+     * Cancels the edit from the keyboard, mirroring the mouse Cancel button.
+     * The card's main comment (level 0) is cancelled by the parent card,
+     * the same route saveCard uses; replies cancel themselves.
+     * Drafts are ignored so a single key press cannot delete a new comment.
+     * @returns {void}
+     */
+    cancelOnEscape() {
+      if (this.comment.draft) {
+        return;
+      }
+      if (this.level === 0) {
+        this.$emit("cancelCard");
+      } else {
+        this.cancel();
+      }
     },
     remove() {
       this.$socket.emit('commentUpdate', {
@@ -458,6 +507,26 @@ export default {
     },
     editComment() {
       this.$refs.collab.startCollab();
+    },
+    /**
+     * Before the comment is deleted, moves keyboard focus to the next annotation card.
+     * @returns {void}
+     */
+    moveFocusToNextCard() {
+      const body = this.$refs.commentBody;
+      if (body && body.contains(document.activeElement)) {
+        focusNextAnnotationCard(body);
+      }
+    },
+    /**
+     * Shows fewer replies; the Show less button disappears, so focus moves to Show more.
+     * @returns {void}
+     */
+    showLess() {
+      this.maxComments = this.defaultNumComments;
+      this.$nextTick(() => {
+        if (this.$refs.showMore) this.$refs.showMore.$el.focus();
+      });
     },
     toEditMode(status) {
       this.editMode = status;
@@ -501,10 +570,62 @@ export default {
         this.$socket.emit("stats", {
           action: "textPasted",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             documentId: this.documentId,
             studySessionId: this.studySessionId,
             studyStepId: this.studyStepId,
+            from: "comment",
+            commentId: this.commentId,
             pastedText: pastedText
+          }
+        })
+      }
+    },
+    /**
+     * Logs saved comment text changes.
+     *
+     * @param {string} previousText - Text before editing.
+     * @param {string} updatedText - Saved text.
+     * @returns {void}
+     */
+    logCommentUpdate(previousText, updatedText) {
+      if (!this.acceptStats || previousText === updatedText) return;
+      this.$socket.emit("stats", {
+        action: "commentUpdated",
+        data: {
+          ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+          documentId: this.documentId,
+          studySessionId: this.studySessionId,
+          studyStepId: this.studyStepId,
+          from: "comment",
+          commentId: this.commentId,
+          previousText: previousText,
+          updatedText: updatedText
+        }
+      })
+    },
+    /**
+     * Logs copied comment text.
+     *
+     * @param {ClipboardEvent} event - Copy event.
+     * @returns {void}
+     */
+    onCopy(event) {
+      const target = event.target;
+      const copiedText = target?.value
+        ? target.value.substring(target.selectionStart, target.selectionEnd)
+        : window.getSelection()?.toString();
+      if (this.acceptStats && copiedText) {
+        this.$socket.emit("stats", {
+          action: "textCopied",
+          data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+            documentId: this.documentId,
+            studySessionId: this.studySessionId,
+            studyStepId: this.studyStepId,
+            from: "comment",
+            commentId: this.commentId,
+            copiedText: copiedText
           }
         })
       }
@@ -515,9 +636,8 @@ export default {
 
 <style scoped>
 .comment {
-  color: #666666;
+  color: var(--bs-secondary-color, #666666);
   font-style: normal;
-  box-shadow: 2px, 3px lightgrey;
 }
 
 .blockquote {

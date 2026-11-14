@@ -151,6 +151,20 @@ The dictionary contains the following keys:
 
 -----
 
+**Row action buttons**
+
+``BasicTable`` accepts a ``buttons`` array. That becomes the manage column. For each row,
+``getFilteredButtons`` in ``Table.vue`` decides which buttons to show.
+
+Each button may include ``filter``: an array of ``{ key, value }`` checks against that row.
+Default ``filterMode`` is ``or`` (show if any check matches). Set ``filterMode: "and"`` when
+every check must match.
+
+On a dashboard list page, build this array with ``dashboardRowAction`` / ``dashboardRowButton``
+from ``frontend/src/basic/dashboard/actions.js``. See :doc:`../components/dashboard`.
+
+-----
+
 **Pagination**
 
 Pagination is handled by the ``BasicTablePagination`` component.  

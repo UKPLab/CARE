@@ -16,7 +16,10 @@
 import BasicTable from "@/basic/Table.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
+import { withSearch } from "@/basic/dashboard/constants.js";
 import { resolveApiMessage } from "@/assets/utils";
+import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 import JSZip from "jszip";
 import FileSaver from "file-saver";
 
@@ -24,7 +27,7 @@ import FileSaver from "file-saver";
  * Table displaying submissions for a specific assignment.
  *
  * Can be used standalone via the assignmentId prop or with pre-fetched rows.
- * Shows submission metadata (name, user, creation date, study usage) and
+ * Shows submission metadata (name, creation date, last update) and
  * provides actions to download, replace, or delete individual submissions.
  * Supports bulk download as a ZIP archive.
  *
@@ -48,15 +51,7 @@ export default {
   },
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {
@@ -64,9 +59,8 @@ export default {
       return [
         { name: this.$t("submission.dashboard.columns.id"), key: "id" },
         { name: this.$t("assignments.dashboard.submissionsTable.columns.name"), key: "name" },
-        { name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName" },
-        { name: this.$t("assignments.dashboard.submissionsTable.columns.studyUsageCount"), key: "studyUsageCount" },
-        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt" },
+        { name: this.$t("submission.dashboard.columns.createdAt"), key: "createdAt", type: "datetime" },
+        { name: this.$t("assignments.dashboard.submissionsTable.columns.updatedAt"), key: "updatedAt", type: "datetime" },
       ];
     },
     hasAdminRights() {
@@ -113,87 +107,39 @@ export default {
             userId: submission.userId,
             assignmentId: this.assignmentId,
             canDownload: this.hasAdminRights || (submission.userId === this.currentUserId),
-            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null,
+            canReplaceDelete: ((submission.userId === this.currentUserId && this.assignment.allowReUpload) || this.canReplaceDeleteSubmissions && !isStudyLocked) && this.assignment.closed === null && !isAssignmentPastDeadline(this.assignment),
             isStudyLocked,
             studyUsageCount,
             name: submission.name || "-",
             userName: user?.userName || this.authUser?.userName || "unknown",
             group: submission.group ?? "-",
             description: submission.description || "",
-            createdAt: submission.createdAt ? new Date(submission.createdAt).toLocaleString() : "-",
+            createdAt: submission.createdAt,
+            updatedAt: submission.updatedAt,
           };
         });
     },
     tableButtons() {
-      const buttons = [];
-
-      buttons.push(
-        {
-          icon: "download",
-          filter: [
-            {
-              key: "canDownload",
-              value: true,
-            },
-          ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
+      return [
+        dashboardRowAction("download", {
+          filter: [{ key: "canDownload", value: true }],
           title: this.$t("submission.dashboard.actions.download"),
           action: "downloadSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        },
-        {
-          icon: "arrow-repeat",
-          filter: [
-            {
-              key: "canReplaceDelete",
-              value: true,
-            },
-          ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            },
-          },
+          stats: { submissionId: "id" },
+        }),
+        dashboardRowAction("replace", {
+          filter: [{ key: "canReplaceDelete", value: true }],
           title: this.$t("assignments.dashboard.submissionsTable.actions.replace"),
           action: "replaceSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        },
-        {
-          icon: "trash",
-          filter: [
-            {
-              key: "canReplaceDelete",
-              value: true,
-            },
-          ],
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-danger": true,
-              "btn-sm": true,
-            },
-          },
+          stats: { submissionId: "id" },
+        }),
+        dashboardRowAction("delete", {
+          filter: [{ key: "canReplaceDelete", value: true }],
           title: this.$t("assignments.dashboard.submissionsTable.actions.delete"),
           action: "deleteSubmission",
-          stats: {
-            submissionId: "id",
-          },
-        }
-      );
-
-      return buttons;
+          stats: { submissionId: "id" },
+        }),
+      ];
     },
   },
   methods: {

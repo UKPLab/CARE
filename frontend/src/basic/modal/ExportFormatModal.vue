@@ -83,7 +83,8 @@ export default {
      * @param {number|null} id                          - ID of a single record to export. If null, all records in the table are exported.
      * @param {string|null} table                       - Table name to export from (e.g. "tag_set", "workflow").
      * @param {string|null} childTable                  - Optional child table to nest under each parent record (e.g. "tag", "workflow_step").
-     * @param {object|null} tableOptions                - Options for the parent table export (currently unused, reserved for future use).
+     * @param {object|null} tableOptions                - Options for the parent table export.
+     * @param {Function}    [tableOptions.filter]       - Extra predicate for parent rows (e.g. templates only).
      * @param {object|null} childTableOptions           - Options for child table export.
      * @param {string}      [childTableOptions.key]     - Key name to nest children under in the exported object. Defaults to the childTable name.
      */
@@ -127,7 +128,8 @@ export default {
       const tableName = this.table;
       const childTableName = this.childTable;
       const items = this.$store.getters[`table/${tableName}/getFiltered`](
-        (w) => (this.filterId === null || w.id === this.filterId));
+        (w) => (this.filterId === null || w.id === this.filterId)
+          && (!this.tableOptions?.filter || this.tableOptions.filter(w)));
 
       let result = items;
 
@@ -141,14 +143,16 @@ export default {
         });
       }
       result = result.map(item => Object.fromEntries(Object.entries(item).filter(([key]) => key !== 'id')));
-
-      const filename = this.filterId
-        ? `${tableName}_${this.filterId}_${Date.now()}`
+      this.downloadItems(result, format, this.filterId, tableName);
+    },
+    downloadItems(items, format, id, tableName) {
+      const filename = id
+        ? `${tableName}_${id}_${Date.now()}`
         : `${tableName}s_${Date.now()}`;
-      downloadObjectsAs(result, filename, format);
+      downloadObjectsAs(items, filename, format);
 
       const displayTable = this.humanizeTableName(tableName);
-      const successKey = this.filterId
+      const successKey = id
         ? 'modals.importExport.export.success.single'
         : 'modals.importExport.export.success.multiple';
       this.eventBus.emit("toast", {

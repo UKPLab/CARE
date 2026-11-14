@@ -1,0 +1,144 @@
+{
+  "common": {
+    "name": "Name",
+    "description": "Beschreibung",
+    "trigger": "Trigger",
+    "event": "Ereignis",
+    "action": "Aktion",
+    "project": "Projekt",
+    "status": "Status",
+    "enabled": "Aktiviert",
+    "error": "Fehler",
+    "close": "Schließen",
+    "save": "Speichern",
+    "notAvailable": "Nicht verfügbar",
+    "yes": "Ja",
+    "no": "Nein"
+  },
+  "dashboard": {
+    "title": "Trigger",
+    "create": "Trigger erstellen",
+    "createTitle": "Eine neue Trigger-Regel erstellen"
+  },
+  "actions": {
+    "view": "Trigger anzeigen",
+    "edit": "Trigger bearbeiten",
+    "delete": "Trigger löschen",
+    "toggle": "Trigger aktivieren / deaktivieren",
+    "cancel": "Abbrechen",
+    "retry": "Erneut versuchen",
+    "rerun": "Erneut ausführen",
+    "viewError": "Fehlermeldung anzeigen"
+  },
+  "status": {
+    "enabled": "Aktiviert",
+    "disabled": "Deaktiviert",
+    "pending": "Ausstehend",
+    "running": "Wird ausgeführt",
+    "completed": "Abgeschlossen",
+    "cancelled": "Abgebrochen",
+    "failed": "Fehlgeschlagen"
+  },
+  "confirm": {
+    "deleteTitle": "Trigger löschen",
+    "delete": "Möchten Sie \"{name}\" wirklich löschen?",
+    "cancelTitle": "Ausführung abbrechen",
+    "cancel": "Diesen Trigger-Lauf für \"{name}\" abbrechen?",
+    "rerunTitle": "Ausführung wiederholen",
+    "rerun": "Den abgeschlossenen Trigger \"{name}\" erneut ausführen?"
+  },
+  "logs": {
+    "title": "Trigger-Protokolle",
+    "attempts": "Versuche",
+    "started": "Gestartet",
+    "errorMessageTitle": "Fehlermeldung",
+    "deletedTrigger": "<Gelöschter Trigger>",
+    "noErrorMessage": "Es wurde keine Fehlermeldung aufgezeichnet."
+  },
+  "editor": {
+    "editTitle": "Trigger bearbeiten",
+    "createTitle": "Trigger erstellen"
+  },
+  "steps": {
+    "info": "Trigger-Informationen",
+    "review": "Prüfen und bestätigen"
+  },
+  "fields": {
+    "nameHelp": "Anzeigename für diese Trigger-Regel in der Trigger-Übersicht.",
+    "descriptionHelp": "Kurzer Hinweis für Administratoren, wann und warum dieser Trigger ausgeführt wird.",
+    "scopeProject": "Auf Projekt beschränken",
+    "scopeProjectHelp": "Beschränkt diesen Trigger auf das ausgewählte Projekt. Ereignisfilter und Zuweisungsoptionen verwenden dieses Projekt.",
+    "maxRetries": "Maximale Wiederholungen",
+    "maxRetriesHelp": "Wie oft ein fehlgeschlagener Lauf über die Trigger-Protokolle erneut versucht werden darf, bevor er fehlgeschlagen bleibt.",
+    "parallelLimit": "Parallelitätslimit",
+    "parallelLimitHelp": "Maximale Anzahl gleichzeitiger Ausführungen dieses Triggers.",
+    "timeout": "Zeitlimit",
+    "timeoutSeconds": "Zeitlimit (Sekunden)",
+    "timeoutHelp": "Maximale Laufzeit einer einzelnen Ausführung in Sekunden, bevor sie als Zeitüberschreitung gilt.",
+    "whenEvent": "Wenn (Ereignis)",
+    "thenAction": "Dann (Aktion)"
+  },
+  "view": {
+    "namedTitle": "Trigger: {name}",
+    "seconds": "{count} Sekunden"
+  },
+  "review": {
+    "note": "Prüfen Sie die Angaben oben, bevor Sie sie absenden.",
+    "nlpSkill": "NLP-Skill",
+    "input": "Eingabe: {parameter}",
+    "baseFile": "Basisdatei ({name})"
+  },
+  "metadata": {
+    "events": {
+      "assignment": {
+        "label": "Zuweisung",
+        "description": "Wird ausgelöst, wenn ein Teilnehmer eine Einreichung für eine ausgewählte Zuweisung hochlädt.",
+        "fields": {
+          "assignment": "Zuweisung"
+        }
+      }
+    },
+    "actions": {
+      "email": {
+        "label": "E-Mail senden",
+        "description": "Sendet eine E-Mail an einen aus dem Ereigniskontext ermittelten Empfänger.",
+        "fields": {
+          "recipient": "Senden an",
+          "template": "E-Mail-Vorlage"
+        },
+        "options": {
+          "uploader": "Hochladender Benutzer",
+          "admins": "Alle Administratoren"
+        }
+      },
+      "aiPreprocessing": {
+        "label": "KI-Vorverarbeitung",
+        "description": "Führt einen NLP-Skill für die hochgeladene Einreichung mit dem konfigurierten Skill, der Eingabezuordnung und den Basisdateioptionen aus. Ergebnisse werden in den Dokumentdaten gespeichert."
+      }
+    }
+  },
+  "messages": {
+    "updatedTitle": "Trigger aktualisiert",
+    "createdTitle": "Trigger erstellt",
+    "updated": "Der Trigger wurde erfolgreich aktualisiert.",
+    "created": "Der Trigger wurde erfolgreich erstellt.",
+    "cancelledTitle": "Abgebrochen",
+    "cancelled": "Die Trigger-Ausführung wurde abgebrochen.",
+    "retryQueuedTitle": "Neuer Versuch vorgemerkt",
+    "retryQueued": "Die Trigger-Ausführung wurde wieder auf ausstehend gesetzt.",
+    "rerunQueuedTitle": "Erneute Ausführung vorgemerkt",
+    "rerunQueued": "Eine neue Trigger-Ausführung wurde vorgemerkt."
+  },
+  "errors": {
+    "updateTitle": "Trigger konnte nicht aktualisiert werden",
+    "createTitle": "Trigger konnte nicht erstellt werden",
+    "update": "Der Trigger konnte nicht aktualisiert werden.",
+    "create": "Der Trigger konnte nicht erstellt werden.",
+    "cancelTitle": "Abbrechen fehlgeschlagen",
+    "retryTitle": "Neuer Versuch fehlgeschlagen",
+    "rerunTitle": "Erneute Ausführung fehlgeschlagen",
+    "details": "Details der Trigger-Ausführung konnten nicht geladen werden",
+    "action": "Die Trigger-Aktion ist fehlgeschlagen",
+    "unknown": "Unbekannter Fehler"
+  }
+}

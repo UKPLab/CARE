@@ -58,7 +58,17 @@
 					ref="assignmentForm"
 					v-model="formData"
 					:fields="assignmentFields"
+					:original-data="originalDates"
 				/>
+				<BasicButton
+					type="button"
+					class="btn btn-outline-secondary mt-3"
+					:disabled="!submissionWarningPreview"
+					@click="previewSubmissionWarning"
+				>
+					Preview Submission Warning
+				</BasicButton>
+				<ConfirmModal ref="warningPreviewModal" />
 			</div>
 		</template>
   </StepperModal>
@@ -68,6 +78,8 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
+import BasicButton from "@/basic/Button.vue";
+import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 /**
@@ -82,7 +94,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
 	name: "AssignmentModal",
-	components: { StepperModal, BasicForm, BasicTable },
+	components: { StepperModal, BasicForm, BasicTable, BasicButton, ConfirmModal },
 	subscribeTable: ["assignment", "user_role", "user", "assignment_share", "study", "workflow", "configuration"],
 	data() {
 		return {
@@ -102,6 +114,7 @@ export default {
 				scrollX: true,
 				search: true,
 			},
+			originalDates: null,
 		};
 	},
 	computed: {
@@ -133,6 +146,14 @@ export default {
 		},
 		assignmentFields() {
 			return this.$store.getters["table/assignment/getFields"] || [];
+		},
+		/**
+		 * Trims and nulls-out the submission warning the same way the student-facing upload
+		 * modal does, so the Preview button is only enabled when a warning would actually
+		 * be shown to students.
+		 */
+		submissionWarningPreview() {
+			return (this.formData.submissionWarning || "").trim() || null;
 		},
 		availableRoles() {
 			return (this.$store.getters["table/user_role/getAll"] || []).filter((role) => !role.deleted);
@@ -172,6 +193,26 @@ export default {
 			this.selectedRoles = [];
 			this.selectedUsers = [];
 		},
+		/**
+		 * Opens the same ConfirmModal, with the same title and message, that
+		 * AssignmentUploadModal.vue's uploadSubmission() shows to students — so instructors
+		 * preview exactly what will be shown, not a re-styled approximation. Keep the title
+		 * and message strings in sync with that method if either changes.
+		 *
+		 * ConfirmModal is declared inside this step's own slot content (not as a sibling of
+		 * StepperModal), so it renders as a genuine descendant of the stepper's BasicModal —
+		 * BasicModal's own parentModal/nested-suspended mechanism then greys out the stepper
+		 * automatically while this dialog is open, with no manual wiring needed here.
+		 */
+		previewSubmissionWarning() {
+			if (!this.submissionWarningPreview) return;
+			this.$refs.warningPreviewModal.open(
+				"Submission",
+				"Please confirm before uploading:",
+				this.submissionWarningPreview,
+				() => {}
+			);
+		},
 		getDefaultFormData() {
 			const defaults = {};
 			for (const field of this.assignmentFields) {
@@ -182,6 +223,7 @@ export default {
 			return defaults;
 		},
 		open(assignmentId = 0, copy = false) {
+			this.originalDates = null;
 			this.assignmentId = assignmentId;
 			this.isCopy = copy;
 			this.assignByUser = false;
@@ -193,6 +235,13 @@ export default {
 				const assignment = this.$store.getters["table/assignment/get"](assignmentId);
 				if (assignment) {
 					this.formData = { ...this.formData, ...assignment };
+
+					if (!copy) {
+						this.originalDates = {
+							start: assignment.start,
+							end: assignment.end,
+						};
+					}
 
 					const entries = (this.$store.getters["table/assignment_share/getAll"] || [])
 						.filter(e => e.assignmentId === assignmentId && !e.deleted);

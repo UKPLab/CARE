@@ -1,0 +1,784 @@
+{
+  "schemaVersion": 1,
+  "exportedAt": "2026-08-10T23:36:03.383Z",
+  "traceCount": 34,
+  "recording": {
+    "name": "250-toggle-annotation-visibility",
+    "status": "finished",
+    "startTime": "2026-08-10T23:27:27.395Z",
+    "userId": 3,
+    "participantSocketIds": [
+      "o2D2-TTZMejvegnsAAAR"
+    ],
+    "excludeEvents": null,
+    "endTime": "2026-08-10T23:27:50.509Z"
+  },
+  "traces": [
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "recordingRefresh",
+      "payload": [
+        {
+          "id": 15,
+          "name": "Recording 8/11/2026, 1:27:27 AM",
+          "status": "recording",
+          "userId": 3,
+          "deleted": false,
+          "endTime": null,
+          "createdAt": "2026-08-10T23:27:27.396Z",
+          "startTime": "2026-08-10T23:27:27.395Z",
+          "updatedAt": "2026-08-10T23:27:27.396Z",
+          "excludeEvents": null,
+          "participantSocketIds": [
+            "o2D2-TTZMejvegnsAAAR"
+          ]
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:27.407Z",
+      "endTime": "2026-08-10T23:27:27.407Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": false
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:29.112Z",
+      "endTime": "2026-08-10T23:27:29.112Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 596,
+          "clientY": 671,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:33.526Z",
+      "endTime": "2026-08-10T23:27:33.526Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "text": "o address these limitations, we introduce",
+          "documentId": 1,
+          "studyStepId": null,
+          "eventClientX": 596,
+          "eventClientY": 671,
+          "studySessionId": null
+        },
+        "action": "onTextSelect"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:33.557Z",
+      "endTime": "2026-08-10T23:27:33.557Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "text": "hatGPT (O",
+          "documentId": 1,
+          "studyStepId": null,
+          "eventClientX": 368,
+          "eventClientY": 536,
+          "studySessionId": null
+        },
+        "action": "onTextSelect"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:36.978Z",
+      "endTime": "2026-08-10T23:27:36.978Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "title": "Other",
+          "documentId": 1
+        },
+        "action": "clickCardButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:38.685Z",
+      "endTime": "2026-08-10T23:27:38.685Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 4,
+        "anonymous": false,
+        "selectors": {
+          "target": [
+            {
+              "selector": [
+                {
+                  "end": 1826,
+                  "type": "TextPositionSelector",
+                  "start": 1817
+                },
+                {
+                  "type": "TextQuoteSelector",
+                  "exact": "hatGPT (O",
+                  "prefix": "GPT-3 (Brown et al., 2020) and C",
+                  "suffix": "uyanget al., 2022)2 – the progre"
+                },
+                {
+                  "type": "PagePositionSelector",
+                  "number": 1
+                }
+              ]
+            }
+          ]
+        },
+        "documentId": 1,
+        "studyStepId": null,
+        "studySessionId": null
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:38.687Z",
+      "endTime": "2026-08-10T23:27:38.687Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 6,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:27:38.701Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:27:38.701Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 5,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:38.703Z",
+      "endTime": "2026-08-10T23:27:38.703Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "text": "hatGPT (O",
+          "draft": true,
+          "tagId": 4,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:27:38.693Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 1826,
+                    "type": "TextPositionSelector",
+                    "start": 1817
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "hatGPT (O",
+                    "prefix": "GPT-3 (Brown et al., 2020) and C",
+                    "suffix": "uyanget al., 2022)2 – the progre"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:27:38.693Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:38.704Z",
+      "endTime": "2026-08-10T23:27:38.704Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "text": "hatGPT (O",
+          "draft": true,
+          "tagId": 4,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:27:38.693Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 1826,
+                    "type": "TextPositionSelector",
+                    "start": 1817
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "hatGPT (O",
+                    "prefix": "GPT-3 (Brown et al., 2020) and C",
+                    "suffix": "uyanget al., 2022)2 – the progre"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:27:38.693Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:38.705Z",
+      "endTime": "2026-08-10T23:27:38.705Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 6,
+          "tags": "[]",
+          "text": null,
+          "draft": true,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:27:38.701Z",
+          "updatedAt": "2026-08-10T23:27:38.701Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 5,
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:38.706Z",
+      "endTime": "2026-08-10T23:27:38.706Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:38.708Z",
+      "endTime": "2026-08-10T23:27:38.708Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "tag_set"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:38.708Z",
+      "endTime": "2026-08-10T23:27:38.708Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:38.708Z",
+      "endTime": "2026-08-10T23:27:38.708Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 413,
+          "clientY": 503,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:39.043Z",
+      "endTime": "2026-08-10T23:27:39.043Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "icon": "floppy-fill",
+          "props": {
+            "commentId": 6
+          },
+          "title": "Save"
+        },
+        "action": "clickSidebarButton"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:40.937Z",
+      "endTime": "2026-08-10T23:27:40.937Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentUpdate",
+      "payload": {
+        "tags": "[]",
+        "text": null,
+        "commentId": 6
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:40.936Z",
+      "endTime": "2026-08-10T23:27:40.936Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationUpdate",
+      "payload": {
+        "tagId": 4,
+        "annotationId": 5
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:40.935Z",
+      "endTime": "2026-08-10T23:27:40.935Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "text": "hatGPT (O",
+          "draft": false,
+          "tagId": 4,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:27:38.693Z",
+          "deletedAt": null,
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 1826,
+                    "type": "TextPositionSelector",
+                    "start": 1817
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "hatGPT (O",
+                    "prefix": "GPT-3 (Brown et al., 2020) and C",
+                    "suffix": "uyanget al., 2022)2 – the progre"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:27:40.946Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "creator_name": "guest",
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:40.953Z",
+      "endTime": "2026-08-10T23:27:40.953Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "annotationRefresh",
+      "payload": [
+        {
+          "id": 5,
+          "text": "hatGPT (O",
+          "draft": false,
+          "tagId": 4,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:27:38.693Z",
+          "selectors": {
+            "target": [
+              {
+                "selector": [
+                  {
+                    "end": 1826,
+                    "type": "TextPositionSelector",
+                    "start": 1817
+                  },
+                  {
+                    "type": "TextQuoteSelector",
+                    "exact": "hatGPT (O",
+                    "prefix": "GPT-3 (Brown et al., 2020) and C",
+                    "suffix": "uyanget al., 2022)2 – the progre"
+                  },
+                  {
+                    "type": "PagePositionSelector",
+                    "number": 1
+                  }
+                ]
+              }
+            ]
+          },
+          "updatedAt": "2026-08-10T23:27:40.946Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:40.955Z",
+      "endTime": "2026-08-10T23:27:40.955Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 6,
+          "tags": "[]",
+          "text": null,
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:27:38.701Z",
+          "deletedAt": null,
+          "updatedAt": "2026-08-10T23:27:40.952Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 5,
+          "creator_name": "guest",
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:40.958Z",
+      "endTime": "2026-08-10T23:27:40.958Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "commentRefresh",
+      "payload": [
+        {
+          "id": 6,
+          "tags": "[]",
+          "text": null,
+          "draft": false,
+          "userId": 3,
+          "deleted": false,
+          "anonymous": false,
+          "createdAt": "2026-08-10T23:27:38.701Z",
+          "updatedAt": "2026-08-10T23:27:40.952Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "annotationId": 5,
+          "studySessionId": null,
+          "parentCommentId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:40.959Z",
+      "endTime": "2026-08-10T23:27:40.959Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "subscribeAppData",
+      "payload": {
+        "table": "comment_vote"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:40.965Z",
+      "endTime": "2026-08-10T23:27:40.965Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1364,
+          "clientY": 475,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:42.459Z",
+      "endTime": "2026-08-10T23:27:42.459Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1364,
+          "clientY": 472,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:43.992Z",
+      "endTime": "2026-08-10T23:27:43.992Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "appDataUpdate",
+      "payload": {
+        "data": {
+          "state": 1,
+          "userId": 3,
+          "commentId": 6,
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        },
+        "table": "comment_state"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:45.501Z",
+      "endTime": "2026-08-10T23:27:45.501Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "state": true,
+          "commentId": 6
+        },
+        "action": "commentToggleCollapse"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:45.505Z",
+      "endTime": "2026-08-10T23:27:45.505Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "unsubscribeAppData",
+      "payload": "cc10d201-04e9-4a99-9a54-c14cfab6c74f",
+      "direction": true,
+      "startTime": "2026-08-10T23:27:45.505Z",
+      "endTime": "2026-08-10T23:27:45.505Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "comment_stateRefresh",
+      "payload": [
+        {
+          "id": 1,
+          "state": 1,
+          "userId": 3,
+          "deleted": false,
+          "commentId": 6,
+          "createdAt": "2026-08-10T23:27:45.508Z",
+          "updatedAt": "2026-08-10T23:27:45.508Z",
+          "documentId": 1,
+          "studyStepId": null,
+          "studySessionId": null
+        }
+      ],
+      "direction": false,
+      "startTime": "2026-08-10T23:27:45.518Z",
+      "endTime": "2026-08-10T23:27:45.518Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1078,
+          "clientY": 351,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:45.860Z",
+      "endTime": "2026-08-10T23:27:45.860Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1076,
+          "clientY": 371,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:47.093Z",
+      "endTime": "2026-08-10T23:27:47.093Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1049,
+          "clientY": 387,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:48.110Z",
+      "endTime": "2026-08-10T23:27:48.110Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "clientX": 1069,
+          "clientY": 84,
+          "scrollX": 0,
+          "scrollY": 0
+        },
+        "action": "mouseMove"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:49.159Z",
+      "endTime": "2026-08-10T23:27:49.159Z"
+    },
+    {
+      "recordingId": 15,
+      "userId": 3,
+      "socketId": "o2D2-TTZMejvegnsAAAR",
+      "action": "stats",
+      "payload": {
+        "data": {
+          "hidden": true
+        },
+        "action": "tabVisibilityChange"
+      },
+      "direction": true,
+      "startTime": "2026-08-10T23:27:49.321Z",
+      "endTime": "2026-08-10T23:27:49.321Z"
+    }
+  ]
+}

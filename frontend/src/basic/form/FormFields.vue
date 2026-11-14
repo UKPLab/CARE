@@ -2,10 +2,23 @@
   <div
     v-for="field in fields"
     :key="field.key"
-    :class="'size' in field ? 'col-md-' + field.size : 'col-12'"
+    :class="[
+      'size' in field ? 'col-md-' + field.size : 'col-12',
+      field.wrapperClass,
+    ]"
   >
+    <BasicButton
+      v-if="field.type === 'button'"
+      :icon="field.icon"
+      :title="field.title"
+      :text="field.text"
+      :tooltip="field.tooltip"
+      :disabled="field.disabled || false"
+      :class="field.class"
+      @click="$emit('button-click', { key: field.key, action: field.action, field })"
+    />
     <FormSwitch
-      v-if="field.type === 'switch'"
+      v-else-if="field.type === 'switch'"
       :ref="'ref_' + field.key"
       :model-value="modelValue[field.key]"
       :options="field"
@@ -35,6 +48,13 @@
       />
       <FormCheckbox
         v-else-if="field.type === 'checkbox'"
+        :ref="'ref_' + field.key"
+        :model-value="modelValue[field.key]"
+        :options="field"
+        @update:model-value="onFieldUpdate(field.key, $event)"
+      />
+      <FormRadio
+        v-else-if="field.type === 'radio'"
         :ref="'ref_' + field.key"
         :model-value="modelValue[field.key]"
         :options="field"
@@ -108,6 +128,7 @@ import FormSwitch from "@/basic/form/Switch.vue";
 import FormSlider from "@/basic/form/Slider.vue";
 import FormSelect from "@/basic/form/Select.vue";
 import FormCheckbox from "@/basic/form/Checkbox.vue";
+import FormRadio from "@/basic/form/Radio.vue";
 import FormDefault from "@/basic/form/Default.vue";
 import FormPassword from "@/basic/form/Password.vue";
 import FormTextarea from "@/basic/form/Textarea.vue";
@@ -116,6 +137,7 @@ import FormEditor from "@/basic/form/Editor.vue";
 import FormTable from "@/basic/form/DataTable.vue";
 import FormChoice from "@/basic/form/Choice.vue";
 import FormFile from "@/basic/form/File.vue";
+import BasicButton from "@/basic/Button.vue";
 
 /**
  * Renders schema-driven form controls for a list of field definitions.
@@ -126,12 +148,14 @@ import FormFile from "@/basic/form/File.vue";
 export default {
   name: "FormFields",
   components: {
+    BasicButton,
     FormFile,
     DatetimePicker,
     FormSwitch,
     FormSlider,
     FormSelect,
     FormCheckbox,
+    FormRadio,
     FormDefault,
     FormPassword,
     FormTextarea,
@@ -150,7 +174,7 @@ export default {
       required: true,
     },
   },
-  emits: ["update:modelValue", "update:configStatus", "file-change"],
+  emits: ["update:modelValue", "update:configStatus", "file-change", "button-click"],
   methods: {
     onFieldUpdate(key, value) {
       this.$emit('update:modelValue', { ...this.modelValue, [key]: value });

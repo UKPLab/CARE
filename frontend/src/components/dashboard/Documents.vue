@@ -1,8 +1,16 @@
 <template>
-  <Card :title="$t('documents.title')">
-    <template #headerElements>
+  <DashboardListPage
+    :title="$t('documents.title')"
+    :columns="columns"
+    :data="docs"
+    :buttons="buttons"
+    :table-options="options"
+    @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
       <BasicButton
+          v-if="canUploadDocument"
           class="btn-primary btn-sm"
           :title="$t('documents.addDocument')"
           :text="$t('documents.uploadDocument')"
@@ -19,22 +27,13 @@
       />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-          :columns="columns"
-          :data="docs"
-          :options="options"
-          :buttons="buttons"
-          :max-table-height="'65vh'"
-          @action="action"
-      />
+    <template #afterTable>
       <EditorDownload ref="editorDownload"/>
     </template>
-  </Card>
+  </DashboardListPage>
   <PublishModal ref="publishModal"/>
-  <StudyModal ref="studyCoordinator"/>
   <ConfirmModal ref="deleteConf"/>
-  <UploadModal ref="uploadModal"/>
+  <UploadModal v-if="canUploadDocument" ref="uploadModal"/>
   <CreateModal ref="createModal"/>
   <EditModal ref="editModal"/>
   <DownloadPDFModal ref="pdfDownloadModal"/>
@@ -42,9 +41,6 @@
 
 <script>
 import PublishModal from "./documents/PublishModal.vue";
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
-import StudyModal from "./coordinator/Study.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import UploadModal from "./documents/UploadModal.vue";
@@ -52,7 +48,9 @@ import CreateModal from "./documents/CreateModal.vue";
 import EditModal from "./documents/EditModal.vue";
 import EditorDownload from "@/components/editor/editor/EditorDownload.vue";
 import DownloadPDFModal from "./documents/DownloadPDFModal.vue";
-import { resolveApiMessage } from "@/assets/utils";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+import { DASHBOARD_BADGES, dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 
 /**
  * Document list component
@@ -67,10 +65,8 @@ export default {
   name: "DashboardDocument",
   subscribeTable: ["document", "study", "template"],
   components: {
-    StudyModal,
     UploadModal,
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     PublishModal,
     ConfirmModal,
@@ -81,17 +77,13 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
     };
   },
   computed: {
+    canUploadDocument() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.documents.upload");
+    },
     columns() {
       return [
         {name: this.$t('common.id'), key: "id"},
@@ -123,76 +115,29 @@ export default {
     },
     buttons() {
       const buttons = [
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        dashboardRowAction("open", {
           title: this.$t('documents.accessDocument'),
           action: "accessDoc",
           stats:{
             documentId: "id",
           }
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-          filter: [
-            {
-              key: "uploadedByUserId",
-              value: this.userId,
-            },
-            {
-              key: "uploadedByUserId",
-              value: null
-            }
-          ],
+        }),
+        dashboardRowAction("delete", {
           title: this.$t('documents.deleteDocument'),
           action: "deleteDoc",
+          filter: [
+            {
+              key: "canDelete",
+              value: true,
+            },
+          ],
           stats:{
             documentId: "id",
           }
-        },
-        {
-          icon: "cloud-arrow-up",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-          filter: [
-            {
-              key: "uploadedByUserId",
-              value: this.userId,
-            },
-            {
-              key: "uploadedByUserId",
-              value: null
-            }
-          ],
+        }),
+        dashboardRowAction("publish", {
           title: this.$t('documents.publishDocument'),
           action: "publicDoc",
-          stats:{
-            documentId: "id",
-          }
-        },
-        {
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
           filter: [
             {
               key: "uploadedByUserId",
@@ -203,96 +148,68 @@ export default {
               value: null
             }
           ],
-          title: this.$t('documents.renameDocument'),
-          action: "renameDoc",
           stats:{
             documentId: "id",
           }
-        },
-      ];
-      if (this.studiesEnabled) {
-        buttons.push({
-          icon: "person-workspace",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        }),
+        dashboardRowAction("edit", {
+          title: this.$t('documents.renameDocument'),
+          action: "renameDoc",
           filter: [
             {
-              key: "type",
-              value: 0,
+              key: "uploadedByUserId",
+              value: this.userId,
             },
+            {
+              key: "uploadedByUserId",
+              value: null
+            }
           ],
-          title: this.$t('documents.openStudyCoordinator'),
-          action: "openStudyCoordinator",
-          stats: {
+          stats:{
             documentId: "id",
           }
-        });
-      }
+        }),
+      ];
       if (this.showDeltaDownloadButton) {
-        buttons.push({
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
-          filter: [
-            {
-              key: "type",
-              value: 1,
-            }],
+        buttons.push(dashboardRowAction("exportDelta", {
           title: this.$t('documents.exportDelta'),
           action: "exportDeltaDoc",
-          stats: {
-            documentId: "id",
-          } 
-        });
-      }
-      if (this.showHTMLDownloadButton) {
-        buttons.push({
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
           filter: [
             {
               key: "type",
               value: 1,
             }],
-          title: this.$t('documents.exportHtml'),
-          action: "exportHTMLDoc",
           stats: {
             documentId: "id",
           }
-        });
+        }));
+      }
+      if (this.showHTMLDownloadButton) {
+        buttons.push(dashboardRowAction("exportHtml", {
+          title: this.$t('documents.exportHtml'),
+          action: "exportHTMLDoc",
+          filter: [
+            {
+              key: "type",
+              value: 1,
+            }],
+          stats: {
+            documentId: "id",
+          }
+        }));
       }
       if (this.showPDFDownloadButton) {
-        buttons.push({
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            },
-          },
+        buttons.push(dashboardRowAction("exportPdf", {
+          title: this.$t('documents.downloadPdfWithAnnotations'),
+          action: "exportWithAnnotations",
           filter: [
             {
             key: "type",
             value: 0,
           }
         ],
-        title: this.$t('documents.downloadPdfWithAnnotations'),
-        action: "exportWithAnnotations",
-      });
-    }
+        }));
+      }
       return buttons;
     },
     docs() {
@@ -300,18 +217,15 @@ export default {
           .filter((doc) => doc.userId === this.userId && doc.parentDocumentId === null && doc.hideInFrontend === false && doc.type !== 3)
           .map((d) => {
             let newD = {...d};
+            const uploadedByOwner = d.uploadedByUserId === this.userId || d.uploadedByUserId === null;
+            newD.canDelete = uploadedByOwner && d.submissionId == null;
             newD.typeName = d.type === 0 ? this.$t('documents.types.pdf') : d.type === 1 ? this.$t('documents.types.html') : this.$t('documents.types.modal');
             newD.publicBadge = {
-              class: newD.public ? "bg-success" : "bg-danger",
+              class: DASHBOARD_BADGES.publicPrivate[!!newD.public],
               text: newD.public ? this.$t('common.yes') : this.$t('common.no'),
             };
             return newD;
           });
-    },
-    studiesEnabled() {
-      return (
-          this.$store.getters["settings/getValue"]("app.study.enabled") === "true"
-      );
     },
     showCreateButton() {
       return this.$store.getters["settings/getValue"]('editor.document.showButtonCreate') === 'true';
@@ -341,9 +255,6 @@ export default {
         case "renameDoc":
           this.renameDoc(data.params);
           break;
-        case "openStudyCoordinator":
-          this.openStudyCoordinator(data.params);
-          break;
         case "exportDeltaDoc":
           this.$refs.editorDownload.exportDeltaDoc(data.params);
           break;
@@ -366,29 +277,20 @@ export default {
         warning = "";
       }
 
-      this.$refs.deleteConf.open(
-          this.$t('documents.messages.deleteTitle'),
-          this.$t('documents.messages.deleteConfirm'),
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteConf,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "document",
+          id: row.id,
+          title: this.$t('documents.messages.deleteTitle'),
+          message: this.$t('documents.messages.deleteConfirm'),
           warning,
-          (val) => {
-            if (val) {
-              this.$socket.emit("appDataUpdate", {
-                table: "document",
-                data: {
-                  id: row.id,
-                  deleted: true
-                }
-              }, (result) => {
-                if (!result.success) {
-                  this.eventBus.emit('toast', {
-                    title: this.$t('errors.documents.deleteFailed'),
-                    message: resolveApiMessage(result),
-                    variant: "danger"
-                  });
-                }
-              });
-            }
-          }
+          failTitle: this.$t('errors.documents.deleteFailed'),
+        }
       );
     },
     renameDoc(row) {
@@ -403,15 +305,8 @@ export default {
     publishDoc(row) {
       this.$refs.publishModal.open(row.id);
     },
-    openStudyCoordinator(row) {
-      this.$refs.studyCoordinator.open(0, row.id);
-    },
   },
 };
 </script>
 
-<style scoped>
-.card .card-body {
-  padding: 1rem;
-}
-</style>
+<style scoped></style>

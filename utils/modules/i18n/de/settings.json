@@ -17,5 +17,13 @@
   },
   "rememberToSave": "Denken Sie daran, nach Änderungen auf {save} zu klicken.",
   "noneUseDefaultEmail": "Keine (Standard-E-Mail verwenden)",
-  "pickColor": "Farbe auswählen"
+  "pickColor": "Farbe auswählen",
+  "triggerQueue": {
+    "group": "Trigger",
+    "queue": "Warteschlange",
+    "pollInterval": {
+      "displayName": "Abfrageintervall der Trigger-Warteschlange (Minuten)",
+      "description": "Legt fest, wie oft der Trigger-Warteschlangenprozess nach ausstehenden Aufträgen sucht. Neue Aufträge starten weiterhin sofort, wenn ein Ereignis ausgelöst wird. Erfordert einen Serverneustart."
+    }
+  }
 }

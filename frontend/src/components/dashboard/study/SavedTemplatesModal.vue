@@ -20,18 +20,18 @@
       >
         <template #additional-buttons>
           <BasicButton
-            class="btn btn-outline-secondary btn-sm"
+            class="btn-secondary btn-sm"
             icon="upload"
             text=""
             :title="$t('modals.importExport.wiring.studyTemplates.importTooltip')"
             @click="openImport"
           />
           <BasicButton
-            class="btn btn-outline-secondary btn-sm"
+            class="btn-secondary btn-sm"
             icon="download"
             text=""
             :title="$t('modals.importExport.wiring.studyTemplates.exportAllTooltip')"
-            @click="$refs.exportFormatModal.open(null, 'study', 'study_step')"
+            @click="$refs.exportFormatModal.open(null, 'study', 'study_step', { filter: (s) => s.template === true })"
           />
         </template>
       </BasicTable>
@@ -74,10 +74,11 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 /**
  * Modal to show saved study templates
  * 
- * This modal allows users to view, use, and delete saved study templates.
+ * This modal allows users to view, use, edit, and delete saved study templates.
  * Users can browse through their saved templates, delete unwanted ones,
  * and use existing templates to create new studies with pre-configured settings.
  * 
@@ -135,42 +136,26 @@ export default {
     },
     tableButtons() {
       return [
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        dashboardRowAction("edit", {
+          title: this.$t('studies.modalTitle.editTemplate'),
+          filter: [{ key: "showEditTemplateButton", value: true }],
+          action: "editTemplate",
+        }),
+        dashboardRowAction("delete", {
           title: this.$t('common.delete'),
           filter: [
             {key: "showDeleteTemplateButton", value: true},
           ],
           action: "deleteTemplate",
-        },
-        {
-          icon: "play",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("resume", {
           title: this.$t('common.use'),
           action: "useTemplate",
-        },
-        {
-          icon: "download",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        }),
+        dashboardRowAction("download", {
           title: this.$t('common.export'),
           action: "exportTemplate",
-        },
+        }),
       ];
     },
     savedTemplates() {
@@ -183,12 +168,19 @@ export default {
           collab: s.collab,
           multipleSubmit: s.multipleSubmit,
           showDeleteTemplateButton: this.showDeleteTemplateButton,
+          showEditTemplateButton: this.showEditTemplateButton || s.userId === this.userId,
         };
       });
     },
     showDeleteTemplateButton() {
       return this.$store.getters["auth/checkRight"]("study.template.delete");
-    }
+    },
+    showEditTemplateButton() {
+      return this.$store.getters["auth/checkRight"]("study.template.edit");
+    },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
   },
   methods: {
     open() {
@@ -198,7 +190,9 @@ export default {
       this.$refs.savedTemplatesModal.close();
     },
     handleAction({ action, params }) {
-      if (action === "deleteTemplate") {
+      if (action === "editTemplate") {
+        this.editTemplate(params);
+      } else if (action === "deleteTemplate") {
         this.deleteTemplate(params);
       } else if (action === "useTemplate") {
         this.useTemplate(params);
@@ -245,7 +239,11 @@ export default {
     },
     useTemplate(template) {
       this.close();
-      this.$refs.studyCoordinator.open(template.id, null, false, false, true);
+      this.$refs.studyCoordinator.open(template.id, false, false, true);
+    },
+    editTemplate(template) {
+      this.close();
+      this.$refs.studyCoordinator.open(template.id, false, true, false);
     },
     openImport() {
       this.$refs.importFormatModal.open("study", "study_step", {
@@ -258,7 +256,7 @@ export default {
     },
     createTemplate() {
       this.close();
-      this.$refs.studyCoordinator.open(0, null, false, true, false);
+      this.$refs.studyCoordinator.open(0, false, true, false);
     },
   },
 };

@@ -216,7 +216,7 @@ export default {
      * @param {object}      [options={}]                - Optional configuration.
      * @param {object}      [options.overrides={}]      - Fields merged into each imported item, overriding values from the file.
      * @param {object}      [options.socket={}]         - Custom socket options (defaults to appDataUpdate with standard payload).
-     * @param {string}      [options.socket.name]       - Custom socket event name instead of "appDataUpdate".
+     * @param {string}      [options.socket.name]       - Custom socket event name instead of "appDataUpdate". Nested child records go on the item payload.
      * @param {string}      [options.socket.dataKey]    - Key under which item data is nested in the payload. If omitted, item data is spread directly into the top-level payload.
      * @param {object}      [options.socket.extra={}]   - Extra top-level fields merged into the socket payload.
      */
@@ -327,6 +327,13 @@ export default {
           const dataKey = this.socketOptions.dataKey;
           const extra = this.socketOptions.extra || {};
           const itemPayload = { ...itemData, ...this.overrides, userId: this.userId };
+          if (this.childTable && children.length > 0) {
+            itemPayload[this.childTable] = children.map((child) =>
+              Object.fromEntries(
+                Object.entries(child).filter(([key]) => !attributesToDelete.includes(key))
+              )
+            );
+          }
           result = await this.socketEmit(this.socketOptions.name, dataKey
             ? { ...extra, [dataKey]: itemPayload }
             : { ...extra, ...itemPayload }
@@ -342,6 +349,7 @@ export default {
           importedCount++;
 
           if (this.childTable && children.length > 0 && !this.socketOptions.name) {
+            const parentId = result.data?.id ?? result.data;
             const fkField = `${tableCamel}Id`;
             const previousField = `${childTableCamel}Previous`;
             let previousId = null;
@@ -352,10 +360,10 @@ export default {
               );
               const childResult = await this.socketEmit("appDataUpdate", {
                 table: this.childTable,
-                data: { ...childData, [fkField]: result.data, [previousField]: previousId },
+                data: { ...childData, [fkField]: parentId, [previousField]: previousId },
               });
               if (childResult.success) {
-                previousId = childResult.data;
+                previousId = childResult.data?.id ?? childResult.data;
               } else {
                 this.eventBus.emit("toast", {
                   title: this.$t('modals.importExport.import.errors.importError'),
@@ -380,17 +388,19 @@ export default {
       }
 
       this.$refs.stepper.setWaiting(false);
-      const successKey = importedCount === 1
-        ? 'modals.importExport.import.success.single'
-        : 'modals.importExport.import.success.multiple';
-      this.eventBus.emit("toast", {
-        title: this.$t('modals.importExport.import.success.title'),
-        message: this.$t(successKey, {
-          count: importedCount,
-          table: displayTable,
-        }),
-        variant: "success",
-      });
+      if (importedCount > 0) {
+        const successKey = importedCount === 1
+          ? 'modals.importExport.import.success.single'
+          : 'modals.importExport.import.success.multiple';
+        this.eventBus.emit("toast", {
+          title: this.$t('modals.importExport.import.success.title'),
+          message: this.$t(successKey, {
+            count: importedCount,
+            table: displayTable,
+          }),
+          variant: "success",
+        });
+      }
       this.close();
     },
   },

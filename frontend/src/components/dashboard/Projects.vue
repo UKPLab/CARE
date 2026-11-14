@@ -1,6 +1,13 @@
 <template>
-  <Card :title="$t('dashboard.projects.title')">
-    <template #headerElements>
+  <DashboardListPage
+    :title="$t('dashboard.projects.title')"
+    :columns="columns"
+    :data="projects"
+    :buttons="buttons"
+    :table-options="options"
+    @action="action"
+  >
+    <template #headerActions>
       <div class="btn-group gap-2">
       <BasicButton
         class="btn-primary btn-sm"
@@ -19,17 +26,7 @@
       />
       </div>
     </template>
-    <template #body>
-      <BasicTable
-        :columns="columns"
-        :data="projects"
-        :options="options"
-        :buttons="buttons"
-        :max-table-height="'65vh'"
-        @action="action"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
   <ProjectModal ref="projectModal"/>
   <ExportModal ref="exportModal"/>
   <ConfirmModal ref="deleteConf"/>
@@ -38,13 +35,14 @@
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import ProjectModal from "./coordinator/Project.vue";
 import ExportModal from "./projects/ExportModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AssignProjectModal from "./projects/AssignProjectModal.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
+import { DASHBOARD_BADGES, dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
 
 /**
@@ -59,8 +57,7 @@ export default {
   subscribeTable: ["project"],
   components: {
     ExportModal,
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     ProjectModal,
     ConfirmModal,
@@ -68,14 +65,7 @@ export default {
   },
   data() {
     return {
-      options: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-      },
+      options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
     };
   },
   computed: {
@@ -96,86 +86,52 @@ export default {
     },
     buttons() {
       const buttons = [
-        {
-          icon: "clipboard",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-            }
-          },
+        dashboardRowAction("copy", {
           title: this.$t('dashboard.projects.actions.copy'),
           action: "copy",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          icon: "pencil",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
-          filter: [
-            {key: "userId", value: this.userId},
-          ],
+        }),
+        dashboardRowAction("edit", {
           title: this.$t('dashboard.projects.actions.edit'),
           action: "edit",
-          stats: {
-            projectId: "id",
-          }
-        },
-        {
-          icon: "trash",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
           filter: [
             {key: "userId", value: this.userId},
           ],
-          title: this.$t('dashboard.projects.actions.delete'),
-          action: "delete",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          icon: "share",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
+        }),
+        dashboardRowAction("delete", {
+          title: this.$t('dashboard.projects.actions.delete'),
+          action: "delete",
+          filter: [
+            {key: "userId", value: this.userId},
+          ],
+          stats: {
+            projectId: "id",
+          }
+        }),
+        dashboardRowAction("share", {
+          title: this.$t('dashboard.projects.actions.share'),
+          action: "publish",
           filter: [
             {key: "public", value: false},
             {key: "userId", value: this.userId},
           ],
-          title: this.$t('dashboard.projects.actions.share'),
-          action: "publish",
+          filterMode: "and",
           stats: {
             projectId: "id",
           }
-        },
-        {
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-dark": true,
-            }
-          },
+        }),
+        dashboardRowAction("download", {
           title: this.$t('dashboard.projects.actions.export'),
-          icon: "download",
           action: "export",
           stats: {
             projectId: "id",
           }
-        }
+        }),
       ];
       return buttons;
     },
@@ -185,7 +141,7 @@ export default {
           let newD = {...d};
           newD.published = {
             text: newD.public || newD.userId === null ? this.$t('common.yes') : this.$t('common.no'),
-            class: newD.public || newD.userId === null ? "bg-success" : "bg-danger",
+            class: DASHBOARD_BADGES.publicPrivate[!!(newD.public || newD.userId === null)],
           };
           newD.closed = {
             text: newD.closed ? this.$t('common.yes') : this.$t('common.no'),
@@ -245,31 +201,24 @@ export default {
         warning += `There ${documents.length !== 1 ? "are" : "is"} currently ${documents.length} ${documents.length !== 1 ? "documents" : "document"} linked to this project. Deleting the project will also delete the ${documents.length !== 1 ? "documents" : "document"}.\n`;
       }
 
-      this.$refs.deleteConf.open(
-        this.$t('dashboard.projects.delete.title'),
-        this.$t('dashboard.projects.delete.message'),
-        warning,
-        (val) => {
-          if (val) {
-            this.$socket.emit("appDataUpdate", {
-              table: "project",
-              data: {
-                id: params.id,
-                deleted: true
-              }
-            }, (result) => {
-              if (!result.success) {
-                this.eventBus.emit('toast', {
-                  title: this.$t('dashboard.projects.toasts.deleteFailed'),
-                  message: resolveApiMessage(result),
-                  variant: "danger"
-                });
-              }
-            });
-          }
+      confirmSoftDelete(
+        {
+          confirmRef: this.$refs.deleteConf,
+          socket: this.$socket,
+          eventBus: this.eventBus,
+        },
+        {
+          table: "project",
+          id: params.id,
+          title: this.$t('dashboard.projects.delete.title'),
+          message: this.$t('dashboard.projects.delete.message'),
+          warning,
+          failTitle: this.$t('dashboard.projects.toasts.deleteFailed'),
+          onSuccess: () => {
+            this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
+          },
         }
       );
-      this.$socket.emit("appSettingSet", { key: "projects.default", value: 1 });
     },
     publishProject(params) {
       this.$socket.emit("appDataUpdate", {
@@ -302,8 +251,4 @@ export default {
 };
 </script>
 
-<style scoped>
-.card .card-body {
-  padding: 1rem;
-}
-</style>
+<style scoped></style>

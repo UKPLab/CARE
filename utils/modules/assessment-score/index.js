@@ -179,7 +179,132 @@ function buildScoresFromState(assessmentState = {}) {
     return scores;
 }
 
+const ASSESSMENT_RESULT_KEY = "assessment_result";
+
+/**
+ * Parse a document_data assessment value.
+ * Accepts fenced JSON, a double-encoded JSON string, and an `{ output }` wrapper.
+ *
+ * @param {*} value - Raw document_data.value
+ * @returns {*|null}
+ */
+function parseStoredAssessmentValue(value) {
+    let parsed = value;
+    if (typeof parsed === "string") {
+        const trimmed = parsed.trim();
+        const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
+        try {
+            parsed = JSON.parse(fenced ? fenced[1].trim() : trimmed);
+        } catch (_error) {
+            return null;
+        }
+    }
+    if (typeof parsed === "string") {
+        try {
+            parsed = JSON.parse(parsed);
+        } catch (_error) {
+            return null;
+        }
+    }
+    if (
+        parsed &&
+        typeof parsed === "object" &&
+        !Array.isArray(parsed) &&
+        parsed.output != null &&
+        parsed.assessment == null
+    ) {
+        return parseStoredAssessmentValue(parsed.output);
+    }
+    return parsed;
+}
+
+/**
+ * True when a stored assessment_result marks any criterion as saved by a grader.
+ * A saved score of 0 still counts.
+ *
+ * @param {*} value - Raw document_data.value
+ * @returns {boolean}
+ */
+function hasSavedCriterion(value) {
+    const parsed = parseStoredAssessmentValue(value);
+    if (!parsed || typeof parsed !== "object") return false;
+    const entries = Array.isArray(parsed) ? parsed : Object.values(parsed);
+    return entries.some((item) => item && typeof item === "object" && item.isSaved === true);
+}
+
+/**
+ * Flatten a stored document_data assessment value into { criterionName: score }.
+ * Hook/NLP results are often a list or `{ Clarity: 4 }`, not `{ Clarity: { currentScore } }`.
+ *
+ * @param {*} value - Raw document_data.value
+ * @returns {Object}
+ */
+function scoresFromStoredValue(value) {
+    const parsed = parseStoredAssessmentValue(value);
+    if (!parsed || typeof parsed !== "object") return {};
+
+    const list = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed.assessment)
+            ? parsed.assessment
+            : Array.isArray(parsed.criteria)
+                ? parsed.criteria
+                : Array.isArray(parsed.results)
+                    ? parsed.results
+                    : null;
+    if (list) {
+        const scores = {};
+        list.forEach((item) => {
+            if (!item || typeof item !== "object") return;
+            const name = item.name || item.criterion || item.criterionName || item.title;
+            const raw = Number(item.currentScore ?? item.score ?? item.points);
+            if (name && Number.isFinite(raw)) scores[name] = raw;
+        });
+        return scores;
+    }
+
+    const fromState = buildScoresFromState(parsed);
+    if (Object.keys(fromState).length) return fromState;
+
+    const scores = {};
+    Object.entries(parsed).forEach(([name, stored]) => {
+        if (typeof stored === "number" && Number.isFinite(stored)) {
+            scores[name] = stored;
+        }
+    });
+    return scores;
+}
+
+/**
+ * Prefer a human-saved assessment_result row over hook/NLP rows.
+ * The saved row wins when any criterion has isSaved === true, including an all-zero grade.
+ * Otherwise the first hook/NLP row with scores is used.
+ *
+ * @param {Array<{key?: string, value?: *}>} rows - document_data rows for one document
+ * @returns {Object} Flat map of criterion name to score
+ */
+function pickScoresFromGradeRows(rows) {
+    let savedScores = {};
+    let savedByHuman = false;
+    let hookScores = {};
+    for (const row of rows || []) {
+        if (!row) continue;
+        const scores = scoresFromStoredValue(row.value);
+        if (!Object.keys(scores).length) continue;
+        if (row.key === ASSESSMENT_RESULT_KEY) {
+            savedScores = scores;
+            savedByHuman = hasSavedCriterion(row.value);
+        } else if (!Object.keys(hookScores).length) {
+            hookScores = scores;
+        }
+    }
+    if (savedByHuman) return savedScores;
+    return Object.keys(hookScores).length ? hookScores : savedScores;
+}
+
 module.exports = {
     calculateAssessmentScore,
     buildScoresFromState,
+    scoresFromStoredValue,
+    pickScoresFromGradeRows,
 };

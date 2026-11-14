@@ -176,3 +176,76 @@ Each entry is clickable and **jumps to the PDF & Sidebar** position (see :doc:`a
 .. code-block:: javascript
 
    this.$refs.reportModal.open();
+
+Assessment sidebar keyboard interaction
+---------------------------------------
+
+Location: ``frontend/src/components/study/assessment/AssessmentCriteria.vue``,
+``AssessmentRubric.vue``, ``frontend/src/components/study/Assessment.vue``
+
+**Purpose**
+
+Allow a reviewer to fill in an assessment without the mouse, and make the
+sidebar operable for keyboard-only and screen-reader users.
+
+**Key map**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 25 30 45
+
+   * - Key
+     - Where
+     - Behaviour
+   * - ``Enter`` / ``Space``
+     - rubric or criterion header
+     - Expands or collapses the panel. Focus stays on the header.
+   * - ``Enter``
+     - edit button
+     - Opens the editor and moves focus into the textarea.
+   * - ``Ctrl+Enter`` / ``Cmd+Enter``
+     - justification textarea
+     - Commits the text (``saveEdit``) and moves focus to the score dropdown.
+   * - ``Shift+Enter`` / ``Enter``
+     - justification textarea
+     - Inserts a newline. Native behaviour, deliberately not intercepted.
+   * - ``Esc``
+     - justification textarea
+     - Cancels the edit, discards the text, focus returns to the edit button.
+   * - ``Enter``
+     - save button
+     - Marks the criterion saved and advances to the next one.
+
+``Ctrl+Enter`` is used rather than plain ``Enter`` to match
+``components/annotator/sidebar/card/Comment.vue``, which already binds
+``ctrl.enter`` to save. All key handlers use the ``.exact`` modifier, so a
+shortcut never fires when an unintended modifier is held.
+
+**Focus behaviour**
+
+- Focus never moves when a panel merely expands — only after an explicit
+  action (committing, cancelling, or marking a criterion done).
+- After the last criterion of a rubric, ``focus-next-rubric`` opens the next
+  rubric and focus lands on its first criterion header.
+- After the final criterion of the final rubric, ``Assessment.vue`` emits
+  ``assessment-advance-past-end`` and ``Study.vue`` focuses the *Next* or
+  *Finish Study* control. Under ``forcedAssessment`` that button is enabled in
+  the same render, so ``focusForwardControl`` retries for a few animation
+  frames.
+
+**Accessibility**
+
+Both headers are ``<div>`` elements with ``role="button"``, ``tabindex="0"``,
+``aria-expanded`` and ``aria-controls``, following the W3C ARIA Authoring
+Practices accordion pattern. They are not native ``<button>`` elements because
+the header contains an info icon with its own click handler, and nesting an
+interactive element inside a button is invalid HTML.
+
+Arrow-key navigation between headers (optional in the APG pattern) is **not**
+implemented.
+
+**Failed saves**
+
+``saveAssessmentData`` now surfaces a toast on rejection
+(``assessment.save.failedTitle`` / ``failedMessage``) instead of only writing
+to the console.

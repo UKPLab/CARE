@@ -8,27 +8,39 @@
     >
       <label class="form-label">{{ input }}:</label>
       <FormSelect
-          v-model="inputMappings[input]"
+          :model-value="inputMappings[input]"
           :options="{ options: studyBased ? availableDataSources : dataSourcesByInput[input] }"
           :value-as-object="true"
           @update:model-value="updateMapping(input, $event)"
       />
+      <div
+          v-if="isHook && inputMappings[input]?.type === 'submission'"
+          class="mt-1 ps-1"
+      >
+        <FormRadio
+            :model-value="submissionFileSelections[input]?.[0] || null"
+            :options="{ key: `submission_file_${studyStepId || 'standalone'}_${serviceIndex}_${input}`, label: 'nlp.inputMap.selectFilesToInclude', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
+            @update:model-value="toggleSubmissionFile(input, $event)"
+        />
+      </div>
     </div>
 
-    <h6 class="text-secondary mt-4">{{ $t('nlp.inputMap.outputMapping') }}</h6>
-    <div
-        v-for="output in skillOutputs"
-        :key="output"
-        class="mb-2"
-    >
-      <label class="form-label">{{ output }}:</label>
-      <FormSelect
-          v-model="outputMappings[output]"
-          :options="{ options: outputDataOptions }"
-          :value-as-object="true"
-          @update:model-value="updateOutputMapping(output, $event)"
-      />
-    </div>
+    <template v-if="outputMapping">
+      <h6 class="text-secondary mt-4">{{ $t('nlp.inputMap.outputMapping') }}</h6>
+      <div
+          v-for="output in skillOutputs"
+          :key="output"
+          class="mb-2"
+      >
+        <label class="form-label">{{ output }}:</label>
+        <FormSelect
+            :model-value="outputMappings[output]"
+            :options="{ options: outputDataOptions }"
+            :value-as-object="true"
+            @update:model-value="updateOutputMapping(output, $event)"
+        />
+      </div>
+    </template>
   </div>
 </template>
 
@@ -38,26 +50,27 @@
  * Dynamically generates input fields based on the selected skill's configuration
  * This supports both study-based and non-study-based workflows
  *
- * @author Manu Sundar Raj Nandyal, Dennis Zyska
+ * @author Manu Sundar Raj Nandyal, Dennis Zyska, Mohammed Rawhani
  */
 import FormSelect from "@/basic/form/Select.vue";
+import FormRadio from "@/basic/form/Radio.vue";
 import deepEqual from "deep-equal";
+import { tokenInnerText } from "placeholder-tokens";
+
 export default {
   name: "InputMap",
-  components: {FormSelect},
+  components: {FormSelect, FormRadio},
   inject: {
     isTemplateMode: {
       type: Boolean,
       default: false,
     },
   },
-  subscribeTable: [{
-    table: "configuration",
-    filter: [
-      {key: "type", value: 0},
-      {key: "hideInFrontend", value: false}
-    ]
-  }],
+  subscribeTable: [
+    "ai_hook",
+    {table: "configuration", filter: [{key: "type", value: 0}, {key: "hideInFrontend", value: false}]},
+    {table: "configuration", filter: [{key: "type", value: 1}]},
+  ],
   props: {
     skillName: {
       type: String,
@@ -91,13 +104,29 @@ export default {
       type: Number,
       default: null,
     },
+    hookId: {
+      type: Number,
+      default: null,
+    },
+    outputMapping: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
+    serviceIndex: {
+      type: Number,
+      default: 0,
+    },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "validation-change"],
   data() {
     return {
       inputMappings: {},
       outputMappings: {},
       isUpdatingFromWithin: false,
+      hookPlaceholders: [],
+      hookPlaceholdersLoaded: false,
+      submissionFileSelections: {},
     };
   },
   computed: {
@@ -129,6 +158,24 @@ export default {
     },
     configurations() {
       return this.$store.getters["table/configuration/getAll"] || [];
+    },
+    // First validation configuration (type 1) — defines what files a submission must contain.
+    // TODO: support dynamicty here
+    validationConfig() {
+      return this.configurations.find(cfg => cfg.type === 1) || null;
+    },
+    // File options: always "pdf" (the PDF document) + the named files inside the ZIP entry.
+    // Each zip option carries `pattern` (the validation-config regex) so the backend can match
+    validationFileOptions() {
+      const requiredFiles = this.validationConfig?.content?.rules?.requiredFiles || [];
+      const options = [{value: "pdf", label: "pdf", pattern: null}];
+      const zipEntry = requiredFiles.find(f => Array.isArray(f.includeFiles) && f.includeFiles.length);
+      if (zipEntry) {
+        zipEntry.includeFiles.forEach(f => {
+          if (f.name) options.push({value: f.name, label: f.name, pattern: f.pattern || null});
+        });
+      }
+      return options;
     },
     configurationSources() {
       return this.configurations
@@ -162,17 +209,41 @@ export default {
 
       return ordered;
     },
+    isHook() {
+      return !!this.hookId;
+    },
+    hookTemplateId() {
+      if (!this.hookId) return null;
+      const hook = this.$store.getters["table/ai_hook/get"](this.hookId);
+      return hook?.templateId || null;
+    },
     skillInputs() {
+      // Hooks map the prompt template's placeholders (fetched async); skills map their declared inputs.
+      if (this.isHook) {
+        return this.hookPlaceholders;
+      }
       if (!this.skillName) return [];
       const skill = this.nlpSkills.find((s) => s.name === this.skillName);
       if (!skill) return [];
       return Object.keys(skill.config.input.data || {});
     },
     skillOutputs() {
+      if (!this.outputMapping) return [];
+      // A hook produces a single output (the completion) → one destination row.
+      if (this.isHook) {
+        return ["result"];
+      }
       if (!this.skillName) return [];
       const skill = this.nlpSkills.find((s) => s.name === this.skillName);
       if (!skill) return [];
       return Object.keys(skill.config.output.data || {});
+    },
+    inputMappingValid() {
+      if (this.isHook && !this.hookPlaceholdersLoaded) return false;
+      return this.skillInputs.every((input) => {
+        const mapping = this.inputMappings[input];
+        return mapping && mapping.value !== null && mapping.value !== undefined;
+      });
     },
     tableBasedParameter() {
       for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
@@ -282,6 +353,40 @@ export default {
       },
       immediate: true,
     },
+    hookTemplateId: {
+      handler(templateId) {
+        this.hookPlaceholdersLoaded = false;
+        if (templateId) {
+          this.fetchHookPlaceholders(templateId);
+        } else {
+          this.hookPlaceholders = [];
+          this.hookPlaceholdersLoaded = true;
+        }
+      },
+      immediate: true,
+    },
+    inputMappingValid: {
+      handler(isValid) {
+        this.$emit("validation-change", isValid);
+      },
+      immediate: true,
+    },
+    hookPlaceholders: {
+      handler() {
+        // Placeholders arrive asynchronously; (re)align the input/output mapping rows once they load.
+        if (!this.isHook) return;
+        const inputs = {};
+        this.skillInputs.forEach((input) => {
+          inputs[input] = this.inputMappings[input] || null;
+        });
+        this.inputMappings = inputs;
+        const outputs = {};
+        this.skillOutputs.forEach((output) => {
+          outputs[output] = this.outputMappings[output] || null;
+        });
+        this.outputMappings = outputs;
+      },
+    },
     modelValue: {
       handler(newValue, oldValue) {
         // Prevent loops: if we're currently updating from within, skip
@@ -298,17 +403,15 @@ export default {
         }
 
         if (typeof newValue === 'object') {
-          // New format: { ...inputMappings, output: {...outputMappings} }
-          if (newValue.output) {
-            this.outputMappings = {...newValue.output};
-            // Extract input mappings (everything except output key)
-            const {output, ...inputMappings} = newValue;
-            this.inputMappings = {...inputMappings};
-          } else {
-            // Legacy format: just input mappings
-            this.inputMappings = {...newValue};
-            this.outputMappings = {};
-          }
+          const {output, ...inputMappings} = newValue;
+          this.inputMappings = {...inputMappings};
+          this.outputMappings = this.outputMapping && output ? {...output} : {};
+          // Restore submission file selections from saved mapping (hook mode).
+          const fileSelections = {};
+          Object.entries(this.inputMappings).forEach(([key, val]) => {
+            if (val?.selectedFiles) fileSelections[key] = val.selectedFiles;
+          });
+          this.submissionFileSelections = fileSelections;
         }
       },
       immediate: true,
@@ -316,6 +419,51 @@ export default {
     },
   },
   methods: {
+    // Select a single file for a hook submission input (radio); re-emits with updated selectedFiles + filePatterns.
+    toggleSubmissionFile(input, fileName) {
+      const next = [fileName];
+      this.submissionFileSelections = {...this.submissionFileSelections, [input]: next};
+      const source = this.inputMappings[input];
+      if (source) {
+        this.isUpdatingFromWithin = true;
+        const updated = {...source, selectedFiles: next, filePatterns: this.buildFilePatterns(next)};
+        this.inputMappings = {...this.inputMappings, [input]: updated};
+        this.$emit("update:modelValue", this.getMappingValue());
+        this.$nextTick(() => { this.isUpdatingFromWithin = false; });
+      }
+    },
+    // Build a { name: pattern } map for only the currently selected files (pdf has no pattern).
+    buildFilePatterns(selectedFiles) {
+      const patterns = {};
+      this.validationFileOptions.forEach(opt => {
+        if (opt.pattern && selectedFiles.includes(opt.value)) {
+          patterns[opt.value] = opt.pattern;
+        }
+      });
+      return patterns;
+    },
+    // Fetch the placeholders this hook's template actually uses; they become the input-mapping rows.
+    fetchHookPlaceholders(templateId) {
+      this.$socket.emit("templatePlaceholderGetUsed", {templateId}, (result) => {
+        const list = Array.isArray(result) ? result : (result?.data ?? []);
+        this.hookPlaceholders = list.flatMap((placeholder) => {
+          const indexes = placeholder.usedIndexes || [];
+          if (indexes.length === 0) {
+            return placeholder.placeholderKey ? [placeholder.placeholderKey] : [];
+          }
+          return indexes.map((index) => tokenInnerText(placeholder.placeholderKey, index));
+        }).filter(Boolean);
+        this.hookPlaceholdersLoaded = true;
+      });
+    },
+    /**
+     * Build the mapping value supported by this service declaration.
+     * @returns {Object} Input mappings with optional output mappings
+     */
+    getMappingValue() {
+      if (!this.outputMapping) return {...this.inputMappings};
+      return {...this.inputMappings, output: {...this.outputMappings}};
+    },
     // Append resolved document and submission-derived sources for the current step
     appendResolvedDocSources(sources, stepIndex) {
       if (!this.resolvedSourceDocument) return;
@@ -332,20 +480,23 @@ export default {
           });
       this.resolvedSubmissionDocs.forEach(d => {
         const name = d && d.name ? d.name : this.$t('nlp.inputMap.sources.documentFallback', { id: d.id });
-        sources.push(
-            {
-              value: `submission_${d.id}`,
-              name: this.$t('nlp.inputMap.sources.submissionWithName', { name }),
-              stepIndex: stepIndex,
-              type: "submission",
-              table: "submission"
-            });
+        sources.push({
+          value: `submission_${d.id}`,
+          name: this.$t('nlp.inputMap.sources.submissionWithName', { name }),
+          stepIndex: stepIndex,
+          type: "submission",
+          table: "submission",
+          submissionId: d.submissionId,
+          pdfDocumentId: this.resolvedSourceDocumentId, // for extracting
+        });
       });
     },
     updateMapping(input, source) {
       this.isUpdatingFromWithin = true;
 
-      if (source && source.requiresTableSelection) {
+      // Apply Skills allow only one table-based source. Hooks need multiple when the
+      // prompt template uses indexed placeholders (e.g. submissionFiles[1] and [2]).
+      if (source && source.requiresTableSelection && !this.isHook) {
         Object.keys(this.inputMappings).forEach(paramName => {
           if (paramName !== input && this.inputMappings[paramName] && this.inputMappings[paramName].requiresTableSelection) {
             this.inputMappings[paramName] = null;
@@ -353,15 +504,22 @@ export default {
         });
       }
 
+      // For hook submission sources, carry the already-chosen file selections forward.
+      // Switching away from submission clears the selections for this input.
+      let effectiveSource = source;
+      if (this.isHook && source?.type === "submission") {
+        const sel = this.submissionFileSelections[input] || [];
+        effectiveSource = {...source, selectedFiles: sel, filePatterns: this.buildFilePatterns(sel)};
+      } else if (this.isHook && source?.type !== "submission") {
+        this.submissionFileSelections = {...this.submissionFileSelections, [input]: []};
+      }
+
       this.inputMappings = {
         ...this.inputMappings,
-        [input]: source,
+        [input]: effectiveSource,
       };
 
-      this.$emit("update:modelValue", {
-        ...this.inputMappings,
-        output: {...this.outputMappings},
-      });
+      this.$emit("update:modelValue", this.getMappingValue());
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
@@ -376,10 +534,7 @@ export default {
         [output]: source
       };
 
-      this.$emit('update:modelValue', {
-        ...this.inputMappings,
-        output: {...this.outputMappings}
-      });
+      this.$emit('update:modelValue', this.getMappingValue());
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
@@ -394,14 +549,24 @@ export default {
         switch (step.stepType) {
           case 1: {
             if (this.isTemplateMode) {
-              sources.push({
-                value: 'template_submission',
-                name: this.$t('nlp.inputMap.sources.submission'),
-                type: 'submission',
-                table: 'submission',
-                stepIndex: stepIndex,
-                isTemplate: true
-              });
+              sources.push(
+                {
+                  value: 'template_document',
+                  name: this.$t('nlp.inputMap.sources.documents'),
+                  type: 'document',
+                  table: 'document',
+                  stepIndex: stepIndex,
+                  isTemplate: true
+                },
+                {
+                  value: 'template_submission',
+                  name: this.$t('nlp.inputMap.sources.submission'),
+                  type: 'submission',
+                  table: 'submission',
+                  stepIndex: stepIndex,
+                  isTemplate: true
+                }
+              );
             } else {
               // Add specific document/submission sources
               if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
@@ -452,6 +617,11 @@ export default {
             break;
           case 3: // Modal
             break;
+          case 4: // Dialogue
+            if (stepIndex === currentWorkflowStepIndex && this.isHook) {
+              this.appendResolvedDocSources(sources, stepIndex);
+            }
+            break;
         }
         // get assessment from previous steps
         if (stepIndex < currentWorkflowStepIndex) {
@@ -478,6 +648,7 @@ export default {
       if (!Array.isArray(fields) || !fields.length) return sources;
 
       const configField = fields.find(f => f.key === 'configurationId');
+      if (!configField) return sources;
 
       sources.push({
         value: `assessment_step${currentWorkflowStepIndex}`,
@@ -544,6 +715,6 @@ export default {
 }
 
 .text-secondary {
-  color: #6c757d !important;
+  color: var(--bs-secondary-color, #6c757d) !important;
 }
 </style>

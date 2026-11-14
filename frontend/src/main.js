@@ -25,6 +25,9 @@ export const i18n = createI18n({
   locale: getInitialLocale(),
   fallbackLocale: DEFAULT_LOCALE,
   messages: i18nBundles,
+  pluralizationRules: {
+    fr: (choice, choicesLength) => (choicesLength === 2 && Math.abs(choice) > 1 ? 1 : 0),
+  },
 });
 
 app.use(i18n);
@@ -89,5 +92,10 @@ app.use(store);
 import subscribeTable from "@/plugins/subscribeTable";
 
 app.use(subscribeTable);
+
+// Expose `this.$ai` to every component for AI / LLM requests via ack callbacks
+import ai from "@/plugins/ai";
+
+app.use(ai);
 
 router.isReady().then(() => app.mount('#app'));

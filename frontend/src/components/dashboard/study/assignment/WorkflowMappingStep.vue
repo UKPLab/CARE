@@ -8,7 +8,7 @@
     <div v-if="targetWorkflowId && targetWorkflowSteps.length > 0">
       <h6 class="text-secondary mt-4">{{ $t('dashboard.study.workflowStepMapping') }}</h6>
       <p class="text-muted">{{ $t('dashboard.study.mapWorkflowStepToTarget') }}</p>
-      <div v-for="(templateStep, index) in workflowSteps" :key="templateStep.id" class="mb-3">
+      <div v-for="(templateStep, index) in mappableWorkflowSteps" :key="templateStep.id" class="mb-3">
         <label class="form-label">
           <strong>
             {{ $t('dashboard.study.sourceStepTargetStep', {
@@ -46,11 +46,19 @@ import FormSelect from "@/basic/form/Select.vue";
  * target workflow and then maps each annotator/editor step from the template to a
  * corresponding step in the target. Also allows choosing the new study owner (session
  * user vs. study owner) when creating bulk assignments.
- * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
+ * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf, Mohammed Rawhani
  */
+const DOC_TYPE_PDF = 0;
+const DOC_TYPE_ZIP = 4;
+
 export default {
   name: "WorkflowMappingStep",
   components: { FormSelect },
+  subscribeTable: [
+    { table: "assignment" },
+    { table: "submission" },
+    { table: "document" },
+  ],
   props: {
     workflowSteps: {
       type: Array,
@@ -73,6 +81,39 @@ export default {
     };
   },
   computed: {
+    assignmentSourceOptions() {
+      const assignments = this.$store.getters["table/assignment/getAll"] || [];
+      const submissions = this.$store.getters["table/submission/getAll"] || [];
+      const documents = this.$store.getters["table/document/getAll"] || [];
+      const assignmentBySubmission = new Map(submissions
+          .filter(submission => !submission.deleted)
+          .map(submission => [submission.id, submission.assignmentId]));
+      const typesByAssignment = new Map();
+      for (const document of documents) {
+        if (document.deleted || !assignmentBySubmission.has(document.submissionId)) continue;
+        const assignmentId = assignmentBySubmission.get(document.submissionId);
+        if (!typesByAssignment.has(assignmentId)) typesByAssignment.set(assignmentId, new Set());
+        typesByAssignment.get(assignmentId).add(document.type);
+      }
+
+      return assignments.filter(assignment => !assignment.deleted).flatMap(assignment => {
+        const types = typesByAssignment.get(assignment.id);
+        const options = [];
+        if (types?.has(DOC_TYPE_ZIP)) {
+          options.push({
+            name: `<${this.$t('dashboard.study.typeSubmission')}> ${assignment.name}`,
+            value: `submission:assignment:${assignment.id}`,
+          });
+        }
+        if (types?.has(DOC_TYPE_PDF)) {
+          options.push({
+            name: `<${this.$t('dashboard.study.typeDocument')}> ${assignment.name}`,
+            value: `document:assignment:${assignment.id}`,
+          });
+        }
+        return options;
+      });
+    },
     workflowOptions() {
       return {
         options: this.$store.getters["table/workflow/getAll"].map(workflow => ({
@@ -87,9 +128,13 @@ export default {
           item => item.workflowId === this.targetWorkflowId
       ) || [];
     },
+    mappableWorkflowSteps() {
+      // Dialogue steps are created without copied sources.
+      return this.workflowSteps.filter(step => step.stepType !== 4);
+    },
     isWorkflowMappingComplete() {
-      if (!this.targetWorkflowId) return false;
-      return this.workflowSteps.every(step => {
+      if (!this.targetWorkflowId || this.mappableWorkflowSteps.length === 0) return false;
+      return this.mappableWorkflowSteps.every(step => {
         return this.workflowMapping[step.id] !== undefined && this.workflowMapping[step.id] !== null;
       });
     },
@@ -169,7 +214,7 @@ export default {
           }
         }
       }
-      return options;
+      return stepType === 1 ? [...options, ...this.assignmentSourceOptions] : options;
     },
     reset() {
       this.targetWorkflowId = null;

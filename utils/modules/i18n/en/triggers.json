@@ -1,0 +1,144 @@
+{
+  "common": {
+    "name": "Name",
+    "description": "Description",
+    "trigger": "Trigger",
+    "event": "Event",
+    "action": "Action",
+    "project": "Project",
+    "status": "Status",
+    "enabled": "Enabled",
+    "error": "Error",
+    "close": "Close",
+    "save": "Save",
+    "notAvailable": "N/A",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "dashboard": {
+    "title": "Triggers",
+    "create": "Create trigger",
+    "createTitle": "Create a new trigger rule"
+  },
+  "actions": {
+    "view": "View trigger",
+    "edit": "Edit trigger",
+    "delete": "Delete trigger",
+    "toggle": "Enable / disable trigger",
+    "cancel": "Cancel",
+    "retry": "Retry",
+    "rerun": "Re-run",
+    "viewError": "View error message"
+  },
+  "status": {
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "pending": "Pending",
+    "running": "Running",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "failed": "Failed"
+  },
+  "confirm": {
+    "deleteTitle": "Delete Trigger",
+    "delete": "Are you sure you want to delete \"{name}\"?",
+    "cancelTitle": "Cancel execution",
+    "cancel": "Cancel this trigger run for \"{name}\"?",
+    "rerunTitle": "Re-run execution",
+    "rerun": "Run the completed trigger \"{name}\" again?"
+  },
+  "logs": {
+    "title": "Trigger logs",
+    "attempts": "Attempts",
+    "started": "Started",
+    "errorMessageTitle": "Error message",
+    "deletedTrigger": "<Deleted Trigger>",
+    "noErrorMessage": "No error message recorded."
+  },
+  "editor": {
+    "editTitle": "Edit trigger",
+    "createTitle": "Create trigger"
+  },
+  "steps": {
+    "info": "Trigger info",
+    "review": "Review & Confirm"
+  },
+  "fields": {
+    "nameHelp": "Display name for this trigger rule in the Triggers dashboard.",
+    "descriptionHelp": "Short note for admins describing when and why this trigger runs.",
+    "scopeProject": "Scope to project",
+    "scopeProjectHelp": "Limits this trigger to the selected project. Event filters and assignment options use this project.",
+    "maxRetries": "Max retries",
+    "maxRetriesHelp": "How many times a failed run may be retried from the trigger logs before it stays failed.",
+    "parallelLimit": "Parallel limit",
+    "parallelLimitHelp": "Maximum number of executions of this trigger that may run at the same time.",
+    "timeout": "Timeout",
+    "timeoutSeconds": "Timeout (seconds)",
+    "timeoutHelp": "Maximum seconds a single execution may run before it is treated as timed out.",
+    "whenEvent": "When (event)",
+    "thenAction": "Then (action)"
+  },
+  "view": {
+    "namedTitle": "Trigger: {name}",
+    "seconds": "{count} seconds"
+  },
+  "review": {
+    "note": "Please review the information above before submitting.",
+    "nlpSkill": "NLP skill",
+    "input": "Input: {parameter}",
+    "baseFile": "Base file ({name})"
+  },
+  "metadata": {
+    "events": {
+      "assignment": {
+        "label": "Assignment",
+        "description": "Fires when a student uploads a submission for a selected assignment.",
+        "fields": {
+          "assignment": "Assignment"
+        }
+      }
+    },
+    "actions": {
+      "email": {
+        "label": "Send an email",
+        "description": "Sends an email to a recipient derived from the event context.",
+        "fields": {
+          "recipient": "Send to",
+          "template": "Email template"
+        },
+        "options": {
+          "uploader": "The uploader",
+          "admins": "All admins"
+        }
+      },
+      "aiPreprocessing": {
+        "label": "AI Preprocessing",
+        "description": "Runs an NLP skill on the uploaded submission using the configured skill, input mapping, and base file options. Results are stored in document data."
+      }
+    }
+  },
+  "messages": {
+    "updatedTitle": "Trigger updated",
+    "createdTitle": "Trigger created",
+    "updated": "The trigger was updated successfully.",
+    "created": "The trigger was created successfully.",
+    "cancelledTitle": "Cancelled",
+    "cancelled": "The trigger execution has been cancelled.",
+    "retryQueuedTitle": "Retry queued",
+    "retryQueued": "The trigger execution has been set back to pending.",
+    "rerunQueuedTitle": "Re-run queued",
+    "rerunQueued": "A new trigger execution has been queued."
+  },
+  "errors": {
+    "updateTitle": "Failed to update trigger",
+    "createTitle": "Failed to create trigger",
+    "update": "The trigger could not be updated.",
+    "create": "The trigger could not be created.",
+    "cancelTitle": "Cancel failed",
+    "retryTitle": "Retry failed",
+    "rerunTitle": "Re-run failed",
+    "details": "Failed to load trigger execution details",
+    "action": "The trigger action failed",
+    "unknown": "Unknown error"
+  }
+}

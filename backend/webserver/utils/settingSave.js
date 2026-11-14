@@ -3,6 +3,19 @@
 const { assertStableEmailTemplateContent } = require("../../utils/helper/templateResolver");
 
 const MAIL_SERVICE_KEY_PREFIX = "system.mailService.";
+// Only list setting types where leading/trailing whitespace has no semantic value.
+// Unknown or newly added types preserve whitespace by default.
+const TRIM_WHITESPACE_SETTING_TYPES = new Set(["boolean", "color", "integer", "number", "string"]);
+
+/**
+ * Returns whether a setting value should be trimmed before saving.
+ *
+ * @param {Object} setting setting entry
+ * @returns {boolean}
+ */
+function shouldTrimSetting(setting) {
+    return TRIM_WHITESPACE_SETTING_TYPES.has(setting?.type);
+}
 
 /**
  * Reject email.template.* settings that point at a missing or incomplete template.
@@ -66,16 +79,48 @@ function payloadTouchesMailService(settings) {
  * Normalize setting values to string payload format expected by the settings model.
  *
  * @param {*} value setting value
+ * @param {Object} [setting] setting entry
  * @returns {string}
  */
-function normalizeSettingValue(value) {
+function normalizeSettingValue(value, setting = {}) {
+    let normalized;
     if (value === null || value === undefined) {
-        return "";
+        normalized = "";
+    } else if (typeof value === "object") {
+        // NOTE: Coerce object/array payloads to JSON; persisted settings are always strings.
+        normalized = JSON.stringify(value);
+    } else {
+        normalized = String(value);
     }
-    if (typeof value === "object") {
-        return JSON.stringify(value);
+    return shouldTrimSetting(setting) ? normalized.trim() : normalized;
+}
+
+/**
+ * Load persisted setting types for payload entries that do not include type metadata.
+ *
+ * @param {Object} Setting setting model
+ * @param {Object[]} settings setting entries
+ * @param {Object} [options] additional options
+ * @returns {Promise<Map<string, string>>}
+ */
+async function getSettingTypeByKey(Setting, settings, options = {}) {
+    const keys = [...new Set(settings
+        .filter((setting) => setting && typeof setting.key === "string" && !setting.type)
+        .map((setting) => setting.key))];
+    if (!keys.length) {
+        return new Map();
     }
-    return String(value);
+    if (!Setting || typeof Setting.findAll !== "function") {
+        throw new TypeError("getSettingTypeByKey requires a Setting model with findAll.");
+    }
+
+    const rows = await Setting.findAll({
+        where: { key: keys },
+        attributes: ["key", "type"],
+        raw: true,
+        transaction: options.transaction,
+    });
+    return new Map(rows.map((row) => [row.key, row.type]));
 }
 
 /**
@@ -96,11 +141,16 @@ async function saveSettings(Setting, settings, options = {}) {
         await validateEmailTemplateSettings(options.models, list, options);
     }
     const touchesMailService = payloadTouchesMailService(list);
+    const settingTypeByKey = await getSettingTypeByKey(Setting, list, options);
     for (const setting of list) {
         if (!setting || typeof setting.key !== "string" || setting.key.trim() === "") {
             continue;
         }
-        await Setting.set(setting.key, normalizeSettingValue(setting.value), {
+        const settingWithType = setting.type ? setting : {
+            ...setting,
+            type: settingTypeByKey.get(setting.key),
+        };
+        await Setting.set(setting.key, normalizeSettingValue(setting.value, settingWithType), {
             transaction: options.transaction,
         });
     }
@@ -108,7 +158,9 @@ async function saveSettings(Setting, settings, options = {}) {
 }
 
 module.exports = {
+    getSettingTypeByKey,
     payloadTouchesMailService,
     normalizeSettingValue,
     saveSettings,
+    shouldTrimSetting,
 };
