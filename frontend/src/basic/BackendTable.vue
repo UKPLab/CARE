@@ -550,11 +550,11 @@ export default {
       const after = this.total - this.infiniteSliceStart - this.tableData.length;
       return Math.max(0, after) * this.effectiveRowHeight;
     },
-    /** Scrollbar jumped to rows that are not loaded yet: skeletons sit in the viewport, not under a giant spacer. */
+    /** Keep spacers collapsed only while the thumb points outside the loaded window. */
     thumbAwaitingRows() {
-      // Keep spacers collapsed for the whole jump, including the moment rows arrive,
-      // so the viewport does not fall into an empty block and schedule another load.
-      return this._pinnedRow != null;
+      if (this._pinnedRow == null) return false;
+      return this._pinnedRow < this.rowsBefore
+        || this._pinnedRow >= this.rowsBefore + this.loadedCount;
     },
     /** True when the viewport is looking at rows we have not fetched yet. */
     infiniteViewportUnloaded() {
@@ -568,7 +568,8 @@ export default {
       return (overlapEnd >= overlapStart ? overlapEnd - overlapStart + 1 : 0) <= 0;
     },
     showPlaceholderRows() {
-      return this.isInfiniteMode && this.total > 0 && this.infiniteViewportUnloaded;
+      return this.isInfiniteMode && this.total > 0
+        && (this.thumbAwaitingRows || this.infiniteViewportUnloaded);
     },
     /**
      * Skeleton stand-ins for the viewport while its rows are still in flight. They carry the
@@ -2123,6 +2124,7 @@ export default {
           this._suppressScroll = false;
           return;
         }
+        if (this._thumbDrag) return;
         this._pinnedRow = null;
         this._thumbFraction = null;
         this.scheduleVirtualUpdate();
@@ -2161,6 +2163,10 @@ export default {
       const maxTop = Math.max(0, rect.height - thumb);
       const y = event.clientY - rect.top - thumb / 2;
       this.previewThumb(Math.max(0, Math.min(maxTop, y)), maxTop);
+      if (!track.querySelector(".infinite-scrollbar-thumb")?.contains(event.target)) {
+        this.commitThumbFraction();
+        return;
+      }
       this._thumbDrag = {
         maxTop,
         offset: thumb / 2,
@@ -2190,8 +2196,14 @@ export default {
       const outside = target < this.rowsBefore || target >= this.rowsBefore + this.loadedCount;
       const wrapper = this.$refs.tableWrapper;
       if (outside && wrapper) {
-        this._suppressScroll = true;
-        wrapper.scrollTop = 0;
+        if (this._thumbDrag) this.scheduleWindowSeek(target);
+        if (wrapper.scrollTop !== 0) {
+          this._suppressScroll = true;
+          wrapper.scrollTop = 0;
+        }
+      } else {
+        this.scrollToRowIndex(target);
+        this.scheduleVirtualUpdate();
       }
     },
     /**
@@ -2241,8 +2253,10 @@ export default {
       const wrapper = this.$refs.tableWrapper;
       if (!wrapper) return;
       const row = Math.max(0, Math.min(index, Math.max(0, this.total - 1)));
+      const scrollTop = row * this.effectiveRowHeight;
+      if (wrapper.scrollTop === scrollTop) return;
       this._suppressScroll = true;
-      wrapper.scrollTop = row * this.effectiveRowHeight;
+      wrapper.scrollTop = scrollTop;
     },
     scheduleVirtualUpdate() {
       if (!this.isInfiniteMode || this._scrollRaf) return;
@@ -2492,7 +2506,23 @@ export default {
       clearTimeout(this._seekTimer);
       this._seekTimer = setTimeout(() => {
         this._seekTimer = null;
-        this.seekWindow(targetRow);
+        const target = this._pinnedRow == null ? targetRow : this._pinnedRow;
+        if (this._windowFetchBusy) {
+          if (target < this.rowsBefore || target >= this.rowsBefore + this.loadedCount) {
+            this.scheduleWindowSeek(target);
+          }
+          return;
+        }
+        if (target >= this.rowsBefore && target < this.rowsBefore + this.loadedCount) {
+          if (!this._thumbDrag) {
+            this._pinnedRow = null;
+            this._windowHold = false;
+          }
+          this.scrollToRowIndex(target);
+          this.scheduleVirtualUpdate();
+          return;
+        }
+        this.seekWindow(target);
       }, 120);
     },
     /**
@@ -2550,20 +2580,24 @@ export default {
           return;
         }
         this.replaceWindow(items, meta, offset, {clearEntering: true});
-        const loadedLast = this.rowsBefore + Math.max(0, items.length - 1);
-        const show = Math.min(targetRow, loadedLast);
-        const local = Math.max(0, show - this.rowsBefore);
-        this.virtualStart = local;
-        this.virtualEnd = items.length;
-        // Spacers stay collapsed while pinned, so these rows sit in the viewport at once.
-        this.$nextTick(() => {
-          this._pinnedRow = null;
+        const show = this._pinnedRow == null ? targetRow : this._pinnedRow;
+        const loadedEnd = this.rowsBefore + items.length;
+        if (show >= this.rowsBefore && show < loadedEnd) {
+          const local = show - this.rowsBefore;
+          this.virtualStart = local;
+          this.virtualEnd = items.length;
+          // Spacers stay collapsed while pinned, so these rows sit in the viewport at once.
           this.$nextTick(() => {
-            this.scrollToRowIndex(show);
-            this.updateVirtualWindow();
-            this._windowHold = false;
+            if (!this._thumbDrag) this._pinnedRow = null;
+            this.$nextTick(() => {
+              this.scrollToRowIndex(show);
+              this.updateVirtualWindow();
+              if (!this._thumbDrag) this._windowHold = false;
+            });
           });
-        });
+        } else {
+          this.$nextTick(() => this.updateVirtualWindow());
+        }
       } catch (err) {
         if (token === this._seekToken) {
           this.handleWindowLoadError(err);
@@ -2573,6 +2607,11 @@ export default {
       } finally {
         if (token === this._seekToken) {
           this._windowFetchBusy = false;
+          const target = this._pinnedRow;
+          if (target != null
+            && (target < this.rowsBefore || target >= this.rowsBefore + this.loadedCount)) {
+            this.scheduleWindowSeek(target);
+          }
         }
       }
     },
