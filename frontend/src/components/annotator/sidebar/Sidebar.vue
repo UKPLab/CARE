@@ -313,6 +313,10 @@ export default {
       if (!comment || !this.isStepShown) {
         return;
       }
+      const context = {
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      };
       // The card may be in a tab that is not open, e.g. an earlier step's tab next to the current one: open it first,
       // so the scroll goes to a card on screen
       if (this.showSidebarTabOf(this.$refs["annocard" + comment.id]?.[0]?.$el)) {
@@ -324,9 +328,7 @@ export default {
         this.$socket.emit("stats", {
           action: "sidebarScroll",
           data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
+            ...context,
             annotationId: annotationId
           }
         });

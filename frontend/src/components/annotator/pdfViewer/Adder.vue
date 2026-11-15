@@ -1,12 +1,21 @@
 <template>
   <div
+    v-show="!readOnly"
     id="adder"
     ref="adder"
     :style="{visibility: isVisible ? 'visible':'hidden'}"
     :class="{ 'is-extended': isExtended }"
-  > 
+  >
+    <BasicButton
+      v-if="hasAiChat"
+      class="adder-ask-ai btn btn-sm btn-outline-primary w-100"
+      icon="chat-quote"
+      :text="$t('ai.chat.askAi')"
+      :tooltip="$t('ai.chat.quoteSelection')"
+      @click="askAi"
+    />
     <div
-      v-if="isExtended" 
+      v-if="isExtended"
       class="menu-search-bar">
       <input
         v-model="searchTerm"
@@ -78,6 +87,11 @@ export default {
       required: false,
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null,
+    },
     pdf: {
       type: Object,
       required: true,
@@ -85,6 +99,9 @@ export default {
     acceptStats: {
       default: () => false
     },
+  },
+  props: {
+    readOnly: {type: Boolean, required: false, default: false},
   },
   data() {
     return {
@@ -183,8 +200,19 @@ export default {
         return false;
       }
       return this.study.anonymize;
+    },
+    hasAiChat() {
+      const services = this.currentStudyStep?.configuration?.services || [];
+      return services.some((service) => service.type === "aiChat");
     }
 
+  },
+  watch: {
+    readOnly(readOnly, wasReadOnly) {
+      if (readOnly && !wasReadOnly && this.recencySortingOn) this.saveUsageHistory();
+      this._onClearSelection();
+      if (!readOnly) this.$nextTick(this.checkOverflow);
+    },
   },
   created() {
     document.body.addEventListener('mouseup', this.checkSelection);
@@ -203,12 +231,13 @@ export default {
     document.body.addEventListener('resize', this.checkOverflow);
   },
   beforeUnmount() {
+    clearTimeout(this.pendingCallback);
     document.body.removeEventListener('mouseup', this.checkSelection);
     document.body.removeEventListener('dblclick', this.doubleClickHandler);
     document.body.removeEventListener('mousedown', this.positionTracker);
     document.body.removeEventListener('resize', this.checkOverflow);
     
-    if (this.recencySortingOn) {
+    if (!this.readOnly && this.recencySortingOn) {
       this.saveUsageHistory();
     }
   },
@@ -262,7 +291,7 @@ export default {
     checkSelection(event) {
       // stop any default behavior like the Edge built-in mini-menu 
       // which can visually block our Annotations Adder
-      this.stopDefaultOnSelection(event);
+      if (!this.readOnly) this.stopDefaultOnSelection(event);
       
       // cancel pending callbacks
       if (this.pendingCallback) {
@@ -270,9 +299,10 @@ export default {
         this.pendingCallback = null;
       }
 
+      const context = this.studyContext();
       // delay for having the right data
       this.pendingCallback = setTimeout(() => {        
-        this._onSelection(event);
+        this._onSelection(event, context);
       }, 10);
     },
     stopDefaultOnSelection(event) {
@@ -280,6 +310,7 @@ export default {
       // and if something has been selected 
       const isLeftClick = event.button === 0;
       const selection = document.getSelection();
+      if (!this.$el.closest(".has-transparent-text-layer")?.contains(selection?.anchorNode)) return;
 
       //if not a doubleClick, check if the distance the selection was dragged
       let distanceMoved = 0;
@@ -342,18 +373,30 @@ export default {
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
     },
-    async _onSelection(event) {
-      if (this.assignableTags.length === 0) {
-        this.eventBus.emit('toast', {
-          title: this.$t('errors.tags.emptyTagset.title'),
-          message: this.$t('errors.tags.emptyTagset.message'),
-          variant: "danger"
-        });
-
-        this._onClearSelection();
-        return;
-      }
-
+    /**
+     * Emits the current selection to this study step's AI chat.
+     *
+     * @returns {Promise<void>}
+     */
+    async askAi() {
+      const text = this.selectedRanges.map((range) => range.toString()).join(" ").trim();
+      if (!text) return;
+      const quote = {
+        text,
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+      };
+      this.eventBus.emit("aiChatQuote", quote);
+      this.eventBus.emit("toast", {
+        title: this.$t("ai.chat.quotedTitle"),
+        message: this.$t("ai.chat.quotedMessage"),
+        variant: "success",
+      });
+      this._onClearSelection();
+      document.getSelection()?.removeAllRanges();
+    },
+    async _onSelection(event, context = this.studyContext()) {
       // get selection
       const selection = /** @type {Selection} */ (document.getSelection());
       if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
@@ -377,8 +420,19 @@ export default {
         return;
       }
 
+      if (!this.readOnly && this.assignableTags.length === 0) {
+        this.eventBus.emit('toast', {
+          title: this.$t('errors.tags.emptyTagset.title'),
+          message: this.$t('errors.tags.emptyTagset.message'),
+          variant: "danger"
+        });
+
+        this._onClearSelection();
+        return;
+      }
+
       this.selectedRanges = [range];
-      if (!this.isVisible || !this.areRangesEqual(this.selectedRanges[0], this.previousRanges[0])) {
+      if (!this.readOnly && (!this.isVisible || !this.areRangesEqual(this.selectedRanges[0], this.previousRanges[0]))) {
         this.show(event.clientX, event.clientY);
       }
       this.previousRanges = [range];
@@ -386,15 +440,20 @@ export default {
         this.$socket.emit("stats", {
           action: "onTextSelect",
           data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
+            ...context,
             eventClientX: event.clientX, eventClientY: event.clientY,
             text: range.toString(),
           }
         });
       }
 
+    },
+    /** Captures the study context before the selection delay. */
+    studyContext() {
+      return {
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      };
     },
     areRangesEqual(range1, range2) {
       return (
@@ -495,6 +554,11 @@ export default {
 
       if (!startTextLayer || !endTextLayer) {
         throw new Error('Selection is outside page text');
+      }
+
+      const root = this.$el.closest(".has-transparent-text-layer");
+      if (!root?.contains(startTextLayer) || !root.contains(endTextLayer)) {
+        throw new Error('Selection belongs to another PDF');
       }
 
       if (startTextLayer !== endTextLayer) {

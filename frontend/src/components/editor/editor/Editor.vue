@@ -466,6 +466,7 @@ export default {
           this.$socket.emit("stats", {
             action: "textPasted",
             data: {
+              ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
               documentId: this.documentId,
               studySessionId: this.studySessionId,
               studyStepId: this.studyStepId,
@@ -482,6 +483,7 @@ export default {
           this.$socket.emit("stats", {
             action: "textCopied",
             data: {
+              ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
               from: "editor",
               documentId: this.documentId,
               studySessionId: this.studySessionId,

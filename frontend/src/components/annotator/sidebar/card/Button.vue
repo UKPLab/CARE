@@ -46,6 +46,8 @@ export default {
   name: "SidebarButton",
   components: {LoadIcon, IconLoading},
   inject: {
+    currentStudyStep: {type: Object, required: false, default: null},
+    documentId: {type: Number, required: false, default: null},
     acceptStats: {
       default: () => false
     },
@@ -95,6 +97,8 @@ export default {
         this.$socket.emit("stats", {
           action: "clickSidebarButton",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+            ...(this.documentId ? {documentId: this.documentId} : {}),
             "title": this.title, "icon": this.icon, "props": this.props,
             ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
             ...(this.studyStepId ? {studyStepId: this.studyStepId} : {})

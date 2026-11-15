@@ -139,6 +139,7 @@ export default {
     }
   },
   inject: {
+    hiddenStudyStepId: {type: Number, required: false, default: null},
     studySessionId: {
       type: Number,
       required: false,
@@ -212,17 +213,11 @@ export default {
       assessmentViewActive: true,
       maxSidebarWidth: 600,
       minSidebarWidth: 250,
-      logScroll: debounce(function () {
+      logScroll: debounce(function (data) {
         if (this.acceptStats) {
           this.$socket.emit("stats", {
             action: "annotatorScrollActivity",
-            data: {
-              documentId: this.documentId,
-              ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
-              ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
-              scrollTop: this.$refs.viewer.scrollTop,
-              scrollHeight: this.$refs.viewer.scrollHeight
-            }
+            data,
           })
         }
       }, 500),
@@ -406,20 +401,7 @@ export default {
     // this.minSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
     // this.maxSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
     // this.sidebarWidth = this.$store.getters["settings/getValue"]("sidebar.width") || this.minSidebarWidth;
-    this.eventBus.on('pdfScroll', (annotationId) => {
-      this.scrollTo(annotationId);
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "pdfScroll",
-          data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            annotationId: annotationId
-          }
-        });
-      }
-    });
+    this.eventBus.on('pdfScroll', this.onPdfScroll);
 
     // init component
     this.load();
@@ -435,6 +417,8 @@ export default {
 
   },
   beforeUnmount() {
+    this.logScroll.flush();
+    this.eventBus.off('pdfScroll', this.onPdfScroll);
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
     this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
@@ -464,6 +448,31 @@ export default {
     }
   },
   methods: {
+    /** Handles annotation jumps only in the addressed visible document and step. */
+    onPdfScroll(payload) {
+      const annotationId = typeof payload === "object" ? payload.annotationId : payload;
+      const annotation = this.$store.getters["table/annotation/get"](annotationId);
+      if (!annotation || annotation.documentId !== this.documentId || !this.isShown ||
+          (this.studyStepId != null && this.hiddenStudyStepId === this.studyStepId)) return;
+      // Older callers pass only an ID; scoped callers also disambiguate reused PDFs and document-level annotations.
+      const target = typeof payload === "object" ? payload : {
+        studyStepId: annotation.studyStepId ?? this.currentStudyStep?.id,
+        studySessionId: annotation.studySessionId,
+      };
+      if ((target.documentId != null && target.documentId !== this.documentId) ||
+          (target.studyStepId != null && target.studyStepId !== this.studyStepId) ||
+          (target.studySessionId != null && target.studySessionId !== this.studySessionId)) return;
+      this.scrollTo(annotationId);
+      if (this.acceptStats) {
+        this.$socket.emit("stats", {
+          action: "pdfScroll",
+          data: {
+            documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}), annotationId,
+          },
+        });
+      }
+    },
     // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
     isSidebarTabShown(slotName) {
       return isLookBackTabShown(slotName, this.lookBackTabs, this.shownLookBackStepId, this.ownTabsHidden);
@@ -556,7 +565,14 @@ export default {
       })
     },
     scrollActivity() {
-      this.logScroll();
+      this.logScroll({
+        documentId: this.documentId,
+        ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+        ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+        scrollTop: this.$refs.viewer.scrollTop,
+        scrollHeight: this.$refs.viewer.scrollHeight,
+      });
     },
     async scrollTo(annotationId) {
       const annotation = this.$store.getters['table/annotation/get'](annotationId);
@@ -618,12 +634,9 @@ export default {
       return highlight && isInPlaceholder(highlight);
     },
     _anchorOffset(anchor) {
-      if (!anchor.highlights) {
-        // This anchor was not resolved to a location in the document.
-        return null;
-      }
-      const highlight = anchor.highlights[0];
-      return offsetRelativeTo(highlight, document.querySelector('#viewerContainer' + '-' + this.documentId));
+      const container = this.$refs.viewer;
+      const highlight = anchor.highlights?.find(element => container.contains(element));
+      return highlight ? offsetRelativeTo(highlight, container) : null;
     },
     async _waitForAnnotationToBeAnchored(annotation, maxWait) {
       const start = Date.now();
@@ -718,6 +731,7 @@ export default {
         this.$socket.emit("stats", {
           action: "textCopied",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             from: "annotator",
             documentId: this.documentId,
             studySessionId: this.studySessionId,

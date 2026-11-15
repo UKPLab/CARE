@@ -9,6 +9,7 @@
       @success="success"
       @submit="handleSubmit"
       @hide="dropFormData"
+      :original-data="originalDates"
   >
     <template #title>
       {{ modalTitle }}
@@ -62,6 +63,7 @@ export default {
       studyRecord: null,
       formSubscriptionIds: [],
       templateWasEdited: false,
+      originalDates: null,
     }
   },
   computed: {
@@ -141,6 +143,19 @@ export default {
       this.isUsingTemplate = copy && studyId !== 0;
       this.studyRecord = studyRow ? { ...studyRow } : null;
       this.hash = this.studyId !== 0 ? this.study.hash : this.hash;
+      this.originalDates = null;
+
+      if (studyId !== 0 && !copy) {
+        const savedStudy =
+          this.$store.getters["table/study/get"](studyId);
+
+        if (savedStudy) {
+          this.originalDates = {
+            start: savedStudy.start,
+            end: savedStudy.end,
+          };
+        }
+      }
 
       if (!loadInitialized) {
         try {

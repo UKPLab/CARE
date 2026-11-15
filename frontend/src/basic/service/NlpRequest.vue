@@ -157,11 +157,13 @@ export default {
       }
       this.sendRequest();
     },
-    buildPayloadFromStudyData(inputSpec, type, key) {
+    buildPayloadFromStudyData(inputSpec) {
       const studyStepFromIndex = this.orderedStudySteps[inputSpec.stepIndex];
+      if (!studyStepFromIndex) return null;
       const studyStepData = this.studyData[studyStepFromIndex.id];
+      if (studyStepData?.[inputSpec.type] == null) return null;
       if (inputSpec.key) {
-        return studyStepData[inputSpec.type][key];
+        return studyStepData[inputSpec.type][inputSpec.key];
       } else {
         return studyStepData[inputSpec.type];
       }

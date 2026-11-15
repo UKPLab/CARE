@@ -4,6 +4,14 @@
       v-if="currentData !== null"
       class="row g-3"
     >
+      <div v-if="dateValidationErrors.length" class="col-12" role="alert">
+        <div class="alert alert-danger mb-0">
+          <div v-for="field in dateValidationErrors" :key="field.key">
+            {{ $t(field.label) }}:
+            {{ $t(field.invalidText || "errors.element.pastDate") }}
+          </div>
+        </div>
+      </div>
       <FormFields
         ref="regularGrid"
         :fields="regularFields"
@@ -59,6 +67,8 @@ export default {
     return {
       formData: computed(() => this.currentData),
       formButtonClick: (payload) => this.$emit("button-click", payload),
+      originalFormData: computed(() => this.originalData),
+      validateDateValue: (options) => this.validateDateValue(options),
     };
   },
   props: {
@@ -70,11 +80,16 @@ export default {
       type: Array,
       required: true,
     },
+    originalData: {
+      type: Object,
+      default: null,
+    },
   },
   emits: ["update:modelValue", "update:configStatus", "file-change", "button-click"],
   data() {
     return {
       currentData: null,
+      dateValidationErrors: [],
     };
   },
   computed: {
@@ -94,8 +109,12 @@ export default {
     },
   },
   watch: {
+    originalData() {
+      this.dateValidationErrors = [];
+    },
     currentData: {
       handler() {
+        this.dateValidationErrors = [];
         if (!deepEqual(this.currentData, this.modelValue)) {
           this.$emit("update:modelValue", this.currentData);
         }
@@ -130,13 +149,80 @@ export default {
       const regularOk = this.$refs.regularGrid
         ? this.$refs.regularGrid.validate()
         : true;
-      const advancedOk =
-        !this.$refs.advancedGrid || this.$refs.advancedGrid.validate();
-      return regularOk && advancedOk;
+
+      const advancedOk = this.$refs.advancedGrid
+        ? this.$refs.advancedGrid.validate()
+        : true;
+
+      this.dateValidationErrors = this.getInvalidDateFields();
+
+      return regularOk && advancedOk && this.dateValidationErrors.length === 0;
     },
     handleConfigStatusChange(status) {
       this.$emit("update:configStatus", status);
-    }
+    },
+
+    /**
+     * Check the past-date rule using the current saved-record snapshot.
+     * Empty values are handled by required-field validation.
+     *
+     * @param {Object} options Validation options.
+     * @param {string} options.key Field key.
+     * @param {string|Date|null} options.value Current value.
+     * @param {boolean} options.disablePast Whether to reject past dates.
+     * @param {boolean} [options.dateOnly=false] Compare calendar dates only.
+     * @returns {boolean} Whether the date is allowed.
+     */
+    validateDateValue({ key, value, disablePast, dateOnly = false }) {
+      if (!disablePast || value == null || value === "") {
+        return true;
+      }
+
+      const selected = new Date(value);
+      if (Number.isNaN(selected.getTime())) {
+        return false;
+      }
+
+      const normalize = (date) => {
+        const result = new Date(date);
+        if (dateOnly) {
+          result.setHours(0, 0, 0, 0);
+        } else {
+          // The inputs allow selecting minutes, not seconds.
+          result.setSeconds(0, 0);
+        }
+        return result.getTime();
+      };
+
+      const originalValue = this.originalData?.[key];
+      if (originalValue != null && originalValue !== "") {
+        const original = new Date(originalValue);
+        if (
+          !Number.isNaN(original.getTime()) &&
+          normalize(selected) === normalize(original)
+        ) {
+          return true;
+        }
+      }
+
+      return normalize(selected) >= normalize(new Date());
+    },
+
+    /**
+     * Find invalid dates even when their pickers are not rendered.
+     *
+     * @returns {Object[]} Field definitions whose dates are invalid.
+     */
+    getInvalidDateFields() {
+      return this.fields.filter((field) => {
+        return field.type === "datetime" && !this.validateDateValue({
+          key: field.key,
+          value: this.currentData?.[field.key],
+          disablePast: field.disablePast,
+          dateOnly: field.dateOnly === true,
+        });
+      });
+    },
   },
 };
 </script>

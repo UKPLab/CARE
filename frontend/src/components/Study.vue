@@ -28,12 +28,7 @@
   <Teleport to="#topbarCustomPlaceholder">
     <div class="d-flex justify-content-between align-items-center w-100">
       <TopBarButton
-          v-if="
-          currentStudyStep &&
-          currentStudyStep.allowBackward &&
-          currentStudyStep &&
-          currentStudyStep.studyStepPrevious !== null
-        "
+          v-if="currentStudyStep?.allowBackward && currentStudyStep.studyStepPrevious !== null"
           class="btn btn-outline-primary me-3"
           :title="previousLabel"
           :props="{ key: 'studyNav.previous' }"
@@ -43,15 +38,8 @@
       </TopBarButton>
 
       <TopBarButton
-          v-if="
-          !readOnlyComputed &&
-          studySession &&
-          !studySessionFinished &&
-          lastStep &&
-          currentStudyStep &&
-          currentStudyStep.stepType !== 3 &&
-          studySession.studyStepId === lastStep.id
-        "
+          v-if="!readOnlyComputed && studySession && !studySessionFinished && lastStep &&
+              currentStudyStep && currentStudyStep.stepType !== 3 && studySession.studyStepId === lastStep.id"
           ref="finishButton"
           class="btn btn-outline-secondary mx-3"
           :title="$t('studies.finishStudy')"
@@ -72,15 +60,8 @@
         {{ nextLabel }}
       </TopBarButton>
 
-      <TopBarButton
-          v-if="timeLeft > 0"
-          class="btn mb-1"
-      >
-        <LoadIcon
-            :size="21"
-            class="me-1 mb-1 middle"
-            icon-name="stopwatch"
-        />
+      <TopBarButton v-if="timeLeft > 0" class="btn mb-1">
+        <LoadIcon :size="21" class="me-1 mb-1 middle" icon-name="stopwatch"/>
         <span
             :class="{ 'text-danger': timeLeft < 5 * 60 }"
             class="middle"
@@ -119,6 +100,7 @@
 
           <div v-if="!(studySession && studySession.start === null)">
             <LoadingModal
+                v-if="step.stepType !== 4"
                 :study-step-id="step.id"
                 :document-id="step.documentId"
                 :config="step.configuration"
@@ -142,7 +124,18 @@
                 @update:data="updateStudyData(step.id, $event.type, $event.data)"
                 @assessment-ready-changed="onAssessmentReady(step.id, $event)"
                 @assessment-advance-past-end="focusForwardControl"
-            />
+            >
+              <template v-if="hasAiChat(step)" #aiConversation>
+                <AiChatSidebar
+                    icon="chat-dots"
+                    :title="$t('ai.chat.sidebarTitle')"
+                    :study-step-id="step.id"
+                    :document-id="step.documentId"
+                    :service="getAiChatService(step)"
+                    :read-only="readOnlyComputed || !!studySession?.end"
+                />
+              </template>
+            </StepView>
 
             <StepModal
                 v-if="step.stepType === 3"
@@ -150,6 +143,18 @@
                 :is-last-step="step.id === lastStep.id"
                 @close="handleModalClose"
                 @update:data="updateStudyData(step.id, 'modal', $event)"
+            />
+
+            <Dialogue
+                v-if="step.stepType === 4"
+                :is-shown="currentStudyStepId === step.id"
+                :study-description="study?.description || ''"
+                :study-step-id="step.id"
+                :document-id="step.documentId"
+                :config="step.configuration"
+                :read-only="readOnlyComputed"
+                @update:ready="stepsReady[step.id] = $event"
+                @update:data="updateStudyData(step.id, 'dialogue', $event)"
             />
 
           </div>
@@ -182,11 +187,15 @@ import {buildLookBack, buildStepLabels, buildTabsByStep} from "@/components/stud
 import {computed} from "vue";
 import StepModal from "./stepmodal/StepModal.vue";
 import LoadingModal from "@/components/study/LoadingModal.vue";
+import AiChatSidebar from "@/components/aiAssistant/AiChatSidebar.vue";
+import Dialogue from "@/components/dialogue/Dialogue.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyRoute",
   components: {
+    AiChatSidebar,
+    Dialogue,
     LoadIcon,
     FinishModal,
     StudyModal,
@@ -310,13 +319,14 @@ export default {
         const prev = steps[i - 1];
         const prevLoaded = this.isStepLoaded(prev.id);
         const prevHasAssessment = !!prev.configuration?.settings?.configurationId;
+        const prevRequiresReady = prevHasAssessment || prev.stepType === 4;
 
         const readyMap = this.stepsReady || {};
         const hasEntry = Object.hasOwn(readyMap, prev.id);
 
-        const prevReady = prevHasAssessment
+        const prevReady = prevRequiresReady
             ? (hasEntry ? readyMap[prev.id] : false) // expect entry → default false
-            : true;                                  // no assessment → always ready
+            : true;                                  // nothing to wait for → always ready
 
         acc[step.id] = prevLoaded && prevReady;
         return acc;
@@ -552,6 +562,13 @@ export default {
     handleLoadingError(errorData) {
       this.setStudyError(errorData.message, errorData.code);
     },
+    getAiChatService(step) {
+      const services = step.configuration?.services || [];
+      return services.find(service => service.type === "aiChat") || null;
+    },
+    hasAiChat(step) {
+      return !!this.getAiChatService(step);
+    },
     next() {
       const nextStep = this.nextStudyStep;
       if (!nextStep) return;
@@ -559,6 +576,10 @@ export default {
       this.updateStep(nextStep.id);
     },
     isStepLoaded(stepId) {
+      const step = this.studySteps.find((entry) => Number(entry.id) === Number(stepId));
+      if (step?.stepType === 4) {
+        return true;
+      }
       if (stepId in this.loadingReady) {
         return this.loadingReady[stepId];
       }
@@ -566,12 +587,7 @@ export default {
     },
     getStudyData() {
       if (this.studyHash) {
-        this.$socket.emit(
-            "appDataByHash",
-            {
-              table: "study",
-              hash: this.studyHash
-            },
+        this.$socket.emit("appDataByHash", {table: "study", hash: this.studyHash},
             (response) => {
               if (!response.success) {
                 this.setStudyError(response.message, response.code);
@@ -618,11 +634,7 @@ export default {
       }
     },
     finalFinish(data) {
-      this.$socket.emit(
-          "studySessionFinish",
-          {
-            studySessionId: data.studySessionId,
-          },
+      this.$socket.emit("studySessionFinish", {studySessionId: data.studySessionId},
           (result) => {
             if (result.success) {
               this.eventBus.emit("toast", {
@@ -699,14 +711,8 @@ export default {
       if (this.readOnlyComputed) {
         this.localStudyStepId = step;
       } else {
-        this.$socket.emit(
-            "appDataUpdate",
-            {
-              table: "study_session",
-              data: {
-                id: this.studySessionId,
-                studyStepId: step,
-              },
+        this.$socket.emit("appDataUpdate", {
+              table: "study_session", data: {id: this.studySessionId, studyStepId: step},
             },
             (result) => {
               if (!result.success) {

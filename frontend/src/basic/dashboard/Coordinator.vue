@@ -24,6 +24,7 @@
           ref="form"
           v-model="data"
           :fields="fields"
+          :original-data="originalData"
           @update:config-status="handleConfigStatusChange"
         />
       </span>
@@ -140,6 +141,10 @@ export default {
       type: Boolean,
       required: false,
       default: false,
+    },
+    originalData: {
+      type: Object,
+      default: null,
     },
   },
   emits: ["submit", "success", "hide"],
