@@ -377,6 +377,7 @@
   },
   "element": {
     "invalidInput": "Die Eingabe ist ungültig.",
+    "pastDate": "Wählen Sie ein Datum und eine Uhrzeit, die nicht in der Vergangenheit liegen.",
     "fieldRequired": "Dieses Feld ist erforderlich."
   },
   "collaboration": {
