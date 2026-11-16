@@ -25,6 +25,7 @@ For a live demo, visit https://demo.care.ukp.informatik.tu-darmstadt.de. Join ou
    for_developers/before_you_start
    for_developers/basics/basics
    for_developers/i18n
+   for_developers/testing
 
    for_developers/frontend/frontend
    for_developers/backend/backend

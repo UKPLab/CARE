@@ -1,7 +1,7 @@
-jest.mock("../webserver/Socket.js", () => class Socket {});
+jest.mock("../../webserver/Socket.js", () => class Socket {});
 
 const fs = require("fs");
-const AnnotationSocket = require("../webserver/sockets/annotation.js");
+const AnnotationSocket = require("../../webserver/sockets/annotation.js");
 
 function createAnnotationSocket({
     userId = 10,

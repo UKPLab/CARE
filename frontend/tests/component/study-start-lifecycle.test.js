@@ -49,7 +49,7 @@ const SETTLE_MS = 3 * DIALOG_TRANSITION_MS
 
 /** Evaluates the options object and the template of an SFC, replacing its imports with the given stubs. */
 function loadComponent(path, stubs = {}) {
-    const source = readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8')
+    const source = readFileSync(new URL(`../../src/${path}`, import.meta.url), 'utf8')
     const script = source.match(/<script>([\s\S]*?)<\/script>/)[1]
     const importPattern = /^import\s+([^'"]*?)\s+from\s+['"][^'"]+['"];?[ \t]*$/gm
     const names = [...script.matchAll(importPattern)].flatMap(([, clause]) =>
