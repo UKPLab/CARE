@@ -23,152 +23,145 @@
         :add-label="current.addLabel"
         :columns="current.columns"
         :data="current.rows"
-        :buttons="current.buttons"
-        :loading="Boolean(current.loading)"
-        :error="current.error || ''"
-        :empty-text="current.emptyText || ''"
-        @add="openModal(null)"
+        :buttons="rowButtons"
+        :loading="current.loading"
+        :error="current.error"
+        :empty-text="current.emptyText"
+        @add="openCreate"
         @action="onAction"
-        @retry="loadCriteria()"
+        @retry="loadVersioned(current.kind)"
       />
-      <p
-        v-if="activeTab !== 'criteria'"
-        class="text-muted small mt-3 mb-0"
-      >
-        {{ $t("assessmentManagement.prototypeNote") }}
-      </p>
     </template>
   </BasicCard>
 
-  <AssessmentModal ref="assessmentModal" />
-  <RubricModal ref="rubricModal" />
+  <AssessmentModal
+    ref="assessmentModal"
+    @saved="loadVersioned('assessment', { force: true })"
+  />
+  <RubricModal
+    ref="rubricModal"
+    @saved="loadVersioned('rubric', { force: true })"
+  />
   <CriterionModal
     ref="criterionModal"
-    :criteria="criteria"
-    @saved="loadCriteria({ force: true })"
+    @saved="loadVersioned('criterion', { force: true })"
   />
-  <ConfirmModal ref="confirmModal" />
+  <!-- Versions modals: the read-only view of a version opens in the modal placed inside, so it nests above it -->
+  <VersionsModal
+    ref="assessmentVersionsModal"
+    kind="assessment"
+    kind-label="assessmentManagement.kinds.assessment"
+    @view="viewVersion('assessment', $event)"
+    @changed="loadVersioned('assessment', { force: true })"
+  >
+    <AssessmentModal ref="assessmentViewModal" />
+  </VersionsModal>
+  <VersionsModal
+    ref="rubricVersionsModal"
+    kind="rubric"
+    kind-label="assessmentManagement.kinds.rubric"
+    @view="viewVersion('rubric', $event)"
+    @changed="loadVersioned('rubric', { force: true })"
+  >
+    <RubricModal ref="rubricViewModal" />
+  </VersionsModal>
+  <VersionsModal
+    ref="criterionVersionsModal"
+    kind="criterion"
+    kind-label="assessmentManagement.kinds.criterion"
+    @view="viewVersion('criterion', $event)"
+    @changed="loadVersioned('criterion', { force: true })"
+  >
+    <CriterionModal ref="criterionViewModal" />
+  </VersionsModal>
 </template>
 
 <script>
 /**
- * Assessment management dashboard: assessments, rubrics and criteria in three tabs.
+ * Assessment management dashboard: assessments, rubrics and criteria in three tabs, all backed by the database
+ * through the assessment*, rubric* and criterion* socket events.
  *
- * The Criteria tab is backed by the database through the criterion* socket events: every criterion
- * version is listed (historical ones too), a version can be viewed, copied into a new version or deleted
- * while no rubric uses it. The Assessments and Rubrics tabs still use the local mock store
- * (assessments/assessmentMockStore.js); nothing they do is saved yet.
+ * Each tab lists one row per assessment / rubric / criterion: its latest version with the number of versions.
+ * A row can be viewed (read-only), copied into a new version (version numbers are assigned by the backend) or
+ * opened in the Versions modal, where one version can be viewed or deleted. There is no Delete in the tables.
+ * Deleting an assessment version is disabled for now (the Versions modal says so and sends nothing).
  *
  * @author Eyad Mohamed
  */
 import BasicCard from "@/basic/dashboard/card/Card.vue";
 import BasicButton from "@/basic/Button.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 import AssessmentTablePanel from "@/components/dashboard/assessments/AssessmentTablePanel.vue";
 import AssessmentModal from "@/components/dashboard/assessments/AssessmentModal.vue";
 import RubricModal from "@/components/dashboard/assessments/RubricModal.vue";
 import CriterionModal from "@/components/dashboard/assessments/CriterionModal.vue";
-import { CALCULATION_METHODS } from "@/components/dashboard/assessments/assessmentConstants.js";
-import criteriaBackendMixin from "@/components/dashboard/assessments/criteriaBackendMixin.js";
-import {
-  assessmentState,
-  deleteAssessment,
-  deleteRubric,
-  assessmentsUsingRubric,
-} from "@/components/dashboard/assessments/assessmentMockStore.js";
+import VersionsModal from "@/components/dashboard/assessments/VersionsModal.vue";
+import { calculationOptions } from "@/components/dashboard/assessments/assessmentConstants.js";
+import versionedBackendMixin from "@/components/dashboard/assessments/versionedBackendMixin.js";
+
+/** Tab key → kind of the backend events */
+const KIND_OF_TAB = { assessments: "assessment", rubrics: "rubric", criteria: "criterion" };
 
 export default {
   name: "DashboardAssessments",
-  components: { BasicCard, BasicButton, ConfirmModal, AssessmentTablePanel, AssessmentModal, RubricModal, CriterionModal },
-  mixins: [criteriaBackendMixin],
+  components: { BasicCard, BasicButton, AssessmentTablePanel, AssessmentModal, RubricModal, CriterionModal, VersionsModal },
+  mixins: [versionedBackendMixin],
   data() {
     return {
       activeTab: "assessments",
     };
   },
   computed: {
-    assessmentRows() {
-      return assessmentState.assessments.map((a) => ({ ...a, rubricCount: a.rubricIds.length }));
-    },
-    rubricRows() {
-      return assessmentState.rubrics.map((r) => {
-        const method = CALCULATION_METHODS.find((m) => m.value === r.calculation);
-        return {
-          ...r,
-          calculationLabel: method ? this.$t(method.labelKey) : r.calculation,
-          criterionCount: r.criterionIds.length,
-        };
-      });
-    },
-    mockRowButtons() {
-      return [
-        dashboardRowAction("edit", { title: this.$t("assessmentManagement.actions.edit"), action: "edit" }),
-        dashboardRowAction("delete", { title: this.$t("assessmentManagement.actions.delete"), action: "delete" }),
-      ];
-    },
-    criterionButtons() {
+    rowButtons() {
       return [
         dashboardRowAction("view", { title: this.$t("assessmentManagement.actions.view"), action: "view" }),
         dashboardRowButton("plus-square", { title: this.$t("assessmentManagement.actions.newVersion"), action: "newVersion" }),
-        dashboardRowAction("delete", { title: this.$t("assessmentManagement.actions.delete"), action: "delete" }),
+        dashboardRowButton("clock-history", { title: this.$t("assessmentManagement.actions.versions"), action: "versions" }),
       ];
     },
+    /** Rubric rows with the readable calculation (an older stored value is shown as it is, or as its legacy name) */
+    rubricRows() {
+      return this.lists.rubric.rows.map((row) => {
+        const method = calculationOptions(row.calculation).find((m) => m.value === row.calculation);
+        return { ...row, calculationLabel: method?.labelKey ? this.$t(method.labelKey) : (row.calculation ?? "") };
+      });
+    },
     tabs() {
-      const idColumn = { name: this.$t("assessmentManagement.fields.id"), key: "id", sortable: true };
-      const nameColumn = { name: this.$t("assessmentManagement.fields.name"), key: "name", sortable: true };
-      const codeColumn = { name: this.$t("assessmentManagement.fields.code"), key: "code", sortable: true };
+      const common = (tabKey, text, rows) => {
+        const kind = KIND_OF_TAB[tabKey];
+        const list = this.lists[kind];
+        return {
+          key: tabKey,
+          kind,
+          label: this.$t(`assessmentManagement.tabs.${tabKey}`),
+          panelTitle: this.$t(`assessmentManagement.${kind}.listTitle`),
+          addLabel: this.$t(`assessmentManagement.${kind}.add`),
+          emptyText: this.$t(`assessmentManagement.${kind}.empty`),
+          rows,
+          loading: list.loading,
+          error: list.error,
+          ...text,
+        };
+      };
+      const column = (key, label, extra = {}) => ({ name: this.$t(`assessmentManagement.fields.${label}`), key, sortable: true, ...extra });
+      const versionColumns = [column("versionNumber", "latestVersion"), column("versionCount", "versions")];
+      const created = column("createdAt", "createdAt", { type: "datetime" });
       return [
-        {
-          key: "assessments",
-          label: this.$t("assessmentManagement.tabs.assessments"),
-          panelTitle: this.$t("assessmentManagement.assessment.listTitle"),
-          addLabel: this.$t("assessmentManagement.assessment.add"),
-          rows: this.assessmentRows,
-          buttons: this.mockRowButtons,
+        common("assessments", {
+          columns: [column("name", "name"), column("description", "description"), ...versionColumns, created],
+        }, this.lists.assessment.rows),
+        common("rubrics", {
           columns: [
-            idColumn,
-            nameColumn,
-            { name: this.$t("assessmentManagement.fields.description"), key: "description", sortable: true },
-            { name: this.$t("assessmentManagement.fields.version"), key: "version", sortable: true },
-            { name: this.$t("assessmentManagement.fields.rubrics"), key: "rubricCount", sortable: true },
+            column("name", "name"), column("description", "description"), ...versionColumns,
+            column("calculationLabel", "calculation"), column("minPoints", "minPoints"), column("maxPoints", "maxPoints"), created,
           ],
-        },
-        {
-          key: "rubrics",
-          label: this.$t("assessmentManagement.tabs.rubrics"),
-          panelTitle: this.$t("assessmentManagement.rubric.listTitle"),
-          addLabel: this.$t("assessmentManagement.rubric.add"),
-          rows: this.rubricRows,
-          buttons: this.mockRowButtons,
+        }, this.rubricRows),
+        common("criteria", {
           columns: [
-            idColumn,
-            codeColumn,
-            nameColumn,
-            { name: this.$t("assessmentManagement.fields.calculation"), key: "calculationLabel", sortable: true },
-            { name: this.$t("assessmentManagement.fields.criteria"), key: "criterionCount", sortable: true },
+            column("name", "name"), column("description", "description"), ...versionColumns,
+            column("minPoints", "minPoints"), column("maxPoints", "maxPoints"), created,
           ],
-        },
-        {
-          key: "criteria",
-          label: this.$t("assessmentManagement.tabs.criteria"),
-          panelTitle: this.$t("assessmentManagement.criterion.listTitle"),
-          addLabel: this.$t("assessmentManagement.criterion.add"),
-          rows: this.criteria,
-          buttons: this.criterionButtons,
-          loading: this.criteriaLoading,
-          error: this.criteriaError,
-          emptyText: this.$t("assessmentManagement.criterion.empty"),
-          columns: [
-            idColumn,
-            { name: this.$t("assessmentManagement.fields.group"), key: "criterionGroupId", sortable: true },
-            nameColumn,
-            { name: this.$t("assessmentManagement.fields.version"), key: "versionNumber", sortable: true },
-            { name: this.$t("assessmentManagement.fields.minPoints"), key: "minPoints", sortable: true },
-            { name: this.$t("assessmentManagement.fields.maxPoints"), key: "maxPoints", sortable: true },
-            { name: this.$t("assessmentManagement.fields.createdAt"), key: "createdAt", type: "datetime", sortable: true },
-          ],
-        },
+        }, this.lists.criterion.rows),
       ];
     },
     current() {
@@ -176,70 +169,23 @@ export default {
     },
   },
   methods: {
-    modalRef() {
-      return {
-        assessments: this.$refs.assessmentModal,
-        rubrics: this.$refs.rubricModal,
-      }[this.activeTab];
+    /** The create/view modal of the active tab */
+    modalOf(kind) {
+      return this.$refs[`${kind}Modal`];
     },
-    /** Prototype tabs: rows carry derived fields, the modals work on the stored record. */
-    storedRecord(row) {
-      return assessmentState[this.activeTab].find((r) => r.id === row.id);
+    openCreate() {
+      this.modalOf(this.current.kind).openCreate();
     },
-    openModal(row) {
-      if (this.activeTab === "criteria") {
-        this.$refs.criterionModal.openCreate();
-        return;
-      }
-      this.modalRef().open(row ? this.storedRecord(row) : null);
-    },
-    onAction(data) {
-      if (this.activeTab === "criteria") {
-        this.onCriterionAction(data);
-      } else if (data.action === "edit") {
-        this.openModal(data.params);
-      } else if (data.action === "delete") {
-        this.confirmDelete(data.params);
-      }
-    },
-    onCriterionAction({ action, params }) {
+    /** All three actions work on the latest version of the row; `versions` opens the history of its group. */
+    onAction({ action, params }) {
+      const { kind } = this.current;
       if (action === "view") {
-        this.$refs.criterionModal.openView(params.id);
+        this.modalOf(kind).openView(params.id);
       } else if (action === "newVersion") {
-        this.$refs.criterionModal.openNewVersion(params.id);
-      } else if (action === "delete") {
-        this.confirmCriterionDelete(params);
+        this.modalOf(kind).openNewVersion(params.id);
+      } else if (action === "versions") {
+        this.openVersions(kind, params);
       }
-    },
-    confirmDelete(row) {
-      const messages = {
-        assessments: () => this.$t("assessmentManagement.confirm.deleteAssessment", { name: row.name }),
-        rubrics: () => this.$t("assessmentManagement.confirm.deleteRubric", { name: row.name }),
-      };
-      const warnings = {
-        assessments: () => null,
-        rubrics: () => this.usageWarning(assessmentsUsingRubric(row.id).length),
-      };
-      const tab = this.activeTab;
-      this.$refs.confirmModal.open(
-        this.$t("assessmentManagement.confirm.title"),
-        messages[tab](),
-        warnings[tab](),
-        (confirmed) => {
-          if (!confirmed) {
-            return;
-          }
-          ({ assessments: deleteAssessment, rubrics: deleteRubric })[tab](row.id);
-          this.eventBus.emit("toast", {
-            title: this.$t("assessmentManagement.messages.deleted"),
-            message: this.$t("assessmentManagement.messages.recordDeleted", { name: row.name }),
-            variant: "success",
-          });
-        }
-      );
-    },
-    usageWarning(count) {
-      return count > 0 ? this.$t("assessmentManagement.confirm.usedBy", { count }) : null;
     },
   },
 };

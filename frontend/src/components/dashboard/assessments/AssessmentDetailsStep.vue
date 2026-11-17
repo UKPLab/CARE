@@ -14,6 +14,7 @@
       class="form-control"
       :class="{ 'is-invalid': errors.name }"
       :value="modelValue.name"
+      :disabled="readonly"
       @input="update('name', $event.target.value)"
       @blur="$emit('touch', 'name')"
     />
@@ -27,30 +28,16 @@
       class="form-control"
       rows="3"
       :value="modelValue.description"
+      :disabled="readonly"
       @input="update('description', $event.target.value)"
-    />
-  </AssessmentFormField>
-  <AssessmentFormField
-    field-id="assessment-version"
-    :label="$t('assessmentManagement.fields.version')"
-    required
-    :error="errors.version"
-  >
-    <input
-      id="assessment-version"
-      type="text"
-      class="form-control"
-      :class="{ 'is-invalid': errors.version }"
-      :value="modelValue.version"
-      @input="update('version', $event.target.value)"
-      @blur="$emit('touch', 'version')"
     />
   </AssessmentFormField>
 </template>
 
 <script>
 /**
- * Step 1 of the assessment modal: name, description and version.
+ * Step 1 of the assessment modal: name and description. There is no version field (the backend numbers the
+ * versions). With `readonly` the inputs are disabled.
  *
  * @author Eyad Mohamed
  */
@@ -62,6 +49,7 @@ export default {
   props: {
     modelValue: { type: Object, required: true },
     errors: { type: Object, required: true },
+    readonly: { type: Boolean, default: false },
   },
   emits: ["update:modelValue", "touch"],
   methods: {

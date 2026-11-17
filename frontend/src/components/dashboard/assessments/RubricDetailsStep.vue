@@ -14,24 +14,9 @@
       class="form-control"
       :class="{ 'is-invalid': errors.name }"
       :value="modelValue.name"
-      @input="update('name', $event.target.value)"
+      :disabled="readonly"
+      @input="update({ name: $event.target.value })"
       @blur="$emit('touch', 'name')"
-    />
-  </AssessmentFormField>
-  <AssessmentFormField
-    field-id="rubric-code"
-    :label="$t('assessmentManagement.fields.code')"
-    required
-    :error="errors.code"
-  >
-    <input
-      id="rubric-code"
-      type="text"
-      class="form-control"
-      :class="{ 'is-invalid': errors.code }"
-      :value="modelValue.code"
-      @input="update('code', $event.target.value)"
-      @blur="$emit('touch', 'code')"
     />
   </AssessmentFormField>
   <AssessmentFormField
@@ -43,49 +28,34 @@
       class="form-control"
       rows="2"
       :value="modelValue.description"
-      @input="update('description', $event.target.value)"
+      :disabled="readonly"
+      @input="update({ description: $event.target.value })"
     />
   </AssessmentFormField>
-  <div class="row">
-    <div class="col-sm-6">
-      <AssessmentFormField
-        field-id="rubric-min"
-        :label="$t('assessmentManagement.fields.minPoints')"
-        required
-        :error="errors.minPoints"
-      >
-        <input
-          id="rubric-min"
-          type="number"
-          step="1"
-          class="form-control"
-          :class="{ 'is-invalid': errors.minPoints }"
-          :value="modelValue.minPoints"
-          @input="update('minPoints', parsePoints($event.target.value))"
-          @blur="$emit('touch', 'minPoints')"
-        />
-      </AssessmentFormField>
-    </div>
-    <div class="col-sm-6">
-      <AssessmentFormField
-        field-id="rubric-max"
-        :label="$t('assessmentManagement.fields.maxPoints')"
-        required
-        :error="errors.maxPoints"
-      >
-        <input
-          id="rubric-max"
-          type="number"
-          step="1"
-          class="form-control"
-          :class="{ 'is-invalid': errors.maxPoints }"
-          :value="modelValue.maxPoints"
-          @input="update('maxPoints', parsePoints($event.target.value))"
-          @blur="$emit('touch', 'maxPoints')"
-        />
-      </AssessmentFormField>
-    </div>
-  </div>
+  <PointBoundField
+    field-id="rubric-min"
+    :label="$t('assessmentManagement.fields.minPoints')"
+    :active="modelValue.minActive"
+    :model-value="modelValue.minPoints"
+    :other="bounds.max"
+    :readonly="readonly"
+    :error="errors.minPoints"
+    @update:active="update({ minActive: $event })"
+    @update:model-value="update({ minPoints: $event })"
+    @touch="$emit('touch', 'minPoints')"
+  />
+  <PointBoundField
+    field-id="rubric-max"
+    :label="$t('assessmentManagement.fields.maxPoints')"
+    :active="modelValue.maxActive"
+    :model-value="modelValue.maxPoints"
+    :other="bounds.min"
+    :readonly="readonly"
+    :error="errors.maxPoints"
+    @update:active="update({ maxActive: $event })"
+    @update:model-value="update({ maxPoints: $event })"
+    @touch="$emit('touch', 'maxPoints')"
+  />
   <AssessmentFormField
     field-id="rubric-calculation"
     :label="$t('assessmentManagement.fields.calculation')"
@@ -94,14 +64,15 @@
       id="rubric-calculation"
       class="form-select"
       :value="modelValue.calculation"
-      @change="update('calculation', $event.target.value)"
+      :disabled="readonly"
+      @change="update({ calculation: $event.target.value })"
     >
       <option
-        v-for="method in calculationMethods"
+        v-for="method in methods"
         :key="method.value"
         :value="method.value"
       >
-        {{ $t(method.labelKey) }}
+        {{ method.label }}
       </option>
     </select>
   </AssessmentFormField>
@@ -115,54 +86,88 @@
     <input
       id="rubric-default"
       type="number"
-      step="1"
+      step="any"
       class="form-control"
       :class="{ 'is-invalid': errors.defaultPoints }"
       :value="modelValue.defaultPoints"
-      @input="update('defaultPoints', parsePoints($event.target.value))"
+      :disabled="readonly"
+      @input="update({ defaultPoints: parsePoints($event.target.value) })"
       @blur="$emit('touch', 'defaultPoints')"
     />
     <div class="form-text">
       {{ $t("assessmentManagement.fields.defaultPointsHelp") }}
     </div>
   </AssessmentFormField>
-  <div class="form-check">
+  <div class="form-check rubric-bonus mb-3">
     <input
       id="rubric-bonus"
       type="checkbox"
       class="form-check-input"
       :checked="modelValue.isBonus"
-      @change="update('isBonus', $event.target.checked)"
+      :disabled="readonly"
+      @change="update({ isBonus: $event.target.checked })"
     />
     <label
       for="rubric-bonus"
       class="form-check-label"
     >{{ $t("assessmentManagement.fields.isBonus") }}</label>
+    <FormHelp
+      :help="$t('assessmentManagement.rubric.bonusHelp')"
+      data-bs-container="body"
+    />
+  </div>
+  <SettingsEditor
+    :model-value="modelValue.settingsRows"
+    :readonly="readonly"
+    :show-all="showAllSettingsErrors"
+    @update:model-value="update({ settingsRows: $event })"
+  />
+  <div
+    v-if="errors.settings"
+    class="invalid-feedback d-block"
+  >
+    {{ errors.settings }}
   </div>
 </template>
 
 <script>
 /**
- * Step 1 of the rubric modal: details, point boundaries, calculation method and bonus flag.
- * The default points field only appears for calculation methods that use it.
+ * Step 1 of the rubric modal: name, description, the optional point bounds (shared component), the calculation
+ * method, the start points of the "Base + adjustments" method, the bonus flag with a help tooltip and the shared
+ * Advanced Settings. New rubrics choose between Summation and Base + adjustments; an older stored value (for
+ * example the former "Capped sum") is shown and kept. With `readonly` every input is disabled.
  *
  * @author Eyad Mohamed
  */
 import AssessmentFormField from "@/components/dashboard/assessments/AssessmentFormField.vue";
-import { CALCULATION_METHODS, usesDefaultPoints } from "@/components/dashboard/assessments/assessmentConstants.js";
+import PointBoundField from "@/components/dashboard/assessments/PointBoundField.vue";
+import SettingsEditor from "@/components/dashboard/assessments/SettingsEditor.vue";
+import FormHelp from "@/basic/form/Help.vue";
+import { calculationOptions, usesDefaultPoints } from "@/components/dashboard/assessments/assessmentConstants.js";
 import { parsePoints } from "@/components/dashboard/assessments/assessmentValidation.js";
+import { activeBounds } from "@/components/dashboard/assessments/criterionForm.js";
 
 export default {
   name: "RubricDetailsStep",
-  components: { AssessmentFormField },
+  components: { AssessmentFormField, PointBoundField, SettingsEditor, FormHelp },
   props: {
     modelValue: { type: Object, required: true },
+    /** Field → translated message */
     errors: { type: Object, required: true },
+    readonly: { type: Boolean, default: false },
+    /** True after a submit attempt: the settings editor shows every problem */
+    showAllSettingsErrors: { type: Boolean, default: false },
   },
   emits: ["update:modelValue", "touch"],
   computed: {
-    calculationMethods() {
-      return CALCULATION_METHODS;
+    bounds() {
+      return activeBounds(this.modelValue);
+    },
+    methods() {
+      return calculationOptions(this.modelValue.calculation).map((method) => ({
+        value: method.value,
+        label: method.labelKey ? this.$t(method.labelKey) : method.value,
+      }));
     },
     showDefaultPoints() {
       return usesDefaultPoints(this.modelValue.calculation);
@@ -170,9 +175,17 @@ export default {
   },
   methods: {
     parsePoints,
-    update(field, value) {
-      this.$emit("update:modelValue", { ...this.modelValue, [field]: value });
+    update(changes) {
+      this.$emit("update:modelValue", { ...this.modelValue, ...changes });
     },
   },
 };
 </script>
+
+<style scoped>
+/* the checkbox and its label are clickable, so show the pointer (not when read-only and disabled) */
+.rubric-bonus .form-check-input:not(:disabled),
+.rubric-bonus .form-check-input:not(:disabled) + .form-check-label {
+  cursor: pointer;
+}
+</style>

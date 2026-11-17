@@ -6,35 +6,37 @@
     {{ description }}
   </p>
 
-  <BasicTable
-    ref="table"
-    :model-value="tableSelection"
-    :columns="columns"
-    :data="rows"
-    :options="tableOptions"
-    :max-table-height="240"
-    @update:model-value="onTableSelection"
-  />
+  <template v-if="!readonly">
+    <BasicTable
+      ref="table"
+      :model-value="tableSelection"
+      :columns="columns"
+      :data="rows"
+      :options="tableOptions"
+      :max-table-height="240"
+      @update:model-value="onTableSelection"
+    />
 
-  <div
-    v-if="error"
-    class="invalid-feedback d-block mb-2"
-  >
-    {{ error }}
-  </div>
-  <div
-    v-else-if="selectedRows.length > 0"
-    class="text-muted small mt-1"
-  >
-    {{ $t("assessmentManagement.selection.selectedCount", { count: selectedRows.length }) }}
-    <template v-if="selectedRows.length > 1">
-      · {{ $t("assessmentManagement.selection.reorderHint") }}
-      <BasicIcon
-        icon-name="arrow-down"
-        :size="12"
-      />
-    </template>
-  </div>
+    <div
+      v-if="error"
+      class="invalid-feedback d-block mb-2"
+    >
+      {{ error }}
+    </div>
+    <div
+      v-else-if="selectedRows.length > 0"
+      class="text-muted small mt-1"
+    >
+      {{ $t("assessmentManagement.selection.selectedCount", { count: selectedRows.length }) }}
+      <template v-if="selectedRows.length > 1">
+        · {{ $t("assessmentManagement.selection.reorderHint") }}
+        <BasicIcon
+          icon-name="arrow-down"
+          :size="12"
+        />
+      </template>
+    </div>
+  </template>
 
   <h6 class="mt-3">
     {{ $t("assessmentManagement.selection.selectedOrder") }}
@@ -56,10 +58,13 @@
           {{ row.name }}
         </div>
         <div class="text-muted small">
-          {{ row.code }}
+          {{ row.detail }}
         </div>
       </div>
-      <span class="btn-group">
+      <span
+        v-if="!readonly"
+        class="btn-group"
+      >
         <BasicButton
           class="btn btn-sm btn-outline-secondary"
           icon="arrow-up"
@@ -87,8 +92,10 @@
 
 <script>
 /**
- * Second step of the assessment and rubric modals: pick existing records in a
- * searchable table and arrange them in an ordered list.
+ * Second step of the assessment and rubric modals: pick existing record VERSIONS (rows are versions, `id` is the
+ * version id) in a searchable table and arrange them in an ordered list. The selected versions are pinned: they
+ * stay the chosen ones even when newer versions exist. Each list entry shows the name and
+ * `row.detail` (e.g. the version number). With `readonly` (a stored version) only the ordered list is shown.
  *
  * `modelValue` is the ordered id list and the single source of truth. BasicTable
  * keeps its checked rows in an array it mutates in place (push/splice) and, when
@@ -114,6 +121,7 @@ export default {
     description: { type: String, required: true },
     emptyText: { type: String, required: true },
     error: { type: String, required: false, default: "" },
+    readonly: { type: Boolean, default: false },
   },
   emits: ["update:modelValue"],
   data() {
