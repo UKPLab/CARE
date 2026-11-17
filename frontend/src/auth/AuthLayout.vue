@@ -298,8 +298,6 @@ html[data-bs-theme="dark"] .auth-card {
   z-index: -1;
   border-radius: 50%;
   filter: blur(46px);
-  animation: auth-glow-drift 14s ease-in-out infinite alternate;
-  animation-delay: var(--auth-clock, 0s);
 }
 
 .auth-brand-glow--primary {
@@ -316,8 +314,6 @@ html[data-bs-theme="dark"] .auth-card {
   top: calc(50% - 40px);
   left: calc(50% - 20px);
   background: var(--auth-glow-warm);
-  animation-duration: 18s;
-  animation-direction: alternate-reverse;
 }
 
 .auth-brand-ring {
@@ -703,13 +699,6 @@ html[data-bs-theme="dark"] .auth-spark {
 
 /* ---------- Motion ---------- */
 
-@keyframes auth-glow-drift {
-  to {
-    translate: 30px 24px;
-    scale: 1.12;
-  }
-}
-
 @keyframes auth-ring-spin {
   to {
     rotate: 360deg;
@@ -747,7 +736,6 @@ html[data-bs-theme="dark"] .auth-spark {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-brand-glow,
   .auth-brand-ring,
   .auth-card-brand--intro .auth-brand-ring,
   .auth-intro-title,
