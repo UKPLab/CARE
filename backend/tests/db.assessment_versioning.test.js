@@ -6,7 +6,8 @@ const {UniqueConstraintError, ForeignKeyConstraintError, DatabaseError} = requir
  * They talk to the models directly, no server or sockets involved.
  *
  * A version and its link / option rows are created in ONE transaction; once that transaction has
- * committed the version is final (database triggers reject further rows, updates and single-row deletes).
+ * committed the version is final (database triggers reject further rows and content updates). Deleting is a
+ * soft delete (lifecycle columns); see db.assessment_lifecycle.test.js for the lifecycle, chain and race tests.
  */
 describe("Assessment versioning schema", () => {
     const {assessment, rubric, criterion, assessment_rubric, rubric_criterion, criterion_scoring_option} = db.models;
@@ -19,8 +20,17 @@ describe("Assessment versioning schema", () => {
     const tx = (work) => db.sequelize.transaction(work);
 
     // Row factories; pass the transaction to create a version together with its rows.
+    // a new version of an existing group points at the latest live version of that group (the database requires it)
+    const latestLiveAssessment = async (group, transaction) => {
+        const [row] = await db.sequelize.query(
+            'SELECT MAX(id) AS "latest" FROM "assessment" WHERE "assessmentGroupId" = :group AND "deleted" = false',
+            {replacements: {group}, transaction, type: db.sequelize.QueryTypes.SELECT});
+        return row.latest;
+    };
     const newAssessment = async (data = {}, transaction) => {
-        const row = await assessment.create({versionNumber: "1", name: next(), description: "", ...data}, {transaction});
+        const previousAssessmentVersionId = data.assessmentGroupId ? await latestLiveAssessment(data.assessmentGroupId, transaction) : null;
+        const row = await assessment.create(
+            {versionNumber: "1", name: next(), description: "", previousAssessmentVersionId, ...data}, {transaction});
         created.assessment.push(row.id);
         return row;
     };
@@ -30,7 +40,7 @@ describe("Assessment versioning schema", () => {
         return row;
     };
     const newCriterion = async (data = {}, transaction) => {
-        const row = await criterion.create({versionNumber: "1", name: next(), description: "", subjective: false, expertLevel: 1, ...data}, {transaction});
+        const row = await criterion.create({versionNumber: "1", name: next(), description: "", ...data}, {transaction});
         created.criterion.push(row.id);
         return row;
     };
@@ -43,7 +53,10 @@ describe("Assessment versioning schema", () => {
 
     afterAll(async () => {
         // children cascade; delete in reference order so RESTRICT keys never block the cleanup
-        await assessment.destroy({where: {id: created.assessment}});
+        // (newest assessment first: a version is referenced by its successor's predecessor link)
+        for (const id of [...created.assessment].sort((a, b) => b - a)) {
+            await assessment.destroy({where: {id}});
+        }
         await rubric.destroy({where: {id: created.rubric}});
         await criterion.destroy({where: {id: created.criterion}});
         await db.sequelize.close();
@@ -53,12 +66,30 @@ describe("Assessment versioning schema", () => {
         test("all six tables exist with the expected columns", async () => {
             const columns = async (model) => Object.keys(await db.sequelize.getQueryInterface().describeTable(model.tableName)).sort();
 
-            expect(await columns(assessment)).toEqual(["assessmentGroupId", "createdAt", "description", "id", "name", "versionNumber"]);
-            expect(await columns(rubric)).toEqual(["calculation", "createdAt", "defaultPoints", "description", "id", "isBonus", "maxPoints", "minPoints", "name", "rubricGroupId", "versionNumber"]);
-            expect(await columns(criterion)).toEqual(["createdAt", "criterionGroupId", "description", "expertLevel", "function", "id", "maxPoints", "minPoints", "name", "subjective", "versionNumber"]);
-            expect(await columns(assessment_rubric)).toEqual(["assessmentId", "id", "rubricId", "rubricPositionInAssessment"]);
-            expect(await columns(rubric_criterion)).toEqual(["criterionId", "criterionPositionInRubric", "id", "rubricId"]);
-            expect(await columns(criterion_scoring_option)).toEqual(["criterionId", "description", "id", "points", "position"]);
+            const lifecycle = ["createdAt", "deleted", "deletedAt", "updatedAt"];
+            expect(await columns(assessment)).toEqual([...lifecycle, "assessmentGroupId", "description", "id", "name", "previousAssessmentVersionId", "versionNumber"].sort());
+            expect(await columns(rubric)).toEqual([...lifecycle, "calculation", "defaultPoints", "description", "id", "isBonus", "maxPoints", "minPoints", "name", "rubricGroupId", "settings", "versionNumber"].sort());
+            expect(await columns(criterion)).toEqual([...lifecycle, "criterionGroupId", "description", "id", "maxPoints", "minPoints", "name", "settings", "versionNumber"].sort());
+            expect(await columns(assessment_rubric)).toEqual([...lifecycle, "assessmentId", "id", "rubricId", "rubricPositionInAssessment"].sort());
+            expect(await columns(rubric_criterion)).toEqual([...lifecycle, "criterionId", "criterionPositionInRubric", "id", "rubricId"].sort());
+            expect(await columns(criterion_scoring_option)).toEqual([...lifecycle, "criterionId", "description", "id", "points", "position"].sort());
+        });
+
+        test("every model attribute matches the column of its table (name, nullability, JSON/boolean/numeric type) and vice versa", async () => {
+            const expectedType = (type) => type.key === "DECIMAL" ? "numeric" : type.key === "JSONB" ? "jsonb"
+                : type.key === "BOOLEAN" ? "boolean" : type.key === "DATE" ? "timestamp with time zone"
+                    : type.key === "INTEGER" ? "integer" : type.key === "TEXT" ? "text" : "character varying";
+            for (const model of [assessment, rubric, criterion, assessment_rubric, rubric_criterion, criterion_scoring_option]) {
+                const [rows] = await db.sequelize.query(
+                    "SELECT column_name, data_type FROM information_schema.columns WHERE table_schema = 'public' AND table_name = :table",
+                    {replacements: {table: model.tableName}});
+                const columns = Object.fromEntries(rows.map((row) => [row.column_name, row.data_type]));
+                const attributes = model.getAttributes();
+                expect(Object.keys(columns).sort()).toEqual(Object.keys(attributes).sort());
+                for (const [name, attribute] of Object.entries(attributes)) {
+                    expect([model.tableName, name, columns[name]]).toEqual([model.tableName, name, expectedType(attribute.type)]);
+                }
+            }
         });
 
         test("the configuration table is untouched", async () => {
@@ -99,6 +130,8 @@ describe("Assessment versioning schema", () => {
             const fresh = await create({versionNumber: "1"});
             expect(third[groupKey]).toBe(second[groupKey]);
             expect(fresh[groupKey]).toBeGreaterThan(first[groupKey]);
+            // the deleted version is still in the table, flagged
+            expect((await model().getById(first.id, {}, true)).deleted).toBe(true);
         });
 
         test("version number, name and description are required", async () => {
@@ -115,8 +148,9 @@ describe("Assessment versioning schema", () => {
             await expect(model().updateById(row.id, {name: "changed"})).rejects.toThrow(/immutable/);
             await expect(model().update({name: "changed"}, {where: {id: row.id}})).rejects.toThrow(/immutable/);
             await expect(instance.update({name: "changed"})).rejects.toThrow(/immutable/);
-            await expect(model().upsert(full)).rejects.toThrow(/immutable/);
-            await expect(model().bulkCreate([full], {updateOnDuplicate: ["name"]})).rejects.toThrow(/immutable/);
+            // (an assessment insert is refused earlier, by its predecessor rule)
+            await expect(model().upsert(full)).rejects.toThrow(/immutable|predecessor/);
+            await expect(model().bulkCreate([full], {updateOnDuplicate: ["name"]})).rejects.toThrow(/immutable|predecessor/);
             await expect(db.sequelize.query(`UPDATE "${model().tableName}" SET "name" = 'changed' WHERE id = ${row.id}`))
                 .rejects.toThrow(/immutable/);
             expect((await model().getById(row.id)).name).toBe(row.name);
@@ -264,23 +298,29 @@ describe("Assessment versioning schema", () => {
                 await expect(model.updateById(row.id, {[column]: 9})).rejects.toThrow(/immutable/);
                 await expect(model.update({[column]: 9}, {where: {id: row.id}})).rejects.toThrow(/immutable/);
                 await expect((await model.findByPk(row.id)).increment(column, {by: 1})).rejects.toThrow(/immutable/);
-                await expect(model.deleteById(row.id)).rejects.toThrow(/immutable/);
+                await expect(model.deleteById(row.id)).rejects.toThrow(/together with their version/);
+                await expect(model.update({deleted: true}, {where: {id: row.id}})).rejects.toThrow(/together with their version/);
                 await expect(model.destroy({where: {id: row.id}})).rejects.toThrow(/immutable/);
                 await expect(db.sequelize.query(`DELETE FROM "${model.tableName}" WHERE id = ${row.id}`)).rejects.toThrow(/immutable/);
                 expect(await model.getById(row.id)).not.toBeNull();
             }
 
-            // deleting the parent versions still removes the children
+            // deleting the parent versions flags the children (they are kept, hidden from the default reads)
             await assessment.deleteById(parentAssessment.id);
             await rubric.deleteById(parentRubric.id);
             await criterion.deleteById(parentCriterion.id);
             expect(await assessment_rubric.getById(link.id)).toBeNull();
             expect(await rubric_criterion.getById(occurrence.id)).toBeNull();
             expect(await criterion_scoring_option.getById(option.id)).toBeNull();
+            for (const [model, row] of [[assessment_rubric, link], [rubric_criterion, occurrence], [criterion_scoring_option, option]]) {
+                const kept = await model.getById(row.id, {}, true);
+                expect(kept.deleted).toBe(true);
+                expect(kept.deletedAt).toBeInstanceOf(Date);
+            }
         });
     });
 
-    describe("MetaModel on tables without a deleted column", () => {
+    describe("MetaModel", () => {
         test("getById, getAllByKey and getAll work", async () => {
             const row = await newAssessment({versionNumber: "meta"});
 
@@ -289,27 +329,15 @@ describe("Assessment versioning schema", () => {
             expect((await assessment.getAll()).some((r) => r.id === row.id)).toBe(true);
         });
 
-        test("deleteById removes the row for good", async () => {
+        test("deleteById soft-deletes: the row is hidden from the default reads and kept with its deletion time", async () => {
             const row = await newAssessment();
             await assessment.deleteById(row.id);
             expect(await assessment.getById(row.id)).toBeNull();
-        });
-
-        test("models with soft delete keep their behaviour", async () => {
-            const {workflow} = db.models;
-            const row = await workflow.add({name: next()});
-            try {
-                expect((await workflow.getById(row.id)).id).toBe(row.id);
-
-                await workflow.deleteById(row.id);
-
-                expect(await workflow.getById(row.id)).toBeNull();
-                expect((await workflow.getAll()).some((r) => r.id === row.id)).toBe(false);
-                const kept = await workflow.getById(row.id, {}, true);
-                expect(kept.deleted).toBe(true);
-            } finally {
-                await workflow.destroy({where: {id: row.id}});
-            }
+            expect((await assessment.getAll()).some((r) => r.id === row.id)).toBe(false);
+            const kept = await assessment.getById(row.id, {}, true);
+            expect(kept.deleted).toBe(true);
+            expect(kept.deletedAt).toBeInstanceOf(Date);
+            expect(kept.name).toBe(row.name);
         });
 
         test("add returns the created row", async () => {
@@ -342,25 +370,31 @@ describe("Assessment versioning schema", () => {
             await expect(newRubric({minPoints: 2, maxPoints: 2})).resolves.toBeDefined();
         });
 
-        test("min and max points are required", async () => {
-            await expect(rubric.create({versionNumber: "1", name: next(), description: "", maxPoints: 1})).rejects.toThrow();
-            await expect(rubric.create({versionNumber: "1", name: next(), description: "", minPoints: 0})).rejects.toThrow();
+        test("min and max points are optional: NULL means the bound is not active", async () => {
+            const onlyMax = await rubric.create({versionNumber: "1", name: next(), description: "", maxPoints: 1});
+            const onlyMin = await rubric.create({versionNumber: "1", name: next(), description: "", minPoints: 0});
+            const neither = await rubric.create({versionNumber: "1", name: next(), description: ""});
+            created.rubric.push(onlyMax.id, onlyMin.id, neither.id);
+            expect(onlyMax.minPoints).toBeNull();
+            expect(onlyMin.maxPoints).toBeNull();
+            expect([neither.minPoints, neither.maxPoints]).toEqual([null, null]);
+            expect(neither.settings).toEqual({});
         });
     });
 
     describe("criterion", () => {
-        test("points and function are optional; subjective and expertLevel are required", async () => {
+        test("points are optional and settings default to an empty object", async () => {
             const bare = await newCriterion();
             expect(bare.minPoints).toBeNull();
             expect(bare.maxPoints).toBeNull();
-            expect(bare.function).toBeNull();
 
-            const full = await newCriterion({minPoints: -2, maxPoints: 0, function: "manual_grading", subjective: true, expertLevel: 2});
+            const full = await newCriterion({minPoints: -2, maxPoints: 0, settings: {function: "manual_grading", expertLevel: 2}});
             expect(Number(full.minPoints)).toBe(-2);
-            expect(full.expertLevel).toBe(2);
+            expect(full.settings).toEqual({function: "manual_grading", expertLevel: 2});
 
-            await expect(criterion.create({versionNumber: "1", name: next(), description: "", expertLevel: 1})).rejects.toThrow();
-            await expect(criterion.create({versionNumber: "1", name: next(), description: "", subjective: true})).rejects.toThrow();
+            const plain = await criterion.create({versionNumber: "1", name: next(), description: ""});
+            created.criterion.push(plain.id);
+            expect(plain.settings).toEqual({});
         });
 
         test("min above max is rejected", async () => {
@@ -409,7 +443,7 @@ describe("Assessment versioning schema", () => {
             const unused = await newRubric();
             await tx(async (t) => linkRubric((await newAssessment({}, t)).id, used.id, 1, t));
 
-            await expect(rubric.deleteById(used.id)).rejects.toThrow(/foreign key|violates/i);
+            await expect(rubric.deleteById(used.id)).rejects.toThrow(/still referenced/);
             expect(await rubric.getById(used.id)).not.toBeNull();
 
             await rubric.deleteById(unused.id);
@@ -426,7 +460,9 @@ describe("Assessment versioning schema", () => {
 
             await assessment.deleteById(target.id);
 
-            expect(await assessment_rubric.count({where: {assessmentId: target.id}})).toBe(0);
+            // the link row is kept (flagged), it no longer counts as a reference
+            expect(await assessment_rubric.count({where: {assessmentId: target.id}})).toBe(1);
+            expect(await assessment_rubric.count({where: {assessmentId: target.id, deleted: false}})).toBe(0);
             await rubric.deleteById(row.id);
             expect(await rubric.getById(row.id)).toBeNull();
         });
@@ -463,12 +499,12 @@ describe("Assessment versioning schema", () => {
             const unused = await newCriterion();
             await tx(async (t) => linkCriterion((await newRubric({}, t)).id, used.id, 1, t));
 
-            await expect(criterion.deleteById(used.id)).rejects.toThrow(/foreign key|violates/i);
+            await expect(criterion.deleteById(used.id)).rejects.toThrow(/still referenced/);
             await criterion.deleteById(unused.id);
             expect(await criterion.getById(unused.id)).toBeNull();
         });
 
-        test("deleting an unreferenced rubric removes its criterion links but keeps the criteria", async () => {
+        test("deleting an unreferenced rubric flags its criterion links and keeps the criteria", async () => {
             const row = await newCriterion();
             const target = await tx(async (t) => {
                 const parent = await newRubric({}, t);
@@ -478,7 +514,8 @@ describe("Assessment versioning schema", () => {
 
             await rubric.deleteById(target.id);
 
-            expect(await rubric_criterion.count({where: {rubricId: target.id}})).toBe(0);
+            expect(await rubric_criterion.count({where: {rubricId: target.id}})).toBe(1);
+            expect(await rubric_criterion.count({where: {rubricId: target.id, deleted: false}})).toBe(0);
             expect(await criterion.getById(row.id)).not.toBeNull();
         });
 
@@ -491,7 +528,7 @@ describe("Assessment versioning schema", () => {
             });
             await tx(async (t) => linkRubric((await newAssessment({}, t)).id, target.id, 1, t));
 
-            await expect(rubric.deleteById(target.id)).rejects.toThrow(/foreign key|violates/i);
+            await expect(rubric.deleteById(target.id)).rejects.toThrow(/still referenced/);
             expect(await rubric_criterion.count({where: {rubricId: target.id}})).toBe(1);
         });
     });
@@ -535,7 +572,7 @@ describe("Assessment versioning schema", () => {
             })).resolves.toBeUndefined();
         });
 
-        test("deleting an unreferenced criterion removes its options", async () => {
+        test("deleting an unreferenced criterion flags its options and keeps them", async () => {
             const row = await tx(async (t) => {
                 const leaf = await newCriterion({}, t);
                 await addOption(leaf.id, 0, 1, t);
@@ -544,7 +581,8 @@ describe("Assessment versioning schema", () => {
 
             await criterion.deleteById(row.id);
 
-            expect(await criterion_scoring_option.count({where: {criterionId: row.id}})).toBe(0);
+            expect(await criterion_scoring_option.count({where: {criterionId: row.id}})).toBe(1);
+            expect(await criterion_scoring_option.count({where: {criterionId: row.id, deleted: false}})).toBe(0);
         });
     });
 
