@@ -165,15 +165,7 @@ export default {
     },
 
     activeSubgroup() {
-      const currentPath = this.$route.path.toLowerCase();
-      const currentElement = this.$store.getters['table/nav_element/getAll']
-        .find(el => currentPath === `/dashboard/${el.path}`.toLowerCase());
-
-      if (!currentElement) return null;
-
-      const group = this.sidebarGroups.find(g => g.id === currentElement.groupId);
-
-      return group?.name || null;
+      return resolveNavigationGroup(this.defaultGroupedElements, this.activeElement);
     },
 
     // Hover-preview coordination (hoveredSubgroup), spread in from sidebarHoverPreview.js
@@ -181,25 +173,34 @@ export default {
   },
 
   watch: {
+    activeSubgroup(newGroup) {
+      if (newGroup) {
+        this.setOnlyExpandedGroup(newGroup);
+      } else {
+        this.closeAllGroups();
+      }
+    },
     defaultGroupedElements(newGroups) {
       newGroups.forEach(group => {
         if (!(group.key in this.groupStates)) {
           this.groupStates[group.key] = false;
         }
       });
+      this.$nextTick(() => this.syncSidebarWithRoute());
+      if (this.hoveredGroup) {
+        if (!newGroups.some(group => group.key === this.hoveredGroup)) {
+          this.resetPreview();
+        } else {
+          this.$nextTick(() => this.updatePreviewPosition());
+        }
+      }
     },
-    $route(to) {
-      const toPath = to.path.toLowerCase().replace(/\/$/, '');
-
+    $route() {
       this.resetPreview();
 
       this.$nextTick(() => {
         requestAnimationFrame(() => {
-          if (toPath === '/dashboard') {
-            this.closeAllGroups();
-          } else {
-            this.syncSidebarWithRoute();
-          }
+          this.syncSidebarWithRoute();
         });
       });
     },
