@@ -339,6 +339,13 @@ fieldset:disabled .form-select {
   border-color: var(--bs-form-invalid-border-color);
 }
 
+/* Focused invalid field: the ring takes the border's red instead of --care-primary, so the field
+   does not show a red border inside a blue (light) or yellow (dark) ring. */
+html :is(.form-control, .form-select):is(.is-invalid, :has(+ .feedback-invalid.invalid)):focus {
+  border-color: var(--bs-form-invalid-border-color);
+  box-shadow: var(--care-focus-ring-invalid);
+}
+
 /* List of errors under an upload or import form. */
 .scrollable-error-container {
   color: var(--bs-danger-text-emphasis);

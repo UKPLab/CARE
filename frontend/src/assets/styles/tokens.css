@@ -175,8 +175,11 @@ html[data-bs-theme="dark"] {
    --care-hover-danger: the same for destructive actions.
    --care-row-hover: a hovered row in a list or table (table rows, Home lists).
    --care-active-bg: the selected item in a navigation list.
-   --care-focus-ring: the one keyboard focus indicator, as a box-shadow. */
+   --care-focus-ring: the one keyboard focus indicator, as a box-shadow.
+   --care-focus-ring-invalid: the same ring on a field marked invalid, in the invalid border colour
+     (Bootstrap's --bs-form-invalid-border-color, lighter red in dark mode). */
 :root {
+  --care-focus-ring-invalid: 0 0 0 3px color-mix(in srgb, var(--bs-form-invalid-border-color) 35%, transparent);
   --care-hover: rgba(var(--bs-secondary-rgb), 0.12);
   --care-hover-danger: rgba(var(--bs-danger-rgb), 0.1);
   --care-row-hover: color-mix(in srgb, var(--care-primary) 5%, transparent);

@@ -495,6 +495,10 @@ export default {
   border-color: var(--bs-form-invalid-border-color);
 }
 
+.password-field:has(+ .feedback-invalid.invalid) .form-control:focus {
+  box-shadow: var(--care-focus-ring-invalid);
+}
+
 .password-toggle {
   position: absolute;
   top: 50%;
