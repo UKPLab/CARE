@@ -4,10 +4,10 @@ const {UniqueConstraintError, ForeignKeyConstraintError} = require("sequelize");
 const Socket = require("../Socket.js");
 const TranslatableError = require("../../utils/TranslatableError");
 const {positiveInt} = require("../../utils/helper/positiveInt.js");
-// used as a module object so tests can pause the reference check while the row lock is held
-const assessmentReferences = require("../../utils/helper/assessmentReferences.js");
+const {softDeleteAssessmentVersion} = require("../../utils/helper/assessmentLifecycle.js");
 const {
-    DASHBOARD_RIGHT, has, isObject, readVersionNumber, readText, loadRubrics,
+    DASHBOARD_RIGHT, has, isObject, rejectClientVersionNumber, readText, lockVersionGroup, nextVersionNumber,
+    latestLiveVersionId, queryLatestVersions, queryVersionHistory, loadRubrics,
 } = require("../../utils/helper/assessmentVersions.js");
 
 /**
@@ -19,28 +19,16 @@ const {
  * creates, changes or deletes them. Everyone with the dashboard right may use every event, whoever
  * created the assessment. The models are not autoTable, so nothing is broadcast; clients re-request.
  *
- * Deleting is currently disabled (`deleteEnabled`). Once enabled it is refused while the assessment is
- * referenced from JSON (study steps, study templates,
- * triggers, trigger queue); see utils/helper/assessmentReferences.js for what is checked and for the
- * writer-side lock that is still required before the delete is fully race-safe.
+ * Deleting is refused while the assessment version is referenced from JSON (study steps, study templates, triggers,
+ * trigger actions, pending trigger runs); see utils/helper/assessmentReferences.js for what is checked. The writers of
+ * such references are guarded in the database (migration 20261116120000-add-assessment-reference-guard.js), so a
+ * reference cannot be saved while the delete runs, nor to a version that is already deleted.
  *
  * Every request payload must be an object (send `{}` when there is nothing to send).
  *
  * @class AssessmentSocket
  */
 class AssessmentSocket extends Socket {
-
-    /**
-     * TEMPORARILY OFF: `assessmentDelete` answers `errors.assessment.assessment.deleteDisabled` and does
-     * nothing else. The reference check and the row lock below are in place, but no writer of an
-     * assessment id (study steps, templates, triggers, AI hooks) takes the matching `FOR KEY SHARE` lock
-     * yet, so a concurrent save could still leave a dangling reference. Set to `true` only after the
-     * writer-side locking is integrated; the exact steps are in the "Enabling assessment deletion"
-     * section of the Stage 2C report (carexllm reports/issues/489).
-     * Checked on the server inside the handler, so calling the socket event directly cannot bypass it.
-     * @type {boolean}
-     */
-    static deleteEnabled = false;
 
     /**
      * @throws {TranslatableError} when the user lacks the dashboard right
@@ -52,7 +40,7 @@ class AssessmentSocket extends Socket {
     }
 
     /**
-     * Assessment versions with their rubrics ordered by `rubricPositionInAssessment`, API shape.
+     * Live (not soft-deleted) assessment versions with their rubrics ordered by `rubricPositionInAssessment`, API shape.
      * Each association is `{id, assessmentId, rubricId, rubricPositionInAssessment, rubric}`; `id` is the
      * rubric association id and `rubric` the full rubric version with its ordered criteria (as returned by
      * the rubric events). Three queries however many assessments: assessments with their links, then the
@@ -64,8 +52,8 @@ class AssessmentSocket extends Socket {
     async loadAssessments(where, options = {}) {
         const {assessment, assessment_rubric: assessmentRubric} = this.models;
         const rows = await assessment.findAll({
-            where,
-            include: [{model: assessmentRubric, as: "assessmentRubrics"}],
+            where: {...where, deleted: false},
+            include: [{model: assessmentRubric, as: "assessmentRubrics", where: {deleted: false}, required: false}],
             order: [
                 ["assessmentGroupId", "ASC"],
                 ["id", "ASC"],
@@ -93,7 +81,6 @@ class AssessmentSocket extends Socket {
      */
     validateAssessment(source) {
         const fields = {
-            versionNumber: readVersionNumber(source),
             name: readText(source, "name"),
             description: readText(source, "description", {allowEmpty: true, maxLength: Infinity}),
         };
@@ -118,7 +105,8 @@ class AssessmentSocket extends Socket {
     }
 
     /**
-     * Inserts an assessment version and its rubric associations in the caller's transaction.
+     * Inserts an assessment version and its rubric associations in the caller's transaction. The version number
+     * and the predecessor link are assigned here (under the group lock).
      * @param {Object} source request fields (see validateAssessment)
      * @param {number|null} assessmentGroupId existing group for a new version, null to start a new group
      * @param {Object} options socket options with the open transaction
@@ -127,10 +115,11 @@ class AssessmentSocket extends Socket {
     async insertVersion(source, assessmentGroupId, options) {
         const {fields, rubricIds} = this.validateAssessment(source);
         const {assessment, rubric, assessment_rubric: assessmentRubric} = this.models;
+        const {sequelize} = this.server.db;
         const transaction = options.transaction;
 
         if (rubricIds.length) {
-            const found = await rubric.findAll({where: {id: rubricIds}, attributes: ["id"], transaction});
+            const found = await rubric.findAll({where: {id: rubricIds, deleted: false}, attributes: ["id"], transaction});
             const foundIds = new Set(found.map((row) => row.id));
             const missing = rubricIds.filter((id) => !foundIds.has(id));
             if (missing.length) {
@@ -138,17 +127,27 @@ class AssessmentSocket extends Socket {
             }
         }
 
+        // The new version points at the latest live version of its group (NULL for the first one). Both the
+        // number and the predecessor are read under the group lock; the database re-checks the predecessor.
+        let previousAssessmentVersionId = null;
+        if (assessmentGroupId !== null) {
+            await lockVersionGroup(sequelize, "assessment", assessmentGroupId, transaction);
+            previousAssessmentVersionId = await latestLiveVersionId(sequelize, "assessment", assessmentGroupId, transaction);
+        }
+        const versionNumber = assessmentGroupId === null
+            ? "1" : await nextVersionNumber(sequelize, "assessment", assessmentGroupId, transaction);
+
         let row;
         try {
             row = await assessment.create(
-                assessmentGroupId === null ? fields : {...fields, assessmentGroupId},
+                assessmentGroupId === null
+                    ? {...fields, versionNumber, previousAssessmentVersionId}
+                    : {...fields, versionNumber, previousAssessmentVersionId, assessmentGroupId},
                 {transaction}
             );
         } catch (error) {
             if (error instanceof UniqueConstraintError) {
-                throw new TranslatableError("errors.assessment.assessment.versionExists", {
-                    versionNumber: fields.versionNumber,
-                });
+                throw new TranslatableError("errors.assessment.versionConflict");
             }
             throw error;
         }
@@ -174,7 +173,8 @@ class AssessmentSocket extends Socket {
     }
 
     /**
-     * All assessment versions, including historical ones, ordered by group and id.
+     * All live assessment versions, including historical ones, ordered by group and id. The dashboard tables use
+     * `assessmentGetLatest` and `assessmentGetVersions`; this full list is for callers that need every version.
      *
      * @socketEvent assessmentGetAll
      * @param {Object} data {} (no filters)
@@ -184,6 +184,39 @@ class AssessmentSocket extends Socket {
     async getAllAssessments(data, options) {
         await this.assertDashboardAccess();
         return await this.loadAssessments({});
+    }
+
+    /**
+     * The latest live version of every assessment, without rubrics, with the number of live versions.
+     *
+     * @socketEvent assessmentGetLatest
+     * @param {Object} data {}
+     * @param {Object} options
+     * @returns {Promise<Object[]>} one entry per assessment group, ordered by group: the version's own fields
+     *   (including `previousAssessmentVersionId`) and `versionCount`
+     */
+    async getLatestAssessments(data, options) {
+        await this.assertDashboardAccess();
+        return await queryLatestVersions(this.server.db.sequelize, "assessment");
+    }
+
+    /**
+     * The live versions of one assessment, newest first.
+     *
+     * @socketEvent assessmentGetVersions
+     * @param {Object} data
+     * @param {number} data.assessmentGroupId group of the assessment
+     * @param {Object} options
+     * @returns {Promise<{id: number, assessmentGroupId: number, versionNumber: string, name: string, createdAt: string}[]>}
+     */
+    async getAssessmentVersions(data, options) {
+        await this.assertDashboardAccess();
+        const groupId = positiveInt(isObject(data) ? data.assessmentGroupId : null);
+        const rows = groupId ? await queryVersionHistory(this.server.db.sequelize, "assessment", groupId) : [];
+        if (!rows.length) {
+            throw new TranslatableError("errors.assessment.assessment.groupNotFound");
+        }
+        return rows.map(({groupId: assessmentGroupId, ...row}) => ({...row, assessmentGroupId}));
     }
 
     /**
@@ -210,18 +243,19 @@ class AssessmentSocket extends Socket {
      *
      * @socketEvent assessmentCreate
      * @param {Object} data
-     * @param {string} data.versionNumber entered by the user
      * @param {string} data.name
      * @param {string} data.description may be empty
      * @param {number[]} [data.rubricIds] existing rubric version ids; array order becomes the position (from 1)
      * @param {Object} options socket options with the transaction
      * @returns {Promise<Object>} the stored assessment with its rubrics
+     * @throws {TranslatableError} when the payload carries a `versionNumber`: the backend assigns it
      */
     async createAssessment(data, options) {
         await this.assertDashboardAccess();
         if (!isObject(data)) {
-            throw new TranslatableError("errors.assessment.fieldRequired", {field: "versionNumber"});
+            throw new TranslatableError("errors.assessment.fieldRequired", {field: "name"});
         }
+        rejectClientVersionNumber(data);
         return await this.insertVersion(data, null, options);
     }
 
@@ -235,7 +269,6 @@ class AssessmentSocket extends Socket {
      * @param {Object} data
      * @param {number} [data.assessmentGroupId] group of the new version; derived from `copyFromId` when omitted
      * @param {number} [data.copyFromId] assessment version to copy; must belong to `assessmentGroupId` if both are given
-     * @param {string} data.versionNumber entered by the user, unique within the group
      * @param {...*} [data] the assessment properties of `assessmentCreate`; required unless copied
      * @param {Object} options socket options with the transaction
      * @returns {Promise<Object>} the stored assessment with its rubrics (new association ids)
@@ -245,6 +278,7 @@ class AssessmentSocket extends Socket {
         if (!isObject(data)) {
             throw new TranslatableError("errors.assessment.assessment.groupNotFound");
         }
+        rejectClientVersionNumber(data);
         const transaction = options.transaction;
         const {assessment} = this.models;
 
@@ -278,10 +312,9 @@ class AssessmentSocket extends Socket {
                     source[key] = data[key];
                 }
             }
-            source.versionNumber = data.versionNumber;
         } else if (groupId === null) {
             throw new TranslatableError("errors.assessment.fieldRequired", {field: "assessmentGroupId"});
-        } else if (!(await assessment.findOne({where: {assessmentGroupId: groupId}, attributes: ["id"], transaction}))) {
+        } else if (!(await assessment.findOne({where: {assessmentGroupId: groupId, deleted: false}, attributes: ["id"], transaction}))) {
             throw new TranslatableError("errors.assessment.assessment.groupNotFound");
         }
 
@@ -289,63 +322,29 @@ class AssessmentSocket extends Socket {
     }
 
     /**
-     * DISABLED while `AssessmentSocket.deleteEnabled` is false: after the permission check it throws
-     * `errors.assessment.assessment.deleteDisabled`, before reading or locking anything.
-     *
-     * Permanently deletes one assessment version and its rubric associations. Refused while it is
-     * referenced from a study step (also of a study template), a trigger, a trigger action or a pending
-     * trigger run. Rubric versions and other assessment versions are untouched.
-     *
-     * Order matters for concurrency: the assessment row is locked `FOR UPDATE` first, and only then are
-     * the references read. A writer that follows the writer-side protocol (`FOR KEY SHARE` on the row
-     * before saving a reference) either finishes before the lock is granted and is seen by the check, or
-     * waits and then finds the row gone. Writers that do not follow it yet are not covered (see
-     * utils/helper/assessmentReferences.js).
+     * Soft-deletes one assessment version (see `softDeleteAssessmentVersion`): refused while it is referenced from
+     * a study step (also of a study template), a trigger, a trigger action or a pending trigger run; the live
+     * successor is re-linked to its predecessor; rubric versions and other assessment versions are untouched.
      *
      * @socketEvent assessmentDelete
      * @param {Object} data
      * @param {number} data.assessmentId id of the assessment version
      * @param {Object} options socket options with the transaction
-     * @returns {Promise<{id: number, assessmentGroupId: number}>} the deleted version
+     * @returns {Promise<{id: number, assessmentGroupId: number, latestVersionId: number|null}>} the deleted version
      */
     async deleteAssessment(data, options) {
         await this.assertDashboardAccess();
-        if (!AssessmentSocket.deleteEnabled) {
-            throw new TranslatableError("errors.assessment.assessment.deleteDisabled");
-        }
         const assessmentId = positiveInt(isObject(data) ? data.assessmentId : null);
-        const transaction = options.transaction;
-        const {assessment} = this.models;
-
-        const row = assessmentId
-            ? await assessment.findByPk(assessmentId, {transaction, lock: transaction.LOCK.UPDATE})
-            : null;
-        if (!row) {
+        if (!assessmentId) {
             throw new TranslatableError("errors.assessment.assessment.notFound");
         }
-
-        const references = await assessmentReferences.findAssessmentReferences(this.server.db.sequelize, assessmentId, transaction);
-        const count = assessmentReferences.countReferences(references);
-        if (count) {
-            const list = (ids) => ids.join(", ") || "-";
-            throw new TranslatableError("errors.assessment.assessment.inUse", {
-                assessmentId,
-                count,
-                studySteps: list(references.studySteps),
-                templateSteps: list(references.templateSteps),
-                triggers: list(references.triggers),
-                triggerActions: list(references.triggerActions),
-                queuedRuns: list(references.queuedRuns),
-            });
-        }
-
-        // assessment_rubric rows go with it (ON DELETE CASCADE); rubric rows are not touched
-        await assessment.destroy({where: {id: assessmentId}, transaction});
-        return {id: row.id, assessmentGroupId: row.assessmentGroupId};
+        return await softDeleteAssessmentVersion(this.server.db.sequelize, assessmentId, options.transaction);
     }
 
     init() {
         this.createSocket("assessmentGetAll", this.getAllAssessments, {}, false);
+        this.createSocket("assessmentGetLatest", this.getLatestAssessments, {}, false);
+        this.createSocket("assessmentGetVersions", this.getAssessmentVersions, {}, false);
         this.createSocket("assessmentGet", this.getAssessment, {}, false);
         this.createSocket("assessmentCreate", this.createAssessment, {}, true);
         this.createSocket("assessmentCreateVersion", this.createAssessmentVersion, {}, true);

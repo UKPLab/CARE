@@ -1,19 +1,18 @@
 const Server = require("../webserver/Server.js");
 const {getSocketClient} = require("./utils.js");
 const assessmentReferences = require("../utils/helper/assessmentReferences.js");
-const AssessmentSocket = require("../webserver/sockets/assessment.js");
 
-// production default, read before any test switches the flag
-const DEFAULT_DELETE_ENABLED = AssessmentSocket.deleteEnabled;
+// Version numbers are always assigned by the backend; a client number is refused (see "client version numbers"
+// below). Numbering across kinds, concurrency and history queries are in socket.assessment_versions.test.js.
 
 /**
  * Socket tests for assessment versions and their rubric associations (Stage 2C of the versioned
  * assessments): retrieve, create, new version, delete with reference protection, permissions,
  * validation, rollback, immutability and the delete / reference concurrency scenarios.
  *
- * `assessmentDelete` is temporarily disabled in production (`AssessmentSocket.deleteEnabled = false`)
- * until the writers take the assessment row lock. The tests of the preserved delete logic switch the
- * flag on for the whole file; the "temporary delete restriction" block switches it off again.
+ * Deleting is protected twice: the reference check in the delete transaction, and a database guard on every
+ * writer of such a reference (migration 20261116120000-add-assessment-reference-guard.js). The "concurrent delete
+ * and reference" block exercises both orders against the real database.
  */
 describe("Test Websockets - Assessment", () => {
     const PORT = 3110;
@@ -52,7 +51,7 @@ describe("Test Websockets - Assessment", () => {
                 {versionNumber: "1", name: next(), description: "", minPoints: -2, maxPoints: 4}, {transaction});
             if (withCriterion) {
                 const c = await criterion.create(
-                    {versionNumber: "1", name: next(), description: "", subjective: false, expertLevel: 1}, {transaction});
+                    {versionNumber: "1", name: next(), description: ""}, {transaction});
                 created.criterion.push(c.id);
                 await criterion_scoring_option.create({criterionId: c.id, points: -1, description: "opt", position: 1}, {transaction});
                 await rubric_criterion.create({rubricId: r.id, criterionId: c.id, criterionPositionInRubric: 1}, {transaction});
@@ -64,7 +63,7 @@ describe("Test Websockets - Assessment", () => {
     };
     const rubrics = (n, withCriterion = false) => Promise.all(Array.from({length: n}, () => newRubric(withCriterion)));
 
-    const base = (data = {}) => ({versionNumber: "1", name: next(), description: "An assessment", ...data});
+    const base = (data = {}) => ({name: next(), description: "An assessment", ...data});
 
     const create = async (data = {}, socket = admin) => {
         const response = await call(socket, "assessmentCreate", base(data));
@@ -86,8 +85,8 @@ describe("Test Websockets - Assessment", () => {
     // ---- reference holders (raw SQL: the real writers do not exist yet) ----
     const addStudy = async (template = false) => {
         const [row] = await query(
-            'INSERT INTO study (hash, template, "createdAt", "updatedAt") VALUES (:hash, :template, now(), now()) RETURNING id',
-            {hash: next(), template});
+            'INSERT INTO study (name, hash, template, "createdAt", "updatedAt") VALUES (:name, :hash, :template, now(), now()) RETURNING id',
+            {name: next(), hash: next(), template});
         created.study.push(row.id);
         return row.id;
     };
@@ -137,7 +136,6 @@ describe("Test Websockets - Assessment", () => {
     };
 
     beforeAll(async () => {
-        AssessmentSocket.deleteEnabled = true;
         db = require("../db/index.js");
         server = new Server();
         server.start(PORT);
@@ -162,7 +160,6 @@ describe("Test Websockets - Assessment", () => {
     });
 
     afterAll(async () => {
-        AssessmentSocket.deleteEnabled = DEFAULT_DELETE_ENABLED;
         sockets.forEach((socket) => socket.connected && socket.disconnect());
         const remove = (sql, replacements) => db.sequelize.query(sql, {replacements});
         const ids = (key) => (created[key].length ? created[key] : [0]);
@@ -172,12 +169,18 @@ describe("Test Websockets - Assessment", () => {
         await remove('DELETE FROM study_step WHERE id IN (:ids)', {ids: ids("study_step")});
         await remove('DELETE FROM study WHERE id IN (:ids)', {ids: ids("study")});
         // reference order so RESTRICT keys never block the cleanup; links cascade
-        await db.models.assessment.destroy({where: {id: created.assessment}});
+        // newest first: a version is referenced by its successor's predecessor link
+        for (const id of [...created.assessment].sort((a, b) => b - a)) {
+            await db.models.assessment.destroy({where: {id}});
+        }
         await db.models.rubric.destroy({where: {id: created.rubric}});
         await db.models.criterion.destroy({where: {id: created.criterion}});
         await remove('DELETE FROM "user_role_matching" WHERE "userId" IN (:ids) OR "userRoleId" IN (:roles)', {ids: created.users, roles: created.roles});
         await remove('DELETE FROM "role_right_matching" WHERE "userRoleId" IN (:roles)', {roles: created.roles});
         await remove('DELETE FROM "user_role" WHERE id IN (:roles)', {roles: created.roles});
+        // the logger writes the refused requests of the users to the log table asynchronously
+        await sleep(500);
+        await remove('DELETE FROM "log" WHERE "userId" IN (:ids)', {ids: created.users});
         await remove('DELETE FROM "user" WHERE id IN (:ids)', {ids: created.users});
         server.stop();
     });
@@ -185,11 +188,11 @@ describe("Test Websockets - Assessment", () => {
     describe("create assessment", () => {
         test("creates the assessment with generated ids and ordered rubric associations", async () => {
             const [a, b, c] = await rubrics(3);
-            const data = await create({versionNumber: "1.0.1", rubricIds: [c.id, a.id, b.id]});
+            const data = await create({rubricIds: [c.id, a.id, b.id]});
 
             expect(Number.isInteger(data.id)).toBe(true);
             expect(Number.isInteger(data.assessmentGroupId)).toBe(true);
-            expect(data).toMatchObject({versionNumber: "1.0.1", description: "An assessment"});
+            expect(data).toMatchObject({versionNumber: "1", description: "An assessment"});
             expect(data.createdAt).toBeDefined();
             // array order is kept (not sorted by id), positions start at 1
             expect(data.rubrics.map((l) => [l.rubricId, l.rubricPositionInAssessment])).toEqual([[c.id, 1], [a.id, 2], [b.id, 3]]);
@@ -236,8 +239,8 @@ describe("Test Websockets - Assessment", () => {
 
         test("assessmentGetAll returns every version, historical ones included, in order", async () => {
             const [a, b] = await rubrics(2);
-            const first = await create({versionNumber: "1", rubricIds: [a.id, b.id]});
-            const second = (await addVersion({copyFromId: first.id, versionNumber: "2", rubricIds: [b.id, a.id]})).data;
+            const first = await create({rubricIds: [a.id, b.id]});
+            const second = (await addVersion({copyFromId: first.id, rubricIds: [b.id, a.id]})).data;
 
             const response = await call(admin, "assessmentGetAll");
             expect(response.success).toBe(true);
@@ -263,10 +266,10 @@ describe("Test Websockets - Assessment", () => {
     describe("create a new version", () => {
         test("adds a version to the group with new association ids and leaves earlier versions unchanged", async () => {
             const [a, b] = await rubrics(2);
-            const v1 = await create({versionNumber: "1", rubricIds: [a.id, b.id]});
+            const v1 = await create({rubricIds: [a.id, b.id]});
             const linksBefore = await links(v1.id);
 
-            const response = await addVersion({assessmentGroupId: v1.assessmentGroupId, copyFromId: v1.id, versionNumber: "2"});
+            const response = await addVersion({assessmentGroupId: v1.assessmentGroupId, copyFromId: v1.id});
             expect(response.success).toBe(true);
             expect(response.data.id).not.toBe(v1.id);
             expect(response.data.assessmentGroupId).toBe(v1.assessmentGroupId);
@@ -280,18 +283,18 @@ describe("Test Websockets - Assessment", () => {
 
         test("copying keeps properties and rubrics; overrides change the properties, selection and order", async () => {
             const [a, b, c] = await rubrics(3);
-            const v1 = await create({versionNumber: "1", rubricIds: [a.id, b.id]});
+            const v1 = await create({rubricIds: [a.id, b.id]});
 
-            const same = await addVersion({copyFromId: v1.id, versionNumber: "1.1"});
-            expect(same.data).toMatchObject({name: v1.name, description: v1.description, versionNumber: "1.1", assessmentGroupId: v1.assessmentGroupId});
+            const same = await addVersion({copyFromId: v1.id});
+            expect(same.data).toMatchObject({name: v1.name, description: v1.description, versionNumber: "2", assessmentGroupId: v1.assessmentGroupId});
             expect(rubricIdsOf(same.data)).toEqual([a.id, b.id]);
 
-            const changed = await addVersion({copyFromId: v1.id, versionNumber: "2", name: "renamed", rubricIds: [c.id, b.id, a.id]});
+            const changed = await addVersion({copyFromId: v1.id, name: "renamed", rubricIds: [c.id, b.id, a.id]});
             expect(changed.data.name).toBe("renamed");
             expect(rubricIdsOf(changed.data)).toEqual([c.id, b.id, a.id]);
 
-            expect(rubricIdsOf((await addVersion({copyFromId: v1.id, versionNumber: "3", rubricIds: [b.id]})).data)).toEqual([b.id]);
-            expect((await addVersion({copyFromId: v1.id, versionNumber: "4", rubricIds: []})).data.rubrics).toEqual([]);
+            expect(rubricIdsOf((await addVersion({copyFromId: v1.id, rubricIds: [b.id]})).data)).toEqual([b.id]);
+            expect((await addVersion({copyFromId: v1.id, rubricIds: []})).data.rubrics).toEqual([]);
             expect((await call(admin, "assessmentGet", {assessmentId: v1.id})).data).toEqual(v1);
         });
 
@@ -302,35 +305,35 @@ describe("Test Websockets - Assessment", () => {
             const {rubric} = db.models;
             const newer = await rubric.create({rubricGroupId: old.rubricGroupId, versionNumber: "2", name: old.name, description: "", minPoints: 0, maxPoints: 1});
             created.rubric.push(newer.id);
-            const copy = await addVersion({copyFromId: first.id, versionNumber: "2"});
+            const copy = await addVersion({copyFromId: first.id});
             expect(rubricIdsOf(copy.data)).toEqual([old.id]);
         });
 
         test("without copyFromId all properties must be sent", async () => {
             const [a] = await rubrics(1);
             const v1 = await create();
-            const missing = await addVersion({assessmentGroupId: v1.assessmentGroupId, versionNumber: "2"});
+            const missing = await addVersion({assessmentGroupId: v1.assessmentGroupId});
             expect(missing).toMatchObject({success: false, key: "errors.assessment.fieldRequired", params: {field: "name"}});
 
-            const response = await addVersion(base({assessmentGroupId: v1.assessmentGroupId, versionNumber: "2", rubricIds: [a.id]}));
+            const response = await addVersion(base({assessmentGroupId: v1.assessmentGroupId, rubricIds: [a.id]}));
             expect(response.success).toBe(true);
             expect(response.data.assessmentGroupId).toBe(v1.assessmentGroupId);
         });
 
-        test("duplicate version numbers within a group are rejected and nothing is left behind", async () => {
-            const [a] = await rubrics(1);
-            const v1 = await create({versionNumber: "1", rubricIds: [a.id]});
-            const linksBefore = await db.models.assessment_rubric.count();
-            const response = await addVersion({copyFromId: v1.id, versionNumber: "1"});
-            expect(response).toMatchObject({success: false, key: "errors.assessment.assessment.versionExists", params: {versionNumber: "1"}});
-            expect(await db.models.assessment.count({where: {assessmentGroupId: v1.assessmentGroupId}})).toBe(1);
-            expect(await db.models.assessment_rubric.count()).toBe(linksBefore);
+        test("versions of one assessment are numbered 1, 2, 3 by the backend, each with its own rubric links", async () => {
+            const [a, b] = await rubrics(2);
+            const v1 = await create({rubricIds: [a.id, b.id]});
+            const v2 = (await addVersion({copyFromId: v1.id})).data;
+            const v3 = (await addVersion({copyFromId: v2.id, rubricIds: [b.id]})).data;
+            expect([v1.versionNumber, v2.versionNumber, v3.versionNumber]).toEqual(["1", "2", "3"]);
+            expect(await db.models.assessment_rubric.count({where: {assessmentId: [v1.id, v2.id, v3.id]}})).toBe(5);
         });
 
-        test("the same version number may be used in another group", async () => {
-            const a = await create({versionNumber: "1"});
-            const b = await create({versionNumber: "1"});
+        test("every assessment starts at version 1 in its own group", async () => {
+            const a = await create({});
+            const b = await create({});
             expect(a.assessmentGroupId).not.toBe(b.assessmentGroupId);
+            expect([a.versionNumber, b.versionNumber]).toEqual(["1", "1"]);
         });
 
         test("unknown or invalid group and source ids are rejected", async () => {
@@ -341,8 +344,8 @@ describe("Test Websockets - Assessment", () => {
                 [{...base(), assessmentGroupId: "abc"}, "errors.assessment.assessment.groupNotFound"],
                 [{...base(), assessmentGroupId: 0}, "errors.assessment.assessment.groupNotFound"],
                 [base(), "errors.assessment.fieldRequired"],
-                [{copyFromId: 999999999, versionNumber: "2"}, "errors.assessment.assessment.notFound"],
-                [{copyFromId: v1.id, assessmentGroupId: other.assessmentGroupId, versionNumber: "2"}, "errors.assessment.assessment.copySourceMismatch"],
+                [{copyFromId: 999999999}, "errors.assessment.assessment.notFound"],
+                [{copyFromId: v1.id, assessmentGroupId: other.assessmentGroupId}, "errors.assessment.assessment.copySourceMismatch"],
             ];
             for (const [payload, key] of cases) {
                 expect(await call(admin, "assessmentCreateVersion", payload)).toMatchObject({success: false, key});
@@ -355,7 +358,7 @@ describe("Test Websockets - Assessment", () => {
             const [a, b] = await rubrics(2);
             const s1 = await create({rubricIds: [a.id, b.id]});
             const s2 = await create({rubricIds: [a.id]});
-            const s1v2 = (await addVersion({copyFromId: s1.id, versionNumber: "2"})).data;
+            const s1v2 = (await addVersion({copyFromId: s1.id})).data;
 
             const associationIds = [s1, s2, s1v2].map((s) => s.rubrics.find((l) => l.rubricId === a.id).id);
             expect(new Set(associationIds).size).toBe(3);
@@ -383,7 +386,7 @@ describe("Test Websockets - Assessment", () => {
             expect(await db.models.assessment_rubric.count()).toBe(linksBefore);
 
             const v1 = await create({rubricIds: [a.id]});
-            expect(await addVersion({copyFromId: v1.id, versionNumber: "2", rubricIds: [999999999]}))
+            expect(await addVersion({copyFromId: v1.id, rubricIds: [999999999]}))
                 .toMatchObject({success: false, key: "errors.assessment.assessment.rubricsNotFound"});
         });
 
@@ -401,107 +404,31 @@ describe("Test Websockets - Assessment", () => {
         });
     });
 
-    describe("temporary delete restriction", () => {
-        beforeEach(() => {
-            AssessmentSocket.deleteEnabled = false;
-        });
-        afterEach(() => {
-            AssessmentSocket.deleteEnabled = true;
-        });
-
-        const disabled = {success: false, key: "errors.assessment.assessment.deleteDisabled"};
-
-        test("deletion is off by default in the code", () => {
-            expect(DEFAULT_DELETE_ENABLED).toBe(false);
-        });
-
-        test("the event refuses an unreferenced assessment and changes nothing", async () => {
-            const [a] = await rubrics(1);
-            const row = await create({rubricIds: [a.id]});
-            const response = await call(admin, "assessmentDelete", {assessmentId: row.id});
-            expect(response).toMatchObject(disabled);
-            expect(response.message).toMatch(/disabled/i);
-            expect((await call(admin, "assessmentGet", {assessmentId: row.id})).data).toEqual(row);
-            expect(await links(row.id)).toHaveLength(1);
-        });
-
-        test("every payload gets the same answer, so the event cannot be used to probe or bypass it", async () => {
-            const row = await create();
-            const payloads = [
-                {assessmentId: row.id},
-                {assessmentId: String(row.id)},
-                {assessmentId: 999999999},
-                {assessmentId: null},
-                {assessmentId: row.id, force: true, deleteEnabled: true},
-                {},
-            ];
-            for (const payload of payloads) {
-                expect(await call(admin, "assessmentDelete", payload)).toMatchObject(disabled);
-            }
-            expect(await db.models.assessment.count({where: {id: row.id}})).toBe(1);
-        });
-
-        test("it applies to users with the dashboard right too, and users without it still get access denied", async () => {
-            const row = await create();
-            expect(await call(allowed, "assessmentDelete", {assessmentId: row.id})).toMatchObject(disabled);
-            expect(await call(denied, "assessmentDelete", {assessmentId: row.id}))
-                .toMatchObject({success: false, key: "errors.assessment.accessDenied"});
-            expect(await db.models.assessment.count({where: {id: row.id}})).toBe(1);
-        });
-
-        test("it stops before reading references, taking the lock or deleting", async () => {
-            const row = await create();
-            const references = jest.spyOn(assessmentReferences, "findAssessmentReferences");
-            const destroy = jest.spyOn(db.models.assessment, "destroy");
-            const findByPk = jest.spyOn(db.models.assessment, "findByPk");
-            try {
-                expect(await call(admin, "assessmentDelete", {assessmentId: row.id})).toMatchObject(disabled);
-                expect(references).not.toHaveBeenCalled();
-                expect(destroy).not.toHaveBeenCalled();
-                expect(findByPk).not.toHaveBeenCalled();
-            } finally {
-                references.mockRestore();
-                destroy.mockRestore();
-                findByPk.mockRestore();
-            }
-        });
-
-        test("the other operations are unaffected: create, get, get all and new versions still work", async () => {
-            const [a, b] = await rubrics(2);
-            const v1 = await create({versionNumber: "1", rubricIds: [a.id, b.id]});
-            const v2 = await addVersion({copyFromId: v1.id, versionNumber: "2", rubricIds: [b.id, a.id]});
-            expect(v2.success).toBe(true);
-            expect((await call(admin, "assessmentGet", {assessmentId: v1.id})).data).toEqual(v1);
-            const all = (await call(admin, "assessmentGetAll")).data;
-            expect(all.filter((r) => r.assessmentGroupId === v1.assessmentGroupId).map((r) => r.id)).toEqual([v1.id, v2.data.id]);
-        });
-
-        test("rubric and criterion deletion are unaffected by the restriction", async () => {
-            const [unused] = await rubrics(1);
-            expect((await call(admin, "rubricDelete", {rubricId: unused.id})).success).toBe(true);
-        });
-    });
-
     describe("delete an assessment version", () => {
         test("deletes an unreferenced version with its associations and leaves rubrics and other versions", async () => {
             const [a, b] = await rubrics(2);
-            const v1 = await create({versionNumber: "1", rubricIds: [a.id, b.id]});
-            const v2 = (await addVersion({copyFromId: v1.id, versionNumber: "2"})).data;
+            const v1 = await create({rubricIds: [a.id, b.id]});
+            const v2 = (await addVersion({copyFromId: v1.id})).data;
 
             const response = await call(admin, "assessmentDelete", {assessmentId: v2.id});
             expect(response).toMatchObject({success: true, data: {id: v2.id, assessmentGroupId: v1.assessmentGroupId}});
 
-            expect(await db.models.assessment.count({where: {id: v2.id}})).toBe(0);
-            expect(await db.models.assessment_rubric.count({where: {assessmentId: v2.id}})).toBe(0);
+            expect(response.data.latestVersionId).toBe(v1.id);
+            // soft delete: the version and its associations stay in the table, flagged, and are hidden from every read
+            expect(await db.models.assessment.count({where: {id: v2.id}})).toBe(1);
+            expect(await db.models.assessment.count({where: {id: v2.id, deleted: false}})).toBe(0);
+            expect(await db.models.assessment_rubric.count({where: {assessmentId: v2.id}})).toBe(2);
+            expect(await db.models.assessment_rubric.count({where: {assessmentId: v2.id, deleted: false}})).toBe(0);
+            expect((await call(admin, "assessmentGet", {assessmentId: v2.id})).success).toBe(false);
             expect(await db.models.rubric.count({where: {id: [a.id, b.id]}})).toBe(2);
             expect((await call(admin, "assessmentGet", {assessmentId: v1.id})).data).toEqual(v1);
         });
 
         test("deleting the first version keeps the group usable", async () => {
-            const v1 = await create({versionNumber: "1"});
-            const v2 = (await addVersion({copyFromId: v1.id, versionNumber: "2"})).data;
+            const v1 = await create({});
+            const v2 = (await addVersion({copyFromId: v1.id})).data;
             expect((await call(admin, "assessmentDelete", {assessmentId: v1.id})).success).toBe(true);
-            expect((await addVersion({copyFromId: v2.id, versionNumber: "3"})).data.assessmentGroupId).toBe(v1.assessmentGroupId);
+            expect((await addVersion({copyFromId: v2.id})).data.assessmentGroupId).toBe(v1.assessmentGroupId);
         });
 
         test.each([[999999999], [null], ["abc"]])("unknown id %p fails", async (assessmentId) => {
@@ -514,8 +441,14 @@ describe("Test Websockets - Assessment", () => {
         /** the delete is refused, names the dependency, and leaves the assessment intact */
         const expectBlocked = async (row, expectedParams) => {
             const response = await call(admin, "assessmentDelete", {assessmentId: row.id});
-            expect(response).toMatchObject({success: false, key: "errors.assessment.assessment.inUse", params: expect.objectContaining(expectedParams)});
-            expect(response.message).toContain(String(row.id));
+            expect(response).toMatchObject({
+                success: false,
+                key: "errors.assessment.assessment.inUse",
+                params: expect.objectContaining({name: row.name, version: row.versionNumber, ...expectedParams}),
+            });
+            // the message names the version by name and number, never by database id
+            expect(response.message).toContain(`'${row.name}' (version ${row.versionNumber})`);
+            expect(response.message).not.toContain(String(row.id));
             expect((await call(admin, "assessmentGet", {assessmentId: row.id})).data).toEqual(row);
         };
 
@@ -523,7 +456,10 @@ describe("Test Websockets - Assessment", () => {
             const [a] = await rubrics(1);
             const row = await create({rubricIds: [a.id]});
             const stepId = await addStep({settings: {assessmentId: row.id}});
-            await expectBlocked(row, {assessmentId: row.id, count: 1, studySteps: String(stepId), templateSteps: "-", triggers: "-"});
+            const {study, step} = (await query(
+                `SELECT st.name AS study, ws.name AS step FROM study_step ss JOIN study st ON st.id = ss."studyId"
+                 JOIN workflow_step ws ON ws.id = ss."workflowStepId" WHERE ss.id = :stepId`, {stepId}))[0];
+            await expectBlocked(row, {count: 1, studySteps: `'${study}' / '${step}'`, templateSteps: "-", triggers: "-"});
         });
 
         test("a string id, a deeper path, or a soft-deleted step still block", async () => {
@@ -544,14 +480,19 @@ describe("Test Websockets - Assessment", () => {
             const row = await create();
             const templateStep = await addStep({settings: {assessmentId: row.id}}, {template: true});
             const studyStep = await addStep({settings: {assessmentId: row.id}});
-            await expectBlocked(row, {count: 2, studySteps: String(studyStep), templateSteps: String(templateStep)});
+            const names = async (stepId) => {
+                const [r] = await query(
+                    `SELECT st.name AS study, ws.name AS step FROM study_step ss JOIN study st ON st.id = ss."studyId"
+                     JOIN workflow_step ws ON ws.id = ss."workflowStepId" WHERE ss.id = :stepId`, {stepId});
+                return `'${r.study}' / '${r.step}'`;
+            };
+            await expectBlocked(row, {count: 2, studySteps: await names(studyStep), templateSteps: await names(templateStep)});
         });
 
         test("legacy configurationId is another id space and does not block", async () => {
             const row = await create();
             await addStep({settings: {configurationId: row.id}});
             await addStep({configurationId: row.id});
-            await addStep({settings: {assessmentId: row.id + 1000000}});
             expect((await call(admin, "assessmentDelete", {assessmentId: row.id})).success).toBe(true);
         });
 
@@ -559,16 +500,19 @@ describe("Test Websockets - Assessment", () => {
             const mapping = (id) => ({skillParameterMappings: {assessment: {table: "assessment", fileIds: [id]}}});
             const byTrigger = await create();
             const triggerId = await addTrigger(mapping(byTrigger.id));
-            await expectBlocked(byTrigger, {count: 1, triggers: String(triggerId), triggerActions: "-"});
+            const triggerName = (await query('SELECT name FROM "trigger" WHERE id = :triggerId', {triggerId}))[0].name;
+            await expectBlocked(byTrigger, {count: 1, triggers: `'${triggerName}'`, triggerActions: "-"});
 
             const byAction = await create();
             const actionId = await addTriggerAction({data: mapping(String(byAction.id))});
-            await expectBlocked(byAction, {count: 1, triggerActions: String(actionId)});
+            const actionName = (await query("SELECT name FROM trigger_action WHERE id = :actionId", {actionId}))[0].name;
+            await expectBlocked(byAction, {count: 1, triggerActions: `'${actionName}'`});
 
             const byRun = await create();
             const pending = await addQueueRun({trigger: mapping(byRun.id)}, 0);
             const running = await addQueueRun({trigger: mapping(byRun.id)}, 1);
-            await expectBlocked(byRun, {count: 2, queuedRuns: `${pending}, ${running}`});
+            const runNames = (await query('SELECT t.name FROM trigger_queue q JOIN "trigger" t ON t.id = q."triggerId" WHERE q.id IN (:ids) ORDER BY q.id', {ids: [pending, running]})).map((r) => `'${r.name}'`);
+            await expectBlocked(byRun, {count: 2, queuedRuns: runNames.join(", ")});
         });
 
         test("an AI hook input of type assessment blocks", async () => {
@@ -595,8 +539,8 @@ describe("Test Websockets - Assessment", () => {
         });
 
         test("another version of the same group can be deleted while one is referenced", async () => {
-            const v1 = await create({versionNumber: "1"});
-            const v2 = (await addVersion({copyFromId: v1.id, versionNumber: "2"})).data;
+            const v1 = await create({});
+            const v2 = (await addVersion({copyFromId: v1.id})).data;
             await addStep({settings: {assessmentId: v1.id}});
             expect((await call(admin, "assessmentDelete", {assessmentId: v2.id})).success).toBe(true);
             expect(await db.models.assessment.count({where: {id: v1.id}})).toBe(1);
@@ -676,28 +620,162 @@ describe("Test Websockets - Assessment", () => {
                 pause.restore();
                 await writer.rollback();
             }
-            expect(await db.models.assessment.count({where: {id: row.id}})).toBe(0);
+            expect(await db.models.assessment.count({where: {id: row.id, deleted: false}})).toBe(0);
         });
 
-        test("KNOWN LIMITATION: a writer that does not take the lock can still save a reference during a delete", async () => {
-            // Documents why the delete is not yet fully race-safe: the writers (study steps, triggers, hooks)
-            // are not changed in this stage, so nothing stops them from writing without the row lock.
+        /** the error of a write the database guard refused, or null when it went through */
+        const refusal = (promise) => promise.then(() => null, (error) => error);
+        const expectGuardRefusal = (error) => {
+            expect(error).toBeTruthy();
+            expect(error.original.code).toBe("23503");
+            expect(error.message).toMatch(/does not exist or was deleted/);
+        };
+        const referencesTo = async (assessmentId) => (await query(
+            "SELECT count(*)::int AS steps FROM study_step WHERE configuration::text LIKE :like",
+            {like: `%"assessmentId": ${assessmentId}%`}))[0].steps;
+
+        test("the delete holds the lock first: a plain writer (no explicit lock) waits, then is refused and nothing dangles", async () => {
             const row = await create();
             const pause = pauseDeleteAfterCheck();
-            let stepId;
             try {
                 const deleting = call(admin, "assessmentDelete", {assessmentId: row.id});
                 await pause.entered;
-                stepId = await addStep({settings: {assessmentId: row.id}});   // no lock: not blocked
+
+                const writing = refusal(addStep({settings: {assessmentId: row.id}}));
+                expect(await pending(writing)).toBe(true);             // the database guard waits for the delete
+
                 pause.release();
                 expect((await deleting).success).toBe(true);
+                expectGuardRefusal(await writing);
             } finally {
                 pause.restore();
             }
-            // a reference to an assessment that no longer exists: exactly what the writer-side lock prevents
-            expect(await db.models.assessment.count({where: {id: row.id}})).toBe(0);
+            expect(await referencesTo(row.id)).toBe(0);
+            expect(await db.models.assessment.count({where: {id: row.id, deleted: false}})).toBe(0);
+        });
+
+        test("a plain writer holds the reference first: the delete waits, then sees it and refuses", async () => {
+            const row = await create();
+            const writer = await db.sequelize.transaction();
+            let committed = false;
+            try {
+                await addStep({settings: {assessmentId: row.id}}, {transaction: writer});   // the guard takes the lock itself
+                const deleting = call(admin, "assessmentDelete", {assessmentId: row.id});
+                expect(await pending(deleting)).toBe(true);
+                await writer.commit();
+                committed = true;
+                expect(await deleting).toMatchObject({success: false, key: "errors.assessment.assessment.inUse"});
+            } finally {
+                if (!committed) {
+                    await writer.rollback();
+                }
+            }
+            expect(await db.models.assessment.count({where: {id: row.id, deleted: false}})).toBe(1);
+        });
+
+        test("a reference MODIFIED to point at the version during its delete is refused", async () => {
+            const [target, other] = [await create(), await create()];
+            const stepId = await addStep({settings: {assessmentId: other.id}});
+            const pause = pauseDeleteAfterCheck();
+            try {
+                const deleting = call(admin, "assessmentDelete", {assessmentId: target.id});
+                await pause.entered;
+                const updating = refusal(query(
+                    "UPDATE study_step SET configuration = CAST(:configuration AS jsonb) WHERE id = :stepId",
+                    {configuration: JSON.stringify({settings: {assessmentId: target.id}}), stepId}));
+                expect(await pending(updating)).toBe(true);
+                pause.release();
+                expect((await deleting).success).toBe(true);
+                expectGuardRefusal(await updating);
+            } finally {
+                pause.restore();
+            }
             const [step] = await query("SELECT configuration FROM study_step WHERE id = :stepId", {stepId});
-            expect(assessmentReferences.collectAssessmentIds(step.configuration)).toEqual([row.id]);
+            expect(step.configuration).toEqual({settings: {assessmentId: other.id}});   // unchanged, still valid
+        });
+
+        test("a reference modified first: the new target is protected, the old one is free", async () => {
+            const [target, other] = [await create(), await create()];
+            const stepId = await addStep({settings: {assessmentId: other.id}});
+            await query("UPDATE study_step SET configuration = CAST(:configuration AS jsonb) WHERE id = :stepId",
+                {configuration: JSON.stringify({settings: {assessmentId: target.id}}), stepId});
+            expect((await call(admin, "assessmentDelete", {assessmentId: target.id})).success).toBe(false);
+            expect((await call(admin, "assessmentDelete", {assessmentId: other.id})).success).toBe(true);
+        });
+
+        test("COPYING a template step into a study during the delete: the copy goes through and the delete is refused", async () => {
+            const row = await create();
+            const templateStep = await addStep({settings: {assessmentId: row.id}}, {template: true});
+            const studyId = await addStudy(false);
+            const pause = pauseDeleteAfterCheck();
+            try {
+                const deleting = call(admin, "assessmentDelete", {assessmentId: row.id});
+                await pause.entered;
+                const copying = query(
+                    `INSERT INTO study_step ("studyId", "workflowStepId", "stepType", configuration, "createdAt", "updatedAt")
+                     SELECT :studyId, "workflowStepId", "stepType", configuration, now(), now() FROM study_step WHERE id = :templateStep
+                     RETURNING id`, {studyId, templateStep});
+                expect(await pending(copying)).toBe(true);
+                pause.release();
+                expect(await deleting).toMatchObject({success: false, key: "errors.assessment.assessment.inUse"});
+                const [copy] = await copying;
+                created.study_step.push(copy.id);
+            } finally {
+                pause.restore();
+            }
+            expect(await db.models.assessment.count({where: {id: row.id, deleted: false}})).toBe(1);
+        });
+
+        test("after the delete every holder refuses a new reference: steps, triggers, trigger actions and active runs", async () => {
+            const row = await create();
+            expect((await call(admin, "assessmentDelete", {assessmentId: row.id})).success).toBe(true);
+            const mapping = {skillParameterMappings: {a: {table: "assessment", fileIds: [row.id]}}};
+
+            expectGuardRefusal(await refusal(addStep({settings: {assessmentId: row.id}})));
+            expectGuardRefusal(await refusal(addStep({settings: {assessmentId: String(row.id)}}, {template: true})));
+            expectGuardRefusal(await refusal(addStep({settings: {assessmentId: row.id}}, {deleted: true})));   // soft-deleted steps count too
+            expectGuardRefusal(await refusal(addTrigger(mapping)));
+            expectGuardRefusal(await refusal(addTriggerAction({data: mapping})));
+            expectGuardRefusal(await refusal(addQueueRun({trigger: mapping}, 0)));
+            expectGuardRefusal(await refusal(addQueueRun({trigger: mapping}, 1)));
+            expect(await referencesTo(row.id)).toBe(0);
+        });
+
+        test("what the delete does not look at is not guarded either: finished runs, soft-deleted rows, legacy ids", async () => {
+            const row = await create();
+            expect((await call(admin, "assessmentDelete", {assessmentId: row.id})).success).toBe(true);
+            const mapping = {a: {table: "assessment", fileIds: [row.id]}};
+            const failedRun = await addQueueRun({trigger: mapping}, 4);
+            await addQueueRun({trigger: mapping}, 2);
+            const retired = await addTrigger({skillParameterMappings: mapping}, true);
+            await addStep({settings: {configurationId: row.id}});
+            await addStep({configurationId: row.id});
+            await addTrigger({skillParameterMappings: {a: {table: "configuration", fileIds: [row.id]}}});
+
+            // ... but a retired row that starts counting again is checked
+            expectGuardRefusal(await refusal(query('UPDATE "trigger" SET deleted = false WHERE id = :retired', {retired})));
+            expectGuardRefusal(await refusal(query("UPDATE trigger_queue SET status = 0 WHERE id = :failedRun", {failedRun})));
+        });
+
+        test("ordinary updates of rows that already reference a live version are not affected", async () => {
+            const row = await create();
+            const stepId = await addStep({settings: {assessmentId: row.id}});
+            await query(
+                "UPDATE study_step SET configuration = CAST(:configuration AS jsonb) WHERE id = :stepId",
+                {configuration: JSON.stringify({settings: {assessmentId: row.id, other: 1}}), stepId});
+            await query('UPDATE study_step SET "allowBackward" = true WHERE id = :stepId', {stepId});
+            expect((await query("SELECT configuration FROM study_step WHERE id = :stepId", {stepId}))[0].configuration)
+                .toEqual({settings: {assessmentId: row.id, other: 1}});
+        });
+
+        test("assessment ids are locked in ascending order, so two writers with swapped ids cannot deadlock", async () => {
+            const [a, b] = [await create(), await create()];
+            const configs = [
+                {x: {assessmentId: a.id}, y: {assessmentId: b.id}},
+                {x: {assessmentId: b.id}, y: {assessmentId: a.id}},
+            ];
+            const results = await Promise.all(Array.from({length: 8}, (_unused, i) => refusal(addStep(configs[i % 2]))));
+            expect(results.every((result) => result === null)).toBe(true);
         });
 
         test("the writer-side lock refuses an assessment that does not exist", async () => {
@@ -719,7 +797,7 @@ describe("Test Websockets - Assessment", () => {
                 ["assessmentGetAll", {}],
                 ["assessmentGet", {assessmentId: row.id}],
                 ["assessmentCreate", base()],
-                ["assessmentCreateVersion", {copyFromId: row.id, versionNumber: "2"}],
+                ["assessmentCreateVersion", {copyFromId: row.id}],
                 ["assessmentDelete", {assessmentId: row.id}],
             ];
             for (const [event, payload] of requests) {
@@ -735,7 +813,7 @@ describe("Test Websockets - Assessment", () => {
             expect((await call(allowed, "assessmentGet", {assessmentId: row.id})).success).toBe(true);
             expect((await call(allowed, "assessmentGetAll")).data.map((r) => r.id)).toContain(row.id);
 
-            const version = await addVersion({copyFromId: row.id, versionNumber: "2"}, allowed);
+            const version = await addVersion({copyFromId: row.id}, allowed);
             expect(version.success).toBe(true);
             expect((await create({}, allowed)).id).toBeDefined();
 
@@ -746,10 +824,6 @@ describe("Test Websockets - Assessment", () => {
 
     describe("validation and rollback", () => {
         test.each([
-            ["versionNumber missing", {versionNumber: undefined}, "errors.assessment.fieldRequired", {field: "versionNumber"}],
-            ["versionNumber blank", {versionNumber: "  "}, "errors.assessment.fieldRequired", {field: "versionNumber"}],
-            ["versionNumber not a string", {versionNumber: {}}, "errors.assessment.fieldInvalid", {field: "versionNumber"}],
-            ["versionNumber too long", {versionNumber: "x".repeat(256)}, "errors.assessment.fieldInvalid", {field: "versionNumber"}],
             ["name missing", {name: undefined}, "errors.assessment.fieldRequired", {field: "name"}],
             ["name blank", {name: " "}, "errors.assessment.fieldRequired", {field: "name"}],
             ["name not a string", {name: 5}, "errors.assessment.fieldInvalid", {field: "name"}],
@@ -784,18 +858,18 @@ describe("Test Websockets - Assessment", () => {
             const v1 = await create({rubricIds: [a.id]});
             const spy = jest.spyOn(db.models.assessment_rubric, "bulkCreate").mockRejectedValueOnce(new Error("boom"));
             try {
-                expect((await call(admin, "assessmentCreateVersion", {copyFromId: v1.id, versionNumber: "2"})).success).toBe(false);
+                expect((await call(admin, "assessmentCreateVersion", {copyFromId: v1.id})).success).toBe(false);
             } finally {
                 spy.mockRestore();
             }
             expect(await db.models.assessment.count({where: {assessmentGroupId: v1.assessmentGroupId}})).toBe(1);
-            expect((await addVersion({copyFromId: v1.id, versionNumber: "2"})).success).toBe(true);
+            expect((await addVersion({copyFromId: v1.id})).success).toBe(true);
         });
 
         test("a failing delete leaves the assessment and its associations in place", async () => {
             const [a] = await rubrics(1);
             const row = await create({rubricIds: [a.id]});
-            const spy = jest.spyOn(db.models.assessment, "destroy").mockRejectedValueOnce(new Error("boom"));
+            const spy = jest.spyOn(db.models.assessment, "update").mockRejectedValueOnce(new Error("boom"));
             try {
                 expect((await call(admin, "assessmentDelete", {assessmentId: row.id})).success).toBe(false);
             } finally {
@@ -805,38 +879,44 @@ describe("Test Websockets - Assessment", () => {
         });
     });
 
-    describe("version number format", () => {
-        test.each([["1"], ["1.1"], ["1.1.1"], ["2.0.3"], [" 3.1 "]])("create accepts version %p", async (versionNumber) => {
-            expect((await create({versionNumber})).versionNumber).toBe(versionNumber.trim());
+    describe("client version numbers", () => {
+        // every value is refused, whatever it looks like: the backend alone assigns the number
+        const refused = [["1"], ["1.1"], [" 3.1 "], [2], [0], [""], ["  "], [null], [{}], [["1"]], ["abc"], ["x".repeat(256)]];
+
+        test.each(refused)("assessmentCreate refuses a versionNumber %j and stores nothing", async (versionNumber) => {
+            const name = next();
+            const response = await call(admin, "assessmentCreate", base({name, versionNumber}));
+            expect(response).toMatchObject({success: false, key: "errors.assessment.versionNumberNotAllowed"});
+            expect(await countByName(name)).toBe(0);
         });
 
-        test.each([["abc"], ["v1"], ["1.a"], ["1.2-beta"], ["1."], [".1"], ["1..2"], ["-1"], ["1,2"]])(
-            "create rejects version %p and stores nothing", async (versionNumber) => {
-                const name = next();
-                const response = await call(admin, "assessmentCreate", base({name, versionNumber}));
-                expect(response).toMatchObject({success: false, key: "errors.assessment.versionFormat"});
-                expect(await countByName(name)).toBe(0);
-            });
-
-        test("a new version needs the format too, and the uniqueness rule still applies", async () => {
-            const v1 = await create({versionNumber: "1"});
-            for (const versionNumber of ["v2", "2.", "2-beta"]) {
-                expect(await addVersion({copyFromId: v1.id, versionNumber}))
-                    .toMatchObject({success: false, key: "errors.assessment.versionFormat"});
-            }
-            expect(await addVersion({copyFromId: v1.id, versionNumber: "1"}))
-                .toMatchObject({success: false, key: "errors.assessment.assessment.versionExists"});
-            expect((await addVersion({copyFromId: v1.id, versionNumber: "1.1"})).success).toBe(true);
-            expect(await db.models.assessment.count({where: {assessmentGroupId: v1.assessmentGroupId}})).toBe(2);
+        test.each(refused)("assessmentCreateVersion refuses a versionNumber %j, with or without a copy source, and stores nothing", async (versionNumber) => {
+            const v1 = await create({});
+            expect(await addVersion({copyFromId: v1.id, versionNumber}))
+                .toMatchObject({success: false, key: "errors.assessment.versionNumberNotAllowed"});
+            expect(await addVersion(base({assessmentGroupId: v1.assessmentGroupId, versionNumber})))
+                .toMatchObject({success: false, key: "errors.assessment.versionNumberNotAllowed"});
+            expect(await db.models.assessment.count({where: {assessmentGroupId: v1.assessmentGroupId}})).toBe(1);
         });
 
-        test("a stored version that does not match the format stays readable, listed and copyable", async () => {
+        test("numbers are never reused: after the newest version is deleted the next one continues the sequence", async () => {
+            const v1 = await create({});
+            const v2 = (await addVersion({copyFromId: v1.id})).data;
+            expect(v2.versionNumber).toBe("2");
+            expect((await call(admin, "assessmentDelete", {assessmentId: v2.id})).success).toBe(true);
+            const v3 = (await addVersion({copyFromId: v1.id})).data;
+            expect(v3.versionNumber).toBe("3");
+            expect(v3.previousAssessmentVersionId).toBe(v1.id);
+        });
+
+        test("a stored label of another form stays readable, listed and copyable; the copy gets the next number", async () => {
             const old = await db.models.assessment.create({versionNumber: "v1-beta", name: next(), description: ""});
             created.assessment.push(old.id);
             expect((await call(admin, "assessmentGet", {assessmentId: old.id})).data.versionNumber).toBe("v1-beta");
             expect((await call(admin, "assessmentGetAll")).data.find((r) => r.id === old.id).versionNumber).toBe("v1-beta");
-            const copy = await addVersion({copyFromId: old.id, versionNumber: "2"});
-            expect(copy).toMatchObject({success: true, data: {assessmentGroupId: old.assessmentGroupId, versionNumber: "2"}});
+            const copy = await addVersion({copyFromId: old.id});
+            // "v1-beta" has no leading number and counts as 0, so the first automatic number of its group is 1
+            expect(copy).toMatchObject({success: true, data: {assessmentGroupId: old.assessmentGroupId, versionNumber: "1"}});
             expect((await call(admin, "assessmentGet", {assessmentId: old.id})).data.versionNumber).toBe("v1-beta");
         });
     });
