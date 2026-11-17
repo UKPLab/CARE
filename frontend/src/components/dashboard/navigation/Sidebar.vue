@@ -357,7 +357,6 @@ export default {
   min-height: 0;
   overflow-y: auto;
   overflow-x: visible;
-  scrollbar-gutter: stable;
 
   scrollbar-width: thin;
   scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
