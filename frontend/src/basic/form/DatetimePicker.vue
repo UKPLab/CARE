@@ -126,7 +126,14 @@ import LoadIcon from "@/basic/Icon.vue";
 import BasicButton from "@/basic/Button.vue";
 import CalendarPanel from "@/basic/form/CalendarPanel.vue";
 import { formatLocalizedDate, formatLocalizedDateTime, translateMaybeKey } from "@/assets/utils";
-import {datetimePrefs, setPreferredTimeZone, setTimePresets} from "@/basic/form/datetimePrefs";
+import {
+  datetimePrefs,
+  ENV_KEY,
+  ENV_TABLE,
+  setPreferredTimeZone,
+  setTimePresets,
+  syncFromRow,
+} from "@/basic/form/datetimePrefs";
 import {bindPopupListeners, placePopup, popupTeleportTarget, uniqueId} from "@/basic/form/listbox";
 import {
   dayOffsets,
@@ -148,7 +155,7 @@ import {
  * Optional `options.min` / `options.max` ("YYYY-MM-DD") limit the selectable days.
  *
  * Times are wall-clock times in the user's chosen time zone (device zone by default; the choice
- * and the quick-time buttons are kept in localStorage, see datetimePrefs). The zone and its UTC
+ * and the quick-time buttons are saved per user in the user_environment table, see datetimePrefs). The zone and its UTC
  * offset for the selected day are shown, so summer/winter time is visible. Times skipped by a
  * clock change (e.g. 02:30 on the spring-forward day) are moved to a real time and the user is
  * told. Repeated times on the fall-back day resolve to the first occurrence (the offset shows which).
@@ -156,6 +163,7 @@ import {
 export default {
   name: "DatetimePicker",
   components: {FormElement, CalendarPanel, LoadIcon, BasicButton},
+  subscribeTable: [{table: ENV_TABLE, filter: [{key: "key", value: ENV_KEY}]}],
   props: {
     options: {
       type: Object,
@@ -210,6 +218,25 @@ export default {
     timePresets() {
       return datetimePrefs.timePresets;
     },
+    userId() {
+      return this.$store.getters["auth/getUserId"];
+    },
+    /** The user's saved picker settings (global row: no document, session or step), or null. */
+    savedPrefsRow() {
+      const getFiltered = this.$store.getters[`table/${ENV_TABLE}/getFiltered`];
+      // Table store not registered yet (e.g. before login)
+      if (!getFiltered) return null;
+      const rows = getFiltered(
+        (e) => e.userId === this.userId &&
+          e.key === ENV_KEY &&
+          !e.documentId &&
+          !e.studySessionId &&
+          !e.studyStepId &&
+          !e.deleted
+      );
+      // Newest row wins if there ever is more than one
+      return rows.reduce((newest, row) => (!newest || row.id > newest.id ? row : newest), null);
+    },
     /** Selected moment as a timestamp, or null. */
     currentTs() {
       if (!this.date) return null;
@@ -260,6 +287,12 @@ export default {
     },
   },
   watch: {
+    savedPrefsRow: {
+      handler(row) {
+        syncFromRow(row, this.userId);
+      },
+      immediate: true,
+    },
     modelValue() {
       // Ignore the echo of our own emit
       if (this.modelValue !== this.currentIso) {
@@ -359,12 +392,12 @@ export default {
     onSelectZone(zone) {
       const before = this.timeZoneId;
       this.keepWallClock = true;
-      setPreferredTimeZone(zone);
+      setPreferredTimeZone(zone, this.$socket);
       // Same zone again: the watcher will not run, so do not leave the flag set
       if (this.timeZoneId === before) this.keepWallClock = false;
     },
     onUpdatePresets(list) {
-      setTimePresets(list);
+      setTimePresets(list, this.$socket);
     },
     clear() {
       this.date = null;
