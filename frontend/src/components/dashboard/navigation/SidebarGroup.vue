@@ -1,8 +1,11 @@
 <template>
   <div class="default-subgroup">
     <!-- Subgroup header -->
-    <div
+    <BasicButton
       class="sidebar-subgroup-heading list-group-item-custom p-3"
+      :aria-label="groupLabel"
+      :title="groupLabel"
+      :aria-expanded="isOpen"
       :class="{
         'collapsed-group-icon-active': isCollapsed && isActive,
         'expanded-group-active': !isCollapsed && isActive && !isOpen,
@@ -14,12 +17,12 @@
       @mouseleave="$emit('leave', $event)"
     >
       <!-- Expanded mode -->
-      <div v-if="!isCollapsed" class="list-group-item-text subgroup-title">
+      <span v-if="!isCollapsed" class="list-group-item-text subgroup-title">
         <span class="sidebar-icon subgroup-heading-icon" :title="groupLabel">
           <LoadIcon :icon-name="subgroup.icon" :size="22" />
         </span>
         {{ groupLabel }}
-      </div>
+      </span>
 
       <!-- Expanded mode: subgroup arrow -->
       <span
@@ -38,7 +41,7 @@
       >
         <LoadIcon :icon-name="subgroup.icon" :size="24" />
       </span>
-    </div>
+    </BasicButton>
 
     <!-- Expanded subgroup content -->
     <transition
@@ -55,6 +58,10 @@
           :key="element.id"
           :element="element"
           variant="default"
+          :is-active="String(element.id) === String(activeElementId)"
+          :is-favorite="isFavorite(element)"
+          :favorite-disabled="favoriteDisabled"
+          @toggle-favorite="$emit('toggle-favorite', $event)"
         />
       </div>
     </transition>
@@ -70,12 +77,13 @@
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import SidebarNavItem from "./SidebarNavItem.vue";
 import { navGroupLabel } from "./helpers/navLabels.js";
 
 export default {
   name: "SidebarGroup",
-  components: { LoadIcon, SidebarNavItem },
+  components: { LoadIcon, BasicButton, SidebarNavItem },
   props: {
     subgroup: {
       type: Object,
@@ -97,8 +105,20 @@ export default {
       type: Boolean,
       required: true,
     },
+    activeElementId: {
+      type: [Number, String],
+      default: null,
+    },
+    favoriteIds: {
+      type: Array,
+      default: () => [],
+    },
+    favoriteDisabled: {
+      type: Boolean,
+      default: false,
+    },
   },
-  emits: ['toggle', 'hover', 'leave'],
+  emits: ['toggle', 'hover', 'leave', 'toggle-favorite'],
   computed: {
     groupLabel() {
       return navGroupLabel(this.$t, this.$te, this.subgroup);
@@ -108,6 +128,9 @@ export default {
     },
   },
   methods: {
+    isFavorite(element) {
+      return this.favoriteIds.includes(String(element.id));
+    },
 
     /* ========================================
        Submenu animation
@@ -151,12 +174,22 @@ export default {
   position: relative;
 }
 
+.sidebar-subgroup-heading:focus-visible {
+  outline: 2px solid var(--bs-primary, #0d6efd);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
 .sidebar-subgroup-heading {
   display: flex !important;
+  width: 100%;
   justify-content: space-between;
   align-items: center;
   cursor: pointer;
-  font-weight: 400;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  text-align: left;
   border: none;
   background-color: var(--bs-tertiary-bg, #f2f2f2);
   border-radius: 0;
@@ -165,10 +198,11 @@ export default {
 
 .sidebar-subgroup-heading:hover {
   background-color: var(--bs-body-bg, #fff) !important;
+  box-shadow: none !important;
 }
 
 .subgroup-title {
-  font-weight: 400;
+  font-weight: 600;
 }
 
 .subgroup-arrow {
@@ -193,6 +227,9 @@ export default {
 
 .submenu-content {
   overflow: hidden;
+  margin: 0.125rem 0.5rem 0.5rem 0.75rem;
+  padding-left: 0.375rem;
+  border-left: 1px solid var(--bs-border-color, rgba(0, 0, 0, 0.125));
 }
 
 .submenu-enter-active,
@@ -245,7 +282,7 @@ export default {
   transform: translateY(-50%);
   width: 3px;
   height: 30px;
-  background: rgba(20, 20, 20, 0.85);
+  background: var(--bs-emphasis-color, #222);
 }
 
 #sidebar-wrapper:not(.collapsed) .expanded-group-active {
@@ -261,7 +298,7 @@ export default {
   transform: translateY(-50%);
   width: 3px;
   height: 30px;
-  background: rgba(20, 20, 20, 0.85);
+  background: var(--bs-emphasis-color, #222);
 }
 
 .sidebar-subgroup-heading.preview-group-active {
