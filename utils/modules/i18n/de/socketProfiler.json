@@ -202,7 +202,8 @@
     "replayFailed": "Replay fehlgeschlagen",
     "deleted": "Aufzeichnung gelöscht",
     "deletedBody": "Die Aufzeichnung wurde gelöscht",
-    "deleteFailed": "Aufzeichnung konnte nicht gelöscht werden"
+    "deleteFailed": "Aufzeichnung konnte nicht gelöscht werden",
+    "operationFailed": "{operation}: {message}"
   },
   "columns": {
     "id": "ID",

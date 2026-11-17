@@ -32,9 +32,10 @@
       "label": "Bei Submission-Upload benachrichtigen:",
       "help": "Wenn aktiviert, wird eine E-Mail gesendet, wenn ein Studierender eine Submission hochlädt oder erneut hochlädt."
     },
-    "submissionWarning":{
+    "submissionWarning": {
       "label": "Warnung vor dem Hochladen:",
-      "help": "Wenn gefüllt, wird dem Nutzer diese Nachricht als Warnung vor dem Hochladen angezeigt. Falls leer, wird keine Warnung gezeigt"
+      "help": "Wenn gefüllt, wird dem Nutzer diese Nachricht als Warnung vor dem Hochladen angezeigt. Falls leer, wird keine Warnung gezeigt",
+      "placeholder": "z. B. Diese Aufgabe muss auf Deutsch eingereicht werden."
     }
   },
   "dashboard": {

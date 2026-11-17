@@ -136,7 +136,7 @@ export default {
         createdAt: r.createdAt ? new Date(r.createdAt).toLocaleString() : "-",
         // Stored status values stay as-is (the backend compares against them);
         // this is display only.
-        statusDisplay: this.$t("socketProfiler.status." + r.status),
+        statusDisplay: this.$t(`socketProfiler.status.${r.status}`),
       }));
     },
     /**

@@ -205,7 +205,7 @@ export default {
           failed = true;
           this.eventBus.emit("toast", {
             title: this.$t("socketProfiler.recording.toasts.saveFailed"),
-            message: `${opName}: ${resolveApiMessage(res)}`,
+            message: this.$t("socketProfiler.toasts.operationFailed", {operation: opName, message: resolveApiMessage(res)}),
             variant: "danger",
           });
         }

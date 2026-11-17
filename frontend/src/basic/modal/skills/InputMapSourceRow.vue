@@ -10,7 +10,7 @@
     <div v-if="isHook && modelValue?.type === 'submission'" class="mt-1 ps-1">
       <FormRadio
           :model-value="selectedFiles[0] || null"
-          :options="{ key: fieldKey, label: 'nlp.inputMap.selectFilesToInclude', options: fileChoices }"
+          :options="{ key: fieldKey, label: $t('nlp.inputMap.selectFilesToInclude'), options: fileChoices }"
           @update:model-value="selectFile"
       />
     </div>
@@ -55,7 +55,7 @@ export default {
       const configurations = this.$store.getters["table/configuration/getAll"] || [];
       const validationConfig = configurations.find(cfg => cfg.type === 1) || null;
       const requiredFiles = validationConfig?.content?.rules?.requiredFiles || [];
-      const options = [{value: "pdf", label: "pdf", pattern: null}];
+      const options = [{value: "pdf", label: this.$t("documents.types.pdf"), pattern: null}];
       const zipEntry = requiredFiles.find(f => Array.isArray(f.includeFiles) && f.includeFiles.length);
       if (zipEntry) {
         zipEntry.includeFiles.forEach(f => {

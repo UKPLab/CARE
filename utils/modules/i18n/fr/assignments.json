@@ -34,7 +34,8 @@
         },
         "submissionWarning": {
             "label": "Avertissement de remise :",
-            "help": "Affiché aux utilisateurs comme demande de confirmation lorsqu'ils effectuent une remise pour ce devoir. Laissez vide pour ne pas afficher d'avertissement."
+            "help": "Affiché aux utilisateurs comme demande de confirmation lorsqu'ils effectuent une remise pour ce devoir. Laissez vide pour ne pas afficher d'avertissement.",
+            "placeholder": "Par exemple, ce devoir doit être soumis en allemand."
         }
     },
     "dashboard": {

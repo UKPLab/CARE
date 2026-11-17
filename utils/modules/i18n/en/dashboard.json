@@ -576,7 +576,7 @@
             }
         }
     },
-  "sessionOverview": {
+    "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",
         "filterWorkflowType": "Filter Workflow type:",
@@ -588,7 +588,5 @@
             "numberOfSteps": "Number of Steps"
         }
     },
-    "ai": {
-        "loadModels": "Load Models"
-    }
+    "ai": {}
 }

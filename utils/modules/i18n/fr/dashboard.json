@@ -588,7 +588,5 @@
             "numberOfSteps": "Nombre d'étapes"
         }
     },
-    "ai": {
-        "loadModels": "Charger les modèles"
-    }
+    "ai": {}
 }

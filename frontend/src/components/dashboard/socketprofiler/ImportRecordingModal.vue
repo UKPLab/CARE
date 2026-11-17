@@ -44,7 +44,7 @@
         <dt class="col-sm-4">{{ $t('socketProfiler.columns.name') }}</dt>
         <dd class="col-sm-8">{{ parsed.recording.name }}</dd>
         <dt class="col-sm-4">{{ $t('socketProfiler.columns.status') }}</dt>
-        <dd class="col-sm-8">{{ $t('socketProfiler.status.' + parsed.recording.status) }}</dd>
+        <dd class="col-sm-8">{{ $t(`socketProfiler.status.${parsed.recording.status}`) }}</dd>
         <dt class="col-sm-4">{{ $t('socketProfiler.columns.startTime') }}</dt>
         <dd class="col-sm-8">{{ formatTime(parsed.recording.startTime) }}</dd>
         <dt class="col-sm-4">{{ $t('socketProfiler.columns.endTime') }}</dt>
