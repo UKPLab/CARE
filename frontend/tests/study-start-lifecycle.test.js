@@ -896,7 +896,7 @@ test('setup does not save settings when administrator creation fails', async () 
     assert.equal(summary.finishing, false)
 })
 
-// BackendTable and its table search, mounted with all their real parts (table/backend, table/search).
+// BackendTable and its table search, mounted with all their real parts (table/server, table/search).
 
 // v-model reads these when it updates a text input.
 Object.assign(globalThis, {Document: window.Document, ShadowRoot: window.ShadowRoot})

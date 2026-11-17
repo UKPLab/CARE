@@ -10,7 +10,7 @@
 
 <script>
 import { markRaw } from "vue";
-import TableSurface from "./table/backend/TableSurface.vue";
+import TableSurface from "./table/server/TableSurface.vue";
 import {
   backendApplyQueryResult,
   backendTableData,
@@ -40,7 +40,7 @@ import { backendtableCellHelpersMethods } from "@/basic/table/helpers/tableCellH
  *
  * This component owns all table state, the lifecycle and the public methods
  * (getSelection, applySelection, applySearch, resetSelection). The rendered parts in
- * ./table/backend inject it as `backendTableController`; the methods next to their markup are reached
+ * ./table/server inject it as `backendTableController`; the methods next to their markup are reached
  * through `tableRefs`, and DOM elements those parts render register there too.
  *
  * @author Andrii Nikitin
