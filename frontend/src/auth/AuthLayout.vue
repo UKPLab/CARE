@@ -404,6 +404,15 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
 .auth-intro {
   margin-block: auto;
   padding-top: 28px;
+}
+
+/* Own View Transition layer only when leaving the register page, for the soft fade-out
+   (::view-transition-old(auth-brand-intro) in the global styles).
+   Arriving, the intro stays in the page snapshot: a named element is shown as a separate
+   snapshot image during the transition, and Firefox rasters that image on its own pixel
+   grid. The block sits at a fractional y (centered by the auto margin), so when the
+   transition ends and the real element replaces the image, the text jumps. */
+html[data-auth-direction="back"] .auth-intro {
   view-transition-name: auth-brand-intro;
 }
 
@@ -856,12 +865,23 @@ html[data-auth-direction="back"] {
 
 /* auth-brand-intro: arriving, the intro is shown live and its parts come in one after
    another (animations in the scoped styles). Leaving, it fades out softly while the
-   logo flies back to the center. */
+   logo flies back to the center.
+   Firefox paints a new snapshot at its bitmap size for a frame when the image has
+   no explicit box, so the heading jumps larger and snaps back. Pin the group and
+   both images to the element's box. */
+::view-transition-group(auth-brand-intro) {
+  animation: none;
+}
+
 ::view-transition-new(auth-brand-intro) {
+  width: 100%;
+  height: 100%;
   animation: none;
 }
 
 ::view-transition-old(auth-brand-intro) {
+  width: 100%;
+  height: 100%;
   animation: auth-intro-out .35s cubic-bezier(.4, 0, 1, 1) both;
 }
 
