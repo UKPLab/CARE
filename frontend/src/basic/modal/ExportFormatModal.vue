@@ -19,7 +19,7 @@
           @click="selectFormat(format.key)"
         >
           {{ format.label }}
-          <small class="d-block text-muted">{{ format.description }}</small>
+          <small class="d-block format-description">{{ format.description }}</small>
         </BasicButton>
       </div>
     </template>
@@ -172,5 +172,19 @@ export default {
 .btn small {
   font-size: 0.75rem;
   margin-top: 0.25rem;
+}
+
+/* Muted at rest. On hover/press the button is filled with the primary colour (light beige in
+   dark mode), where grey is unreadable: follow the button's own text colour instead. */
+.format-description {
+  color: var(--bs-secondary-color);
+  transition: color var(--care-dur-fast) var(--care-ease);
+}
+
+.btn:hover .format-description,
+.btn:focus-visible .format-description,
+.btn:active .format-description {
+  color: inherit;
+  opacity: 0.8;
 }
 </style>
