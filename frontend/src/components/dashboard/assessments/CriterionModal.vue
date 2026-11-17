@@ -15,18 +15,6 @@
       <!-- px-2: the modal content area clips horizontally, so flush inputs lose their focus and error rings -->
       <div class="px-2">
         <div
-          v-if="isVersion"
-          class="alert alert-info py-2 small"
-        >
-          {{ $t("assessmentManagement.criterion.versionNotice", { name: source.name, version: source.versionNumber }) }}
-        </div>
-        <p
-          v-else-if="isView && source"
-          class="text-muted small"
-        >
-          {{ $t("assessmentManagement.criterion.groupInfo", { group: source.criterionGroupId }) }}
-        </p>
-        <div
           v-if="submitError"
           class="alert alert-danger py-2 small"
           role="alert"
@@ -34,9 +22,11 @@
           {{ submitError }}
         </div>
         <CriterionDetailsStep
+          :key="formKey"
           :model-value="form"
           :errors="shownErrors"
           :readonly="isView"
+          :show-all-settings-errors="showAll"
           @update:model-value="setForm"
           @touch="touch"
         />
@@ -55,8 +45,8 @@
           v-model="scoring"
           :criterion-name="form.name"
           :errors="optionErrors"
-          :min="form.minPoints"
-          :max="form.maxPoints"
+          :min="bounds.min"
+          :max="bounds.max"
           :readonly="isView"
           @add="addOption"
           @remove="removeOption"
@@ -69,13 +59,15 @@
 
 <script>
 /**
- * Two-step modal of the Criteria tab: criterion details, then scoring options.
+ * Two-step modal of the Criteria tab: criterion details (name, description, optional bounds, Advanced Settings),
+ * then scoring options.
  *
  * Three modes (criterion versions are immutable, there is no edit):
  * - create:  empty form, `criterionCreate` (new criterion, new group)
  * - view:    a stored version, every input disabled, the last button only closes
- * - version: a stored version as the starting point, the user must enter a new version number,
- *            `criterionCreateVersion` (new row in the same group; the original is never changed)
+ * - version: a stored version as the starting point, `criterionCreateVersion` (new row in the same group; the
+ *            original is never changed)
+ * The version number is never entered: the backend assigns it and the success message shows it.
  *
  * View and version load the version with `criterionGet` first. A failed request keeps the modal and all
  * entered values; the backend message is shown in the modal, next to the field when it belongs to one.
@@ -86,7 +78,7 @@
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import CriterionDetailsStep from "@/components/dashboard/assessments/CriterionDetailsStep.vue";
 import ScoringOptionsStep from "@/components/dashboard/assessments/ScoringOptionsStep.vue";
-import { resolveApiMessage } from "@/assets/utils";
+import { failureText } from "@/components/dashboard/assessments/failureMessage.js";
 import { requestAssessment } from "@/components/dashboard/assessments/assessmentSocket.js";
 import { visibleErrors } from "@/components/dashboard/assessments/assessmentValidation.js";
 import {
@@ -99,6 +91,7 @@ import {
   versionSource,
   validateCriterionForm,
   validateOptionList,
+  activeBounds,
   errorTarget,
 } from "@/components/dashboard/assessments/criterionForm.js";
 
@@ -110,8 +103,6 @@ export default {
   name: "CriterionModal",
   components: { StepperModal, CriterionDetailsStep, ScoringOptionsStep },
   props: {
-    /** All loaded criterion versions, to catch a version number already used in the same group early */
-    criteria: { type: Array, default: () => [] },
   },
   emits: ["saved"],
   data() {
@@ -120,6 +111,10 @@ export default {
       form: emptyCriterionForm(),
       scoring: [],
       touched: {},
+      /** Changes with every opening so the editors start fresh (settings section open or closed) */
+      formKey: 0,
+      /** True after a submit attempt: every problem is shown */
+      showAll: false,
       /** Version being viewed or copied: id, criterionGroupId, versionNumber, name */
       source: null,
       /** Backend errors that belong to a field, shown until that field changes */
@@ -158,29 +153,26 @@ export default {
         ? this.$t("assessmentManagement.criterion.createVersion")
         : this.$t("assessmentManagement.criterion.create");
     },
-    takenVersions() {
-      const group = this.isVersion ? this.source?.criterionGroupId : null;
-      return new Set(this.criteria.filter((c) => c.criterionGroupId === group).map((c) => c.versionNumber));
+    bounds() {
+      return activeBounds(this.form);
     },
     errors() {
-      const errors = validateCriterionForm(this.form);
-      if (!errors.versionNumber && this.takenVersions.has(String(this.form.versionNumber).trim())) {
-        errors.versionNumber = "versionTaken";
-      }
-      return errors;
+      return validateCriterionForm(this.form);
     },
     /** An empty required field waits for its first blur; every other problem shows as soon as it exists. */
     shownErrors() {
       if (this.isView) {
         return {};   // a stored version is only displayed, whatever it contains
       }
+      // the settings errors are shown by the settings editor itself
+      const { settings, ...fieldErrors } = this.errors;
       const valueProblems = Object.fromEntries(
-        Object.entries(this.errors).filter(([, key]) => key !== "required").map(([field]) => [field, true])
+        Object.entries(fieldErrors).filter(([, key]) => key !== "required").map(([field]) => [field, true])
       );
-      return { ...visibleErrors(this.errors, { ...valueProblems, ...this.touched }, this.$t), ...this.serverErrors };
+      return { ...visibleErrors(fieldErrors, { ...valueProblems, ...this.touched }, this.$t), ...this.serverErrors };
     },
     optionErrors() {
-      return validateOptionList(this.scoring, this.form.minPoints, this.form.maxPoints);
+      return validateOptionList(this.scoring, this.bounds.min, this.bounds.max);
     },
     stepValidation() {
       if (this.isView) {
@@ -204,7 +196,7 @@ export default {
       return this.openStored(CRITERION_MODES.view, criterionId);
     },
     /**
-     * Open a stored version as the starting point of a new one; the version number starts empty.
+     * Open a stored version as the starting point of a new one.
      *
      * @param {number} criterionId - Id of the version to copy
      * @returns {Promise<boolean>} True when the modal opened
@@ -219,11 +211,7 @@ export default {
       this.loading = true;
       try {
         const criterion = await requestAssessment(this.$socket, "criterionGet", { criterionId });
-        const form = formFromCriterion(criterion);
-        if (mode === CRITERION_MODES.version) {
-          form.versionNumber = "";
-        }
-        this.show(mode, criterion, form, optionsFromCriterion(criterion));
+        this.show(mode, criterion, formFromCriterion(criterion), optionsFromCriterion(criterion));
         return true;
       } catch (error) {
         this.eventBus.emit("toast", {
@@ -244,17 +232,19 @@ export default {
       this.touched = {};
       this.serverErrors = {};
       this.submitError = "";
+      this.showAll = false;
+      this.formKey += 1;
       this.$refs.stepper.open();
     },
     messageFor(error) {
-      return resolveApiMessage(error.response ?? { message: error.message });
+      return failureText(error, this);
     },
     /** A changed field no longer has the backend error it caused. */
     setForm(next) {
       const serverErrors = { ...this.serverErrors };
       for (const field of Object.keys(next)) {
         if (next[field] !== this.form[field]) {
-          delete serverErrors[field];
+          delete serverErrors[field === "settingsRows" ? "settings" : field];
         }
       }
       this.serverErrors = serverErrors;
@@ -290,6 +280,7 @@ export default {
       }
       if (this.stepValidation.includes(false)) {
         this.touched = Object.fromEntries(Object.keys(this.form).map((field) => [field, true]));
+        this.showAll = true;
         return;
       }
       this.submitting = true;

@@ -2,17 +2,19 @@
  * Form model of the criterion modal: defaults, mapping from and to the backend contract
  * (`criterionCreate`, `criterionCreateVersion`, `criterionGet`) and the checks that run before a request.
  *
- * The backend decides what is valid; these checks only repeat its rules so the user sees the problem
- * before sending: required text fields, a version number made of numbers separated by dots, numbers where
- * numbers are expected, an integer expert level (any whole number the database column can hold),
- * `minPoints <= maxPoints` when both are set, and every option's points inside the
- * criterion's bounds (a missing bound is not enforced). Points need not be integers, options need no unique
- * points or description, and a criterion may have no options.
+ * The backend decides what is valid; these checks only repeat its rules so the user sees the problem before
+ * sending: a name, optional bounds (a bound that is switched off is `null`; negative and decimal values are
+ * fine; `minPoints <= maxPoints` when both are active), Advanced Settings without empty or duplicate keys, and
+ * every scoring option's points inside the active bounds. The version number is never entered: the backend
+ * assigns it (1, 2, 3, ...). Points need not be integers, options need no unique points or description, and a
+ * criterion may have no options.
  *
  * Error values are keys relative to `assessmentManagement.errors`. No `@/` imports (plain Node tests).
  *
  * @author Eyad Mohamed
  */
+import { boundsError } from "./pointBounds.js";
+import { rowsFromSettings, settingsFromRows, validateSettingsRows } from "./settingsForm.js";
 
 /** The three ways the modal opens. */
 export const CRITERION_MODES = Object.freeze({ create: "create", view: "view", version: "version" });
@@ -20,62 +22,44 @@ export const CRITERION_MODES = Object.freeze({ create: "create", view: "view", v
 /** varchar(255) columns in the database. */
 export const MAX_TEXT_LENGTH = 255;
 
-/** The expert level is an INTEGER column: the only limits are those of a signed 32-bit integer. */
-export const INTEGER_MIN = -2147483648;
-export const INTEGER_MAX = 2147483647;
-
-/**
- * Format of a version number: numbers separated by single dots (1, 1.1, 2.0.3). Same rule as
- * VERSION_PATTERN in backend/utils/helper/assessmentVersions.js; stored versions of another form stay
- * readable, the rule only applies to what the user enters.
- */
-export const VERSION_PATTERN = /^\d+(\.\d+)*$/;
-
-/** Form fields of step 1, in display order. */
-export const DETAIL_FIELDS = Object.freeze([
-  "name", "versionNumber", "description", "minPoints", "maxPoints", "function", "expertLevel", "subjective",
-]);
-
 const isBlank = (value) => value === null || value === undefined || String(value).trim() === "";
 const isNumber = (value) => typeof value === "number" && Number.isFinite(value);
 
 /**
- * Empty form of a new criterion. Points are empty (optional, sent as null); expert level needs a value
- * because the backend requires an integer.
+ * Empty form of a new criterion: both bounds switched off, no settings.
  *
  * @returns {Object} Form values
  */
 export function emptyCriterionForm() {
   return {
-    versionNumber: "",
     name: "",
     description: "",
-    minPoints: "",
-    maxPoints: "",
-    function: "",
-    subjective: false,
-    expertLevel: 1,
+    minActive: false,
+    minPoints: 0,
+    maxActive: false,
+    maxPoints: 0,
+    settingsRows: [],
   };
 }
 
 /**
- * Form values of a stored criterion version; `null` fields become empty inputs.
- * Used to view a version or as the starting point of a new one. The version number is copied too, and the
- * caller clears it for a new version so the user has to enter one.
+ * Form values of a stored criterion version. A `null` bound is switched off. Used to view a version or as the
+ * starting point of a new one; stored settings keep their JSON types until the user edits a value.
  *
  * @param {Object} criterion - Criterion as returned by the backend
  * @returns {Object} Form values
  */
 export function formFromCriterion(criterion) {
+  const hasMin = isNumber(criterion.minPoints);
+  const hasMax = isNumber(criterion.maxPoints);
   return {
-    versionNumber: criterion.versionNumber ?? "",
     name: criterion.name ?? "",
     description: criterion.description ?? "",
-    minPoints: criterion.minPoints ?? "",
-    maxPoints: criterion.maxPoints ?? "",
-    function: criterion.function ?? "",
-    subjective: Boolean(criterion.subjective),
-    expertLevel: criterion.expertLevel,
+    minActive: hasMin,
+    minPoints: hasMin ? criterion.minPoints : 0,
+    maxActive: hasMax,
+    maxPoints: hasMax ? criterion.maxPoints : 0,
+    settingsRows: rowsFromSettings(criterion.settings),
   };
 }
 
@@ -92,8 +76,8 @@ export function versionSource(criterion) {
 }
 
 /**
- * Scoring options of a stored criterion in stored order, without database ids: a copy never reuses
- * the rows of the original.
+ * Scoring options of a stored criterion in stored order, without database ids: a copy never reuses the rows
+ * of the original.
  *
  * @param {Object} criterion - Criterion as returned by the backend
  * @returns {Array<{points: number, description: string}>}
@@ -105,33 +89,56 @@ export function optionsFromCriterion(criterion) {
 }
 
 /**
- * Request body of `criterionCreate`, and the content fields of `criterionCreateVersion`.
- * Empty points and function become `null` (never 0); options keep their order and carry no ids.
+ * The active bounds as numbers; a switched-off bound or an invalid number is `null` (not enforced).
+ *
+ * @param {{minActive: boolean, minPoints: *, maxActive: boolean, maxPoints: *}} form
+ * @returns {{min: number|null, max: number|null}}
+ */
+export function activeBounds(form) {
+  return {
+    min: form.minActive && isNumber(form.minPoints) ? form.minPoints : null,
+    max: form.maxActive && isNumber(form.maxPoints) ? form.maxPoints : null,
+  };
+}
+
+/**
+ * The bounds of a criterion as numbers; an empty or invalid bound is `null` (not enforced).
+ *
+ * @param {number|string|null} min - Minimum points
+ * @param {number|string|null} max - Maximum points
+ * @returns {{min: number|null, max: number|null}}
+ */
+export function pointBounds(min, max) {
+  return { min: isNumber(min) ? min : null, max: isNumber(max) ? max : null };
+}
+
+/**
+ * Request body of `criterionCreate`, and the content fields of `criterionCreateVersion`. A switched-off bound
+ * is `null` (never 0); settings are sent as a whole (typed values as strings, untouched stored values with their
+ * type); options keep their order and carry no ids. No version number: the backend assigns it.
  *
  * @param {Object} form - Form values
  * @param {Array<{points: number|string, description: string}>} options - Scoring options in display order
  * @returns {Object} Payload fields
  */
 export function toCriterionPayload(form, options) {
+  const { min, max } = activeBounds(form);
   return {
-    versionNumber: String(form.versionNumber).trim(),
     name: form.name,
     description: form.description ?? "",
-    minPoints: isBlank(form.minPoints) ? null : Number(form.minPoints),
-    maxPoints: isBlank(form.maxPoints) ? null : Number(form.maxPoints),
-    function: isBlank(form.function) ? null : form.function,
-    subjective: Boolean(form.subjective),
-    expertLevel: Number(form.expertLevel),
+    minPoints: min,
+    maxPoints: max,
+    settings: settingsFromRows(form.settingsRows),
     scoringOptions: options.map(({ points, description }) => ({ points: Number(points), description: description ?? "" })),
   };
 }
 
 /**
- * Body of `criterionCreateVersion`: the source version, its group and the full edited content, so the
- * new version is exactly what the user sees (including cleared fields and removed options).
+ * Body of `criterionCreateVersion`: the source version, its group and the full edited content, so the new
+ * version is exactly what the user sees (including switched-off bounds, removed settings and removed options).
  *
  * @param {Object} source - Version the user started from (`id`, `criterionGroupId`)
- * @param {Object} form - Form values, `versionNumber` entered by the user
+ * @param {Object} form - Form values
  * @param {Array} options - Scoring options in display order
  * @returns {Object}
  */
@@ -147,55 +154,37 @@ export function versionRequest(source, form, options) {
  * Check step 1 of the form.
  *
  * @param {Object} form - Form values
- * @returns {Object} Field → error key; empty when valid
+ * @returns {Object} Field → error key (`settings` → the object of validateSettingsRows); empty when valid
  */
 export function validateCriterionForm(form) {
   const errors = {};
   if (isBlank(form.name)) errors.name = "required";
   else if (String(form.name).length > MAX_TEXT_LENGTH) errors.name = "tooLong";
 
-  if (isBlank(form.versionNumber)) errors.versionNumber = "required";
-  else if (String(form.versionNumber).trim().length > MAX_TEXT_LENGTH) errors.versionNumber = "tooLong";
-  else if (!VERSION_PATTERN.test(String(form.versionNumber).trim())) errors.versionNumber = "versionFormat";
+  if (form.minActive && !isNumber(form.minPoints)) errors.minPoints = "number";
+  if (form.maxActive && !isNumber(form.maxPoints)) errors.maxPoints = "number";
+  const { min, max } = activeBounds(form);
+  const range = boundsError(min, max);
+  if (range && !errors.maxPoints) errors.maxPoints = range;
 
-  for (const field of ["minPoints", "maxPoints"]) {
-    if (!isBlank(form[field]) && !isNumber(form[field])) errors[field] = "number";
-  }
-  if (!errors.minPoints && !errors.maxPoints && !isBlank(form.minPoints) && !isBlank(form.maxPoints)
-    && form.maxPoints < form.minPoints) {
-    errors.maxPoints = "maxBelowMin";
-  }
-  if (isBlank(form.expertLevel)) errors.expertLevel = "required";
-  else if (!Number.isInteger(form.expertLevel)) errors.expertLevel = "integer";
-  else if (form.expertLevel < INTEGER_MIN || form.expertLevel > INTEGER_MAX) errors.expertLevel = "integerRange";
-  if (!isBlank(form.function) && String(form.function).length > MAX_TEXT_LENGTH) errors.function = "tooLong";
+  const settings = validateSettingsRows(form.settingsRows);
+  if (settings.general || Object.keys(settings.rows).length) errors.settings = settings;
   return errors;
 }
 
 /**
- * The bounds of a criterion as numbers; an empty or invalid bound is `null` (not enforced).
- *
- * @param {number|string} min - Minimum points from the form
- * @param {number|string} max - Maximum points from the form
- * @returns {{min: number|null, max: number|null}}
- */
-export function pointBounds(min, max) {
-  return { min: isNumber(min) ? min : null, max: isNumber(max) ? max : null };
-}
-
-/**
- * Check the scoring options (step 2): every option needs a numeric point value (negative and decimal
- * values included) that lies within the criterion's bounds. With only one bound set only that bound
- * applies, with none any number is fine. Entered values are never changed. The result changes with the
- * bounds, so editing them in step 1 revalidates the options.
+ * Check the scoring options (step 2): every option needs a numeric point value (negative and decimal values
+ * included) that lies within the active bounds. With only one bound active only that bound applies, with none
+ * any number is fine. Entered values are never changed. The result changes with the bounds, so editing them in
+ * step 1 revalidates the options.
  *
  * @param {Array<{uid: number, points: number|string}>} options - Scoring options
- * @param {number|string} [min] - Criterion minimum points (empty: none)
- * @param {number|string} [max] - Criterion maximum points (empty: none)
+ * @param {number|string|null} [min] - Active minimum points (null/empty: none)
+ * @param {number|string|null} [max] - Active maximum points (null/empty: none)
  * @returns {Object<number, {points: string}>} Option uid → field errors (`required`, `number`,
  *   `pointsBetween`, `pointsAtLeast` or `pointsAtMost`); empty when valid
  */
-export function validateOptionList(options, min = "", max = "") {
+export function validateOptionList(options, min = null, max = null) {
   const bounds = pointBounds(min, max);
   const rangeError = bounds.min !== null && bounds.max !== null ? "pointsBetween"
     : bounds.min !== null ? "pointsAtLeast" : "pointsAtMost";
@@ -211,7 +200,7 @@ export function validateOptionList(options, min = "", max = "") {
 }
 
 /** Fields the backend names in `fieldRequired` / `fieldInvalid` that have an input in step 1. */
-const BACKEND_FIELDS = new Set(DETAIL_FIELDS);
+const BACKEND_FIELDS = new Set(["name", "description", "minPoints", "maxPoints", "settings"]);
 
 /**
  * The input a backend error belongs to, so it can be shown next to it.
@@ -222,9 +211,8 @@ const BACKEND_FIELDS = new Set(DETAIL_FIELDS);
  */
 export function errorTarget(response) {
   const key = response?.key;
-  if (key === "errors.assessment.criterion.versionExists") return { field: "versionNumber", step: 0 };
   if (key === "errors.assessment.pointsRange") return { field: "maxPoints", step: 0 };
-  if (key === "errors.assessment.versionFormat") return { field: "versionNumber", step: 0 };
+  if (key?.startsWith("errors.assessment.settings")) return { field: "settings", step: 0 };
   if (["errors.assessment.optionInvalid", "errors.assessment.optionBelowMin", "errors.assessment.optionAboveMax"].includes(key)) {
     return { field: null, step: 1 };
   }

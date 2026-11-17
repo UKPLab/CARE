@@ -5,7 +5,7 @@
  * `{success: false, key, params, message}`. This wraps one emit in a promise that
  * - resolves with `data`,
  * - rejects with an AssessmentRequestError carrying the backend response (translate it with
- *   `resolveApiMessage(error.response)`),
+ *   `failureText(error, this)` from failureMessage.js),
  * - rejects at once when the socket is not connected and after a timeout when no answer arrives
  *   (both with a client-side i18n key in the same `response` shape).
  *
