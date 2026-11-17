@@ -3,8 +3,19 @@
 const TranslatableError = require("../TranslatableError");
 
 /**
- * Shared by the criterion and rubric socket handlers (versioned assessments): request field readers
- * with identical validation, and the criterion loader / response shape.
+ * The three versioned entities. `table` and `group` are code constants (never user input); `lock` is the
+ * namespace of the group's advisory lock, shared with the triggers of the database
+ * (see 20261116024533-extend-assessment-version_chain.js).
+ */
+const ENTITIES = Object.freeze({
+    assessment: Object.freeze({table: "assessment", group: "assessmentGroupId", lock: 1}),
+    rubric: Object.freeze({table: "rubric", group: "rubricGroupId", lock: 2}),
+    criterion: Object.freeze({table: "criterion", group: "criterionGroupId", lock: 3}),
+});
+
+/**
+ * Shared by the criterion, rubric and assessment socket handlers (versioned assessments): request field readers
+ * with identical validation, version numbering, settings validation, and the loaders / response shapes.
  * Only what the schema requires or what has a defined meaning is checked; nothing else is restricted.
  */
 
@@ -13,14 +24,6 @@ const DASHBOARD_RIGHT = "frontend.dashboard.assessments.view";
 
 /** varchar(255) columns */
 const MAX_STRING = 255;
-
-/**
- * Format of a version number entered for a new criterion, rubric or assessment version (or a new version
- * of one): numbers separated by single dots, e.g. 1, 1.1 or 2.0.3. The same rule is checked in the
- * frontend (criterionForm.js). It is only checked on input: stored versions of any other form, for
- * example imported ones, are never validated, so they stay readable and can be copied into a new version.
- */
-const VERSION_PATTERN = /^\d+(\.\d+)*$/;
 
 const has = (object, key) => Object.prototype.hasOwnProperty.call(object, key);
 const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
@@ -37,31 +40,63 @@ const required = (field) => new TranslatableError("errors.assessment.fieldRequir
 const invalid = (field) => new TranslatableError("errors.assessment.fieldInvalid", {field});
 
 /**
- * Manually entered version number: string or number, trimmed, not empty, at most 255 characters and
- * numbers separated by dots (`VERSION_PATTERN`).
- * @param {Object} source
- * @returns {string}
- * @throws {TranslatableError}
+ * Version numbers are assigned by the backend ("1", "2", ...), never by the client. Every create and
+ * create-version request is checked with this first: a `versionNumber` of any value, `null` included, is refused.
+ * @param {Object} data request payload
+ * @throws {TranslatableError} `errors.assessment.versionNumberNotAllowed`
  */
-function readVersionNumber(source) {
-    let value = source.versionNumber;
-    if (typeof value === "number" && Number.isFinite(value)) {
-        value = String(value);
+function rejectClientVersionNumber(data) {
+    if (has(data, "versionNumber")) {
+        throw new TranslatableError("errors.assessment.versionNumberNotAllowed");
     }
-    if (value === undefined || value === null) {
-        throw required("versionNumber");
-    }
-    if (typeof value !== "string" || value.trim().length > MAX_STRING) {
-        throw invalid("versionNumber");
-    }
-    value = value.trim();
-    if (value === "") {
-        throw required("versionNumber");
-    }
-    if (!VERSION_PATTERN.test(value)) {
-        throw new TranslatableError("errors.assessment.versionFormat");
-    }
-    return value;
+}
+
+/**
+ * Serialises the creators and deleters of one group (transaction-scoped advisory lock). Call it before the
+ * version number is chosen and the row inserted; it is released with the transaction. The database triggers take
+ * the same lock, so raw SQL is serialised too.
+ * @param {import("sequelize").Sequelize} sequelize
+ * @param {"assessment"|"rubric"|"criterion"} kind
+ * @param {number} groupId
+ * @param {import("sequelize").Transaction} transaction
+ */
+async function lockVersionGroup(sequelize, kind, groupId, transaction) {
+    await sequelize.query("SELECT pg_advisory_xact_lock(:namespace, :groupId)", {
+        replacements: {namespace: ENTITIES[kind].lock, groupId}, transaction,
+    });
+}
+
+/**
+ * Next automatic version number of a group: one above the highest leading integer of every version label in
+ * the group, deleted versions included, so a number is never handed out twice (1, 2, 3 with 3 deleted gives 4).
+ * Older labels such as `1.2` count by their leading integer (1); labels without leading digits count as 0.
+ * Nothing is renumbered. Call it after `lockVersionGroup`.
+ * @param {import("sequelize").Sequelize} sequelize
+ * @param {"assessment"|"rubric"|"criterion"} kind
+ * @param {number} groupId
+ * @param {import("sequelize").Transaction} transaction
+ * @returns {Promise<string>}
+ */
+async function nextVersionNumber(sequelize, kind, groupId, transaction) {
+    const {table, group} = ENTITIES[kind];
+    const [row] = await sequelize.query(
+        `SELECT (COALESCE(MAX(substring("versionNumber" from '^[0-9]+')::numeric), 0) + 1)::text AS "next"
+         FROM "${table}" WHERE "${group}" = :groupId`,
+        {replacements: {groupId}, transaction, type: sequelize.QueryTypes.SELECT});
+    return row.next;
+}
+
+/**
+ * Highest id of the live (not deleted) versions of a group: the "latest" version. Creation order, not the
+ * label, decides, because older labels are not ordered.
+ * @returns {Promise<number|null>}
+ */
+async function latestLiveVersionId(sequelize, kind, groupId, transaction) {
+    const {table, group} = ENTITIES[kind];
+    const [row] = await sequelize.query(
+        `SELECT MAX(id) AS "latest" FROM "${table}" WHERE "${group}" = :groupId AND "deleted" = false`,
+        {replacements: {groupId}, transaction, type: sequelize.QueryTypes.SELECT});
+    return row.latest;
 }
 
 /**
@@ -132,22 +167,83 @@ function assertPointsRange(minPoints, maxPoints) {
     }
 }
 
-/** Criterion rows → API shape: plain numbers, options in order. */
+/** Limits of the Advanced Settings object. */
+const SETTINGS_LIMITS = Object.freeze({maxEntries: 100, maxKeyLength: 255, maxStringLength: 10000});
+/** Keys that must never be stored: they would let a settings object reach the prototype of other objects. */
+const UNSAFE_KEYS = new Set(["__proto__", "constructor", "prototype"]);
+
+/**
+ * Validates an Advanced Settings object: a plain object of at most 100 entries; keys not empty after trimming,
+ * at most 255 characters, not `__proto__`, `constructor` or `prototype`, unique after trimming; values string
+ * (at most 10 000 characters), finite number or boolean (their JSON type is kept: the text "true" is not the
+ * boolean true). No key has a special meaning or a fixed type. Keys are stored trimmed.
+ * @param {*} raw value of the request
+ * @returns {Object<string, string|number|boolean>} a new plain object
+ * @throws {TranslatableError}
+ */
+function readSettings(raw) {
+    if (!isObject(raw)) {
+        throw new TranslatableError("errors.assessment.settingsInvalid", {max: SETTINGS_LIMITS.maxEntries});
+    }
+    const entries = Object.entries(raw);
+    if (entries.length > SETTINGS_LIMITS.maxEntries) {
+        throw new TranslatableError("errors.assessment.settingsInvalid", {max: SETTINGS_LIMITS.maxEntries});
+    }
+    const settings = {};
+    for (const [rawKey, value] of entries) {
+        const key = rawKey.trim();
+        if (key === "" || key.length > SETTINGS_LIMITS.maxKeyLength || UNSAFE_KEYS.has(key)) {
+            throw new TranslatableError("errors.assessment.settingsKeyInvalid", {key: rawKey});
+        }
+        if (Object.prototype.hasOwnProperty.call(settings, key)) {
+            throw new TranslatableError("errors.assessment.settingsKeyDuplicate", {key});
+        }
+        const validType = typeof value === "string" ? value.length <= SETTINGS_LIMITS.maxStringLength
+            : typeof value === "number" ? Number.isFinite(value) : typeof value === "boolean";
+        if (!validType) {
+            throw new TranslatableError("errors.assessment.settingsValueInvalid", {key});
+        }
+        settings[key] = value;
+    }
+    return settings;
+}
+
+/**
+ * Settings to store for a criterion request. `settings` replaces the whole object when sent (so a removed key
+ * stays removed); without it the base (the copied version's settings) is the starting point.
+ * @param {Object} source request fields
+ * @param {Object} [base] settings to start from when the request carries none
+ * @returns {Object}
+ * @throws {TranslatableError}
+ */
+function readCriterionSettings(source, base = {}) {
+    return readSettings(source.settings === undefined ? base : source.settings);
+}
+
+/** Criterion rows → API shape: plain numbers, options in order, settings as stored. */
 function formatCriterion(row) {
-    const plain = row.get({plain: true});
+    const plain = typeof row.get === "function" ? row.get({plain: true}) : row;
     return {
         ...plain,
-        minPoints: toNumber(plain.minPoints),
-        maxPoints: toNumber(plain.maxPoints),
-        scoringOptions: plain.scoringOptions.map((option) => ({
+        ...criterionFields(plain),
+        scoringOptions: (plain.scoringOptions || []).map((option) => ({
             ...option,
             points: toNumber(option.points),
         })),
     };
 }
 
+/** Plain numbers and the settings of a criterion. */
+function criterionFields(plain) {
+    return {
+        minPoints: toNumber(plain.minPoints),
+        maxPoints: toNumber(plain.maxPoints),
+        settings: plain.settings || {},
+    };
+}
+
 /**
- * Criterion versions with their scoring options ordered by position.
+ * Live (not soft-deleted) criterion versions with their live scoring options ordered by position.
  * @param {Object} models Sequelize models
  * @param {Object} where Sequelize where for `criterion`
  * @param {Object} [options] Sequelize options (transaction)
@@ -156,8 +252,8 @@ function formatCriterion(row) {
 async function loadCriteria(models, where, options = {}) {
     const {criterion, criterion_scoring_option: scoringOption} = models;
     const rows = await criterion.findAll({
-        where,
-        include: [{model: scoringOption, as: "scoringOptions"}],
+        where: {...where, deleted: false},
+        include: [{model: scoringOption, as: "scoringOptions", where: {deleted: false}, required: false}],
         order: [
             ["criterionGroupId", "ASC"],
             ["id", "ASC"],
@@ -169,7 +265,7 @@ async function loadCriteria(models, where, options = {}) {
 }
 
 /**
- * Rubric versions with their criteria ordered by `criterionPositionInRubric`, API shape (plain numbers).
+ * Live rubric versions with their live criteria ordered by `criterionPositionInRubric`, API shape (plain numbers).
  * Each association is `{id, rubricId, criterionId, criterionPositionInRubric, criterion}`; `id` is the
  * criterion association id and `criterion` the full criterion version with its ordered scoring options.
  * Three queries however many rubrics: rubrics with their links, then all criteria with their options
@@ -182,8 +278,8 @@ async function loadCriteria(models, where, options = {}) {
 async function loadRubrics(models, where, options = {}) {
     const {rubric, rubric_criterion: rubricCriterion} = models;
     const rows = await rubric.findAll({
-        where,
-        include: [{model: rubricCriterion, as: "rubricCriteria"}],
+        where: {...where, deleted: false},
+        include: [{model: rubricCriterion, as: "rubricCriteria", where: {deleted: false}, required: false}],
         order: [
             ["rubricGroupId", "ASC"],
             ["id", "ASC"],
@@ -206,15 +302,59 @@ async function loadRubrics(models, where, options = {}) {
     }));
 }
 
+/**
+ * The latest live version of every group, one query: the version row (no children) plus `versionCount`,
+ * the number of live versions of its group. "Latest" is the highest id. Raw rows: callers format them.
+ * @param {import("sequelize").Sequelize} sequelize
+ * @param {"assessment"|"rubric"|"criterion"} kind
+ * @param {Object} [options] Sequelize options (transaction)
+ * @returns {Promise<Object[]>} ordered by group id
+ */
+async function queryLatestVersions(sequelize, kind, options = {}) {
+    const {table, group} = ENTITIES[kind];
+    return await sequelize.query(
+        `SELECT t.*, g."versionCount"
+         FROM "${table}" t
+         JOIN (SELECT "${group}" AS "groupId", MAX(id) AS "latestId", COUNT(*)::int AS "versionCount"
+               FROM "${table}" WHERE "deleted" = false GROUP BY "${group}") g ON g."latestId" = t.id
+         ORDER BY t."${group}"`,
+        {transaction: options.transaction, type: sequelize.QueryTypes.SELECT});
+}
+
+/**
+ * The live versions of one group, newest first, as short history rows (no children, no settings).
+ * @param {import("sequelize").Sequelize} sequelize
+ * @param {"assessment"|"rubric"|"criterion"} kind
+ * @param {number} groupId
+ * @param {Object} [options] Sequelize options (transaction)
+ * @returns {Promise<{id: number, groupId: number, versionNumber: string, name: string, createdAt: Date}[]>}
+ */
+async function queryVersionHistory(sequelize, kind, groupId, options = {}) {
+    const {table, group} = ENTITIES[kind];
+    return await sequelize.query(
+        `SELECT id, "${group}" AS "groupId", "versionNumber", name, "createdAt"
+         FROM "${table}" WHERE "${group}" = :groupId AND "deleted" = false ORDER BY id DESC`,
+        {replacements: {groupId}, transaction: options.transaction, type: sequelize.QueryTypes.SELECT});
+}
+
 module.exports = {
+    ENTITIES,
+    SETTINGS_LIMITS,
+    rejectClientVersionNumber,
+    lockVersionGroup,
+    nextVersionNumber,
+    latestLiveVersionId,
+    readSettings,
+    readCriterionSettings,
+    criterionFields,
+    queryLatestVersions,
+    queryVersionHistory,
     DASHBOARD_RIGHT,
     MAX_STRING,
-    VERSION_PATTERN,
     has,
     isObject,
     isNumeric,
     toNumber,
-    readVersionNumber,
     readText,
     readOptionalText,
     readNumber,

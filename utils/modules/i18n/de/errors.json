@@ -41,34 +41,37 @@
     "fieldInvalid": "{field} ist ungültig.",
     "optionInvalid": "Bewertungsoption {position}: {field} ist ungültig.",
     "pointsRange": "Die Mindestpunktzahl darf die Höchstpunktzahl nicht überschreiten.",
-    "versionFormat": "Die Versionsnummer muss aus durch Punkte getrennten Zahlen bestehen, zum Beispiel 1, 1.1 oder 2.0.3.",
+    "versionNumberNotAllowed": "Die Versionsnummer wird automatisch vergeben und kann nicht gesetzt werden.",
+    "versionConflict": "Gleichzeitig wurde eine andere Version erstellt. Bitte versuchen Sie es erneut.",
+    "settingsInvalid": "Die Einstellungen müssen ein Objekt mit höchstens {max} Einträgen sein.",
+    "settingsKeyInvalid": "Der Einstellungsschlüssel „{key}“ ist leer, zu lang oder nicht erlaubt.",
+    "settingsKeyDuplicate": "Der Einstellungsschlüssel „{key}“ wird mehrfach verwendet.",
+    "settingsValueInvalid": "Der Wert der Einstellung „{key}“ muss Text, eine Zahl oder true/false sein.",
     "optionBelowMin": "Bewertungsoption {position}: Die Punkte dürfen den Mindestwert des Kriteriums von {min} nicht unterschreiten.",
     "optionAboveMax": "Bewertungsoption {position}: Die Punkte dürfen den Höchstwert des Kriteriums von {max} nicht überschreiten.",
     "criterion": {
       "notFound": "Kriterium nicht gefunden.",
       "groupNotFound": "Kriteriengruppe nicht gefunden.",
-      "versionExists": "Version \"{versionNumber}\" existiert für dieses Kriterium bereits.",
       "copySourceMismatch": "Die zu kopierende Version gehört nicht zu dieser Kriteriengruppe.",
-      "inUse": "Kriterium-Version {criterionId} kann nicht gelöscht werden: Sie wird von {count} Rubrik-Version(en) verwendet ({rubricIds})."
+      "inUse": "„{name}“ (Version {version}) kann nicht gelöscht werden, weil es von {count} Rubrikversion(en) verwendet wird: {references}.",
+      "inUseUnknown": "„{name}“ (Version {version}) kann nicht gelöscht werden, weil es noch von einer Rubrik verwendet wird."
     },
     "rubric": {
       "notFound": "Rubrik nicht gefunden.",
       "groupNotFound": "Rubrikgruppe nicht gefunden.",
-      "versionExists": "Version \"{versionNumber}\" existiert für diese Rubrik bereits.",
       "copySourceMismatch": "Die zu kopierende Version gehört nicht zu dieser Rubrikgruppe.",
       "duplicateCriterion": "Kriterium-Version {criterionId} wurde mehrfach ausgewählt.",
       "criteriaNotFound": "Kriterium-Version(en) nicht gefunden: {criterionIds}.",
-      "inUse": "Rubrik-Version {rubricId} kann nicht gelöscht werden: Sie wird von {count} Assessment-Version(en) verwendet ({assessmentIds})."
+      "inUse": "„{name}“ (Version {version}) kann nicht gelöscht werden, weil es von {count} Assessment-Version(en) verwendet wird: {references}.",
+      "inUseUnknown": "„{name}“ (Version {version}) kann nicht gelöscht werden, weil es noch von einem Assessment verwendet wird."
     },
     "assessment": {
-      "deleteDisabled": "Das Löschen von Assessment-Versionen ist vorübergehend deaktiviert.",
       "notFound": "Assessment nicht gefunden.",
       "groupNotFound": "Assessment-Gruppe nicht gefunden.",
-      "versionExists": "Version \"{versionNumber}\" existiert für dieses Assessment bereits.",
       "copySourceMismatch": "Die zu kopierende Version gehört nicht zu dieser Assessment-Gruppe.",
       "duplicateRubric": "Rubrik-Version {rubricId} wurde mehrfach ausgewählt.",
       "rubricsNotFound": "Rubrik-Version(en) nicht gefunden: {rubricIds}.",
-      "inUse": "Assessment-Version {assessmentId} kann nicht gelöscht werden: Sie wird {count}-mal referenziert. Studienschritte: {studySteps}; Schritte von Studienvorlagen: {templateSteps}; Trigger: {triggers}; Trigger-Aktionen: {triggerActions}; ausstehende Trigger-Läufe: {queuedRuns}."
+      "inUse": "„{name}“ (Version {version}) kann nicht gelöscht werden, weil es noch verwendet wird. Studien: {studySteps}; Studienvorlagen: {templateSteps}; Trigger: {triggers}; Trigger-Aktionen: {triggerActions}; ausstehende Trigger-Läufe: {queuedRuns}."
     }
   },
   "configuration": {

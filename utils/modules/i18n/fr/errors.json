@@ -41,34 +41,37 @@
         "fieldInvalid": "{field} est invalide.",
         "optionInvalid": "Option de notation {position} : {field} est invalide.",
         "pointsRange": "Le minimum de points ne doit pas dépasser le maximum.",
-        "versionFormat": "Le numéro de version doit être composé de nombres séparés par des points, par exemple 1, 1.1 ou 2.0.3.",
+        "versionNumberNotAllowed": "Le numéro de version est attribué automatiquement et ne peut pas être défini.",
+        "versionConflict": "Une autre version a été créée en même temps. Veuillez réessayer.",
+        "settingsInvalid": "Les paramètres doivent être un objet d'au plus {max} entrées.",
+        "settingsKeyInvalid": "La clé de paramètre « {key} » est vide, trop longue ou non autorisée.",
+        "settingsKeyDuplicate": "La clé de paramètre « {key} » est utilisée plusieurs fois.",
+        "settingsValueInvalid": "La valeur du paramètre « {key} » doit être du texte, un nombre ou true/false.",
         "optionBelowMin": "Option de notation {position} : les points ne doivent pas être inférieurs au minimum du critère ({min}).",
         "optionAboveMax": "Option de notation {position} : les points ne doivent pas dépasser le maximum du critère ({max}).",
         "criterion": {
             "notFound": "Critère introuvable.",
             "groupNotFound": "Groupe de critères introuvable.",
-            "versionExists": "La version « {versionNumber} » existe déjà pour ce critère.",
             "copySourceMismatch": "La version à copier n'appartient pas à ce groupe de critères.",
-            "inUse": "La version {criterionId} du critère ne peut pas être supprimée : elle est utilisée par {count} version(s) de grille ({rubricIds})."
+            "inUse": "Impossible de supprimer « {name} » (version {version}) : elle est utilisée par {count} version(s) de grille : {references}.",
+            "inUseUnknown": "Impossible de supprimer « {name} » (version {version}) : elle est encore utilisée par une grille."
         },
         "rubric": {
             "notFound": "Grille introuvable.",
             "groupNotFound": "Groupe de grilles introuvable.",
-            "versionExists": "La version « {versionNumber} » existe déjà pour cette grille.",
             "copySourceMismatch": "La version à copier n'appartient pas à ce groupe de grilles.",
             "duplicateCriterion": "La version {criterionId} du critère est sélectionnée plusieurs fois.",
             "criteriaNotFound": "Version(s) de critère introuvable(s) : {criterionIds}.",
-            "inUse": "La version {rubricId} de la grille ne peut pas être supprimée : elle est utilisée par {count} version(s) d'évaluation ({assessmentIds})."
+            "inUse": "Impossible de supprimer « {name} » (version {version}) : elle est utilisée par {count} version(s) d'évaluation : {references}.",
+            "inUseUnknown": "Impossible de supprimer « {name} » (version {version}) : elle est encore utilisée par une évaluation."
         },
         "assessment": {
-            "deleteDisabled": "La suppression des versions d'évaluation est temporairement désactivée.",
             "notFound": "Évaluation introuvable.",
             "groupNotFound": "Groupe d'évaluations introuvable.",
-            "versionExists": "La version « {versionNumber} » existe déjà pour cette évaluation.",
             "copySourceMismatch": "La version à copier n'appartient pas à ce groupe d'évaluations.",
             "duplicateRubric": "La version {rubricId} de la grille est sélectionnée plusieurs fois.",
             "rubricsNotFound": "Version(s) de grille introuvable(s) : {rubricIds}.",
-            "inUse": "La version {assessmentId} de l'évaluation ne peut pas être supprimée : elle est référencée {count} fois. Étapes d'étude : {studySteps} ; étapes de modèles d'étude : {templateSteps} ; déclencheurs : {triggers} ; actions de déclencheur : {triggerActions} ; exécutions en attente : {queuedRuns}."
+            "inUse": "Impossible de supprimer « {name} » (version {version}) : elle est encore utilisée. Études : {studySteps} ; modèles d'étude : {templateSteps} ; déclencheurs : {triggers} ; actions de déclencheur : {triggerActions} ; exécutions en attente : {queuedRuns}."
         }
     },
     "configuration": {
