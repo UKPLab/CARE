@@ -1,8 +1,5 @@
 <template>
   <AuthLayout :title="$t('auth.register')" intro>
-    <template #above-card>
-      <ScientistMascot :mood="mascotMood"/>
-    </template>
     <template #header-action>
       <a
           class="btn btn-link btn-sm"
@@ -145,11 +142,7 @@
                     for="password"
                 >{{ $t('auth.password') }}</label>
                 <div class="col-md-6">
-                  <div
-                      class="password-field"
-                      @focusin="passwordFocused = true"
-                      @focusout="onPasswordFocusOut"
-                  >
+                  <div class="password-field">
                     <input
                         id="password"
                         v-model="formData['password']"
@@ -269,18 +262,14 @@ import TermsModal from "./TermsModal.vue";
 import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
-import ScientistMascot from "@/auth/ScientistMascot.vue";
 import { navigateWithAuthTransition } from "@/auth/authTransition";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
-/** How long the mascot waves after the page opens */
-const MASCOT_WAVE_MS = 3200;
-
 export default {
   name: "AuthRegister",
-  components: {AuthLayout, TermsModal, BasicButton, LoadIcon, ScientistMascot},
+  components: {AuthLayout, TermsModal, BasicButton, LoadIcon},
   data() {
     return {
       formData: {
@@ -297,9 +286,6 @@ export default {
       currentStep: 0,
       isSubmitting: false,
       showPassword: false,
-      passwordFocused: false,
-      mascotWaving: true,
-      mascotWaveTimer: null,
     }
   },
   computed: {
@@ -344,27 +330,6 @@ export default {
     },
     isLastStep() {
       return this.currentStep === this.steps.length - 1;
-    },
-    /**
-     * Covers the eyes while the password is typed, peeks while it is shown and approves once
-     * the terms are accepted. On the optional step it reads, and approves any opt-in.
-     */
-    mascotMood() {
-      if (this.activeStep.id === "improve") {
-        return this.formData.acceptStats || this.formData.acceptDataSharing ? "approve" : "read";
-      }
-      if (this.activeStep.id === "credentials") {
-        if (this.showPassword) {
-          return "peek";
-        }
-        if (this.passwordFocused) {
-          return "cover";
-        }
-        if (this.formData.acceptTerms) {
-          return "approve";
-        }
-      }
-      return this.mascotWaving ? "wave" : "idle";
     },
     validFirstName() {
       return this.formData.firstName.trim() !== "";
@@ -411,12 +376,6 @@ export default {
       this.formData.acceptDataSharing = this.config.isDataShared;
     }
     this.focusFirstField();
-    this.mascotWaveTimer = setTimeout(() => {
-      this.mascotWaving = false;
-    }, MASCOT_WAVE_MS);
-  },
-  beforeUnmount() {
-    clearTimeout(this.mascotWaveTimer);
   },
   beforeMount() {
     this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
@@ -424,12 +383,6 @@ export default {
   methods: {
     checkVal(key) {
       this.validity[key] = true;
-    },
-    /** Focus moving between the input and the eye button still counts as "in the password field" */
-    onPasswordFocusOut(event) {
-      if (!event.currentTarget.contains(event.relatedTarget)) {
-        this.passwordFocused = false;
-      }
     },
     onSubmit() {
       if (this.isLastStep) {

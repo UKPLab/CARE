@@ -14,9 +14,6 @@
     <div class="auth-stage">
       <div class="auth-shell">
         <div class="auth-card-wrap">
-          <div v-if="$slots['above-card']" class="auth-above-card">
-            <slot name="above-card" />
-          </div>
           <div class="card auth-card">
             <div class="auth-card-main">
               <LogoSvg class="auth-mobile-logo" :height="44" />
@@ -88,7 +85,6 @@
  *
  * @slot default - Card body
  * @slot header-action - Link or button next to the title
- * @slot above-card - Decoration that sits on the top edge of the form half, partly behind it
  * @slot card-footer - Small links and notes at the very bottom of the form half (e.g. docs, feedback, version)
  *
  * @author Mohammad Sherif
@@ -136,8 +132,6 @@ export default {
 <style scoped>
 .auth-page {
   --auth-glow-warm: color-mix(in srgb, #ffd966 55%, transparent);
-  /* Share of the box taken by the form half (columns 1fr : 1.05fr) */
-  --auth-form-share: 48.78%;
   position: relative;
   display: grid;
   grid-template-rows: 1fr auto;
@@ -153,10 +147,9 @@ html[data-bs-theme="dark"] .auth-page {
   --auth-glow-warm: rgba(var(--care-violet-rgb), .32);
 }
 
-/* The box top sits at the same place on every page, whatever the page puts above
-   (mascot) or below (links) the box, so switching pages never moves it. The top
-   offset centers the 540px box on tall screens and always leaves room for the
-   above-card slot (124px tall, 14px of it behind the box). */
+/* The box top sits at the same place on every page, whatever the body height,
+   so switching pages never moves it. The top offset centers the 540px box on
+   tall screens and never goes below 120px. */
 .auth-stage {
   position: relative;
   z-index: 1;
@@ -176,29 +169,6 @@ html[data-bs-theme="dark"] .auth-page {
 .auth-card-wrap {
   position: relative;
   width: 100%;
-}
-
-
-
-/* Centered over the form half */
-.auth-above-card {
-  position: absolute;
-  left: 0;
-  right: calc(100% - var(--auth-form-share));
-  bottom: calc(100% - 14px);
-  z-index: 0;
-  display: flex;
-  justify-content: center;
-  pointer-events: none;
-}
-
-/* The slot gets its own transition layer only when leaving its page ("back").
-   Elements that exist only in the new state are layered above everything else,
-   so on arrival the slot stays unnamed: it is part of the page snapshot, which
-   lies under the card, and rises from behind it. When leaving, it is in the old
-   state, where layers follow paint order, so it stays under the card as well. */
-html[data-auth-direction="back"] .auth-above-card {
-  view-transition-name: auth-mascot;
 }
 
 .auth-card {
@@ -855,10 +825,6 @@ html[data-bs-theme="dark"] .auth-spark {
     font-size: 1.3rem;
   }
 
-  .auth-above-card {
-    right: 0;
-  }
-
   .auth-mobile-logo {
     display: block !important;
     margin: 0 auto 20px;
@@ -959,28 +925,6 @@ html[data-auth-direction="back"] {
 
 ::view-transition-new(auth-card-body) {
   animation: auth-content-in .45s .15s var(--care-ease) both;
-}
-
-/* auth-mascot: the above-card slot (scientist on the register page) while leaving.
-   It sits under the card layer and slides down behind the card. */
-::view-transition-old(auth-mascot) {
-  animation: auth-mascot-hide .45s cubic-bezier(.55, 0, .75, .2) both;
-}
-
-@keyframes auth-mascot-hide {
-  0% {
-    transform: translateY(0);
-  }
-  25% {
-    transform: translateY(-6px);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(130px);
-    opacity: 0;
-  }
 }
 
 @keyframes auth-content-out {
