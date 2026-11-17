@@ -322,6 +322,7 @@ export default {
     },
     async toHome() {
       await this.$router.push(this.homeRoute);
+      this.eventBus.emit("dashboardHome");
     },
     onRecordingIconClick() {
       // Admins jump to the Socket Profiler dashboard. Non-admin participants
