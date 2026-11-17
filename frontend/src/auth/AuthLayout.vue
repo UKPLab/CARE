@@ -417,23 +417,8 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
   font-weight: 700;
   line-height: 1.15;
   letter-spacing: -.02em;
-  /* Slow light sweep through the headline */
-  background: linear-gradient(
-    100deg,
-    var(--bs-emphasis-color) 0%,
-    var(--bs-emphasis-color) 30%,
-    var(--care-primary) 50%,
-    rgb(var(--care-violet-rgb)) 62%,
-    var(--bs-emphasis-color) 80%
-  );
-  background-size: 260% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  animation:
-    auth-intro-in .8s var(--care-ease) both,
-    auth-title-shine 7s ease-in-out infinite alternate;
-  animation-delay: .18s, var(--auth-clock, 0s);
+  color: var(--bs-emphasis-color);
+  animation: auth-intro-in .8s .18s var(--care-ease) both;
 }
 
 .auth-intro-subtitle {
@@ -758,15 +743,6 @@ html[data-bs-theme="dark"] .auth-spark {
     opacity: 0;
     translate: 0 16px;
     filter: blur(6px);
-  }
-}
-
-@keyframes auth-title-shine {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: 0 0;
   }
 }
 
