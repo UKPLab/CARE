@@ -138,6 +138,10 @@ export default {
   height: 100vh;
   overflow-x: hidden;
   overflow-y: auto;
+  /* The register form is taller than the login one. Without a reserved gutter a classic
+     scrollbar appears only on register, the content gets narrower and the centered
+     logo/card shift sideways on every switch. */
+  scrollbar-gutter: stable;
   background:
     radial-gradient(ellipse at 50% 40%, color-mix(in srgb, var(--care-primary) 7%, transparent), transparent 60%),
     var(--bs-tertiary-bg);
@@ -798,9 +802,13 @@ html[data-bs-theme="dark"] .auth-spark {
     font-size: 1.3rem;
   }
 
+  /* Own View Transition layer. Otherwise it sits in the auth-card snapshot, which is
+     stretched from the old card height to the new one during the switch (login and
+     register have different heights here), so the logo got squashed and jumped. */
   .auth-mobile-logo {
     display: block !important;
     margin: 0 auto 20px;
+    view-transition-name: auth-mobile-logo;
   }
 
   .auth-card-brand,
@@ -847,6 +855,16 @@ html[data-auth-direction="back"] {
 
 ::view-transition-new(auth-scene),
 ::view-transition-group(auth-scene) {
+  animation: none;
+}
+
+/* Phone logo: same place on every page, so it just stays put during the switch */
+::view-transition-old(auth-mobile-logo) {
+  display: none;
+}
+
+::view-transition-new(auth-mobile-logo),
+::view-transition-group(auth-mobile-logo) {
   animation: none;
 }
 
