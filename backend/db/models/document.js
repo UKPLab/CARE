@@ -5,6 +5,7 @@ const fs = require('fs')
 const JSZip = require("jszip");
 const SequelizeSimpleCache = require("sequelize-simple-cache");
 const TranslatableError = require("../../utils/TranslatableError");
+const {Op} = require("sequelize");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 
@@ -62,6 +63,25 @@ module.exports = (sequelize, DataTypes) => {
                 default: false
             },
         ]
+
+        /**
+         * The viewer's own documents as the documents dashboard lists them: top-level, not
+         * hidden, in the given project, without config (3) and zip (4) rows. Same rule as
+         * `isOwnListedDocument` in frontend/src/assets/utils.js.
+         *
+         * @param {number} userId
+         * @param {number} projectId
+         * @returns {Object} WHERE fragment
+         */
+        static ownListedFilter(userId, projectId) {
+            return {
+                [Op.and]: [
+                    {userId, projectId, parentDocumentId: null, hideInFrontend: false},
+                    // `type !== 3 && type !== 4` in JS keeps a NULL type, NOT IN would drop it.
+                    {[Op.or]: [{type: null}, {type: {[Op.notIn]: [3, docTypes.DOC_TYPE_ZIP]}}]},
+                ],
+            };
+        }
 
         /**
          * Add a new document (and create a delta file for HTML/MODAL documents)

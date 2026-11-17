@@ -701,6 +701,29 @@ module.exports = (sequelize, DataTypes) => {
         }
 
         /**
+         * Studies still open: not closed, and either no end, an end not passed yet, or multiple
+         * submissions allowed. Same rule as `isStudyOpen` in
+         * frontend/src/components/dashboard/study/studyCardHelpers.js.
+         *
+         * @param {Date} [now]
+         * @returns {Object} WHERE fragment
+         */
+        static openFilter(now = new Date()) {
+            return {
+                [Op.and]: [
+                    {closed: null},
+                    {
+                        [Op.or]: [
+                            {end: null},
+                            {end: {[Op.gte]: now}},
+                            {multipleSubmit: true},
+                        ],
+                    },
+                ],
+            };
+        }
+
+        /**
          * `scope.mySessions`: the "My Sessions" dashboard. Studies in which the viewer has a
          * (not deleted) study session — for every viewer, fullAccess included, since the page is
          * about the viewer's own participation. Narrows the ACL, which already admits these
@@ -732,18 +755,7 @@ module.exports = (sequelize, DataTypes) => {
                     ),
                 },
             };
-            const active = {
-                [Op.and]: [
-                    {closed: null},
-                    {
-                        [Op.or]: [
-                            {end: null},
-                            {end: {[Op.gte]: new Date()}},
-                            {multipleSubmit: true},
-                        ],
-                    },
-                ],
-            };
+            const active = Study.openFilter();
             return {
                 [Op.and]: [
                     participated,

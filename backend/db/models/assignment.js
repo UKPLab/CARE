@@ -138,6 +138,23 @@ module.exports = (sequelize, DataTypes) => {
 		}
 
 		/**
+		 * Assignments the submissions dashboard lists: the viewer's own, and the others while
+		 * not disabled. Narrows the read ACL. Same rule as `isListedAssignment` in
+		 * frontend/src/assets/utils.js (`!disable` there also lists a NULL flag).
+		 *
+		 * @param {number} userId
+		 * @returns {Object} WHERE fragment
+		 */
+		static listedFilter(userId) {
+			return {
+				[Op.or]: [
+					{ userId },
+					{ disable: { [Op.not]: true } },
+				],
+			};
+		}
+
+		/**
 		 * Refuse replace and delete once the assignment is closed or its end time has passed.
 		 * Same comparison the submissions dashboard uses for a closed assignment: a set `closed`
 		 * timestamp, or `end` strictly before now. A missing assignment is ignored.
