@@ -42,46 +42,49 @@
 import { formatLocalizedDateTime, getTimeDiffString } from "@/assets/utils";
 import { homeShared } from "./homeShared";
 
-/** Rows in this panel; sized together with HomeSessions, see SESSIONS_LIMIT there. */
+/**
+ * Rows in this panel; sized together with HomeSessions, see SESSIONS_LIMIT there.
+ * The server sends this many (DEADLINES_LIMIT in backend/webserver/sockets/home.js).
+ */
 const DEADLINES_LIMIT = 3;
 
 /**
- * Open studies with an end date still ahead, soonest first.
+ * Open studies with an end date still ahead, soonest first. The server
+ * picks and orders them (homeSummaryGet, see Home.vue).
  */
 export default {
   name: "HomeDeadlines",
   mixins: [homeShared],
   props: {
-    /** Studies still open in the current project. */
-    openStudies: { type: Array, required: true },
+    /**
+     * Studies of the current project: `upcoming` (open, end not passed, soonest
+     * first, at most DEADLINES_LIMIT) and `withoutDeadline` (open studies without an end).
+     */
+    studies: { type: Object, required: true },
     /** Current time, so "closes in" stays current. */
     now: { type: Number, required: true },
   },
   computed: {
-    upcomingStudies() {
-      return this.openStudies
-        .filter((study) => {
-          const end = new Date(study.end).getTime();
-          return study.end && !Number.isNaN(end) && end >= this.now;
-        })
-        .sort((a, b) => new Date(a.end) - new Date(b.end));
-    },
     studiesWithoutDeadline() {
-      return this.openStudies.filter((study) => !study.end).length;
+      return this.studies.withoutDeadline;
     },
     deadlineItems() {
-      return this.upcomingStudies.slice(0, DEADLINES_LIMIT).map((study) => {
-        const end = new Date(study.end).getTime();
-        return {
-          key: `study-${study.id}`,
-          title: study.name,
-          label: this.$t("dashboard.home.closesIn", { when: getTimeDiffString(this.now, end) }),
-          tone: this.dueTone(end - this.now),
-          detail: this.$t("dashboard.home.endsOn", { date: formatLocalizedDateTime(study.end) }),
-          // Same target as the "open study" action on the studies dashboard.
-          to: `/study/${study.hash}`,
-        };
-      });
+      // An end can pass before the refetch at nextChangeAt answers; keep it out meanwhile.
+      return this.studies.upcoming
+        .filter((study) => new Date(study.end).getTime() >= this.now)
+        .slice(0, DEADLINES_LIMIT)
+        .map((study) => {
+          const end = new Date(study.end).getTime();
+          return {
+            key: `study-${study.id}`,
+            title: study.name,
+            label: this.$t("dashboard.home.closesIn", { when: getTimeDiffString(this.now, end) }),
+            tone: this.dueTone(end - this.now),
+            detail: this.$t("dashboard.home.endsOn", { date: formatLocalizedDateTime(study.end) }),
+            // Same target as the "open study" action on the studies dashboard.
+            to: `/study/${study.hash}`,
+          };
+        });
     },
   },
 };

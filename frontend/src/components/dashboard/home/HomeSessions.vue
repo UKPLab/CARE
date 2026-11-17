@@ -52,69 +52,46 @@ import { homeShared } from "./homeShared";
 const SESSIONS_LIMIT = 3;
 
 /**
- * The viewer's open sessions, soonest deadline first.
+ * The viewer's open sessions, soonest deadline first. The server picks and
+ * orders them and names each deadline (homeSummaryGet, see Home.vue).
  */
 export default {
   name: "HomeSessions",
   mixins: [homeShared],
   props: {
-    /** Viewer's sessions that have not ended. */
-    openSessions: { type: Array, required: true },
+    /**
+     * Viewer's sessions: `upcoming` holds the open ones, most urgent first
+     * (earliest of start + study.timeLimit and study.end), sessions without a
+     * deadline in recency order at the end, at most SESSIONS_LIMIT
+     * (also the limit in backend/webserver/sockets/home.js).
+     */
+    sessions: { type: Object, required: true },
     /** Current time, so deadline chips stay current. */
     now: { type: Number, required: true },
   },
   computed: {
     sessionItems() {
-      // Most urgent first; sessions without a deadline keep their recency order at the end.
-      return this.openSessions
-        .map((session) => {
-          const deadline = this.sessionDeadline(session);
-          return {
-            ...this.sessionLink(session),
-            due: this.dueBadge(deadline),
-            progress: this.sessionProgress(session),
-            deadlineAt: deadline ? deadline.at : Infinity,
-          };
-        })
-        .sort((a, b) => a.deadlineAt - b.deadlineAt)
-        .slice(0, SESSIONS_LIMIT);
+      return this.sessions.upcoming
+        .slice(0, SESSIONS_LIMIT)
+        .map((session) => ({
+          ...this.sessionLink(session),
+          due: this.dueBadge(session.deadline),
+          progress: this.sessionProgress(session),
+        }));
     },
   },
   methods: {
     /**
-     * The earliest of the session's time limit (start + study.timeLimit
-     * minutes) and the study's end date, or null if neither applies.
-     * @param {object} session
-     * @returns {{ at: number, kind: string }|null}
-     */
-    sessionDeadline(session) {
-      const study = this.$store.getters["table/study/get"](session.studyId);
-      if (!study) return null;
-      const candidates = [];
-      if (study.timeLimit > 0 && session.start) {
-        const at = new Date(session.start).getTime() + study.timeLimit * 60 * 1000;
-        if (!Number.isNaN(at)) candidates.push({ at, kind: "timeLimit" });
-      }
-      if (study.end) {
-        const at = new Date(study.end).getTime();
-        if (!Number.isNaN(at)) candidates.push({ at, kind: "study" });
-      }
-      if (candidates.length === 0) return null;
-      return candidates.reduce((min, c) => (c.at < min.at ? c : min));
-    },
-    /**
      * Furthest step reached (studyStepIdMax, the step currently in work)
      * out of the study's steps, as in SessionOverview. A new session starts
-     * on step 1. Null when the study has a single step or none loaded.
-     * @param {object} session
+     * on step 1. Null when the study has a single step or none.
+     * @param {{ stepsTotal: number, stepCurrent: number|null }} session
      * @returns {{ label: string, percent: number }|null}
      */
     sessionProgress(session) {
-      const total = this.$store.getters["table/study_step/getFiltered"](
-        (step) => step.studyId === session.studyId
-      ).length || 0;
+      const total = session.stepsTotal || 0;
       if (total < 2) return null;
-      const current = this.$store.getters["table/study_step/get"](session.studyStepIdMax)?.stepNumber;
+      const current = session.stepCurrent;
       if (!current) return null;
       return {
         label: this.$t("dashboard.home.stepOf", { current, total }),

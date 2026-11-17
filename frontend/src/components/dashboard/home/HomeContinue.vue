@@ -89,6 +89,7 @@ import LoadIcon from "@/basic/Icon.vue";
 import { formatLocalizedDate, getTimeDiffString } from "@/assets/utils";
 import { homeShared } from "./homeShared";
 
+/** Also the number of documents and studies the server sends (backend/webserver/sockets/home.js). */
 const CONTINUE_LIMIT = 6;
 /** Below this many recent items the panel also shows the "start something new" links. */
 const START_LINKS_BELOW = 4;
@@ -102,12 +103,17 @@ export default {
   components: { LoadIcon },
   mixins: [homeShared],
   props: {
-    /** Viewer's own listed documents. */
-    documents: { type: Array, required: true },
-    /** Viewer's sessions that have not ended. */
-    openSessions: { type: Array, required: true },
-    /** Signed-in user, used to count that user's sessions in the week strip. */
-    userId: { type: Number, required: true },
+    /**
+     * Viewer's own listed documents: `recent` (last edited first, at most
+     * CONTINUE_LIMIT) and `createdDates` (activity window).
+     */
+    documents: { type: Object, required: true },
+    /**
+     * Viewer's sessions: `recentByStudy` (one open session per study, the
+     * last used one, with `at` and the study's open session `count`, most
+     * recent first, at most CONTINUE_LIMIT) and the started/finished dates.
+     */
+    sessions: { type: Object, required: true },
     /** The viewer may open the studies dashboard. */
     canSeeStudies: { type: Boolean, required: true },
     /** Current time, so "edited" lines and the week strip stay current. */
@@ -116,22 +122,9 @@ export default {
   computed: {
     continueItems() {
       // A study can have many open sessions of the same user (multiple submit).
-      // Show the study once, linked to its most recently used session.
-      const byStudy = new Map();
-      this.openSessions.forEach((session) => {
-        const at = new Date(session.updatedAt || session.start || session.createdAt).getTime();
-        const entry = byStudy.get(session.studyId);
-        if (!entry) {
-          byStudy.set(session.studyId, { at, session, count: 1 });
-          return;
-        }
-        entry.count += 1;
-        if (at > entry.at) {
-          entry.at = at;
-          entry.session = session;
-        }
-      });
-      const sessions = [...byStudy.values()].map(({ at, session, count }) => {
+      // The server shows the study once, linked to its most recently used session.
+      const sessions = this.sessions.recentByStudy.map((session) => {
+        const { at, count } = session;
         const link = this.sessionLink(session);
         return {
           at,
@@ -146,7 +139,7 @@ export default {
           },
         };
       });
-      const documents = this.documents.map((doc) => {
+      const documents = this.documents.recent.map((doc) => {
         const kind = this.documentKind(doc);
         return {
           at: new Date(doc.updatedAt || doc.createdAt).getTime(),
@@ -197,11 +190,11 @@ export default {
      * added, sessions started, sessions finished.
      */
     weekDays() {
-      const sessions = this.$store.getters["table/study_session/getByUser"](this.userId);
+      // The server sends the dates of the whole activity window (13 weeks), which covers these 7 days.
       const dates = [
-        ...this.documents.map((doc) => doc.createdAt),
-        ...sessions.map((session) => session.start || session.createdAt),
-        ...sessions.map((session) => session.end),
+        ...this.documents.createdDates,
+        ...this.sessions.startedDates,
+        ...this.sessions.finishedDates,
       ]
         .filter(Boolean)
         .map((value) => new Date(value).getTime())

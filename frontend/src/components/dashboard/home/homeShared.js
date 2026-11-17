@@ -23,15 +23,15 @@ export const homeShared = {
       return { kind: "pdf", icon: "file-earmark-pdf", label: this.$t("dashboard.home.kindPdf") };
     },
     /**
-     * @param {object} session
+     * @param {object} session Home summary session row; `studyName` is null
+     *   when the study is gone
      * @returns {{ key: string, title: string, detail: string, to: string }}
      */
     sessionLink(session) {
-      const study = this.$store.getters["table/study/get"](session.studyId);
       const when = getTimeDiffString(Date.now(), new Date(session.start || session.createdAt));
       return {
         key: `session-${session.id}`,
-        title: study?.name || this.$t("sidebar.nav.my_sessions"),
+        title: session.studyName || this.$t("sidebar.nav.my_sessions"),
         detail: this.$t("dashboard.home.started", { when }),
         to: `/session/${session.hash}`,
       };

@@ -1,49 +1,39 @@
 <template>
   <router-link class="card home-tile" to="/dashboard/submissions">
     <span>{{ $t('sidebar.nav.submissions') }}</span>
-    <b>{{ assignments.length }}</b>
+    <b>{{ submissions.assignmentsTotal }}</b>
     <HomeActivityGraph :series="activity" />
   </router-link>
 </template>
 
 <script>
 import HomeActivityGraph from "./HomeActivityGraph.vue";
-import { isListedAssignment } from "@/assets/utils";
 
 /**
- * Home submissions count. Mounted only while the user can see the tile
- * so assignment and submission rows are not subscribed for everyone on Home.
+ * Home submissions count. The server only computes it for viewers who see
+ * the tile (homeSummaryGet, right frontend.dashboard.submissions.view).
  */
 export default {
   name: "HomeSubmissionsTile",
   components: { HomeActivityGraph },
-  subscribeTable: ["assignment", "submission"],
+  props: {
+    /** Listed assignments (isListedAssignment rule): `{ assignmentsTotal, createdDates, submittedDates }`. */
+    submissions: { type: Object, required: true },
+  },
   computed: {
-    userId() {
-      return this.$store.getters["auth/getUserId"];
-    },
-    assignments() {
-      return this.$store.getters["table/assignment/getFiltered"](
-        (assignment) => isListedAssignment(assignment, this.userId)
-      );
-    },
     activity() {
-      const assignmentIds = new Set(this.assignments.map((assignment) => assignment.id));
-      const submissions = this.$store.getters["table/submission/getFiltered"](
-        (submission) => assignmentIds.has(submission.assignmentId) && !submission.deleted
-      ) || [];
       return [
         {
           key: "created",
           label: this.$t("dashboard.home.activitySubmissions"),
-          dates: this.assignments.map((assignment) => assignment.createdAt),
+          dates: this.submissions.createdDates,
         },
         {
           // Uploads to the listed assignments: the user's own, and for an
           // assignment owner the ones handed in by others.
           key: "submitted",
           label: this.$t("dashboard.home.activitySubmitted"),
-          dates: submissions.map((submission) => submission.createdAt),
+          dates: this.submissions.submittedDates,
         },
       ];
     },

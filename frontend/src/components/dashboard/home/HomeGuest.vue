@@ -109,12 +109,9 @@ import getServerURL from "@/assets/serverUrl";
 import { formatLocalizedDateTime } from "@/assets/utils";
 import { homeShared } from "./homeShared";
 
-// Seeded for the guest account in 20220706143939-basic-documents.js.
-const SHOWCASE_DOCUMENT_HASH = "8852a746-360e-4c31-add2-4d1c75bfb96d";
-const SHOWCASE_DOCUMENT_NAME = "Showcase Document";
-
 /**
- * Start page shown to the shared guest account.
+ * Start page shown to the shared guest account. Data comes from the server
+ * (homeSummaryGet, see Home.vue).
  */
 export default {
   name: "HomeGuest",
@@ -126,10 +123,19 @@ export default {
       type: Boolean,
       required: true,
     },
-    /** Studies still open in the current project. */
-    openStudies: {
+    /** Open studies of the current project, soonest end first, studies without an end last (at most 6). */
+    studies: {
       type: Array,
       required: true,
+    },
+    /**
+     * The seeded showcase document (or one with its name) the guest may read,
+     * `{ id, name, hash, type }`, or null.
+     */
+    showcaseDocument: {
+      type: Object,
+      required: false,
+      default: null,
     },
     /** Current time, so deadline chips stay current. */
     now: {
@@ -140,16 +146,6 @@ export default {
   computed: {
     canRegister() {
       return window.config?.["app.register.enabled"] === "true";
-    },
-    // The seeded showcase (fixed hash), or a document with the same name if an
-    // installation re-uploaded it. Only rows the guest may read reach the store.
-    showcaseDocument() {
-      const visible = this.$store.getters["table/document/getFiltered"](
-        (doc) => !doc.deleted && doc.parentDocumentId == null
-      );
-      return visible.find((doc) => doc.hash === SHOWCASE_DOCUMENT_HASH)
-        || visible.find((doc) => doc.name === SHOWCASE_DOCUMENT_NAME)
-        || null;
     },
     guestStartItems() {
       const items = [];
@@ -185,25 +181,21 @@ export default {
       }
       return items;
     },
-    // Open studies the guest account takes part in, soonest deadline first.
+    // Open studies the guest account can open, soonest deadline first (ordered by the server).
     guestStudyItems() {
-      return this.openStudies
-        .map((study) => {
-          const end = study.end ? new Date(study.end).getTime() : NaN;
-          const deadline = Number.isNaN(end) ? null : { at: end, kind: "study" };
-          return {
-            key: `study-${study.id}`,
-            title: study.name,
-            detail: study.end
-              ? this.$t("dashboard.home.endsOn", { date: formatLocalizedDateTime(study.end) })
-              : this.$t("dashboard.home.guest.studyDetail"),
-            to: `/study/${study.hash}`,
-            due: this.dueBadge(deadline),
-            deadlineAt: deadline ? deadline.at : Infinity,
-          };
-        })
-        .sort((a, b) => a.deadlineAt - b.deadlineAt)
-        .slice(0, 6);
+      return this.studies.map((study) => {
+        const end = study.end ? new Date(study.end).getTime() : NaN;
+        const deadline = Number.isNaN(end) ? null : { at: end, kind: "study" };
+        return {
+          key: `study-${study.id}`,
+          title: study.name,
+          detail: study.end
+            ? this.$t("dashboard.home.endsOn", { date: formatLocalizedDateTime(study.end) })
+            : this.$t("dashboard.home.guest.studyDetail"),
+          to: `/study/${study.hash}`,
+          due: this.dueBadge(deadline),
+        };
+      });
     },
   },
   methods: {
