@@ -1,26 +1,45 @@
 {
     "title": "Bewertungen",
     "recordCount": "{count} Einträge",
-    "prototypeNote": "Prototyp mit lokalen Beispieldaten. Änderungen werden nicht in CARE gespeichert.",
     "tabs": {
         "assessments": "Bewertungen",
         "rubrics": "Rubriken",
         "criteria": "Kriterien"
     },
     "actions": {
-        "edit": "Bearbeiten",
         "delete": "Löschen",
-        "save": "Speichern",
         "next": "Weiter",
         "view": "Ansehen",
         "newVersion": "Neue Version erstellen",
+        "versions": "Versionen",
         "retry": "Erneut versuchen"
+    },
+    "kinds": {
+        "criterion": "Kriterium",
+        "rubric": "Rubrik",
+        "assessment": "Bewertung"
+    },
+    "versions": {
+        "title": "Versionen von „{name}“",
+        "empty": "Keine Versionen."
+    },
+    "bounds": {
+        "inactive": "Nicht gesetzt: Es gilt keine Grenze"
+    },
+    "settings": {
+        "title": "Erweiterte Einstellungen",
+        "description": "Optionale Schlüssel-Wert-Paare",
+        "empty": "Keine Einstellungen.",
+        "key": "Schlüssel",
+        "value": "Wert",
+        "add": "Einstellung hinzufügen",
+        "remove": "Einstellung entfernen",
+        "emptyEditable": "Keine Einstellungen. Fügen Sie bei Bedarf einen Schlüssel und einen Wert hinzu."
     },
     "fields": {
         "id": "ID",
         "name": "Name",
         "assessmentName": "Name der Bewertung",
-        "code": "Code",
         "description": "Beschreibung",
         "version": "Version",
         "rubrics": "Rubriken",
@@ -32,49 +51,48 @@
         "defaultPoints": "Standardpunkte",
         "defaultPointsHelp": "Startwert; die Kriterienpunkte werden dazu addiert.",
         "isBonus": "Bonus-Rubrik",
-        "gradingFunction": "Bewertungsfunktion",
-        "expertLevel": "Expertenlevel",
-        "subjective": "Subjektive Bewertung",
         "scoringDescription": "Beschreibung der Punktevergabe",
-        "group": "Gruppe",
+        "latestVersion": "Neueste Version",
+        "versions": "Versionen",
         "createdAt": "Erstellt am"
     },
     "calculation": {
-        "sum": "Summe",
-        "min": "Begrenzte Summe",
+        "sum": "Summierung",
+        "min": "Begrenzte Summe (ältere Rubriken)",
         "max": "Basis + Anpassungen"
-    },
-    "gradingFunction": {
-        "auto_grading": "Automatische Bewertung",
-        "manual_grading": "Manuelle Bewertung",
-        "check_latex_metadata": "LaTeX-Metadaten prüfen",
-        "check_latex_template": "LaTeX-Vorlage prüfen",
-        "check_pdf_pages": "PDF-Seitenzahl prüfen",
-        "none": "Keine"
     },
     "assessment": {
         "listTitle": "Bewertungsdefinitionen",
         "add": "Bewertung hinzufügen",
         "addTitle": "Bewertung hinzufügen",
-        "editTitle": "Bewertung bearbeiten",
+        "viewTitle": "Bewertung ansehen — v{version}",
+        "versionTitle": "Neue Bewertungsversion erstellen",
+        "create": "Bewertung erstellen",
+        "createVersion": "Neue Version erstellen",
         "stepDetails": "Details der Bewertung",
         "stepRubrics": "Rubriken auswählen & ordnen",
         "detailsTitle": "Details der Bewertung",
         "rubricsTitle": "Rubriken auswählen & ordnen",
-        "rubricsHelp": "Wählen Sie vorhandene Rubriken in der Tabelle aus und ordnen Sie sie in der gewünschten Reihenfolge.",
-        "noRubricsSelected": "Noch keine Rubriken ausgewählt."
+        "rubricsHelp": "Wählen Sie Rubrikversionen in der Tabelle aus und ordnen Sie sie in der gewünschten Reihenfolge.",
+        "noRubricsSelected": "Noch keine Rubriken ausgewählt.",
+        "empty": "Noch keine Bewertungen. Fügen Sie die erste hinzu."
     },
     "rubric": {
         "listTitle": "Rubrikenbibliothek",
         "add": "Rubrik hinzufügen",
         "addTitle": "Rubrik hinzufügen",
-        "editTitle": "Rubrik bearbeiten",
+        "viewTitle": "Rubrik ansehen — v{version}",
+        "versionTitle": "Neue Rubrikversion erstellen",
+        "create": "Rubrik erstellen",
+        "createVersion": "Neue Version erstellen",
         "stepDetails": "Details der Rubrik",
         "stepCriteria": "Kriterien auswählen & ordnen",
         "detailsTitle": "Details der Rubrik",
         "criteriaTitle": "Kriterien auswählen & ordnen",
-        "criteriaHelp": "Wählen Sie vorhandene Kriterien in der Tabelle aus und ordnen Sie sie in der gewünschten Reihenfolge.",
-        "noCriteriaSelected": "Noch keine Kriterien ausgewählt."
+        "criteriaHelp": "Wählen Sie Kriteriumsversionen in der Tabelle aus und ordnen Sie sie in der gewünschten Reihenfolge.",
+        "noCriteriaSelected": "Noch keine Kriterien ausgewählt.",
+        "bonusHelp": "Eine Bonus-Rubrik addiert ihre Punkte als Zusatzpunkte zur erreichten Punktzahl, erhöht aber nicht die Maximalpunktzahl der Bewertung. Die Endpunktzahl kann 100 % nicht überschreiten.",
+        "empty": "Noch keine Rubriken. Fügen Sie die erste hinzu."
     },
     "criterion": {
         "listTitle": "Kriterienbibliothek",
@@ -93,12 +111,8 @@
         "versionTitle": "Neue Kriteriumsversion erstellen",
         "create": "Kriterium erstellen",
         "createVersion": "Neue Version erstellen",
-        "versionNotice": "Sie erstellen eine neue Version von „{name}“ (aktuell Version {version}). Version {version} bleibt unverändert, Rubriken, die sie verwenden, sind nicht betroffen. Geben Sie eine neue Versionsnummer ein.",
-        "groupInfo": "Kriteriengruppe {group}. Diese Version wird schreibgeschützt angezeigt.",
         "noOptions": "Keine Bewertungsoptionen.",
-        "empty": "Noch keine Kriterien. Fügen Sie das erste hinzu.",
-        "versionPlaceholder": "z. B. 1.1 oder 2",
-        "versionMustBeNew": "Die Versionsnummer muss neu sein."
+        "empty": "Noch keine Kriterien. Fügen Sie das erste hinzu."
     },
     "selection": {
         "selectedOrder": "Ausgewählte Reihenfolge",
@@ -110,34 +124,32 @@
     },
     "errors": {
         "required": "Dieses Feld ist erforderlich.",
-        "integer": "Geben Sie eine ganze Zahl ein.",
         "maxBelowMin": "Die maximale Punktzahl muss größer oder gleich der minimalen sein.",
-        "duplicateCode": "Dieser Code wird bereits verwendet.",
-        "defaultOutOfRange": "Die Standardpunkte müssen zwischen minimaler und maximaler Punktzahl liegen.",
         "selectRubric": "Wählen Sie mindestens eine Rubrik aus.",
         "selectCriterion": "Wählen Sie mindestens ein Kriterium aus.",
         "number": "Geben Sie eine Zahl ein.",
         "tooLong": "Verwenden Sie höchstens 255 Zeichen.",
-        "versionTaken": "Diese Versionsnummer wird für dieses Kriterium bereits verwendet.",
-        "versionFormat": "Verwenden Sie durch Punkte getrennte Zahlen, zum Beispiel 1, 1.1 oder 2.0.3.",
         "pointsBetween": "Die Punkte müssen zwischen {min} und {max} liegen.",
         "pointsAtLeast": "Die Punkte müssen mindestens {min} betragen.",
         "pointsAtMost": "Die Punkte dürfen höchstens {max} betragen.",
-        "integerRange": "Geben Sie eine ganze Zahl ein, die in die Datenbank passt (-2147483648 bis 2147483647)."
+        "settingsKeyRequired": "Geben Sie einen Schlüssel ein.",
+        "settingsKeyTooLong": "Ein Schlüssel darf höchstens 255 Zeichen haben.",
+        "settingsKeyUnsafe": "Dieser Schlüsselname ist nicht erlaubt.",
+        "settingsKeyDuplicate": "Dieser Schlüssel wird mehrfach verwendet.",
+        "settingsValueTooLong": "Ein Wert darf höchstens 10000 Zeichen haben.",
+        "settingsTooMany": "Es sind höchstens {max} Einstellungen erlaubt."
     },
     "confirm": {
-        "title": "Eintrag löschen",
-        "deleteAssessment": "Bewertung \"{name}\" löschen? Die zugehörigen Rubriken bleiben erhalten.",
-        "deleteRubric": "Rubrik \"{name}\" löschen? Sie wird aus allen Bewertungen entfernt; die Kriterien bleiben erhalten.",
-        "deleteCriterion": "Version „{version}“ des Kriteriums „{name}“ löschen? Nur diese Version wird gelöscht, andere Versionen bleiben erhalten. Sie kann nicht gelöscht werden, solange eine Rubrik sie verwendet.",
-        "usedBy": "Dieser Eintrag wird derzeit von {count} anderen Einträgen verwendet."
+        "title": "Version löschen",
+        "deleteVersion": "Version „{version}“ des Eintrags „{name}“ ({kind}) löschen? Nur diese Version wird gelöscht, andere Versionen bleiben erhalten. Sie kann nicht gelöscht werden, solange sie noch verwendet wird."
     },
     "messages": {
         "saved": "Gespeichert",
         "deleted": "Gelöscht",
-        "assessmentSaved": "Bewertung \"{name}\" wurde gespeichert.",
-        "rubricSaved": "Rubrik \"{name}\" wurde gespeichert.",
-        "recordDeleted": "\"{name}\" wurde gelöscht.",
+        "assessmentCreated": "Bewertung „{name}“ (Version {version}) wurde erstellt.",
+        "assessmentVersionCreated": "Version {version} der Bewertung „{name}“ wurde erstellt.",
+        "rubricCreated": "Rubrik „{name}“ (Version {version}) wurde erstellt.",
+        "rubricVersionCreated": "Version {version} der Rubrik „{name}“ wurde erstellt.",
         "loading": "Wird geladen…",
         "error": "Fehler",
         "deleteFailed": "Löschen fehlgeschlagen",
@@ -145,6 +157,7 @@
         "timeout": "Der Server hat nicht rechtzeitig geantwortet. Versuchen Sie es erneut.",
         "criterionCreated": "Kriterium „{name}“ (Version {version}) wurde erstellt.",
         "criterionVersionCreated": "Version {version} des Kriteriums „{name}“ wurde erstellt.",
-        "criterionDeleted": "Version {version} des Kriteriums „{name}“ wurde gelöscht."
+        "versionDeleted": "Version {version} von „{name}“ ({kind}) wurde gelöscht.",
+        "requestFailed": "Die Anfrage ist fehlgeschlagen. Bitte versuchen Sie es erneut."
     }
 }
