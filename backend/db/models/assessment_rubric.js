@@ -4,11 +4,9 @@ const MetaModel = require("../MetaModel.js");
 module.exports = (sequelize, DataTypes) => {
     /**
      * Places a rubric version at a position in an assessment version.
-     * A rubric version can appear once per assessment version and can be reused across assessment versions.
      */
     class AssessmentRubric extends MetaModel {
         static autoTable = false;
-        static hasSoftDelete = false;
 
         static associate(models) {
             AssessmentRubric.belongsTo(models["assessment"], {foreignKey: "assessmentId", as: "assessment"});
@@ -20,11 +18,14 @@ module.exports = (sequelize, DataTypes) => {
         assessmentId: DataTypes.INTEGER,
         rubricId: DataTypes.INTEGER,
         rubricPositionInAssessment: DataTypes.INTEGER,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
+        createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE,
     }, {
         sequelize,
         modelName: "assessment_rubric",
         tableName: "assessment_rubric",
-        timestamps: false,
     });
 
     return AssessmentRubric;

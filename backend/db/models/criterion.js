@@ -3,13 +3,11 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     /**
-     * One immutable version of a criterion. Same group/version rules as `assessment`.
-     * expertLevel keeps the configuration JSON integer (0 = beginner … 2 = expert in the existing data).
-     * Points are unrestricted NUMERIC: PostgreSQL returns them as strings, convert with Number() where needed.
+     * One immutable version of a criterion; versions of the same criterion share `criterionGroupId`.
+     * `settings` holds free key/value pairs; NULL bounds mean the bound is not active.
      */
     class Criterion extends MetaModel {
         static autoTable = false;
-        static hasSoftDelete = false;
 
         static associate(models) {
             Criterion.hasMany(models["rubric_criterion"], {foreignKey: "criterionId", as: "rubricCriteria"});
@@ -27,15 +25,15 @@ module.exports = (sequelize, DataTypes) => {
         description: DataTypes.TEXT,
         minPoints: DataTypes.DECIMAL,
         maxPoints: DataTypes.DECIMAL,
-        function: DataTypes.STRING,
-        subjective: DataTypes.BOOLEAN,
-        expertLevel: DataTypes.INTEGER,
+        settings: DataTypes.JSONB,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE,
     }, {
         sequelize,
         modelName: "criterion",
         tableName: "criterion",
-        updatedAt: false,
     });
 
     return Criterion;

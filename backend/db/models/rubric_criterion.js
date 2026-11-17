@@ -3,13 +3,10 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     /**
-     * Places a criterion version at a position in a rubric version. The row id is the
-     * "criterion occurrence id" under which assessment results are stored.
-     * A criterion version can appear once per rubric version and can be reused across rubric versions.
+     * Places a criterion version at a position in a rubric version.
      */
     class RubricCriterion extends MetaModel {
         static autoTable = false;
-        static hasSoftDelete = false;
 
         static associate(models) {
             RubricCriterion.belongsTo(models["rubric"], {foreignKey: "rubricId", as: "rubric"});
@@ -21,11 +18,14 @@ module.exports = (sequelize, DataTypes) => {
         rubricId: DataTypes.INTEGER,
         criterionId: DataTypes.INTEGER,
         criterionPositionInRubric: DataTypes.INTEGER,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
+        createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE,
     }, {
         sequelize,
         modelName: "rubric_criterion",
         tableName: "rubric_criterion",
-        timestamps: false,
     });
 
     return RubricCriterion;

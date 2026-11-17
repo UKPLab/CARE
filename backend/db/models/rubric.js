@@ -3,13 +3,11 @@ const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
     /**
-     * One immutable version of a rubric. Same group/version rules as `assessment`.
-     * Points are unrestricted NUMERIC: PostgreSQL returns them as strings, convert with Number() where needed.
-     * calculation: "sum" | "min" | "max" (see utils/modules/assessment-score).
+     * One immutable version of a rubric; versions of the same rubric share `rubricGroupId`.
+     * `settings` holds free key/value pairs; NULL bounds mean the bound is not active.
      */
     class Rubric extends MetaModel {
         static autoTable = false;
-        static hasSoftDelete = false;
 
         static associate(models) {
             Rubric.hasMany(models["assessment_rubric"], {foreignKey: "rubricId", as: "assessmentRubrics"});
@@ -30,12 +28,15 @@ module.exports = (sequelize, DataTypes) => {
         calculation: DataTypes.STRING,
         defaultPoints: DataTypes.DECIMAL,
         isBonus: DataTypes.BOOLEAN,
+        settings: DataTypes.JSONB,
+        deleted: DataTypes.BOOLEAN,
+        deletedAt: DataTypes.DATE,
         createdAt: DataTypes.DATE,
+        updatedAt: DataTypes.DATE,
     }, {
         sequelize,
         modelName: "rubric",
         tableName: "rubric",
-        updatedAt: false,
     });
 
     return Rubric;
