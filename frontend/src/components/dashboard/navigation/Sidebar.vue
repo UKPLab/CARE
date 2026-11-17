@@ -13,6 +13,14 @@
     >
       <!-- Sidebar navigation -->
       <div class="sidebar-scroll-area">
+        <SidebarFavorites
+          :elements="favoriteElements"
+          :active-element-id="activeElementId"
+          :is-collapsed="isCollapsed"
+          :favorite-disabled="isSavingFavorites"
+          @toggle-favorite="toggleFavorite"
+        />
+
         <div class="list-group-test">
           <span>
             <SidebarGroup
@@ -23,9 +31,13 @@
               :is-open="!!groupStates[subgroup.key]"
               :is-active="activeSubgroup === subgroup.key"
               :is-hovered="hoveredGroup === subgroup.key"
+              :active-element-id="activeElementId"
+              :favorite-ids="favoriteIds"
+              :favorite-disabled="isSavingFavorites"
               @toggle="toggleGroup(subgroup.key)"
               @hover="handleGroupMouseEnter($event, subgroup.key)"
               @leave="handleGroupMouseLeave($event, subgroup.key)"
+              @toggle-favorite="toggleFavorite"
             />
           </span>
         </div>
@@ -34,11 +46,16 @@
       <!-- Hover preview: single shared instance -->
       <SidebarPreview
         v-if="hoveredSubgroup && !groupStates[hoveredGroup]"
+        ref="sidebarPreview"
         :subgroup="hoveredSubgroup"
         :is-collapsed="isCollapsed"
         :preview-style="previewStyle"
+        :active-element-id="activeElementId"
+        :favorite-ids="favoriteIds"
+        :favorite-disabled="isSavingFavorites"
         @mouseenter="handlePreviewMouseEnter"
         @mouseleave="handlePreviewMouseLeave($event, hoveredGroup)"
+        @toggle-favorite="toggleFavorite"
       />
 
       <!-- Sidebar footer -->
@@ -77,13 +94,24 @@
 import LoadIcon from "@/basic/Icon.vue";
 import Loading from "@/basic/Loading.vue";
 import SidebarGroup from "./SidebarGroup.vue";
+import SidebarFavorites from "./SidebarFavorites.vue";
 import SidebarPreview from "./SidebarPreview.vue";
 import { sidebarHoverPreviewData, sidebarHoverPreviewComputed, sidebarHoverPreviewMethods } from "./helpers/sidebarHoverPreview.js";
+import { getFavoriteElements, parseFavoriteIds, SIDEBAR_FAVORITES_SETTING, toggleFavoriteId } from "./helpers/sidebarFavorites.js";
+import { resolveNavigationGroup } from "./helpers/navElement.js";
+import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   subscribeTable: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
-  components: { LoadIcon, Loading, SidebarGroup, SidebarPreview },
+  components: { LoadIcon, Loading, SidebarGroup, SidebarFavorites, SidebarPreview },
+
+  props: {
+    activeElement: {
+      type: Object,
+      default: null,
+    },
+  },
 
   data() {
     return {
@@ -93,6 +121,8 @@ export default {
       // Stores open/closed state per subgroup, e.g.:
       // { Home: true, Study: false, ... }
       groupStates: {},
+      favoriteIdsOverride: null,
+      isSavingFavorites: false,
 
       // Hover preview state (hoveredGroup/previewStyle/isHoveringPreview),
       // physically declared in sidebarHoverPreview.js, spread in here
@@ -145,6 +175,19 @@ export default {
 
     isAdmin() {
       return this.$store.getters['auth/isAdmin'];
+    },
+    settings() {
+      return this.$store.getters["settings/getSettings"] || {};
+    },
+    favoriteIds() {
+      return this.favoriteIdsOverride || parseFavoriteIds(this.settings[SIDEBAR_FAVORITES_SETTING]);
+    },
+    favoriteElements() {
+      const availableElements = this.defaultGroupedElements.flatMap(group => group.elements);
+      return getFavoriteElements(availableElements, this.favoriteIds);
+    },
+    activeElementId() {
+      return this.activeElement?.id ?? null;
     },
 
     /* ========================================
@@ -208,12 +251,19 @@ export default {
 
   mounted() {
     document.body.classList.add('sidebar-exists');
+    this.eventBus.on("dashboardHome", this.syncSidebarWithRoute);
+    window.addEventListener("resize", this.updatePreviewPosition);
+    window.addEventListener("scroll", this.updatePreviewPosition, true);
 
     this.initGroupStates();
     this.syncSidebarWithRoute();
   },
 
   beforeUnmount() {
+    this.eventBus.off("dashboardHome", this.syncSidebarWithRoute);
+    window.removeEventListener("resize", this.updatePreviewPosition);
+    window.removeEventListener("scroll", this.updatePreviewPosition, true);
+    this.previewResizeObserver?.disconnect();
     document.body.classList.remove('sidebar-exists');
   },
 
@@ -246,8 +296,7 @@ export default {
       }
     },
 
-    // Opens only the subgroup that belongs to the current route
-    // and closes all others
+    // Opens only the subgroup containing the active dashboard and closes all others
     setOnlyExpandedGroup(groupName) {
       if (!groupName) {
         return;
@@ -271,6 +320,36 @@ export default {
 
       this._setGroupState(groupName, isOpening);
     },
+    toggleFavorite(element) {
+      if (this.isSavingFavorites || !element || element.id === undefined || element.id === null) {
+        return;
+      }
+
+      const availableIds = new Set(
+        this.defaultGroupedElements.flatMap(group => group.elements.map(item => String(item.id)))
+      );
+      if (!availableIds.has(String(element.id))) {
+        return;
+      }
+
+      const nextFavoriteIds = toggleFavoriteId(this.favoriteIds, element.id);
+      this.favoriteIdsOverride = nextFavoriteIds;
+      this.isSavingFavorites = true;
+      this.$socket.emit("appSettingSet", {
+        key: SIDEBAR_FAVORITES_SETTING,
+        value: JSON.stringify(nextFavoriteIds),
+      }, result => {
+        this.isSavingFavorites = false;
+        this.favoriteIdsOverride = null;
+        if (!result?.success) {
+          this.eventBus.emit("toast", {
+            title: this.$t("sidebar.favorites.saveFailedTitle"),
+            message: resolveApiMessage(result, "sidebar.favorites.saveFailedMessage"),
+            variant: "danger",
+          });
+        }
+      });
+    },
 
     /* ========================================
        Sidebar actions
@@ -290,16 +369,10 @@ export default {
     },
 
     syncSidebarWithRoute() {
-      const currentPath = this.$route.path.toLowerCase().replace(/\/$/, '');
-
-      if (currentPath === '/dashboard') {
-        return;
-      }
-
-      this.resetPreview();
-
       if (this.activeSubgroup) {
         this.setOnlyExpandedGroup(this.activeSubgroup);
+      } else {
+        this.closeAllGroups();
       }
     },
 
