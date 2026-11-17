@@ -113,16 +113,10 @@
       </div>
     </form>
     <template
-        v-if="showFeedback || showVersion"
+        v-if="showVersion"
         #card-footer
     >
-      <div v-if="showFeedback">
-        <a
-            :href="linkFeedback"
-            target="_blank"
-        >{{ $t('navigation.feedback') }}</a>
-      </div>
-      <div v-if="showVersion">
+      <div>
         {{ $t('common.appVersion') }}: {{ version }}
       </div>
     </template>
@@ -174,12 +168,6 @@ export default {
   computed: {
     showGuestLogin() {
       return window.config['app.login.guest'] === 'true';
-    },
-    linkFeedback() {
-      return window.config['app.landing.linkFeedback'];
-    },
-    showFeedback() {
-      return window.config['app.landing.showFeedback'] === 'true' && this.linkFeedback !== '';
     },
     showForgotPassword() {
       return window.config['app.login.forgotPassword'] === 'true';
