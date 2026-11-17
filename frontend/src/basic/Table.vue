@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="options && options['search']"
-    class="input-group input-group-sm table-search-simple"
+    class="input-group input-group-sm table-search"
   >
     <span
       id="search-addon1"
@@ -466,6 +466,9 @@ export default {
 </script>
 
 <style scoped src="./table/table.css"></style>
+
+<!-- Search bar look shared with BackendTable's search (table/Search.vue) -->
+<style src="./table/searchBar.css"></style>
 
 <style scoped>
 .form-check-input:disabled {

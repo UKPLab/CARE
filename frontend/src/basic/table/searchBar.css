@@ -1,0 +1,133 @@
+/*
+ * Shared look of the table search bar: BasicTable (Table.vue, plain text filter over Vuex data)
+ * and BackendTable (table/Search.vue, filter tokens with server-side paging). Only the look is
+ * shared; each component keeps its own markup and logic.
+ *
+ * Markup both use:
+ *   <div class="input-group input-group-sm table-search">
+ *     <span class="input-group-text">icon</span>
+ *     <… class="form-control">            (plain <input> or the token field)
+ *     <button class="btn …">               (own buttons and buttons from the additional-buttons slot)
+ *   </div>
+ *
+ * Not scoped on purpose: buttons passed through the `additional-buttons` slot carry the scope of
+ * the page that renders them, so a scoped rule in the table components would not reach them.
+ */
+
+/* One rounded bar on the table surface: icon, field and buttons sit inside it without borders.
+   Surface and border follow the table theming variables (table.css). */
+.table-search {
+  position: relative;
+  align-items: center;
+  column-gap: 2px;
+  /* Breathing room before the table */
+  margin-bottom: var(--table-search-gap, 0.75rem);
+  padding: 3px 4px 3px 2px;
+  font-size: 0.875rem;
+  background: var(--table-bg, var(--bs-body-bg));
+  border: 1px solid var(--table-border-color, var(--bs-border-color-translucent));
+  border-radius: var(--care-radius-lg);
+  box-shadow: var(--care-shadow-1);
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+/* Highlight only while the text field has focus, not when a button in the bar is clicked. */
+.table-search:has(> .form-control:focus-within) {
+  border-color: color-mix(in srgb, var(--care-primary) 45%, transparent);
+  box-shadow: var(--care-shadow-1), 0 0 0 4px color-mix(in srgb, var(--care-primary) 12%, transparent);
+}
+
+[data-bs-theme="dark"] .table-search:has(> .form-control:focus-within) {
+  border-color: color-mix(in srgb, var(--care-primary) 28%, transparent);
+  box-shadow: var(--care-shadow-1), 0 0 0 4px color-mix(in srgb, var(--care-primary) 10%, transparent);
+}
+
+.table-search > .input-group-text,
+.table-search > .form-control,
+.table-search > .form-control:focus {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+.table-search > .input-group-text {
+  padding-inline: 0.7rem 0.4rem;
+  color: var(--bs-secondary-color);
+}
+
+.table-search > .form-control {
+  min-height: 2rem;
+  font-size: 0.875rem;
+  color: var(--bs-body-color);
+}
+
+.table-search input::placeholder {
+  color: var(--bs-secondary-color);
+  opacity: 0.8;
+}
+
+/*
+ * Buttons inside the bar (copy / clear query, import / export, …): quiet icon buttons that
+ * belong to the bar instead of filled Bootstrap buttons. Set through Bootstrap's button
+ * variables so hover, active, focus and disabled all follow, whatever variant class was passed.
+ */
+.table-search > .btn {
+  --bs-btn-padding-x: 0;
+  --bs-btn-padding-y: 0;
+  --bs-btn-font-size: 0.875rem;
+  --bs-btn-color: var(--bs-secondary-color);
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: var(--bs-emphasis-color);
+  --bs-btn-hover-bg: var(--care-hover);
+  --bs-btn-hover-border-color: transparent;
+  --bs-btn-active-color: var(--care-primary);
+  --bs-btn-active-bg: color-mix(in srgb, var(--care-primary) 14%, transparent);
+  --bs-btn-active-border-color: transparent;
+  --bs-btn-disabled-color: var(--bs-secondary-color);
+  --bs-btn-disabled-bg: transparent;
+  --bs-btn-disabled-border-color: transparent;
+  --bs-btn-focus-box-shadow: var(--care-focus-ring);
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  /* .input-group-sm > .btn sets padding directly, not through the variables */
+  padding: 0;
+  margin: 0 !important;
+  border-radius: var(--care-radius-md) !important;
+  transition: background-color var(--care-dur-fast) var(--care-ease), color var(--care-dur-fast) var(--care-ease);
+}
+
+/* --care-hover is a grey tint; on the dark surface a light wash reads better */
+[data-bs-theme="dark"] .table-search > .btn {
+  --bs-btn-hover-bg: rgb(255 255 255 / 0.08);
+  --bs-btn-active-bg: color-mix(in srgb, var(--care-primary) 18%, transparent);
+}
+
+/* Thin divider between the field and the first button */
+.table-search > .form-control + .btn {
+  position: relative;
+  margin-inline-start: 0.4rem !important;
+}
+
+.table-search > .form-control + .btn::before {
+  content: "";
+  position: absolute;
+  /* Middle of the gap: half the margin plus half the column-gap */
+  left: calc(-0.2rem - 1px);
+  top: 25%;
+  bottom: 25%;
+  width: 1px;
+  background: var(--table-border-color, var(--bs-border-color-translucent));
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-search,
+  .table-search > .btn {
+    transition: none;
+  }
+}

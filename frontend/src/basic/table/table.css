@@ -246,10 +246,7 @@
   }
 }
 
-/* BasicTable's search bar: same gap before the table as Search.vue (BackendTable). */
-.table-search-simple {
-  margin-bottom: var(--table-search-gap, 0.75rem);
-}
+/* Search bar look (BasicTable and BackendTable): see searchBar.css */
 
 .input-group.input-group-sm,
 .input-group.input-group-sm .input-group-text,

@@ -1023,69 +1023,10 @@ export default {
 };
 </script>
 
+<!-- Bar, field and button look shared with BasicTable's search (Table.vue) -->
+<style src="./searchBar.css"></style>
+
 <style scoped>
-/* One rounded bar on the table surface: icon, token field and buttons sit inside it
-   borderless. Surface and border follow the table theming variables (table.css). */
-.table-search {
-  position: relative;
-  align-items: center;
-  /* Breathing room before the table; same value as BasicTable's search (table.css). */
-  margin-bottom: var(--table-search-gap, 0.75rem);
-  padding: 3px 4px 3px 2px;
-  font-size: 0.875rem;
-  background: var(--table-bg, var(--bs-body-bg));
-  border: 1px solid var(--table-border-color, var(--bs-border-color-translucent));
-  border-radius: var(--care-radius-lg);
-  box-shadow: var(--care-shadow-1);
-  transition: border-color 0.2s ease, box-shadow 0.25s ease;
-}
-
-/* Highlight only while the text field / chips have focus, not when an extra button in the bar
-   (copy, clear, view switch) is clicked. */
-.table-search:has(.token-field:focus-within) {
-  border-color: color-mix(in srgb, var(--care-primary) 45%, transparent);
-  box-shadow: var(--care-shadow-1), 0 0 0 4px color-mix(in srgb, var(--care-primary) 12%, transparent);
-}
-
-[data-bs-theme="dark"] .table-search:has(.token-field:focus-within) {
-  border-color: color-mix(in srgb, var(--care-primary) 28%, transparent);
-  box-shadow: var(--care-shadow-1), 0 0 0 4px color-mix(in srgb, var(--care-primary) 10%, transparent);
-}
-
-.table-search > .input-group-text,
-.table-search > .form-control,
-.table-search > .search-bar-btn {
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-}
-
-.table-search > .input-group-text {
-  padding-inline: 0.7rem 0.4rem;
-  color: var(--bs-secondary-color);
-}
-
-.table-search > .form-control {
-  min-height: 2rem;
-  font-size: 0.875rem;
-}
-
-.table-search > .search-bar-btn {
-  flex-shrink: 0;
-  color: var(--bs-secondary-color);
-  border-radius: var(--care-radius-md) !important;
-}
-
-.table-search > .search-bar-btn:hover {
-  color: var(--bs-emphasis-color);
-  background: var(--care-hover);
-}
-
-.token-input::placeholder {
-  color: var(--bs-secondary-color);
-  opacity: 0.8;
-}
-
 .token-field {
   --token-chip-gap: 0.2rem;
   position: relative;
@@ -1323,7 +1264,6 @@ export default {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .table-search,
   .token-suggestions .dropdown-item {
     transition: none;
   }
