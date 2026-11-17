@@ -10,16 +10,10 @@
     @copy="onCopy"
   >
     <!-- Toolbar -->
-    <PDFToolbar
-      :id="'pdfToolbar-' + documentId"
-      v-model="toolbarVisible"
-      :zoom-form-data="zoomFormData"
-      :pdf-dark-mode="pdfDarkMode"
-      @toggle-pdf-theme="togglePdfTheme"
-      @update:zoom-form-data="zoomFormData = $event"
-      @zoom-in="zoomIn"
-      @zoom-out="zoomOut"
-      @reset="resetZoom"
+    <PDFViewControls
+      v-model="scale"
+      v-model:pdf-dark-mode="pdfDarkMode"
+      :document-id="documentId"
     />
 
     <PDFPage
@@ -46,7 +40,7 @@ import {computed} from "vue";
 
 import Adder from "./Adder.vue";
 import BasicLoading from "@/basic/Loading.vue";
-import PDFToolbar from "./PDFToolbar.vue";
+import PDFViewControls from "./PDFViewControls.vue";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 import { resolveApiMessage } from "@/assets/utils";
 import debounce from "lodash.debounce";
@@ -64,7 +58,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "PDFViewer",
-  components: {BasicLoading, PDFPage, Adder, PDFToolbar},
+  components: {BasicLoading, PDFPage, Adder, PDFViewControls},
   inject: {
     documentId: {
       type: Number,
@@ -118,24 +112,20 @@ export default {
       lastVisibility: {},
       pageStatsContext: {},
       scale: 1.0,
-      originalScale: null,
-      DEFAULT_SCALE: 1.0,
-      MIN_SCALE: 0.25,
-      MAX_SCALE: 10.0,
-      DEFAULT_SCALE_DELTA: 1.1,
-      toolbarVisible: false,
-      zoomFormData: {
-        zoom: 1.0,
-      },
+
+
+
+
+
+
+
       pdfDarkMode: localStorage.getItem("care.pdfDark") !== null
         ? localStorage.getItem("care.pdfDark") === "true"
         : document.documentElement.getAttribute("data-bs-theme") === "dark",
     }
   },
   computed: {
-    appTheme() {
-      return this.$store.getters["settings/getValue"]("app.theme.mode");
-    },
+
     renderCheck() {
       let minPage = Math.max(Math.min(...this.visiblePages) - 3, 1);
       let maxPage = Math.min(Math.max(...this.visiblePages) + 3, this.pdf.pageCount);
@@ -153,34 +143,18 @@ export default {
     },
   },
   watch: {
-    appTheme(newVal, oldVal) {
-      if (oldVal === undefined) return;
-      this.pdfDarkMode = newVal === "dark";
-      localStorage.removeItem("care.pdfDark");
-    },
+
     scrollTo() {
       if (this.scrollTo !== null) {
         this.scrollTo = null;
       }
     },
-    zoomFormData: {
-      handler(newZoom) {
-        if (this.scale !== newZoom.zoom) {
-          this.scale = newZoom.zoom;
-        }
-      },
-      deep: true,
-    },
+
     isHidden(hidden) {
       // Hidden pages are not on screen, even though the browser still counts them as visible
       this.sendVisiblePages(!hidden);
     },
-    scale(newScale) {
-      // Keep form data in sync with scale
-      if (this.zoomFormData.zoom !== newScale) {
-        this.zoomFormData.zoom = newScale;
-      }
-    },
+
     pdf: {
       handler(value) {
         if (!value) {
@@ -194,7 +168,6 @@ export default {
     },
   },
   mounted() {
-    this.originalScale = this.scale;
     this.$socket.emit("documentGet",
       {
         documentId: this.documentId,
@@ -291,21 +264,10 @@ export default {
         this.resizeDebounced = undefined;
       }
     },
-    togglePdfTheme() {
-      this.pdfDarkMode = !this.pdfDarkMode;
-      localStorage.setItem("care.pdfDark", this.pdfDarkMode);
-    },
-    zoomIn() {
-      let newScale = this.scale * this.DEFAULT_SCALE_DELTA;
-      this.scale = Math.min(this.MAX_SCALE, Math.round(newScale * 10) / 10);
-    },
-    zoomOut() {
-      let newScale = this.scale / this.DEFAULT_SCALE_DELTA;
-      this.scale = Math.max(this.MIN_SCALE, Math.round(newScale * 10) / 10);
-    },
-    resetZoom() {
-      this.scale = this.originalScale || this.DEFAULT_SCALE;
-    },
+
+
+
+
     /**
      * Update the pages to render and log the page state when it changed.
      * A page never reported before counts as not visible, so its first visible report is logged.
@@ -364,7 +326,7 @@ export default {
       this.$emit('copy', event);
     },
   },
-  
+
 }
 </script>
 

@@ -27,127 +27,35 @@
         </ul>
         {{ $t("templates.placeholders.options.notIncludedHelp") }}
       </div>
-  
+
       <div class="card shadow mb-4 configurator">
         <div class="card-header bg-body">
           <h3 class="card-title fw-bold mb-0">{{ $t("sidebar.placeholders") }}</h3>
         </div>
         <div class="card-body p-0">
           <ul class="list-group list-group-flush">
-            <li
+            <TemplatePlaceholderCard
               v-for="placeholder in availablePlaceholders"
               :key="placeholder.id"
-              class="list-group-item"
-            >
-              <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center flex-grow-1">
-                  <div class="icon-container p-2 text-primary me-2">
-                    <i :class="placeholder.icon"></i>
-                  </div>
-                  <div class="d-flex flex-column flex-grow-1">
-                    <div class="d-flex align-items-center">
-                      <h5 class="mb-0 me-1">{{ translateMaybeKey(placeholder.label) }}<span v-if="placeholder.required" class="text-danger ms-1">*</span></h5>
-                      <FormHelp
-                        v-if="placeholder.description"
-                        :help="getPlaceholderHelp(placeholder)"
-                      />
-                    </div>
-                    <p
-                      v-if="placeholder.description"
-                      class="mb-0 text-muted"
-                    >
-                      {{ translateMaybeKey(placeholder.description) }}
-                    </p>
-                    <div
-                      v-if="hasPlaceholderOptions(placeholder)"
-                      class="mt-2"
-                    >
-                      <div
-                        v-for="(row, rowIndex) in getPendingOptionRows(placeholder.id)"
-                        :key="`${placeholder.id}-option-${rowIndex}`"
-                        class="d-flex align-items-center gap-2 mb-2"
-                      >
-                        <select
-                          v-model="row.name"
-                          class="form-select form-select-sm option-select"
-                        >
-                          <option value="">{{ $t("templates.placeholders.options.selectOption") }}</option>
-                          <option
-                            v-for="optionDef in placeholder.placeholderOptions"
-                            :key="optionDef.name"
-                            :value="optionDef.name"
-                            :disabled="isOptionDisabled(placeholder, optionDef.name, rowIndex)"
-                          >
-                            {{ translateMaybeKey(optionDef.label) }}
-                          </option>
-                        </select>
-                        <template v-if="isRangeOption(placeholder, row.name)">
-                          <input
-                            v-model="row.from"
-                            type="number"
-                            min="1"
-                            class="form-control form-control-sm option-input"
-                            :placeholder="$t('templates.placeholders.options.from')"
-                          >
-                          <span class="text-muted">–</span>
-                          <input
-                            v-model="row.to"
-                            type="number"
-                            min="1"
-                            class="form-control form-control-sm option-input"
-                            :placeholder="$t('templates.placeholders.options.to')"
-                          >
-                        </template>
-                        <input
-                          v-else-if="row.name"
-                          v-model="row.value"
-                          type="number"
-                          min="1"
-                          class="form-control form-control-sm option-input"
-                          :placeholder="getOptionLabel(placeholder, row.name)"
-                        >
-                        <BasicButton
-                          class="btn btn-outline-secondary btn-sm"
-                          icon="dash-lg"
-                          text=""
-                          @click="removeOptionRow(placeholder.id, rowIndex)"
-                        />
-                      </div>
-                      <BasicButton
-                        class="btn btn-outline-primary btn-sm"
-                        icon="plus-lg"
-                        :text="$t('templates.placeholders.options.add')"
-                        @click="addOptionRow(placeholder.id)"
-                      />
-                    </div>
-                  </div>
-                </div>
-                <div class="d-flex align-items-center ms-2">
-                  <span class="badge rounded-pill me-2 text-primary">{{ placeholderCounts[placeholder.id] || 0 }}</span>
-                  <BasicButton
-                    class="btn btn-primary btn-sm d-flex align-items-center"
-                    icon="plus-lg"
-                    :text="$t('common.add')"
-                    @click="handlePlaceholderClick(placeholder)"
-                  />
-                </div>
-              </div>
-            </li>
+              :placeholder="placeholder"
+              :count="placeholderCounts[placeholder.id] || 0"
+              :template-type="templateType"
+              @insert="handlePlaceholderClick"
+              @clear-warnings="optionApplyWarnings = []"
+            />
           </ul>
         </div>
       </div>
     </div>
   </template>
-  
+
   <script>
-  import FormHelp from "@/basic/form/Help.vue";
+  import TemplatePlaceholderCard from "./TemplatePlaceholderCard.vue";
   import { resolveApiMessage, translateMaybeKey } from "@/assets/utils";
-  import BasicButton from "@/basic/Button.vue";
   import {
     countPlaceholdersByKey,
     formatDuplicatePlaceholderToken,
     formatPlaceholderToken,
-    formatPositiveIntegerRange,
     getDuplicatePlaceholderIndexes,
     getDuplicateOptionNames,
     getNextPlaceholderIndex,
@@ -167,8 +75,7 @@
   export default {
     name: "TemplateConfigurator",
     components: {
-      FormHelp,
-      BasicButton,
+      TemplatePlaceholderCard,
     },
     inject: {
       templateId: {
@@ -195,7 +102,6 @@
         invalidPlaceholders: [],
         duplicatePlaceholders: [],
         optionApplyWarnings: [],
-        pendingOptionRowsByKey: {},
         lastEditorContent: "",
       };
     },
@@ -242,7 +148,7 @@
     mounted() {
       // Initialize placeholder counts
       this.initializePlaceholderCounts();
-      
+
       // Listen for editor content updates
       this.editorContentHandler = (data) => {
         if (data.templateId === this.templateId) {
@@ -265,7 +171,7 @@
               required: ph.required === true,
               placeholderOptions: Array.isArray(ph.placeholderOptions) ? ph.placeholderOptions : [],
             }));
-            
+
             if (this.templateType && this.placeholderConfigs[this.templateType]) {
               this.placeholderConfigs[this.templateType].placeholders = fetchedPlaceholders;
               this.initializePlaceholderCounts();
@@ -291,31 +197,21 @@
        * @param {Object} placeholder - Sidebar placeholder
        * @returns {boolean}
        */
-      hasPlaceholderOptions(placeholder) {
-        return Array.isArray(placeholder.placeholderOptions) && placeholder.placeholderOptions.length > 0;
-      },
+
       /**
        * Pending option rows for a placeholder key (creates an empty list if none).
        *
        * @param {string} placeholderKey - Placeholder key (`placeholder.id`)
        * @returns {Array} Rows with `name`, `value`, `from`, `to`
        */
-      getPendingOptionRows(placeholderKey) {
-        if (!this.pendingOptionRowsByKey[placeholderKey]) {
-          this.pendingOptionRowsByKey[placeholderKey] = [];
-        }
-        return this.pendingOptionRowsByKey[placeholderKey];
-      },
+
       /**
        * Append an empty option row for the placeholder.
        *
        * @param {string} placeholderKey - Placeholder key
        * @returns {void}
        */
-      addOptionRow(placeholderKey) {
-        const rows = this.getPendingOptionRows(placeholderKey);
-        rows.push({ name: "", value: "", from: "", to: "" });
-      },
+
       /**
        * Remove one pending option row and clear insert notices.
        *
@@ -323,11 +219,7 @@
        * @param {number} rowIndex - Index in the pending-row list
        * @returns {void}
        */
-      removeOptionRow(placeholderKey, rowIndex) {
-        const rows = this.getPendingOptionRows(placeholderKey);
-        rows.splice(rowIndex, 1);
-        this.optionApplyWarnings = [];
-      },
+
       /**
        * Whether the named option uses From/To inputs (`valueType` is `positiveIntegerRange`).
        *
@@ -335,10 +227,7 @@
        * @param {string} optionName - Option name
        * @returns {boolean}
        */
-      isRangeOption(placeholder, optionName) {
-        const optionDef = this.getOptionDef(placeholder, optionName);
-        return optionDef?.valueType === "positiveIntegerRange";
-      },
+
       /**
        * Whether this option name is already selected on another pending row.
        *
@@ -347,10 +236,7 @@
        * @param {number} currentRowIndex - Row that owns the dropdown
        * @returns {boolean}
        */
-      isOptionDisabled(placeholder, optionName, currentRowIndex) {
-        const rows = this.getPendingOptionRows(placeholder.id);
-        return rows.some((row, index) => index !== currentRowIndex && row.name === optionName);
-      },
+
       /**
        * Display label for an option name, or the name if no definition exists.
        *
@@ -358,10 +244,7 @@
        * @param {string} optionName - Option name
        * @returns {string}
        */
-      getOptionLabel(placeholder, optionName) {
-        const optionDef = (placeholder.placeholderOptions || []).find((entry) => entry.name === optionName);
-        return optionDef ? translateMaybeKey(optionDef.label) : optionName;
-      },
+
       /**
        * Option definition for `optionName` on this placeholder, or undefined.
        *
@@ -369,9 +252,7 @@
        * @param {string} optionName - Option name
        * @returns {Object|undefined}
        */
-      getOptionDef(placeholder, optionName) {
-        return (placeholder.placeholderOptions || []).find((entry) => entry.name === optionName);
-      },
+
       /**
        * Whether `value` matches the option's `valueType`.
        *
@@ -397,50 +278,7 @@
        * @param {Object} placeholder - Sidebar placeholder
        * @returns {Object} `{ selectedOptions, applyWarnings }`
        */
-      collectSelectedOptions(placeholder) {
-        const rows = this.getPendingOptionRows(placeholder.id);
-        const selectedOptions = {};
-        const applyWarnings = [];
 
-        rows.forEach((row) => {
-          if (!row.name) {
-            if (
-              (row.value !== "" && row.value != null)
-              || (row.from !== "" && row.from != null)
-              || (row.to !== "" && row.to != null)
-            ) {
-              applyWarnings.push(this.$t("templates.placeholders.options.warnings.valueWithoutOption"));
-            }
-            return;
-          }
-          const optionDef = this.getOptionDef(placeholder, row.name);
-          if (!optionDef) {
-            applyWarnings.push(this.$t("templates.placeholders.options.warnings.unknownOption", {
-              placeholder: translateMaybeKey(placeholder.label),
-            }));
-            return;
-          }
-          const optionLabel = translateMaybeKey(optionDef.label);
-          const optionValue = optionDef.valueType === "positiveIntegerRange"
-            ? formatPositiveIntegerRange(row.from, row.to)
-            : (row.value === undefined || row.value === null ? "" : String(row.value).trim());
-          if (!this.isValidOptionValue(optionDef, optionValue)) {
-            if (!optionValue) {
-              applyWarnings.push(this.$t("templates.placeholders.options.warnings.noValue", { option: optionLabel }));
-            } else {
-              applyWarnings.push(this.$t("templates.placeholders.options.warnings.invalidValue", { option: optionLabel }));
-            }
-            return;
-          }
-          if (Object.prototype.hasOwnProperty.call(selectedOptions, row.name)) {
-            applyWarnings.push(this.$t("templates.placeholders.options.warnings.alreadySet", { option: optionLabel }));
-            return;
-          }
-          selectedOptions[row.name] = optionValue;
-        });
-
-        return { selectedOptions, applyWarnings };
-      },
       /**
        * Validate option names and values on a parsed token (including typed duplicates).
        *
@@ -484,23 +322,7 @@
        * @param {Object} placeholder - Sidebar placeholder
        * @returns {string}
        */
-      getPlaceholderHelp(placeholder) {
-        const typeSlug = {
-          1: "emailGeneral",
-          2: "emailStudySession",
-          3: "emailAssignment",
-          6: "emailStudyClose",
-          7: "emailSubmissionUpload",
-          8: "prompt",
-        }[this.templateType];
-        if (typeSlug && placeholder.id) {
-          const helpKey = `templates.placeholders.help.${typeSlug}.${placeholder.id}`;
-          if (this.$te(helpKey)) {
-            return this.$t(helpKey);
-          }
-        }
-        return translateMaybeKey(placeholder.description);
-      },
+
       /**
        * Reset per-placeholder insert counts to 0.
        *
@@ -577,8 +399,7 @@
        * @param {Object} placeholder - Sidebar placeholder
        * @returns {void}
        */
-      handlePlaceholderClick(placeholder) {
-        const { selectedOptions, applyWarnings } = this.collectSelectedOptions(placeholder);
+      handlePlaceholderClick({placeholder, selectedOptions, applyWarnings}) {
         this.optionApplyWarnings = [...new Set(applyWarnings)];
 
         const nextIndex = getNextPlaceholderIndex(this.lastEditorContent || "", placeholder.id);
@@ -588,9 +409,6 @@
           text: formatPlaceholderToken(placeholder.id, nextIndex, optionsToInsert),
         });
 
-        if (this.hasPlaceholderOptions(placeholder)) {
-          this.pendingOptionRowsByKey[placeholder.id] = [];
-        }
       },
       /**
        * Sidebar icon for a placeholder row. Seeded types are `link` and `text`;
@@ -605,45 +423,10 @@
     },
   };
   </script>
-  
+
   <style scoped>
-  .configurator {
+.configurator {
     --bg-color: var(--bs-secondary-bg, rgb(219, 234, 254));
     --icon-container-size: 36px;
   }
-  
-  .list-group-item {
-    padding: 0.825rem;
-  }
-
-  .list-group-item:last-child {
-    padding-bottom: 1.5rem;
-  }
-  
-  .icon-container {
-    width: var(--icon-container-size);
-    height: var(--icon-container-size);
-    display: flex;
-    margin-right: 0.625rem;
-    align-items: center;
-    justify-content: center;
-    color: var(--bs-body-color);
-    background-color: var(--bg-color);
-  }
-  
-  .list-group-item:hover {
-    background-color: var(--bs-tertiary-bg, #f8f9fa);
-  }
-  
-  .badge {
-    background-color: var(--bg-color);
-  }
-
-  .option-select {
-    max-width: 11rem;
-  }
-
-  .option-input {
-    max-width: 5.5rem;
-  }
-  </style>
+</style>

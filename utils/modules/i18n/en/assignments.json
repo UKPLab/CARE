@@ -122,6 +122,7 @@
     },
     "modal": {
       "submitText": "Save Assignment",
+      "previewSubmissionWarning": "Preview Submission Warning",
       "assignMode": {
         "roles": "Roles",
         "users": "Users"
@@ -255,6 +256,8 @@
       "selectField": "Select a field",
       "matchAgainst": "Match against",
       "primaryKeyHelp": "This mapping controls how CARE matches uploaded rows to submission owners in the selected assignment.",
+      "targetFieldExtId": "extId",
+      "targetFieldEmail": "email",
       "metadataHeading": "Metadata Mappings",
       "targetMetaKey": "Target metaKey",
       "action": "Action",

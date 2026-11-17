@@ -72,6 +72,36 @@ export default {
     }
   },
   methods: {
+    async verifyEmail(token) {
+      try {
+        const response = await axios.get(getServerURL() + '/verify-email?token=' + token,
+          {
+            validateStatus: function (status) {
+              return status === 200 || status === 400 || status === 500;
+            },
+          }
+        );
+        if (response.status === 200) {
+          this.eventBus.emit("toast", {
+            title: this.$t('auth.messages.emailVerified'),
+            message: resolveApiMessage(response.data, "auth.messages.emailVerifiedSuccess"),
+            variant: "success",
+          });
+        } else {
+          this.eventBus.emit("toast", {
+            title: this.$t('errors.auth.emailVerificationError'),
+            message: resolveApiMessage(response.data, "errors.auth.failedToVerifyEmail"),
+            variant: "danger",
+          });
+        }
+      } catch (_error) {
+        this.eventBus.emit("toast", {
+          title: this.$t('errors.auth.emailVerificationError'),
+          message: this.$t('errors.auth.failedToVerifyEmail'),
+          variant: "danger",
+        });
+      }
+    },
     /**
      * Open the email verification modal with the provided email
      * @param {string} email - The email address to verify
@@ -108,7 +138,7 @@ export default {
             withCredentials: true
           }
         );
-        
+
         if (response.status === 200) {
           this.emailVerification.showSuccess = true;
           this.emailVerification.successMessage = resolveApiMessage(response.data, 'auth.messages.verificationEmailSent');

@@ -122,6 +122,7 @@
         },
         "modal": {
             "submitText": "Enregistrer le devoir",
+            "previewSubmissionWarning": "Aperçu de l'avertissement de soumission",
             "assignMode": {
                 "roles": "Rôles",
                 "users": "Utilisateurs"
@@ -255,6 +256,8 @@
             "selectField": "Sélectionnez un champ",
             "matchAgainst": "Faire correspondre avec",
             "primaryKeyHelp": "Ce mappage détermine comment CARE associe les lignes importées aux propriétaires des travaux du devoir sélectionné.",
+            "targetFieldExtId": "extId",
+            "targetFieldEmail": "e-mail",
             "metadataHeading": "Mappages des métadonnées",
             "targetMetaKey": "metaKey cible",
             "action": "Action",

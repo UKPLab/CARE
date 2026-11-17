@@ -122,6 +122,7 @@
     },
     "modal": {
       "submitText": "Assignment speichern",
+      "previewSubmissionWarning": "Submission-Warnung anzeigen",
       "assignMode": {
         "roles": "Rollen",
         "users": "Benutzer"
@@ -255,6 +256,8 @@
       "selectField": "Feld auswählen",
       "matchAgainst": "Abgleichen mit",
       "primaryKeyHelp": "Diese Zuordnung steuert, wie CARE hochgeladene Zeilen den Submission-Besitzern im ausgewählten Assignment zuordnet.",
+      "targetFieldExtId": "extId",
+      "targetFieldEmail": "E-Mail",
       "metadataHeading": "Metadaten-Zuordnungen",
       "targetMetaKey": "Ziel-metaKey",
       "action": "Aktion",

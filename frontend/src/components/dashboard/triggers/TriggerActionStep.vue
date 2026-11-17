@@ -56,7 +56,8 @@ export default {
     selectFields: { type: Array, required: true },
     configFields: { type: Array, required: true },
     componentFields: { type: Array, required: true },
-    validationConfigurationIds: { type: Array, required: true },
+    /** Assignment chosen in the event step; its validation configuration applies to file inputs. */
+    assignmentId: { type: [Number, String], default: null },
     selected: { type: Boolean, required: true },
   },
   emits: ["update:modelValue", "update:actionData", "validity"],
@@ -64,6 +65,12 @@ export default {
     return { componentValidity: {} };
   },
   computed: {
+    validationConfigurationIds() {
+      if (!this.assignmentId) return [];
+      const id = this.$store.getters["table/assignment/get"](Number(this.assignmentId))
+        ?.validationConfigurationId;
+      return id != null ? [id] : [];
+    },
     skillName() {
       return this.actionData.skillName || "";
     },
@@ -107,8 +114,10 @@ export default {
         this.$emit("validity", value);
       },
     },
-    "modelValue.triggerActionId"() {
+    "modelValue.triggerActionId"(next, prev) {
       this.componentValidity = {};
+      // Another action has its own configuration schema.
+      if (prev != null && next !== prev) this.$emit("update:actionData", {});
     },
     validationConfigurationIds(next, prev) {
       if ((next || []).join(",") !== (prev || []).join(",")) {

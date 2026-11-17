@@ -40,13 +40,13 @@
           :title="$t('common.close')"
           @click="close"
         />
+        <BasicButton
+          v-if="isAdmin"
+          class="btn btn-primary"
+          :title="$t('common.add')"
+          @click="addSingleAssignment"
+        />
       </span>
-      <BasicButton
-        v-if="isAdmin"
-        class="btn btn-primary"
-        :title="$t('common.add')"
-        @click="addSingleAssignment"
-      />
     </template>
   </BasicModal>
 </template>

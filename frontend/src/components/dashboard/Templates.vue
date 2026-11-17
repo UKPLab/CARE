@@ -27,7 +27,7 @@
           :title="$t('modals.importExport.wiring.templates.exportAllTooltip')"
           :text="$t('common.exportAll')"
           icon="download"
-          @click="openExport(null)"
+          @click="$refs.exportModal.open()"
         />
         <BasicButton
           class="btn-primary btn-sm"
@@ -44,14 +44,10 @@
     <TemplateDetachModal ref="detachModal" />
     <TemplateUpdateModal ref="updateModal" />
     <PublicTemplatesModal ref="publicTemplatesModal" />
-    <ExportFormatModal
-      ref="exportFormatModal"
-      :title="$t('modals.importExport.wiring.templates.exportTitle')"
-      @formatSelected="onExportFormat"
-    />
+    <TemplateExportModal ref="exportModal" />
     <ImportFormatModal ref="importFormatModal" :title="$t('modals.importExport.wiring.templates.importTitle')" />
   </template>
-  
+
   <script>
   import BasicButton from "@/basic/Button.vue";
   import TemplateModal from "./templates/TemplateModal.vue";
@@ -60,7 +56,7 @@
   import TemplateDetachModal from "./templates/TemplateDetachModal.vue";
   import TemplateUpdateModal from "./templates/TemplateUpdateModal.vue";
   import PublicTemplatesModal from "./templates/PublicTemplatesModal.vue";
-  import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
+  import TemplateExportModal from "./templates/TemplateExportModal.vue";
   import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
   import DashboardListPage from "@/basic/dashboard/ListPage.vue";
   import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
@@ -88,13 +84,12 @@
       TemplateDetachModal,
       TemplateUpdateModal,
       PublicTemplatesModal,
-      ExportFormatModal,
+      TemplateExportModal,
       ImportFormatModal,
     },
     data() {
       return {
         options: { ...DEFAULT_DASHBOARD_TABLE_OPTIONS },
-        exportTemplateId: null,
       };
     },
     computed: {
@@ -270,7 +265,7 @@
             this.$router.push(`/template/${data.params.id}`);
             break;
           case "editContentCopy":
-            this.editContentCopy(data.params);
+            this.$refs.detachModal.open(data.params);
             break;
           case "viewContent":
             this.$router.push(`/template/${data.params.id}`);
@@ -285,56 +280,9 @@
             this.$refs.updateModal.open(data.params);
             break;
           case "export":
-            this.openExport(data.params.id);
+            this.$refs.exportModal.open(data.params.id);
             break;
         }
-      },
-      /**
-       * Edit content of a copy: show detach warning, then detach and navigate to editor
-       */
-      editContentCopy(template) {
-        this.$refs.detachModal.open(template, (t) => {
-          this.$socket.emit("templateDetach", { templateId: t.id }, (result) => {
-            if (result.success) {
-              this.$socket.emit("appData", {
-                table: "template",
-                filter: [{ key: "id", value: t.id }],
-              }, () => {
-                this.eventBus.emit("toast", {
-                  title: this.$t("templates.dashboard.toasts.templateDetached.title"),
-                  message: this.$t("templates.dashboard.toasts.templateDetached.message"),
-                  variant: "success",
-                });
-                this.$router.push(`/template/${t.id}`);
-              });
-            } else {
-              this.eventBus.emit("toast", {
-                title: this.$t("templates.dashboard.toasts.detachFailed"),
-                message: resolveApiMessage(result),
-                variant: "danger",
-              });
-            }
-          });
-        });
-      },
-      // template_content is not in the client store, so the file has to come from the server.
-      openExport(id = null) {
-        this.exportTemplateId = id;
-        this.$refs.exportFormatModal.open();
-      },
-      onExportFormat(format) {
-        const templateId = this.exportTemplateId;
-        this.$socket.emit("templateExport", templateId ? { templateId } : {}, (result) => {
-          if (!result?.success) {
-            this.eventBus.emit("toast", {
-              title: this.$t("errors.download.exportFailedTitle"),
-              message: resolveApiMessage(result),
-              variant: "danger",
-            });
-            return;
-          }
-          this.$refs.exportFormatModal.downloadItems(result.data, format, templateId, "template");
-        });
       },
       deleteTemplate(template) {
         this.$refs.deleteConf.open(
@@ -361,6 +309,3 @@
     },
   };
   </script>
-  
-  <style scoped>
-  </style>

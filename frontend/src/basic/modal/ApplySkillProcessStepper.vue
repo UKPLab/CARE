@@ -46,32 +46,7 @@
           {{ $t('nlp.preprocessing.processStepper.stats.estimatedRemaining') }} <strong>{{ estimatedTimeRemaining }}</strong>
         </div>
 
-        <!-- Errors Display -->
-        <div v-if="hasErrors" class="mt-3">
-          <h6 class="text-danger">{{ $t('nlp.preprocessing.processStepper.errors.title') }}</h6>
-          <div 
-            v-for="(error, index) in errorsList" 
-            :key="index" 
-            class="alert alert-danger py-2 mb-2"
-            role="alert"
-          >
-            <div class="d-flex justify-content-between align-items-start">
-              <div>
-                <strong>{{ $t('nlp.preprocessing.processStepper.errors.errorLabel') }}</strong> 
-                {{ resolveApiMessage(error) }}
-              </div>
-              <small class="text-muted ms-2">
-                {{ formatTimestamp(error.timestamp) }}
-              </small>
-            </div>
-            <small v-if="error.submissionId" class="text-muted">
-              {{ $t('nlp.preprocessing.processStepper.errors.submissionId') }}: {{ error.submissionId }}
-            </small>
-            <small v-else-if="error.documentId" class="text-muted">
-              {{ $t('nlp.preprocessing.processStepper.errors.documentId') }}: {{ error.documentId }}
-            </small>
-          </div>
-        </div>
+        <SkillProcessingErrors :errors="preprocess?.errors || []" />
 
         <h6 class="mt-4">{{ $t('nlp.preprocessing.processStepper.queue.title') }}</h6>
         <div v-if="remainingSubmissions.length === 0" class="text-muted fst-italic">
@@ -98,34 +73,19 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
-import { resolveApiMessage, formatLocalizedTime } from "@/assets/utils";
+import SkillProcessingErrors from './SkillProcessingErrors.vue';
 
 export default {
   name: "ApplySkillProcessStepper",
-  components: { StepperModal, BasicTable },
+  components: { StepperModal, BasicTable, SkillProcessingErrors },
   props: {
-    title: { 
+    title: {type: String, default: null},
+    preprocess: {type: Object, default: () => ({})},
+    inputFiles: {type: Array, default: () => []},
+    currentStep: {type: Number, default: 1},
+    showClose: {type: Boolean, default: true},
+    cancelNextText: {
       type: String,
-      default: null 
-    },
-    preprocess: { 
-      type: Object, 
-      default: () => ({}) 
-    },
-    inputFiles: { 
-      type: Array, 
-      default: () => [] 
-    },
-    currentStep: { 
-      type: Number, 
-      default: 1 
-    },
-    showClose: { 
-      type: Boolean,
-      default: true 
-    },
-    cancelNextText: { 
-      type: String, 
       default: null
     },
   },
@@ -207,18 +167,18 @@ export default {
     },
     remainingSubmissions() {
       if (!this.isProcessingActive) return [];
-      
+
       const currentRequestId = this.preprocess?.currentRequestId;
-      
+
       const remainingIds = new Set(
         Object.entries(this.preprocess.requests)
           .filter(([requestId]) => requestId !== currentRequestId)
           .map(([, request]) => request.submissionId || request.documentId)
           .filter(id => id != null)
       );
-      
+
       const uniqueSubmissions = this.inputFiles.filter(s => remainingIds.has(s.id));
-      
+
       const seen = new Set();
       return uniqueSubmissions.filter(s => {
         if (seen.has(s.id)) return false;
@@ -253,13 +213,7 @@ export default {
       const timeInSeconds = stats.avgPerItemMs ? Math.round(stats.avgPerItemMs / 1000) : null;
       return timeInSeconds ? this.formatDurationSeconds(timeInSeconds) : this.$t('nlp.preprocessing.processStepper.stats.calculating');
     },
-    hasErrors() {
-      const errors = this.preprocess?.errors;
-      return errors && errors.length > 0;
-    },
-    errorsList() {
-      return this.preprocess?.errors || [];
-    },
+
   },
   watch: {
     isProcessingActive(newVal) {
@@ -312,10 +266,7 @@ export default {
       const diffSeconds = Math.max(0, Math.floor((this.now - startMs) / 1000));
       return this.formatDurationSeconds(diffSeconds);
     },
-    formatTimestamp(timestamp) {
-      return formatLocalizedTime(timestamp);
-    },
-    resolveApiMessage,
+
     startElapsedTimer() {
       if (this.elapsedTimer) return;
       this.now = Date.now();
