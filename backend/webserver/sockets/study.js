@@ -9,7 +9,20 @@ const yaml = require('js-yaml');
  * Pass userId. Do not read a user id from the request body.
  */
 
+const {canOf, loadByIdOrHash, pickFields} = require('../utils/restHelpers');
+
 const STUDIES_FULL_ACCESS = 'frontend.dashboard.studies.fullAccess';
+
+// What REST returns for a study. A new column stays out of REST until it is added here.
+const STUDY_PUBLIC_FIELDS = [
+    'id', 'hash', 'name', 'description', 'userId', 'createdByUserId', 'projectId', 'workflowId', 'tagSetId',
+    'template', 'parentStudyId', 'closed', 'start', 'end', 'timeLimit', 'limitSessions', 'limitSessionsPerUser',
+    'collab', 'anonymize', 'resumable', 'multipleSubmit', 'enableEmailNotifications', 'createdAt', 'updatedAt',
+];
+
+function publicStudy(study) {
+    return pickFields(study, STUDY_PUBLIC_FIELDS);
+}
 
 const STUDY_FIELDS = [
     'name',
@@ -40,27 +53,11 @@ const EXPORT_CHILD_STRIP = [
     'id',
 ];
 
-async function userIsAdmin(models, userId) {
-    const roleIds = await models['user_role_matching'].getUserRolesById(userId);
-    return models['user_role_matching'].isAdminInUserRoles(roleIds);
-}
-
-async function userHasRight(models, userId, right) {
-    if (await userIsAdmin(models, userId)) {
-        return true;
-    }
-    const roleIds = await models['user_role_matching'].getUserRolesById(userId);
-    return models['user_role_matching'].hasAccessByUserRoles(roleIds, right);
-}
-
-async function userCanManageStudy(models, userId, study) {
+async function userCanManageStudy(can, userId, study) {
     if (!study) {
         return false;
     }
-    if (study.userId === userId) {
-        return true;
-    }
-    return userIsAdmin(models, userId);
+    return study.userId === userId || await can(STUDIES_FULL_ACCESS);
 }
 
 function ownsStudyRecord(userId, study) {
@@ -68,36 +65,18 @@ function ownsStudyRecord(userId, study) {
         || study.createdByUserId === userId;
 }
 
-async function userCanViewStudy(models, userId, study) {
+async function userCanViewStudy(can, userId, study) {
     if (!study || study.deleted) {
         return false;
     }
-    if (await userHasRight(models, userId, STUDIES_FULL_ACCESS)) {
+    if (await can(STUDIES_FULL_ACCESS)) {
         return true;
     }
     return ownsStudyRecord(userId, study);
 }
 
-async function defaultProjectId(models, userId) {
-    const raw = await models['user_setting'].get('projects.default', userId);
-    const projectId = parseInt(raw, 10);
-    return Number.isInteger(projectId) ? projectId : null;
-}
-
-function parseIdOrHash(idOrHash) {
-    const raw = String(idOrHash);
-    if (/^\d+$/.test(raw)) {
-        return {identifierType: 'id', identifier: Number(raw)};
-    }
-    return {identifierType: 'hash', identifier: raw};
-}
-
 async function loadStudyByIdOrHash(models, idOrHash) {
-    const {identifierType, identifier} = parseIdOrHash(idOrHash);
-    if (identifierType === 'hash') {
-        return models['study'].getByHash(identifier);
-    }
-    return models['study'].getById(identifier);
+    return loadByIdOrHash(models['study'], idOrHash);
 }
 
 function studyRowVisible(study, userId, projectId, seeAll) {
@@ -113,9 +92,10 @@ function studyRowVisible(study, userId, projectId, seeAll) {
     return ownsStudyRecord(userId, study);
 }
 
-async function studyVisibleInList(models, userId, study) {
-    const projectId = await defaultProjectId(models, userId);
-    const seeAll = await userHasRight(models, userId, STUDIES_FULL_ACCESS);
+async function studyVisibleInList(models, userId, study, can) {
+    const {defaultProjectFor} = require('./project');
+    const projectId = await defaultProjectFor(models, userId);
+    const seeAll = await can(STUDIES_FULL_ACCESS);
     return studyRowVisible(study, userId, projectId, seeAll);
 }
 
@@ -134,8 +114,8 @@ function normalizeStudyIds(studyIds) {
     return ids;
 }
 
-async function assertCanManageStudy(models, userId, study, errorKey) {
-    if (!(await userCanManageStudy(models, userId, study))) {
+async function assertCanManageStudy(options, userId, study, errorKey) {
+    if (!(await userCanManageStudy(canOf(options), userId, study))) {
         throw new TranslatableError(errorKey);
     }
 }
@@ -153,6 +133,29 @@ async function stepDocumentsFromStudy(models, studyId) {
         }
     }
     return stepDocuments;
+}
+
+/**
+ * A study owner can read every document in its steps, so linking a document is an access grant.
+ * Keep only the three known keys and require access to each linked document.
+ */
+async function checkedStepDocuments(models, userId, stepDocuments, can) {
+    const {userHasDocumentAccess} = require('./document');
+    const checked = [];
+    for (const step of stepDocuments) {
+        const documentId = step.documentId ?? null;
+        if (documentId !== null) {
+            const document = await models['document'].getById(documentId);
+            if (!document || document.deleted) {
+                throw new TranslatableError('errors.rest.stepDocumentNotFound');
+            }
+            if (!(await userHasDocumentAccess(models, userId, documentId, can))) {
+                throw new TranslatableError('errors.rest.documentNoAccess');
+            }
+        }
+        checked.push({id: step.id, documentId, configuration: step.configuration ?? {}});
+    }
+    return checked;
 }
 
 function pickStudyFields(source) {
@@ -178,7 +181,9 @@ async function runForEachStudy(studyIds, options, action) {
     const sequelize = options.models['study'].sequelize;
     const studies = [];
     for (const id of ids) {
-        const transaction = await sequelize.transaction();
+        const transaction = options.startTransaction
+            ? await options.startTransaction()
+            : await sequelize.transaction();
         try {
             const study = await action(id, transaction);
             await transaction.commit();
@@ -200,28 +205,55 @@ async function runForEachStudy(studyIds, options, action) {
     return studies;
 }
 
+/**
+ * Mirrors the study table subscription in the Studies dashboard. Differs: fullAccess comes from the token.
+ */
 async function listStudies({userId}, options) {
+    const {defaultProjectFor} = require('./project');
     const models = options.models;
-    const studies = await models['study'].getAll() || [];
-    const projectId = await defaultProjectId(models, userId);
-    const seeAll = await userHasRight(models, userId, STUDIES_FULL_ACCESS);
-    const visible = [];
-    for (const study of studies) {
-        if (studyRowVisible(study, userId, projectId, seeAll)) {
-            visible.push(study);
-        }
-    }
-    visible.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    return visible;
+    const projectId = await defaultProjectFor(models, userId);
+    // The Studies dashboard grid's own owner rule (null with fullAccess), so REST and dashboard agree.
+    const scope = await models['study'].getQueryTableScopeFilter({dashboard: true}, {userId, hasAccess: canOf(options)});
+    return models['study'].findAll({
+        where: {
+            [Op.and]: [
+                {template: {[Op.not]: true}},
+                {deleted: {[Op.not]: true}},
+                ...(projectId !== null ? [{projectId}] : []),
+                ...(scope ? [scope] : []),
+            ],
+        },
+        order: [['createdAt', 'ASC']],
+        raw: true,
+    });
 }
 
+/**
+ * Study templates the caller may create studies and assignments from. Same rule createStudy applies.
+ */
+async function listStudyTemplates({userId}, options) {
+    const seeAll = await canOf(options)(STUDIES_FULL_ACCESS);
+    const templates = await options.models['study'].findAll({
+        where: {template: true, deleted: false},
+        attributes: ['id', 'hash', 'name', 'description', 'workflowId', 'userId', 'createdByUserId'],
+        order: [['id', 'ASC']],
+        raw: true,
+    });
+    return templates
+        .filter((template) => seeAll || ownsStudyRecord(userId, template))
+        .map(({createdByUserId, ...template}) => template);
+}
+
+/**
+ * Mirrors appDataUpdate on the study table (create from template). Differs: template loaded by id, field allow-list.
+ */
 async function createStudy({userId, templateId, fields, stepDocuments}, options) {
     const models = options.models;
     const template = await models['study'].getById(templateId, {transaction: options.transaction});
     if (!template) {
         throw new TranslatableError('errors.rest.templateNotFound');
     }
-    if (!(await userCanViewStudy(models, userId, template))) {
+    if (!(await userCanViewStudy(canOf(options), userId, template))) {
         throw new TranslatableError('errors.studies.notAllowedToSeeStudy');
     }
     if (!template.template) {
@@ -242,7 +274,7 @@ async function createStudy({userId, templateId, fields, stepDocuments}, options)
     }
 
     const steps = Array.isArray(stepDocuments)
-        ? stepDocuments
+        ? await checkedStepDocuments(models, userId, stepDocuments, canOf(options))
         : await stepDocumentsFromStudy(models, template.id);
 
     return models['study'].add(payload, {
@@ -251,13 +283,16 @@ async function createStudy({userId, templateId, fields, stepDocuments}, options)
     });
 }
 
+/**
+ * Mirrors appDataUpdate on the study table (edit). Differs: field allow-list, owner or fullAccess checked.
+ */
 async function updateStudyFields({userId, studyId, fields, stepDocuments}, options) {
     const models = options.models;
     const study = await models['study'].getById(studyId, {transaction: options.transaction});
     if (!study) {
         return null;
     }
-    await assertCanManageStudy(models, userId, study, 'errors.studies.notAllowedToSeeStudy');
+    await assertCanManageStudy(options, userId, study, 'errors.studies.notAllowedToSeeStudy');
     if (study.template || study.closed) {
         throw new TranslatableError('errors.rest.studyNotEditable');
     }
@@ -265,7 +300,7 @@ async function updateStudyFields({userId, studyId, fields, stepDocuments}, optio
     const allowed = pickStudyFields(fields);
     const context = {currentUserId: userId};
     if (Array.isArray(stepDocuments)) {
-        context.stepDocuments = stepDocuments;
+        context.stepDocuments = await checkedStepDocuments(models, userId, stepDocuments, canOf(options));
     }
     const updated = await models['study'].updateById(study.id, allowed, {
         transaction: options.transaction,
@@ -284,6 +319,9 @@ async function updateStudyFields({userId, studyId, fields, stepDocuments}, optio
     return newest || updated;
 }
 
+/**
+ * Mirrors StudySocket.sendStudyClosedEmails, close copy. Differs: models and server passed in, no this.
+ */
 async function sendStudyClosedEmails(study, options) {
     if (!study) {
         return;
@@ -341,7 +379,7 @@ async function closeOneStudy(studyId, {userId, notifySessions}, options, transac
     if (!study) {
         throw new TranslatableError('errors.studies.studyNotFound');
     }
-    await assertCanManageStudy(models, userId, study, 'errors.studies.noPermissionCloseStudy');
+    await assertCanManageStudy(options, userId, study, 'errors.studies.noPermissionCloseStudy');
     if (study.closed) {
         throw new TranslatableError('errors.studies.studyAlreadyClosed');
     }
@@ -355,18 +393,26 @@ async function closeOneStudy(studyId, {userId, notifySessions}, options, transac
     });
 
     if (notifySessions) {
-        transaction.afterCommit(async () => {
-            try {
-                const fresh = await models['study'].getById(studyId);
-                await sendStudyClosedEmails(fresh, options);
-            } catch (error) {
-                options.logger.error(`Failed to send study closed emails for study ${studyId}:`, error);
-            }
+        // Not returned, so the answer does not wait for mail delivery. One request's close emails
+        // share one queue, study after study, so a bulk close of 100 studies does not open 100 mail
+        // connections at once. Failures are logged.
+        transaction.afterCommit(() => {
+            options.closeMailQueue = (options.closeMailQueue || Promise.resolve()).then(async () => {
+                try {
+                    const fresh = await models['study'].getById(studyId);
+                    await sendStudyClosedEmails(fresh, options);
+                } catch (error) {
+                    options.logger.error(`Failed to send study closed emails for study ${studyId}:`, error);
+                }
+            });
         });
     }
     return updated;
 }
 
+/**
+ * Mirrors StudySocket.closeStudy and closeBulk (studyClose, studyCloseBulk). Differs: no progress events.
+ */
 async function closeStudies({userId, studyIds, notifySessions}, options) {
     const studies = await runForEachStudy(studyIds, options, (id, transaction) => {
         return closeOneStudy(id, {userId, notifySessions: notifySessions === true}, options, transaction);
@@ -380,7 +426,7 @@ async function openOneStudy(studyId, userId, options, transaction) {
     if (!study) {
         throw new TranslatableError('errors.studies.studyNotFound');
     }
-    await assertCanManageStudy(models, userId, study, 'errors.studies.notAllowedToSeeStudy');
+    await assertCanManageStudy(options, userId, study, 'errors.studies.notAllowedToSeeStudy');
     return models['study'].updateById(studyId, {
         closed: null,
         userIdClosed: null,
@@ -390,6 +436,9 @@ async function openOneStudy(studyId, userId, options, transaction) {
     });
 }
 
+/**
+ * Mirrors StudySocket.openBulk (studyOpenBulk) and Restart in the dashboard. Differs: no progress events.
+ */
 async function openStudies({userId, studyIds}, options) {
     const studies = await runForEachStudy(studyIds, options, (id, transaction) => {
         return openOneStudy(id, userId, options, transaction);
@@ -403,13 +452,16 @@ async function deleteOneStudy(studyId, userId, options, transaction) {
     if (!study) {
         throw new TranslatableError('errors.studies.studyNotFound');
     }
-    await assertCanManageStudy(models, userId, study, 'errors.studies.notAllowedToSeeStudy');
+    await assertCanManageStudy(options, userId, study, 'errors.studies.notAllowedToSeeStudy');
     return models['study'].deleteById(studyId, {
         transaction,
         context: {currentUserId: userId},
     });
 }
 
+/**
+ * Mirrors StudySocket.deleteBulk (studyDeleteBulk). Differs: no progress events.
+ */
 async function deleteStudies({userId, studyIds}, options) {
     const studies = await runForEachStudy(studyIds, options, (id, transaction) => {
         return deleteOneStudy(id, userId, options, transaction);
@@ -417,6 +469,9 @@ async function deleteStudies({userId, studyIds}, options) {
     return {deletedCount: studies.length, studies};
 }
 
+/**
+ * Mirrors StudySocket.saveStudyAsTemplate (studySaveAsTemplate). Differs: owner or fullAccess from the token.
+ */
 async function saveStudyAsTemplate({userId, id, onlyTemplate, templateData}, options) {
     const models = options.models;
     if (onlyTemplate && templateData) {
@@ -440,7 +495,7 @@ async function saveStudyAsTemplate({userId, id, onlyTemplate, templateData}, opt
     if (!currentStudy) {
         throw new TranslatableError('errors.studies.studyNotFound');
     }
-    await assertCanManageStudy(models, userId, currentStudy, 'errors.studies.noPermissionSaveAsTemplate');
+    await assertCanManageStudy(options, userId, currentStudy, 'errors.studies.noPermissionSaveAsTemplate');
 
     const stepDocuments = await stepDocumentsFromStudy(models, currentStudy.id);
     const newStudyData = {
@@ -493,13 +548,16 @@ function parseStudyImport(content, format) {
     return parsed;
 }
 
+/**
+ * Mirrors the dashboard export modal for study and study_step. Same file shape.
+ */
 async function exportStudy({userId, studyId, format}, options) {
     const models = options.models;
     const study = await models['study'].getById(studyId);
     if (!study) {
         return null;
     }
-    if (!(await userCanViewStudy(models, userId, study))) {
+    if (!(await userCanViewStudy(canOf(options), userId, study))) {
         throw new TranslatableError('errors.studies.notAllowedToSeeStudy');
     }
     const steps = await models['study_step'].getAllByKey('studyId', study.id) || [];
@@ -512,12 +570,9 @@ async function exportStudy({userId, studyId, format}, options) {
     };
 }
 
-function importItemData(item) {
-    return Object.fromEntries(
-        Object.entries(item).filter(([key]) => !EXPORT_CHILD_STRIP.includes(key) && key !== 'study_step')
-    );
-}
-
+/**
+ * Mirrors the dashboard import modal (studySaveAsTemplate with onlyTemplate). Differs: study field allow-list.
+ */
 async function importStudies({userId, items}, options) {
     if (!Array.isArray(items) || items.length === 0) {
         throw new TranslatableError('errors.rest.importContentRequired');
@@ -527,10 +582,14 @@ async function importStudies({userId, items}, options) {
         if (!item || typeof item !== 'object' || Array.isArray(item)) {
             throw new TranslatableError('errors.rest.importContentRequired');
         }
+        // Allow-list: an imported file must not set owner, closed state, parent, or other columns.
+        const stepDocuments = Array.isArray(item.stepDocuments)
+            ? await checkedStepDocuments(options.models, userId, item.stepDocuments, canOf(options))
+            : [];
         const template = await saveStudyAsTemplate({
             userId,
             onlyTemplate: true,
-            templateData: importItemData(item),
+            templateData: {...pickStudyFields(item), stepDocuments},
         }, options);
         created.push(template);
     }
@@ -920,15 +979,21 @@ class StudySocket extends Socket {
 
 module.exports = StudySocket;module.exports.STUDY_FIELDS = STUDY_FIELDS;
 module.exports.listStudies = listStudies;
+module.exports.publicStudy = publicStudy;
+module.exports.ownsStudyRecord = ownsStudyRecord;
+module.exports.listStudyTemplates = listStudyTemplates;
 module.exports.loadStudyByIdOrHash = loadStudyByIdOrHash;
-module.exports.userCanViewStudy = userCanViewStudy;
 module.exports.studyVisibleInList = studyVisibleInList;
 module.exports.createStudy = createStudy;
+module.exports.userCanManageStudy = userCanManageStudy;
+module.exports.userCanViewStudy = userCanViewStudy;
+module.exports.pickStudyFields = pickStudyFields;
 module.exports.updateStudyFields = updateStudyFields;
 module.exports.closeStudies = closeStudies;
 module.exports.openStudies = openStudies;
 module.exports.deleteStudies = deleteStudies;
 module.exports.saveStudyAsTemplate = saveStudyAsTemplate;
+module.exports.stepDocumentsFromStudySteps = stepDocumentsFromStudySteps;
 module.exports.exportStudy = exportStudy;
 module.exports.importStudies = importStudies;
 module.exports.parseStudyImport = parseStudyImport;

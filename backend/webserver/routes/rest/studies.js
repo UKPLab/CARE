@@ -1,7 +1,11 @@
 'use strict';
 
-const {requireTokenRight} = require('../../middleware/bearerAuth');
 const TranslatableError = require('../../../utils/TranslatableError');
+const {requireTokenRight} = require('../../middleware/bearerAuth');
+const {restChangeBatch} = require('../../utils/restBroadcast');
+const {sendKnownError, errorKey} = require('../../utils/restHelpers');
+const {heavyRateLimit} = require('../../middleware/restRateLimit');
+const {runWrite, runRead, restOptions, is} = require('./routeHelpers');
 const StudySocket = require('../../sockets/study');
 
 const STUDIES_VIEW = 'frontend.dashboard.studies.view';
@@ -10,6 +14,8 @@ const STUDIES_MANAGE = 'frontend.dashboard.studies.canManageStudies';
 const {
     STUDY_FIELDS,
     listStudies,
+    publicStudy,
+    listStudyTemplates,
     loadStudyByIdOrHash,
     studyVisibleInList,
     createStudy,
@@ -21,7 +27,23 @@ const {
     exportStudy,
     importStudies,
     parseStudyImport,
+    stepDocumentsFromStudySteps,
 } = StudySocket;
+
+// Socket error keys mapped to the REST keys the docs promise.
+const STUDY_ERRORS = {
+    rename: {
+        'errors.studies.studyNotFound': 'errors.rest.studyNotFound',
+        'errors.studies.noPermissionCloseStudy': 'errors.rest.studyNoAccess',
+        'errors.studies.noPermissionSaveAsTemplate': 'errors.rest.studyNoAccess',
+        'errors.studies.noPermissionManageStudies': 'errors.rest.studyNoAccess',
+        'errors.studies.notAllowedToSeeStudy': 'errors.rest.studyNoAccess',
+        'errors.studies.studyAlreadyClosed': 'errors.rest.studyAlreadyClosed',
+        'errors.studies.studyIdRequired': 'errors.rest.studyIdsRequired',
+    },
+    notFound: new Set(['errors.rest.studyNotFound', 'errors.rest.templateNotFound']),
+    forbidden: new Set(['errors.rest.studyNoAccess', 'errors.rest.documentNoAccess']),
+};
 
 const BOOLEAN_FIELDS = new Set([
     'enableEmailNotifications',
@@ -38,74 +60,30 @@ const INTEGER_FIELDS = new Set([
     'limitSessionsPerUser',
 ]);
 const DATE_FIELDS = new Set(['start', 'end']);
-
-function restMessage(err) {
-    if (TranslatableError.is && TranslatableError.is(err)) {
-        return err.key;
-    }
-    if (err && err.key) {
-        return err.key;
-    }
-    if (err && typeof err.message === 'string' && err.message.startsWith('errors.')) {
-        return err.message;
-    }
-    return null;
-}
+// Bulk open, close, and delete take at most this many ids per request.
+const MAX_BULK_STUDY_IDS = 100;
 
 function sendRestError(res, err) {
-    const key = restMessage(err);
-    if (key === 'errors.studies.studyNotFound' || key === 'errors.rest.studyNotFound') {
-        return res.status(404).json({message: 'errors.rest.studyNotFound'});
-    }
-    if (key === 'errors.rest.templateNotFound') {
-        return res.status(404).json({message: 'errors.rest.templateNotFound'});
-    }
-    if (key === 'errors.studies.noPermissionCloseStudy'
-        || key === 'errors.studies.noPermissionSaveAsTemplate'
-        || key === 'errors.studies.noPermissionManageStudies'
-        || key === 'errors.studies.notAllowedToSeeStudy'
-        || key === 'errors.rest.studyNoAccess') {
-        return res.status(403).json({message: 'errors.rest.studyNoAccess'});
-    }
-    if (key === 'errors.studies.studyAlreadyClosed') {
-        return res.status(400).json({message: 'errors.rest.studyAlreadyClosed'});
-    }
-    if (key === 'errors.studies.studyIdRequired') {
-        return res.status(400).json({message: 'errors.rest.studyIdsRequired'});
-    }
-    if (key) {
-        return res.status(400).json({message: key});
-    }
-    return null;
+    return sendKnownError(res, err, STUDY_ERRORS);
 }
 
-function studyOptions(server, transaction) {
-    return {
-        transaction,
-        models: server.db.models,
-        logger: server.logger,
-        server,
-    };
-}
-
-async function loadListedStudy(models, userId, idOrHash, res) {
-    const study = await loadStudyByIdOrHash(models, idOrHash);
-    if (!study) {
-        res.status(404).json({message: 'errors.rest.studyNotFound'});
-        return null;
-    }
-    if (!(await studyVisibleInList(models, userId, study))) {
-        res.status(403).json({message: 'errors.rest.studyNoAccess'});
-        return null;
+/**
+ * A study the caller may see in the list.
+ * @throws {TranslatableError} errors.rest.studyNotFound (404) or errors.rest.studyNoAccess (403)
+ */
+async function listedStudy(userId, idOrHash, options) {
+    const study = await existingStudy(idOrHash, options);
+    if (!(await studyVisibleInList(options.models, userId, study, options.can))) {
+        throw new TranslatableError('errors.rest.studyNoAccess');
     }
     return study;
 }
 
-async function loadExistingStudy(models, idOrHash, res) {
-    const study = await loadStudyByIdOrHash(models, idOrHash);
+/** @throws {TranslatableError} errors.rest.studyNotFound (404) */
+async function existingStudy(idOrHash, options) {
+    const study = await loadStudyByIdOrHash(options.models, idOrHash);
     if (!study) {
-        res.status(404).json({message: 'errors.rest.studyNotFound'});
-        return null;
+        throw new TranslatableError('errors.rest.studyNotFound');
     }
     return study;
 }
@@ -113,6 +91,9 @@ async function loadExistingStudy(models, idOrHash, res) {
 function readStudyIds(body) {
     if (!body || !Array.isArray(body.ids) || body.ids.length === 0) {
         return {error: 'errors.rest.studyIdsRequired'};
+    }
+    if (body.ids.length > MAX_BULK_STUDY_IDS) {
+        return {error: 'errors.rest.tooManyStudyIds'};
     }
     const ids = [];
     for (const raw of body.ids) {
@@ -164,7 +145,7 @@ function readStudyFields(body) {
             continue;
         }
         if (DATE_FIELDS.has(key)) {
-            if (body[key] !== null && typeof body[key] !== 'string') {
+            if (!is.dateOrNull(body[key])) {
                 return {error: 'errors.rest.invalidStudyField'};
             }
             fields[key] = body[key];
@@ -172,12 +153,68 @@ function readStudyFields(body) {
     }
     let stepDocuments;
     if (body.stepDocuments !== undefined) {
-        if (!Array.isArray(body.stepDocuments)) {
+        stepDocuments = readStepDocuments(body.stepDocuments);
+        if (!stepDocuments) {
             return {error: 'errors.rest.invalidStudyField'};
         }
-        stepDocuments = body.stepDocuments;
     }
     return {fields, stepDocuments};
+}
+
+/**
+ * Each entry is { id: workflowStepId, documentId?, configuration? }. Other keys are dropped.
+ * @returns {Array|null} null when the shape is wrong
+ */
+function readStepDocuments(raw) {
+    if (!Array.isArray(raw)) {
+        return null;
+    }
+    const steps = [];
+    for (const step of raw) {
+        if (!step || typeof step !== 'object' || Array.isArray(step) || !Number.isInteger(step.id)) {
+            return null;
+        }
+        const documentId = step.documentId ?? null;
+        if (documentId !== null && !Number.isInteger(documentId)) {
+            return null;
+        }
+        const configuration = step.configuration ?? {};
+        if (typeof configuration !== 'object' || Array.isArray(configuration)) {
+            return null;
+        }
+        steps.push({id: step.id, documentId, configuration});
+    }
+    return steps;
+}
+
+/**
+ * Type-check each imported study the same way POST and PATCH do. Null values are treated as not set.
+ */
+function readImportStudies(items) {
+    const studies = [];
+    for (const item of items) {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            return {error: 'errors.rest.importContentRequired'};
+        }
+        // YAML parses timestamps into Date objects. The field check expects ISO strings.
+        const present = Object.fromEntries(Object.entries(item)
+            .filter(([, value]) => value !== null)
+            .map(([key, value]) => [key, value instanceof Date ? value.toISOString() : value]));
+        const parsed = readStudyFields(present);
+        if (parsed.error) {
+            return {error: parsed.error};
+        }
+        let stepDocuments = parsed.stepDocuments;
+        if (!stepDocuments && Array.isArray(item.study_step)) {
+            // An export carries study_step rows; use them the way the dashboard import does.
+            stepDocuments = readStepDocuments(stepDocumentsFromStudySteps(item.study_step.filter(is.object)));
+            if (!stepDocuments) {
+                return {error: 'errors.rest.invalidStudyField'};
+            }
+        }
+        studies.push({...parsed.fields, stepDocuments});
+    }
+    return {items: studies};
 }
 
 function exportFormat(query) {
@@ -205,18 +242,10 @@ function readImportItems(body) {
     try {
         return {items: parseStudyImport(body.content, format)};
     } catch (err) {
-        if (restMessage(err) === 'errors.rest.importContentRequired') {
+        if (errorKey(err) === 'errors.rest.importContentRequired') {
             return {error: 'errors.rest.importContentRequired'};
         }
         return {error: 'errors.rest.importParseFailed'};
-    }
-}
-
-async function rollback(transaction) {
-    try {
-        await transaction.rollback();
-    } catch (_rollbackError) {
-        // already rolled back
     }
 }
 
@@ -224,105 +253,76 @@ async function rollback(transaction) {
  * REST studies: collection, item, and extra paths for open/close/delete/template/import/export.
  */
 function registerRestStudyRoutes(server) {
-    const models = server.db.models;
     const needView = requireTokenRight(server, STUDIES_VIEW);
     const needManage = requireTokenRight(server, STUDIES_MANAGE);
+    const read = (req, res, label, work) => runRead(server, req, res, {label, errors: STUDY_ERRORS}, work);
+    const write = (req, res, status, label, work) => runWrite(server, req, res, {status, label, errors: STUDY_ERRORS}, work);
 
-    server.app.get('/rest/v1/studies', needView, async (req, res) => {
-        try {
-            const studies = await listStudies({userId: req.apiUserId}, {models});
-            return res.status(200).json({studies: studies || []});
-        } catch (err) {
-            server.logger.error('REST list studies failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
+    /**
+     * Bulk open, close, and delete commit one study at a time (one failing study does not undo the
+     * others) and refresh dashboards once at the end, like the dashboard's bulk actions.
+     */
+    function bulk(req, res, label, action) {
+        const ids = readStudyIds(req.body);
+        if (ids.error) {
+            return res.status(400).json({message: ids.error});
         }
-    });
+        const batch = restChangeBatch(server, req.apiUserId);
+        return read(req, res, label, async (options) => {
+            try {
+                return await action(ids.ids, {...options, startTransaction: batch.start});
+            } finally {
+                await batch.broadcast();
+            }
+        });
+    }
 
-    server.app.post('/rest/v1/studies/import', needManage, async (req, res) => {
+    server.app.get('/rest/v1/studies', needView, (req, res) => read(req, res, 'list studies', async (options) => {
+        const studies = await listStudies({userId: req.apiUserId}, options);
+        return {studies: (studies || []).map(publicStudy)};
+    }));
+
+    server.app.get('/rest/v1/study-templates', needView, (req, res) => read(req, res, 'list study templates', async (options) =>
+        ({templates: await listStudyTemplates({userId: req.apiUserId}, options)})));
+
+    server.app.post('/rest/v1/studies/import', needManage, heavyRateLimit(server), (req, res) => {
         const parsed = readImportItems(req.body);
         if (parsed.error) {
             return res.status(400).json({message: parsed.error});
         }
-        const t = await server.db.sequelize.transaction();
-        try {
-            const studies = await importStudies({
-                userId: req.apiUserId,
-                items: parsed.items,
-            }, studyOptions(server, t));
-            await t.commit();
-            return res.status(201).json({studies});
-        } catch (err) {
-            await rollback(t);
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST import studies failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
+        const checked = readImportStudies(parsed.items);
+        if (checked.error) {
+            return res.status(400).json({message: checked.error});
         }
+        return write(req, res, 201, 'import studies', async (options) => {
+            const studies = await importStudies({userId: req.apiUserId, items: checked.items}, options);
+            return {studies: studies.map(publicStudy)};
+        });
     });
 
-    server.app.post('/rest/v1/studies/close', needManage, async (req, res) => {
-        const ids = readStudyIds(req.body);
-        if (ids.error) {
-            return res.status(400).json({message: ids.error});
-        }
-        try {
+    server.app.post('/rest/v1/studies/close', needManage, heavyRateLimit(server), (req, res) =>
+        bulk(req, res, 'bulk close studies', async (studyIds, options) => {
             const result = await closeStudies({
                 userId: req.apiUserId,
-                studyIds: ids.ids,
+                studyIds,
                 notifySessions: req.body?.notifySessions === true,
-            }, studyOptions(server));
-            return res.status(200).json({closedCount: result.closedCount, studies: result.studies});
-        } catch (err) {
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST bulk close studies failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
-    });
+            }, options);
+            return {closedCount: result.closedCount, studies: result.studies.map(publicStudy)};
+        }));
 
-    server.app.post('/rest/v1/studies/open', needManage, async (req, res) => {
-        const ids = readStudyIds(req.body);
-        if (ids.error) {
-            return res.status(400).json({message: ids.error});
-        }
-        try {
-            const result = await openStudies({
-                userId: req.apiUserId,
-                studyIds: ids.ids,
-            }, studyOptions(server));
-            return res.status(200).json({openedCount: result.openedCount, studies: result.studies});
-        } catch (err) {
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST bulk open studies failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
-    });
+    server.app.post('/rest/v1/studies/open', needManage, heavyRateLimit(server), (req, res) =>
+        bulk(req, res, 'bulk open studies', async (studyIds, options) => {
+            const result = await openStudies({userId: req.apiUserId, studyIds}, options);
+            return {openedCount: result.openedCount, studies: result.studies.map(publicStudy)};
+        }));
 
-    server.app.post('/rest/v1/studies/delete', needManage, async (req, res) => {
-        const ids = readStudyIds(req.body);
-        if (ids.error) {
-            return res.status(400).json({message: ids.error});
-        }
-        try {
-            const result = await deleteStudies({
-                userId: req.apiUserId,
-                studyIds: ids.ids,
-            }, studyOptions(server));
-            return res.status(200).json({deletedCount: result.deletedCount});
-        } catch (err) {
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST bulk delete studies failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
-    });
+    server.app.post('/rest/v1/studies/delete', needManage, heavyRateLimit(server), (req, res) =>
+        bulk(req, res, 'bulk delete studies', async (studyIds, options) => {
+            const result = await deleteStudies({userId: req.apiUserId, studyIds}, options);
+            return {deletedCount: result.deletedCount};
+        }));
 
-    server.app.post('/rest/v1/studies', needManage, async (req, res) => {
+    server.app.post('/rest/v1/studies', needManage, (req, res) => {
         if (req.body?.templateId === undefined || req.body?.templateId === null || req.body?.templateId === '') {
             return res.status(400).json({message: 'errors.rest.templateIdRequired'});
         }
@@ -334,41 +334,27 @@ function registerRestStudyRoutes(server) {
         if (parsed.error) {
             return res.status(400).json({message: parsed.error});
         }
-        const t = await server.db.sequelize.transaction();
-        try {
+        return write(req, res, 201, 'create study', async (options) => {
             const study = await createStudy({
                 userId: req.apiUserId,
                 templateId,
                 fields: parsed.fields,
                 stepDocuments: parsed.stepDocuments,
-            }, studyOptions(server, t));
-            await t.commit();
-            return res.status(201).json({study});
-        } catch (err) {
-            await rollback(t);
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST create study failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
+            }, options);
+            return {study: publicStudy(study)};
+        });
     });
 
+    // A file answer, not JSON, so this read does not use runRead.
     server.app.get('/rest/v1/studies/:idOrHash/export', needManage, async (req, res) => {
         const format = exportFormat(req.query);
         if (!format) {
             return res.status(400).json({message: 'errors.rest.unsupportedExportFormat'});
         }
         try {
-            const study = await loadExistingStudy(models, req.params.idOrHash, res);
-            if (!study) {
-                return;
-            }
-            const exported = await exportStudy({
-                userId: req.apiUserId,
-                studyId: study.id,
-                format,
-            }, studyOptions(server));
+            const options = restOptions(server, req);
+            const study = await existingStudy(req.params.idOrHash, options);
+            const exported = await exportStudy({userId: req.apiUserId, studyId: study.id, format}, options);
             if (!exported) {
                 return res.status(404).json({message: 'errors.rest.studyNotFound'});
             }
@@ -385,93 +371,34 @@ function registerRestStudyRoutes(server) {
         }
     });
 
-    server.app.post('/rest/v1/studies/:idOrHash/template', needManage, async (req, res) => {
-        const t = await server.db.sequelize.transaction();
-        try {
-            const study = await loadExistingStudy(models, req.params.idOrHash, res);
-            if (!study) {
-                await rollback(t);
-                return;
-            }
-            const template = await saveStudyAsTemplate({
-                userId: req.apiUserId,
-                id: study.id,
-            }, studyOptions(server, t));
-            await t.commit();
-            return res.status(201).json({study: template});
-        } catch (err) {
-            await rollback(t);
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST save study template failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
-    });
+    server.app.post('/rest/v1/studies/:idOrHash/template', needManage, (req, res) =>
+        write(req, res, 201, 'save study template', async (options) => {
+            const study = await existingStudy(req.params.idOrHash, options);
+            return {study: publicStudy(await saveStudyAsTemplate({userId: req.apiUserId, id: study.id}, options))};
+        }));
 
-    server.app.post('/rest/v1/studies/:idOrHash/close', needManage, async (req, res) => {
-        const t = await server.db.sequelize.transaction();
-        try {
-            const study = await loadExistingStudy(models, req.params.idOrHash, res);
-            if (!study) {
-                await rollback(t);
-                return;
-            }
+    server.app.post('/rest/v1/studies/:idOrHash/close', needManage, (req, res) =>
+        write(req, res, 200, 'close study', async (options) => {
+            const study = await existingStudy(req.params.idOrHash, options);
             const result = await closeStudies({
                 userId: req.apiUserId,
                 studyIds: [study.id],
                 notifySessions: req.body?.notifySessions === true,
-            }, studyOptions(server, t));
-            await t.commit();
-            return res.status(200).json({study: result.studies[0]});
-        } catch (err) {
-            await rollback(t);
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST close study failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
-    });
+            }, options);
+            return {study: publicStudy(result.studies[0])};
+        }));
 
-    server.app.post('/rest/v1/studies/:idOrHash/open', needManage, async (req, res) => {
-        const t = await server.db.sequelize.transaction();
-        try {
-            const study = await loadExistingStudy(models, req.params.idOrHash, res);
-            if (!study) {
-                await rollback(t);
-                return;
-            }
-            const result = await openStudies({
-                userId: req.apiUserId,
-                studyIds: [study.id],
-            }, studyOptions(server, t));
-            await t.commit();
-            return res.status(200).json({study: result.studies[0]});
-        } catch (err) {
-            await rollback(t);
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST open study failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
-    });
+    server.app.post('/rest/v1/studies/:idOrHash/open', needManage, (req, res) =>
+        write(req, res, 200, 'open study', async (options) => {
+            const study = await existingStudy(req.params.idOrHash, options);
+            const result = await openStudies({userId: req.apiUserId, studyIds: [study.id]}, options);
+            return {study: publicStudy(result.studies[0])};
+        }));
 
-    server.app.get('/rest/v1/studies/:idOrHash', needView, async (req, res) => {
-        try {
-            const study = await loadListedStudy(models, req.apiUserId, req.params.idOrHash, res);
-            if (!study) {
-                return;
-            }
-            return res.status(200).json({study});
-        } catch (err) {
-            server.logger.error('REST get study failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
-    });
+    server.app.get('/rest/v1/studies/:idOrHash', needView, (req, res) => read(req, res, 'get study', async (options) =>
+        ({study: publicStudy(await listedStudy(req.apiUserId, req.params.idOrHash, options))})));
 
-    server.app.patch('/rest/v1/studies/:idOrHash', needManage, async (req, res) => {
+    server.app.patch('/rest/v1/studies/:idOrHash', needManage, (req, res) => {
         const parsed = readStudyFields(req.body);
         if (parsed.error) {
             return res.status(400).json({message: parsed.error});
@@ -479,54 +406,24 @@ function registerRestStudyRoutes(server) {
         if (Object.keys(parsed.fields).length === 0 && !parsed.stepDocuments) {
             return res.status(400).json({message: 'errors.rest.noStudyFields'});
         }
-        const t = await server.db.sequelize.transaction();
-        try {
-            const study = await loadExistingStudy(models, req.params.idOrHash, res);
-            if (!study) {
-                await rollback(t);
-                return;
-            }
+        return write(req, res, 200, 'patch study', async (options) => {
+            const study = await existingStudy(req.params.idOrHash, options);
             const updated = await updateStudyFields({
                 userId: req.apiUserId,
                 studyId: study.id,
                 fields: parsed.fields,
                 stepDocuments: parsed.stepDocuments,
-            }, studyOptions(server, t));
-            await t.commit();
-            return res.status(200).json({study: updated});
-        } catch (err) {
-            await rollback(t);
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST patch study failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
+            }, options);
+            return {study: publicStudy(updated)};
+        });
     });
 
-    server.app.delete('/rest/v1/studies/:idOrHash', needManage, async (req, res) => {
-        const t = await server.db.sequelize.transaction();
-        try {
-            const study = await loadExistingStudy(models, req.params.idOrHash, res);
-            if (!study) {
-                await rollback(t);
-                return;
-            }
-            await deleteStudies({
-                userId: req.apiUserId,
-                studyIds: [study.id],
-            }, studyOptions(server, t));
-            await t.commit();
-            return res.status(200).json({success: true});
-        } catch (err) {
-            await rollback(t);
-            if (sendRestError(res, err)) {
-                return;
-            }
-            server.logger.error('REST delete study failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
-        }
-    });
+    server.app.delete('/rest/v1/studies/:idOrHash', needManage, (req, res) =>
+        write(req, res, 200, 'delete study', async (options) => {
+            const study = await existingStudy(req.params.idOrHash, options);
+            await deleteStudies({userId: req.apiUserId, studyIds: [study.id]}, options);
+            return {success: true};
+        }));
 }
 
 module.exports = {registerRestStudyRoutes};
