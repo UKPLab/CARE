@@ -33,6 +33,7 @@
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import FormSelect from "@/basic/form/Select.vue";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 export default {
   name: "AIHookModelOrder",
@@ -70,35 +71,20 @@ export default {
     },
     tableButtons() {
       return [
-        {
-          icon: "arrow-up-short",
+        dashboardRowButton("arrow-up-short", {
           title: this.$t("ai.actions.moveUp"),
           action: "moveUp",
           filter: [{ key: "canMoveUp", value: true }],
-          options: {
-            iconOnly: true,
-            specifiers: { "btn-primary": true },
-          },
-        },
-        {
-          icon: "arrow-down-short",
+        }),
+        dashboardRowButton("arrow-down-short", {
           title: this.$t("ai.actions.moveDown"),
           action: "moveDown",
           filter: [{ key: "canMoveDown", value: true }],
-          options: {
-            iconOnly: true,
-            specifiers: { "btn-secondary": true },
-          },
-        },
-        {
-          icon: "trash",
+        }),
+        dashboardRowAction("delete", {
           title: this.$t("ai.actions.removeModel"),
           action: "remove",
-          options: {
-            iconOnly: true,
-            specifiers: { "btn-outline-danger": true },
-          },
-        },
+        }),
       ];
     },
     modelIds() {

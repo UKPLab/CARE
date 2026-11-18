@@ -359,3 +359,33 @@ test("repositions an open favorites popup after the sidebar width transition", a
 
   assert.equal(document.querySelector(".sidebar-favorites-popover").style.left, "64px");
 });
+
+test("group list forwards favorite state and actions to its groups", () => {
+  const emitted = [];
+  const SidebarGroupList = loadComponent("components/dashboard/navigation/SidebarGroupList.vue", {
+    SidebarGroup: {
+      props: ["activeElementId", "favoriteIds", "favoriteDisabled", "subgroup"],
+      emits: ["toggle-favorite"],
+      render() {
+        return h("button", {
+          disabled: this.favoriteDisabled,
+          "data-active-id": this.activeElementId,
+          "data-favorites": this.favoriteIds.join(","),
+          onClick: () => this.$emit("toggle-favorite", this.subgroup.elements[0]),
+        });
+      },
+    },
+  });
+  mount(SidebarGroupList, {
+    groups: [{ key: "Home", elements: [navElements[0]] }],
+    groupStates: {},
+    activeElementId: 1,
+    favoriteIds: ["1"],
+    favoriteDisabled: false,
+  }, { globals: { onToggleFavorite: element => emitted.push(element) } });
+  const button = document.querySelector("button");
+  assert.equal(button.dataset.activeId, "1");
+  assert.equal(button.dataset.favorites, "1");
+  button.click();
+  assert.deepEqual(emitted, [navElements[0]]);
+});

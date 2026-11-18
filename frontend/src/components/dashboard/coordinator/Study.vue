@@ -3,13 +3,13 @@
       ref="coordinator"
       table="study"
       :title="isTemplateMode ? $t('studies.template') : $t('studies.study')"
-      :textAdd="isTemplateMode ? $t('common.create') : $t('common.add')"
+      :text-add="isTemplateMode ? $t('common.create') : $t('common.add')"
       :custom-submit="isTemplateMode"
       :default-value="{ isTemplateMode: isTemplateMode }"
+      :original-data="originalDates"
       @success="success"
       @submit="handleSubmit"
       @hide="dropFormData"
-      :original-data="originalDates"
   >
     <template #title>
       {{ modalTitle }}
@@ -51,9 +51,9 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "CoordinatorStudy",
+  components: {BasicCoordinator, BasicButton},
   emits: ["published"],
   subscribeTable: ['ai_budget'],
-  components: {BasicCoordinator, BasicButton},
   data() {
     return {
       studyId: 0,

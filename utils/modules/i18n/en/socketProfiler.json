@@ -202,7 +202,8 @@
     "replayFailed": "Replay failed",
     "deleted": "Recording deleted",
     "deletedBody": "Recording has been deleted",
-    "deleteFailed": "Failed to delete recording"
+    "deleteFailed": "Failed to delete recording",
+    "operationFailed": "{operation}: {message}"
   },
   "columns": {
     "id": "ID",

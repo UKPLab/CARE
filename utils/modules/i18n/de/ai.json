@@ -167,7 +167,9 @@
       "model": "Modell",
       "output": "Ausgabe",
       "review": "Prüfen"
-    }
+    },
+    "outputMode": "Ausgabemodus",
+    "priority": "Priorität"
   },
   "budgets": {
     "title": "KI-Budget",

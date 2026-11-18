@@ -12,7 +12,20 @@
       :class="{ collapsed: isCollapsed }"
     >
       <!-- Sidebar navigation -->
-      <div class="sidebar-scroll-area">
+      <SidebarGroupList
+        :groups="defaultGroupedElements"
+        :group-states="groupStates"
+        :is-collapsed="isCollapsed"
+        :active-group="activeSubgroup"
+        :hovered-group="hoveredGroup"
+        :active-element-id="activeElementId"
+        :favorite-ids="favoriteIds"
+        :favorite-disabled="isSavingFavorites"
+        @toggle="toggleGroup"
+        @hover="handleGroupMouseEnter"
+        @leave="handleGroupMouseLeave"
+        @toggle-favorite="toggleFavorite"
+      >
         <SidebarFavorites
           :elements="favoriteElements"
           :active-element-id="activeElementId"
@@ -20,28 +33,7 @@
           :favorite-disabled="isSavingFavorites"
           @toggle-favorite="toggleFavorite"
         />
-
-        <div class="list-group-test">
-          <span>
-            <SidebarGroup
-              v-for="subgroup in defaultGroupedElements"
-              :key="subgroup.key"
-              :subgroup="subgroup"
-              :is-collapsed="isCollapsed"
-              :is-open="!!groupStates[subgroup.key]"
-              :is-active="activeSubgroup === subgroup.key"
-              :is-hovered="hoveredGroup === subgroup.key"
-              :active-element-id="activeElementId"
-              :favorite-ids="favoriteIds"
-              :favorite-disabled="isSavingFavorites"
-              @toggle="toggleGroup(subgroup.key)"
-              @hover="handleGroupMouseEnter($event, subgroup.key)"
-              @leave="handleGroupMouseLeave($event, subgroup.key)"
-              @toggle-favorite="toggleFavorite"
-            />
-          </span>
-        </div>
-      </div>
+      </SidebarGroupList>
 
       <!-- Hover preview: single shared instance -->
       <SidebarPreview
@@ -58,25 +50,11 @@
         @toggle-favorite="toggleFavorite"
       />
 
-      <!-- Sidebar footer -->
-      <div v-if="isAdmin && !isCollapsed" class="text-center text-secondary">
-        {{ $t('common.appVersion') }}: {{ version }}
-      </div>
-
-      <div
-        class="collapse-sidebar-container list-group-item-action list-group-item list-group-item-custom"
-        :title="$t('navigation.sidebar.toggleSidebar')"
-        @click="toggleSidebar()"
-      >
-        <span class="arrow-toggle sidebar-icon">
-          <LoadIcon name="chevron-double-right" />
-        </span>
-
-        <!-- Expanded mode -->
-        <div v-if="!isCollapsed" class="list-group-item-text" style="cursor:pointer">
-          {{ $t('navigation.sidebar.collapseSidebar') }}
-        </div>
-      </div>
+      <SidebarFooter
+        :is-collapsed="isCollapsed"
+        :show-version="isAdmin"
+        @toggle="toggleSidebar()"
+      />
     </div>
   </div>
 </template>
@@ -91,11 +69,11 @@
  *
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
-import LoadIcon from "@/basic/Icon.vue";
 import Loading from "@/basic/Loading.vue";
-import SidebarGroup from "./SidebarGroup.vue";
+import SidebarGroupList from "./SidebarGroupList.vue";
 import SidebarFavorites from "./SidebarFavorites.vue";
 import SidebarPreview from "./SidebarPreview.vue";
+import SidebarFooter from "./SidebarFooter.vue";
 import { sidebarHoverPreviewData, sidebarHoverPreviewComputed, sidebarHoverPreviewMethods } from "./helpers/sidebarHoverPreview.js";
 import { getFavoriteElements, parseFavoriteIds, SIDEBAR_FAVORITES_SETTING, toggleFavoriteId } from "./helpers/sidebarFavorites.js";
 import { resolveNavigationGroup } from "./helpers/navElement.js";
@@ -104,7 +82,7 @@ import { resolveApiMessage } from "@/assets/utils";
 export default {
   subscribeTable: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
-  components: { LoadIcon, Loading, SidebarGroup, SidebarFavorites, SidebarPreview },
+  components: { Loading, SidebarGroupList, SidebarFavorites, SidebarPreview, SidebarFooter },
 
   props: {
     activeElement: {
@@ -115,7 +93,6 @@ export default {
 
   data() {
     return {
-      version: APP_VERSION,
       isCollapsed: false,
 
       // Stores open/closed state per subgroup, e.g.:
@@ -426,20 +403,6 @@ export default {
   scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
 }
 
-.sidebar-scroll-area {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: visible;
-
-  scrollbar-width: thin;
-  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
-}
-
-.collapse-sidebar-container {
-  border-top: 1px solid rgba(0, 0, 0, 0.125);
-}
-
 @media (min-width: 768px) {
   #wrapper #sidebar-wrapper.collapsed {
     width: 64px;
@@ -473,28 +436,6 @@ export default {
   background: rgba(120, 120, 120, 0.7);
 }
 
-.sidebar-scroll-area::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-scroll-area::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-scroll-area::-webkit-scrollbar-thumb {
-  background: rgba(120, 120, 120, 0.35);
-  border-radius: 999px;
-  transition: background 0.2s ease;
-}
-
-.sidebar-scroll-area:hover::-webkit-scrollbar-thumb {
-  background: rgba(120, 120, 120, 0.5);
-}
-
-.sidebar-scroll-area::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 120, 120, 0.7);
-}
-
 /* ========================================
    3. BASE ELEMENTS (shared across Sidebar.vue, SidebarGroup.vue,
       SidebarNavItem.vue and SidebarPreview.vue)
@@ -521,35 +462,12 @@ export default {
 }
 
 /* ========================================
-   4. COLLAPSED SIDEBAR MODE (own markup only;
-      SidebarGroup.vue/SidebarPreview.vue own their collapsed-mode rules)
+   4. COLLAPSED SIDEBAR MODE (own markup only; SidebarGroup.vue,
+      SidebarPreview.vue and SidebarFooter.vue own their collapsed-mode rules)
 ======================================== */
-
-#sidebar-wrapper.collapsed > .collapse-sidebar-container .list-group-item-text,
-#sidebar-wrapper.collapsed > .text-secondary {
-  display: none !important;
-}
-
-#sidebar-wrapper.collapsed .collapse-sidebar-container {
-  justify-content: center !important;
-  padding-left: 0 !important;
-  padding-right: 0 !important;
-}
 
 #sidebar-wrapper.collapsed .sidebar-icon {
   margin-right: 0;
   margin-left: 0;
-}
-
-/* ========================================
-   5. FOOTER / STATE STYLES
-======================================== */
-
-.arrow-toggle {
-  transform: rotate(180deg);
-}
-
-body.sb-sidenav-toggled .arrow-toggle {
-  transform: rotate(0deg);
 }
 </style>

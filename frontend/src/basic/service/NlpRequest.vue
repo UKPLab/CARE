@@ -20,52 +20,18 @@ export default {
   name: "NlpRequest",
   subscribeTable: ["configuration", "ai_hook"],
   inject: {
-    studyData: {
-      type: Array,
-      required: true,
-      default: () => [],
-    },
-    orderedStudySteps: {
-      type: Array,
-      required: true,
-      default: () => [],
-    },
-    studySessionId: {
-      type: Number,
-      required: true,
-    },
+    studyData: {type: Array, required: true, default: () => []},
+    orderedStudySteps: {type: Array, required: true, default: () => []},
+    studySessionId: {type: Number, required: true},
   },
   props: {
-    skill: {
-      type: String,
-      required: false,
-      default: ""
-    },
-    studyStepId: {
-      type: Number,
-      required: true,
-    },
-    inputs: {
-      type: Object,
-      required: true
-    },
-    name: {
-      type: String,
-      required: false,
-      default: ""
-    },
-    documentData: {
-      type: Object,
-      required: true,
-    },
-    documentId: {
-      type: Number,
-      required: true,
-    },
-    service: {
-      type: Object,
-      required: true,
-    }
+    skill: {type: String, default: ""},
+    studyStepId: {type: Number, required: true},
+    inputs: {type: Object, required: true},
+    name: {type: String, default: ""},
+    documentData: {type: Object, required: true},
+    documentId: {type: Number, required: true},
+    service: {type: Object, required: true}
   },
   emits: ["update:state", "update:data"],
   data() {

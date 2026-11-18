@@ -41,6 +41,8 @@
 </template>
 
 <script>
+import { resolveApiMessage } from "@/assets/utils";
+
 /**
  * Fifth step of the metadata import flow: show import results and any issues.
  *
@@ -49,17 +51,39 @@
 export default {
   name: "StepResult",
   props: {
-    hasResult: {
-      type: Boolean,
-      default: false,
-    },
     result: {
       type: Object,
       default: () => ({}),
     },
-    importIssues: {
-      type: Array,
-      default: () => [],
+  },
+  computed: {
+    hasResult() {
+      return Object.keys(this.result || {}).length > 0;
+    },
+    importIssues() {
+      const issues = [];
+      for (const entry of this.result.unmatched || []) {
+        const detail = resolveApiMessage(entry);
+        const value = entry.primaryKeyValue ?? this.$t("assignments.metadata.issues.unknownValue");
+        issues.push(this.$t("assignments.metadata.issues.unmatched", { value, detail }));
+      }
+      for (const entry of this.result.skipped || []) {
+        const detail = resolveApiMessage(entry);
+        if (entry.submissionId) {
+          issues.push(this.$t("assignments.metadata.issues.submission", { id: entry.submissionId, detail }));
+        } else {
+          issues.push(this.$t("assignments.metadata.issues.row", { detail }));
+        }
+      }
+      for (const entry of this.result.overwritten || []) {
+        const detail = resolveApiMessage(entry);
+        if (entry.submissionId) {
+          issues.push(this.$t("assignments.metadata.issues.submission", { id: entry.submissionId, detail }));
+        } else {
+          issues.push(this.$t("assignments.metadata.issues.import", { detail }));
+        }
+      }
+      return issues;
     },
   },
 };

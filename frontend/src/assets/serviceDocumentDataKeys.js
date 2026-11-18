@@ -43,3 +43,17 @@ export function getAssessmentResultKeyCandidates(service, resultField = "assessm
 
   return [...new Set(keys.filter(Boolean))];
 }
+
+/**
+ * The service of a study step whose result holds the step's AI assessment: the nlpAssessment request with a skill
+ * or hook, otherwise the step's first service.
+ *
+ * @param {Object} stepConfig - configuration of the study step
+ * @returns {Object|null}
+ */
+export function findAssessmentService(stepConfig) {
+  if (!stepConfig || !Array.isArray(stepConfig.services) || !stepConfig.services.length) return null;
+  return stepConfig.services.find(
+    (s) => (s.skill || s.hookId) && s.name === "nlpAssessment" && s.type === "nlpRequest"
+  ) || stepConfig.services[0] || null;
+}

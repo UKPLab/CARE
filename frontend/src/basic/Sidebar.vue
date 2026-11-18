@@ -2,142 +2,59 @@
   <div
       v-show="isSidebarVisible && resolvedActiveSlot"
       id="sidebarContainer"
-      ref="sidebarContainer"
       class="sidebar-wrapper"
       :class="sidebarClasses"
       :style="sidebarStyle"
+      @mouseleave="endPeek"
   >
-    <div id="hoverHotZone" ref="hoverHotZone"></div>
+    <SidebarToggle
+        :visible="isSidebarVisible"
+        :available="isToggleShown"
+        :show="isShown"
+        @toggle="toggleSidebar"
+        @narrow="onNarrow"
+    />
+    <SidebarPeekZone @peek="onPeek"/>
     <div id="sidebar" class="sidebar border-end d-flex flex-column">
-      <div id="hotZone" ref="hotZone" class="hot-zone"></div>
+      <SidebarResizeHandle
+          v-model:width="width"
+          :min="minWidth"
+          :max="maxWidth"
+          @drag-start="isDragging = true"
+          @drag-end="onResizeEnd"
+      />
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
-        <div v-if="sidebarConfigs" class="sidebar-header">
-          <ul class="nav nav-tabs flex-grow-1">
-            <li
-                v-for="(config, slotName) in shownTabs"
-                :key="slotName"
-                class="nav-item"
-            >
-              <TopBarButton
-                  class="nav-link align-items-center"
-                  :class="{
-                  'active': resolvedActiveSlot === slotName,
-                  'current-step': config.current,
-                }"
-                  :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
-                  :title="config.title || ''"
-                  :aria-label="config.current ? $t('navigation.sidebar.currentStepTab', {title: config.title}) : (config.title || $t('navigation.sidebar.sidebarSection'))"
-                  :tabindex="isSingleConfig ? '-1' : '0'"
-                  :aria-disabled="isSingleConfig ? 'true' : 'false'"
-                  :disabled="isSingleConfig"
-                  @click="changeView(slotName)"
-              >
-                <span v-if="config.number" class="fw-semibold me-1">{{ config.number }}</span>
-                <LoadIcon
-                    v-if="config.icon"
-                    :icon-name="config.icon"
-                    :size="20"
-                    :cursor="isSingleConfig ? 'default' : 'pointer'"
-                />
-              </TopBarButton>
-            </li>
-          </ul>
-
-          <!-- Right side - action buttons (general + active slot) -->
-          <div class="sidebar-buttons ms-2">
-            <template v-if="combinedButtons.length > 0">
-              <TopBarButton
-                  v-for="button in visibleButtons"
-                  :key="button.action"
-                  :title="button.title"
-                  class="btn btn-sm sidebar-action-button"
-                  :disabled="button.disabled"
-                  @click="handleButtonAction(button.action, button)"
-              >
-                <LoadIcon
-                    v-if="button.icon"
-                    :icon-name="button.icon"
-                    :size="18"
-                    :color="button.color"
-                />
-              </TopBarButton>
-
-              <!-- Dropdown for additional buttons when more than limit -->
-              <div v-if="hiddenButtons.length > 0" class="dropdown">
-                <TopBarButton
-                    id="sidebarDropdownButton"
-                    class="btn btn-sm sidebar-action-button dropdown-toggle"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    :title="$t('navigation.sidebar.moreActions')"
-                >
-                  <LoadIcon
-                      icon-name="three-dots-vertical"
-                      :size="18"
-                      color="var(--bs-body-color)"
-                  />
-                </TopBarButton>
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="sidebarDropdownButton">
-                  <li v-for="button in hiddenButtons" :key="button.action">
-                    <TopBarButton
-                        class="dropdown-item"
-                        :title="button.title"
-                        :disabled="button.disabled"
-                        @click="handleButtonAction(button.action, button)"
-                    >
-                      <LoadIcon
-                          v-if="button.icon"
-                          :icon-name="button.icon"
-                          :size="16"
-                          :color="button.disabled ? null : button.color"
-                          class="me-2"
-                      />
-                      {{ button.title }}
-                    </TopBarButton>
-                  </li>
-                </ul>
-              </div>
-            </template>
-          </div>
-        </div>
-        <!-- Dynamic slot content -->
-        <div class="sidebar-content">
-          <template v-for="slotName in availableSlots" :key="slotName">
-            <keep-alive>
-              <div v-show="resolvedActiveSlot === slotName" :data-sidebar-slot="slotName">
-                <slot :name="slotName"/>
-              </div>
-            </keep-alive>
+        <SidebarHeader
+            v-if="sidebarConfigs"
+            :tabs="shownTabs"
+            :active-slot="resolvedActiveSlot"
+            :general-buttons="sidebarConfigs.buttons"
+            @select="changeView"
+            @action="handleButtonAction"
+        />
+        <SidebarContent
+            :slot-names="availableSlots"
+            :active-slot="resolvedActiveSlot"
+            :viewed="isShown && isSidebarVisible"
+        >
+          <template v-for="slotName in availableSlots" #[slotName]>
+            <slot :name="slotName"/>
           </template>
-        </div>
+        </SidebarContent>
       </div>
     </div>
-    <Teleport to="#topBarNavItems">
-      <li v-if="isToggleShown" class="nav-item">
-        <TopBarButton
-            :show="isShown"
-            :title="isSidebarVisible ? $t('navigation.sidebar.hideSidebar') : $t('navigation.sidebar.showSidebar')"
-            class="btn rounded-circle"
-            :class="{ 'sidebar-highlight': sidebarIconHighlight }"
-            @click="toggleSidebar"
-        >
-          <LoadIcon
-              :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
-              :size="18"
-          />
-        </TopBarButton>
-      </li>
-    </Teleport>
   </div>
 </template>
 
 <script>
 
 import { scrollElement } from "@/assets/anchoring/scroll";
-import LoadIcon from "@/basic/Icon.vue";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import debounce from "lodash.debounce";
+import SidebarHeader from "@/basic/sidebar/SidebarHeader.vue";
+import SidebarResizeHandle from "@/basic/sidebar/SidebarResizeHandle.vue";
+import SidebarToggle from "@/basic/sidebar/SidebarToggle.vue";
+import SidebarContent from "@/basic/sidebar/SidebarContent.vue";
+import SidebarPeekZone from "@/basic/sidebar/SidebarPeekZone.vue";
 
 /** BasicSidebar component
  *      sidebarWidth: 400,
@@ -149,7 +66,7 @@ import debounce from "lodash.debounce";
  */
 export default {
   name: "BasicSidebar",
-  components: {LoadIcon, TopBarButton},
+  components: {SidebarHeader, SidebarResizeHandle, SidebarToggle, SidebarContent, SidebarPeekZone},
   provide() {
     return {
       showSidebarTabOf: this.showTabOf,
@@ -157,31 +74,11 @@ export default {
     };
   },
   inject: {
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    documentId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    acceptStats: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    currentStudyStep: {
-      type: Object,
-      required: false,
-      default: null
-    }
+    studySessionId: {default: null},
+    studyStepId: {default: null},
+    documentId: {default: null},
+    acceptStats: {default: false},
+    currentStudyStep: {default: null},
   },
   props: {
     activeSideBar: {
@@ -241,20 +138,10 @@ export default {
       maxWidth: 800,
       sidebarWidth: 400,
       isSidebarVisible: this.defaultVisible,
-      sidebarIconHighlight: false,
-      numberOfVisibleButtons: 4, //controls how many buttons are shown before collapsing into dropdown
       isFixed: false,
       isDragging: false,
-      sidebarContainerDom: undefined,
+      peeking: false,
       originalWidth: undefined,
-      isNarrow: false,
-      visibleBeforeNarrow: false,
-      activeSlotStartedAt: null,
-      activeSlotName: null,
-      activeSlotContext: null,
-      logResize: debounce(function (data) {
-        if (this.acceptStats) this.$socket.emit("stats", {action: "sidebarResize", data});
-      }, 500),
     };
   },
   computed: {
@@ -290,34 +177,6 @@ export default {
       }
       return configs;
     },
-    combinedButtons() {
-      let buttons = [];
-      // Add general buttons (not tied to a specific slot)
-      if (this.sidebarConfigs && this.sidebarConfigs.buttons) {
-        buttons = buttons.concat(this.sidebarConfigs.buttons);
-      }
-      // Add buttons for the active slot
-      if (this.activeSlotConfig && this.activeSlotConfig.buttons) {
-        buttons = buttons.concat(this.activeSlotConfig.buttons);
-      }
-      return buttons;
-    },
-    visibleButtons() {
-      // If 3 or fewer buttons, show all
-      if (this.combinedButtons.length <= this.numberOfVisibleButtons) {
-        return this.combinedButtons;
-      }
-      // If more than 3, show only first 2
-      return this.combinedButtons.slice(0, this.numberOfVisibleButtons - 1);
-    },
-    hiddenButtons() {
-      // If 3 or fewer buttons, none are hidden
-      if (this.combinedButtons.length <= this.numberOfVisibleButtons) {
-        return [];
-      }
-      // If more than 3, hide everything after first 2
-      return this.combinedButtons.slice(this.numberOfVisibleButtons - 1);
-    },
     shownTabs() {
       if (!this.isTabShown) {
         return this.sidebarConfigs.tabs;
@@ -335,9 +194,6 @@ export default {
     },
     isSingleConfig() {
       return Object.keys(this.shownTabs).length === 1;
-    },
-    activeSlotConfig() {
-      return this.resolvedActiveSlot ? this.sidebarConfigs.tabs[this.resolvedActiveSlot] : null;
     },
     sidebarStyle() {
       return {
@@ -358,23 +214,6 @@ export default {
     }
   },
   watch: {
-    currentStudyStep() {
-      this.logSidebarSlotDuration();
-      this.startSidebarSlotTimer();
-    },
-    studySessionId() {
-      this.logSidebarSlotDuration();
-      this.startSidebarSlotTimer();
-    },
-    // Includes programmatic tab changes and the fallback when a tab becomes hidden.
-    resolvedActiveSlot() {
-      this.logSidebarSlotDuration();
-      this.startSidebarSlotTimer();
-    },
-    isShown() {
-      this.logSidebarSlotDuration();
-      this.startSidebarSlotTimer();
-    },
     // A new tab to open, for example when a study shows another step, switches to it
     activeSideBar(newSlot) {
       if (newSlot) {
@@ -398,25 +237,9 @@ export default {
     this.originalWidth = this.width;
     this.internalActiveSlot = this.activeSideBar || null;
 
-    this.isNarrow = window.innerWidth <= 900;
-    if (this.isNarrow) {
-      this.visibleBeforeNarrow = this.isSidebarVisible;
-      this.isSidebarVisible = false;
-    }
-
-    this.initDragController();
-    this.initHoverController();
-    window.addEventListener('resize', this.onResize);
-
     // Emit the current active sidebar view after mount
     this.$emit('sidebar-change', this.resolvedActiveSlot);
     this.visibilityChange();
-
-  },
-  beforeUnmount() {
-    this.logResize.flush();
-    this.logSidebarSlotDuration();
-    window.removeEventListener('resize', this.onResize);
   },
   methods: {
     /**
@@ -467,140 +290,35 @@ export default {
       });
     },
 
-    /**
-     * Initializes the drag controller for the sidebar
-     *
-     * When the mouse is pressed on the hot zone, the sidebar can be resized
-     *
-     * @author Zheyu Zhang
-     */
-    initDragController() {
-      // Refs, not ids: a study keeps several steps with a sidebar mounted, and an id finds only the first
-      const dom = this.$refs.hotZone;
-      const that = this;
-
-      let startX, startWidth;
-      const handleStart = (e) => {
-        that.isDragging = true;
-
-        e.preventDefault();
-        document.body.style.userSelect = 'none';
-
-        startWidth = this.width;
-        startX = e.clientX;
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
-      }
-
-      const handleMove = (e) => {
-        e.preventDefault();
-        let newWidth = startWidth - (e.clientX - startX);
-        // maxWidth is in pixels
-        const maxWidthInPixels = this.maxWidth;
-        newWidth = Math.max(newWidth, this.minWidth);
-        newWidth = Math.min(newWidth, maxWidthInPixels);
-        this.width = newWidth;
-      }
-
-      const handleEnd = () => {
-        that.isDragging = false;
-
-        document.removeEventListener('mousemove', handleMove);
-        document.removeEventListener('mouseup', handleEnd);
-        document.body.style.userSelect = '';
-
-        this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
-        this.originalWidth = this.width;
-      }
-
-      dom.addEventListener('mousedown', handleStart);
+    onResizeEnd() {
+      this.isDragging = false;
+      this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
+      this.originalWidth = this.width;
+    },
+    /** The pointer rested on the right window edge (SidebarPeekZone): show the sidebar narrow until it leaves. */
+    onPeek() {
+      this.isFixed = true;
+      this.width = this.minWidth;
+      this.isHovering = true;
+      this.peeking = true;
+    },
+    endPeek() {
+      if (!this.peeking) return;
+      this.peeking = false;
+      this.width = this.originalWidth;
+      this.isFixed = false;
+      this.isHovering = false;
     },
     /**
-     * Initializes the hover controller for the sidebar
-     *
-     * When the mouse enters the hover zone, the sidebar will be fixed
-     *
-     * @author Zheyu Zhang
+     * The window crossed 900px (SidebarToggle): collapse or restore the sidebar
+     * @param {boolean} visible - whether the sidebar is open now
+     * @param {boolean} initial - on mount; the mount itself reports the visibility
      */
-    initHoverController() {
-      const hoverHotZoneDom = this.$refs.hoverHotZone;
-      this.sidebarContainerDom = this.$refs.sidebarContainer;
-      let hoverTimer;
-
-      hoverHotZoneDom.addEventListener('mouseenter', () => {
-        hoverTimer = setTimeout(() => {
-          this.isFixed = true;
-          this.width = this.minWidth;
-          this.isHovering = true;
-          this.sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
-        }, 500);
-      });
-
-      const handleMouseleave = () => {
-        clearTimeout(hoverTimer);
-        this.width = this.originalWidth;
-        this.isFixed = false;
-        this.isHovering = false;
-        this.sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave);
-      };
-
-      hoverHotZoneDom.addEventListener('mouseleave', () => {
-        clearTimeout(hoverTimer);
-      });
-    },
-    /**
-     * Registers the sidebar blur event
-     *
-     * @author Zheyu Zhang
-     */
-    registerSidebarBlurEvent() {
-      const handleSidebarClick = (e) => {
-        e.stopPropagation();
-      };
-
-      const handleBodyClick = () => {
-        this.isFixed = false;
-        this.isHovering = false;
-        document.body.removeEventListener("click", handleBodyClick);
-      };
-
-      this.sidebarContainerDom.addEventListener("click", handleSidebarClick);
-      document.body.addEventListener("click", handleBodyClick);
-    },
-    onCopy(event) {
-      this.$emit('copy', event);
-    },
-    onResize() {
-      // Only act when the width crosses 900px, so a sidebar the user opened or closed keeps its state
-      const isNarrow = window.innerWidth <= 900;
-      if (isNarrow !== this.isNarrow) {
-        this.isNarrow = isNarrow;
-        if (isNarrow) {
-          this.visibleBeforeNarrow = this.isSidebarVisible;
-          this.isSidebarVisible = false;
-          this.sidebarIconHighlight = true;
-          setTimeout(() => {
-            this.sidebarIconHighlight = false;
-          }, 1000);
-        } else {
-          this.isSidebarVisible = this.isSidebarVisible || this.visibleBeforeNarrow;
-        }
-        this.visibilityChange();
-      }
-
-      // Log resize event with debouncing
-      this.logResize({
-        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
-        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
-        windowWidth: window.innerWidth, sidebarVisible: this.isSidebarVisible,
-      });
+    onNarrow(visible, initial) {
+      this.isSidebarVisible = visible;
+      if (!initial) this.visibilityChange();
     },
     visibilityChange() {
-      if (this.isSidebarVisible) {
-        this.startSidebarSlotTimer();
-      } else {
-        this.logSidebarSlotDuration();
-      }
       this.$emit('sidebar-visibility-change', this.isSidebarVisible);
       if (this.acceptStats) {
         this.$socket.emit("stats", {
@@ -614,44 +332,6 @@ export default {
           }
         });
       }
-    },
-    /**
-     * Starts measuring time spent on the active sidebar slot.
-     *
-     * @returns {void}
-     */
-    startSidebarSlotTimer() {
-      if (this.activeSlotStartedAt !== null) return;
-      this.activeSlotName = this.isShown && this.isSidebarVisible ? this.resolvedActiveSlot : null;
-      this.activeSlotStartedAt = this.activeSlotName ? Date.now() : null;
-      this.activeSlotContext = this.activeSlotName ? {
-        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
-        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
-      } : null;
-    },
-    /**
-     * Logs time spent on the active sidebar slot.
-     *
-     * @returns {void}
-     */
-    logSidebarSlotDuration() {
-      const startedAt = this.activeSlotStartedAt;
-      const slotName = this.activeSlotName;
-      const context = this.activeSlotContext;
-      this.activeSlotStartedAt = null;
-      this.activeSlotName = null;
-      this.activeSlotContext = null;
-      if (!this.acceptStats || startedAt === null || !slotName) return;
-      const durationMs = Date.now() - startedAt;
-      if (durationMs <= 0) return;
-      this.$socket.emit("stats", {
-        action: "sidebarSlotDuration",
-        data: {
-          ...context,
-          slotName,
-          durationMs,
-        }
-      });
     },
   },
 };

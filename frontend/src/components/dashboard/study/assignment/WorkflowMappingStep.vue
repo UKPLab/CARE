@@ -59,20 +59,21 @@ export default {
     { table: "submission" },
     { table: "document" },
   ],
+  inject: {
+    workflowSteps: { type: Array, required: false, default: () => [] },
+    bulk: { type: Boolean, required: false, default: true },
+  },
   props: {
-    workflowSteps: {
-      type: Array,
-      default: () => [],
-    },
-    bulk: {
-      type: Boolean,
-      default: true,
-    },
     modalValue: {
       type: Object,
       default: () => ({}),
     },
   },
+  emits: [
+    "update:modalValue",
+    "update:isWorkflowMappingComplete",
+    "update:isValid",
+  ],
   data() {
     return {
       targetWorkflowId: null,

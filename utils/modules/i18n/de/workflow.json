@@ -86,7 +86,6 @@
     "copiedStep": "Kopierter Schritt",
     "copiedStepValue": "{name} ({type})",
     "unnamedStep": "Unbenannter Schritt",
-    "loadingWorkflow": "Workflow wird geladen...",
     "loadingWorkflowGraph": "Workflow-Graph wird geladen...",
     "savingChanges": "Änderungen werden gespeichert...",
     "stepTypes": {

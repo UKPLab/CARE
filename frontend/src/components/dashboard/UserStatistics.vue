@@ -28,24 +28,20 @@
     </template>
   </Card>
   <hr>
-  <Card
-      :title="$t('users.stats.userStatsTitle', { count: selectedUsers ? selectedUsers.length : 0 })">
-    <template #body>
-      <BasicTable
-          ref="stats_table"
-          :columns="statsTableColumns"
-          :data="stats"
-          :options="stats_table.options"
-          :max-table-height="'25vh'"
-      />
-    </template>
-  </Card>
+  <DashboardListPage
+      :title="$t('users.stats.userStatsTitle', { count: selectedUsers ? selectedUsers.length : 0 })"
+      :columns="statsTableColumns"
+      :data="stats"
+      :table-options="stats_table.options"
+      :max-table-height="'25vh'"
+  />
 </template>
 
 <script>
 import BasicTable from "@/basic/Table.vue";
 import BasicButton from "@/basic/Button.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import {downloadObjectsAs, formatLocalizedDate} from "@/assets/utils";
 
 /**
@@ -62,7 +58,7 @@ import {downloadObjectsAs, formatLocalizedDate} from "@/assets/utils";
  */
 export default {
   name: "UserStatistics",
-  components: {BasicTable, BasicButton, Card},
+  components: {BasicTable, BasicButton, Card, DashboardListPage},
   subscribeTable: ["user"],
   props: {
     'admin': {

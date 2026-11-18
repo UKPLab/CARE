@@ -3,6 +3,13 @@ const {
     buildScoresFromState,
     scoresFromStoredValue,
     pickScoresFromGradeRows,
+    defaultCriterionState,
+    withDefaultCriterionStates,
+    unsavedCriterionNames,
+    parseSavedAssessment,
+    normalizeAiAssessment,
+    mergeAssessmentSources,
+    persistedAssessment,
 } = require("../index");
 
 describe("scoresFromStoredValue", () => {
@@ -222,5 +229,70 @@ describe("calculateAssessmentScore", () => {
         const result = calculateAssessmentScore(sumConfig, { A: 1, unknown: 2 });
         expect(result.warnings.some((w) => w.includes("unknown criteria"))).toBe(true);
         expect(result.achieved_points).toBe(1);
+    });
+});
+
+describe("assessment form state", () => {
+    const formConfig = {
+        rubrics: [
+            { name: "R1", criteria: [{ name: "Clarity" }, { name: "Sources" }] },
+            { name: "R2", criteria: [{ name: "Style" }, null, {}] },
+        ],
+    };
+
+    test("adds an empty state only for criteria without one", () => {
+        const kept = { ...defaultCriterionState(), currentScore: 3, isSaved: true };
+        const state = withDefaultCriterionStates(formConfig, { Clarity: kept });
+        expect(Object.keys(state)).toEqual(["Clarity", "Sources", "Style"]);
+        expect(state.Clarity).toBe(kept);
+        expect(state.Style).toEqual(defaultCriterionState());
+    });
+
+    test("lists criteria that are not saved, in rubric order", () => {
+        const state = { Clarity: { isSaved: true }, Sources: { isSaved: false } };
+        expect(unsavedCriterionNames(formConfig, state)).toEqual(["Sources", "Style"]);
+        expect(unsavedCriterionNames(null, state)).toEqual([]);
+    });
+
+    test("parses saved answers and ignores unreadable ones", () => {
+        const errorSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+        expect(parseSavedAssessment('{"Clarity":{"currentScore":2}}')).toEqual({ Clarity: { currentScore: 2 } });
+        expect(parseSavedAssessment({ Clarity: { currentScore: 2 } })).toEqual({ Clarity: { currentScore: 2 } });
+        expect(parseSavedAssessment("not json")).toEqual({});
+        expect(parseSavedAssessment(undefined)).toEqual({});
+        expect(parseSavedAssessment("")).toEqual({});
+        errorSpy.mockRestore();
+    });
+
+    test("normalizes AI results given as justifications or as form states", () => {
+        expect(normalizeAiAssessment(JSON.stringify({
+            assessment: [{ criterion: "Clarity", justification: "Clear", score: 4 }, { score: 1 }],
+        }))).toEqual([{ name: "Clarity", assessment: "Clear", editedAssessment: "", currentScore: 4 }]);
+        expect(normalizeAiAssessment([{ criterion: "Style", assessment: "Ok", currentScore: 2 }]))
+            .toEqual([{ name: "Style", criterion: "Style", assessment: "Ok", currentScore: 2 }]);
+        expect(normalizeAiAssessment({ result: [] })).toBeNull();
+        expect(normalizeAiAssessment(null)).toBeNull();
+    });
+
+    test("saved answers win over AI answers; answers of an earlier step are not saved yet", () => {
+        const saved = { Clarity: { assessment: "Mine", currentScore: 1, isSaved: true } };
+        const ai = [{ name: "Clarity", currentScore: 5 }, { name: "Sources", currentScore: 4, isSaved: true }];
+        const merged = mergeAssessmentSources(formConfig, {}, { saved, ai });
+        expect(merged.Clarity).toMatchObject({ assessment: "Mine", currentScore: 1, isSaved: true });
+        expect(merged.Sources).toMatchObject({ currentScore: 4, isSaved: false });
+        expect(merged.Style).toEqual(defaultCriterionState());
+
+        const fromPrevious = mergeAssessmentSources(formConfig, {}, { saved, fromPreviousStep: true });
+        expect(fromPrevious.Clarity).toMatchObject({ assessment: "Mine", isSaved: false });
+    });
+
+    test("stores only the persisted fields of each criterion", () => {
+        const state = {
+            Clarity: { assessment: "A", editedAssessment: undefined, currentScore: 2, isEditing: true, isSaved: 1 },
+            Empty: null,
+        };
+        expect(persistedAssessment(state)).toEqual({
+            Clarity: { assessment: "A", editedAssessment: "", currentScore: 2, isSaved: false },
+        });
     });
 });

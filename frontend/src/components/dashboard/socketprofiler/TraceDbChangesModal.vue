@@ -21,11 +21,13 @@
       </p>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn-secondary"
-        :text="$t('common.close')"
-        @click="close"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn-secondary"
+          :text="$t('common.close')"
+          @click="close"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

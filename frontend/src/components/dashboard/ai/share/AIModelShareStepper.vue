@@ -20,10 +20,10 @@
     <template #step-2>
       <AIShareSelectStep
         :loading="isLoadingShareData"
-        :columns="shareSelectionColumns"
-        :rows="shareSelectionData"
-        :selected-rows="selectedRowsForTable"
-        @update:selected-rows="onSelectionRowsUpdate"
+        :mode="shareForm.mode"
+        :current-user-id="currentUserId"
+        :selected-ids="activeSelectionIds"
+        @update:selected-ids="onSelectionIdsUpdate"
       />
     </template>
     <template #step-3>
@@ -33,9 +33,9 @@
         :audience-label="shareAudienceLabel"
         :expiry-date="shareForm.expiryDate"
         :cost-limit="shareForm.costLimit"
-        :selected-count="activeSelectionIds.length"
-        :columns="shareSelectionColumns"
-        :selected-rows="selectedRowsForTable"
+        :mode="shareForm.mode"
+        :current-user-id="currentUserId"
+        :selected-ids="activeSelectionIds"
       />
     </template>
   </StepperModal>
@@ -72,7 +72,6 @@ export default {
   data() {
     return {
       shareForm: this.getEmptyShareForm(),
-      shareTargets: { users: [], roles: [] },
       selectedUserIds: [],
       selectedRoleIds: [],
       selectedShareModel: null,
@@ -95,48 +94,15 @@ export default {
         !this.isSavingShare,
       ];
     },
-    shareSelectionColumns() {
-      if (this.shareForm.mode === "roles") {
-        return [
-          { name: this.$t("ai.common.role"), key: "label", sortable: true },
-          { name: this.$t("ai.share.type"), key: "type", sortable: true },
-        ];
-      }
-      return [
-        { name: this.$t("ai.common.name"), key: "label", sortable: true },
-        { name: this.$t("ai.share.type"), key: "type", sortable: true },
-      ];
-    },
-    shareSelectionData() {
-      if (this.shareForm.mode === "roles") {
-        return this.shareTargets.roles.map((role) => ({ ...role, type: this.$t("ai.common.role") }));
-      }
-      return this.shareTargets.users.map((user) => ({ ...user, type: this.$t("ai.common.user") }));
-    },
     activeSelectionIds() {
       if (this.shareForm.mode === "roles") {
         return this.selectedRoleIds;
       }
       return this.selectedUserIds;
     },
-    selectedIdSet() {
-      return new Set(
-        (this.activeSelectionIds || [])
-          .map((id) => Number(id))
-          .filter((id) => Number.isInteger(id) && id > 0)
-      );
-    },
-    selectedRowsForTable() {
-      return this.shareSelectionData.filter((row) => this.selectedIdSet.has(Number(row.id)));
-    },
     shareAudienceLabel() {
       if (this.shareForm.mode === "roles") return this.$t("ai.common.roles");
       return this.$t("ai.common.users");
-    },
-    roleOptions() {
-      return (this.$store.getters["table/user_role/getAll"] || [])
-        .filter((role) => !role.deleted)
-        .map((role) => ({ id: role.id, label: role.name || this.$t("ai.common.roleNumber", { id: role.id }) }));
     },
   },
   methods: {
@@ -161,19 +127,12 @@ export default {
     normalizeIdList(ids) {
       return [...new Set((ids || []).map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))];
     },
-    onSelectionRowsUpdate(rows) {
-      const nextIds = this.normalizeIdList((rows || []).map((row) => row.id));
+    onSelectionIdsUpdate(ids) {
       if (this.shareForm.mode === "roles") {
-        this.selectedRoleIds = nextIds;
+        this.selectedRoleIds = ids;
       } else {
-        this.selectedUserIds = nextIds;
+        this.selectedUserIds = ids;
       }
-    },
-    loadUserOptions() {
-      const me = Number(this.currentUserId);
-      return (this.$store.getters["table/user/getAll"] || [])
-        .filter((user) => !user.deleted && Number(user.id) !== me)
-        .map((user) => ({ id: user.id, label: user.userName }));
     },
     emitAppDataUpdate(table, data) {
       return new Promise((resolve, reject) => {
@@ -249,9 +208,6 @@ export default {
       this.$refs.shareStepper.open();
 
       try {
-        const users = this.loadUserOptions();
-        this.shareTargets = { users, roles: this.roleOptions };
-
         const config = this.buildShareConfig(row.id);
         this.shareForm = {
           mode: config.mode,

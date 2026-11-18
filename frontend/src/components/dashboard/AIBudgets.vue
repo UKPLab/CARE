@@ -1,10 +1,17 @@
 <template>
-  <BasicCard :title="$t('ai.budgets.title')">
-    <template #body>
-      <ul class="nav nav-tabs mb-3">
+  <DashboardListPage
+    :title="$t('ai.budgets.title')"
+    :columns="tabColumns"
+    :data="tabRows(activeTab)"
+    :table-options="tableOptions"
+    :buttons="rowButtons"
+    @action="onAction"
+  >
+    <template #headerActions>
+      <ul class="nav nav-pills">
         <li v-for="tab in tabs" :key="tab.key" class="nav-item">
           <BasicButton
-            class="nav-link"
+            class="nav-link btn-sm"
             :class="{ active: activeTab === tab.key }"
             @click="activeTab = tab.key"
           >
@@ -13,15 +20,8 @@
           </BasicButton>
         </li>
       </ul>
-      <BasicTable
-        :columns="tabColumns"
-        :data="tabRows(activeTab)"
-        :options="tableOptions"
-        :buttons="rowButtons"
-        @action="onAction"
-      />
     </template>
-  </BasicCard>
+  </DashboardListPage>
 
   <AIBudgetEditModal ref="editModal" />
   <ConfirmModal ref="confirmModal" />
@@ -37,12 +37,13 @@
  *
  * @author Mohammed Rawhani
  */
-import BasicCard from "@/basic/dashboard/card/Card.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import BasicButton from "@/basic/Button.vue";
-import BasicTable from "@/basic/Table.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AIBudgetEditModal from "@/components/dashboard/ai/AIBudgetEditModal.vue";
 import { resolveApiMessage, formatLocalizedDateTime } from "@/assets/utils";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 
 export default {
@@ -51,7 +52,7 @@ export default {
     "ai_budget", "ai_model", "ai_hook", "study", "study_step",
     "ai_model_share", "ai_hook_share", "user",
   ],
-  components: { BasicCard, BasicButton, BasicTable, ConfirmModal, AIBudgetEditModal },
+  components: { DashboardListPage, BasicButton, ConfirmModal, AIBudgetEditModal },
   data() {
     return {
       activeTab: "models",
@@ -60,12 +61,7 @@ export default {
         { key: "hooks", label: this.$t("ai.budgets.tabs.hooks"), types: ["hook", "hook_share"] },
         { key: "studies", label: this.$t("ai.budgets.tabs.studies"), types: ["study", "step_hook"] },
       ],
-      tableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {
@@ -162,24 +158,18 @@ export default {
     },
     rowButtons() {
       return [
-        {
-          icon: "pencil",
+        dashboardRowAction("edit", {
           title: this.$t("ai.actions.editLimit"),
           action: "edit",
-          options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
-        },
-        {
-          icon: "arrow-counterclockwise",
+        }),
+        dashboardRowButton("arrow-counterclockwise", {
           title: this.$t("ai.actions.resetSpendingWindow"),
           action: "reset",
-          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
-        },
-        {
-          icon: "trash",
+        }, "warning"),
+        dashboardRowAction("delete", {
           title: this.$t("ai.actions.removeCap"),
           action: "delete",
-          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
-        },
+        }),
       ];
     },
   },
