@@ -19,6 +19,7 @@
           >
             <SettingItem
               :setting="getSetting(key)"
+              :disabled="isDisabled(key)"
               @update:value="(v) => setSettingValue(key, v)"
             />
           </div>
@@ -31,6 +32,7 @@
           >
             <SettingItem
               :setting="getSetting(key)"
+              :disabled="isDisabled(key)"
               @update:value="(v) => setSettingValue(key, v)"
             />
           </div>
@@ -85,6 +87,10 @@ export default {
     translateMaybeKey,
     toggleCollapse() {
       this.isCollapsed = !this.isCollapsed;
+    },
+    isDisabled(key) {
+      return key === "system.pgStats.retentionDays"
+        && this.getSetting("system.pgStats.autoDelete")?.value !== "true";
     },
     getSetting(key) {
       return this.settings.find((s) => s.key === key) || null;

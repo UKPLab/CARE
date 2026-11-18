@@ -119,6 +119,16 @@
         </select>
       </template>
       <input
+        v-else-if="setting.type === 'integer'"
+        :id="'set-' + setting.key"
+        :value="setting.value"
+        class="form-control"
+        type="number"
+        step="1"
+        :disabled="disabled"
+        @input="$emit('update:value', $event.target.value)"
+      />
+      <input
         v-else
         :id="'set-' + setting.key"
         :value="setting.value"
@@ -150,6 +160,7 @@ export default {
   components: { BasicButton, EditorModal, FormHelp, LogoSvg },
   subscribeTable: ["template"],
   props: {
+    disabled: { type: Boolean, default: false },
     setting: {
       type: Object,
       default: null,

@@ -2,6 +2,8 @@
 
 const { assertStableEmailTemplateContent } = require("../../utils/helper/templateResolver");
 
+const { validateSettings: validatePgStatsSettings } = require("../../db/statsSettings");
+
 const MAIL_SERVICE_KEY_PREFIX = "system.mailService.";
 // Only list setting types where leading/trailing whitespace has no semantic value.
 // Unknown or newly added types preserve whitespace by default.
@@ -137,6 +139,7 @@ async function getSettingTypeByKey(Setting, settings, options = {}) {
  */
 async function saveSettings(Setting, settings, options = {}) {
     const list = Array.isArray(settings) ? settings : [];
+    validatePgStatsSettings(list);
     if (options.models) {
         await validateEmailTemplateSettings(options.models, list, options);
     }

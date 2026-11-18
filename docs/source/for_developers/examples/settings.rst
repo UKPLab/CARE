@@ -183,3 +183,40 @@ Mail configuration changes made from the dashboard settings page are applied on
 ``Save Settings`` and do not require a backend restart.
 
 This includes toggles and provider-specific values under ``system.mailService.*``.
+
+PostgreSQL statistics CSV files
+------------------------------
+
+The backend writes periodic PostgreSQL activity snapshots to one CSV per UTC day.
+The default filename is ``logs/pg-performance-YYYY-MM-DD.csv``, relative to the backend's
+working directory. Docker Compose persists this directory through the existing logs mount.
+Every file has a header. Nested metric groups remain JSON inside quoted CSV cells.
+On-demand snapshots used by performance tools and recordings remain unchanged.
+
+Run the database migrations before deploying this change. In the administrator settings,
+open **PostgreSQL statistics**:
+
+- **Collection interval (seconds)** defaults to 100. Values must be whole seconds from
+  1 to 2147483. Saving an interval reschedules collection without restarting the server.
+  Collection does not overlap: a tick is skipped if the previous snapshot is still running.
+- **Automatically delete old statistics** defaults to off. No statistics files are
+  automatically deleted while this setting is off.
+- **Retention period (days)** defaults to 30, accepts 1–36500, and applies only when
+  automatic deletion is enabled. Cleanup runs at startup, after saving these settings,
+  and at UTC midnight. Enabling deletion also applies to existing dated files.
+
+The cutoff is today's UTC date minus the configured number of days. With 30 days on
+2026-11-06, files dated before 2026-10-07 are deleted; the cutoff date itself is kept.
+Cleanup preserves the current day, future dates, invalid dates, directories, symbolic
+links, unrelated files, and the legacy undated CSV. File-operation failures are logged.
+
+``PG_STATS_CSV_PATH`` optionally specifies the directory and filename stem. For example,
+``/data/stats.csv`` produces ``/data/stats-YYYY-MM-DD.csv``. Use a separate path per backend
+process if running multiple instances; file writes are serialized within one process.
+The old undated file is not renamed or migrated.
+
+The settings migration seeds the collection interval from a valid existing
+``PG_STATS_INTERVAL_MS`` environment value (rounded up to whole seconds), otherwise 100.
+Saved settings take precedence afterward. If the setting is absent, the scheduler falls
+back to ``PG_STATS_INTERVAL_MS``, then 100000 milliseconds. A settings read failure disables
+deletion and keeps collection running with the last known interval or startup fallback.

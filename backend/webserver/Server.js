@@ -527,7 +527,9 @@ module.exports = class Server {
         });
         // Start DB stats scheduler
         try {
-            statsScheduler.start(this.db.sequelize, this.logger);
+            statsScheduler.start(this.db.sequelize, this.logger)?.catch(error => {
+                this.logger.warn("Failed to start DB stats scheduler: " + error.message);
+            });
             this._statsScheduler = statsScheduler;
         } catch (e) {
             this.logger.warn('Failed to start DB stats scheduler: ' + e.message);
@@ -553,7 +555,7 @@ module.exports = class Server {
             this.http.close();
         }
         if (this._statsScheduler) {
-            this._statsScheduler.stop(this.logger);
+            await this._statsScheduler.stop(this.logger);
         }
     }
 
