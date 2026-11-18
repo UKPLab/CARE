@@ -1,33 +1,60 @@
 'use strict';
 
-const {rateLimit, ipKeyGenerator} = require('express-rate-limit');
+const {rateLimit} = require('express-rate-limit');
 
-const WINDOW_MS = 60 * 60 * 1000;
-const LIMIT = 100;
+const WINDOW_MS = 60 * 1000;
+const GENERAL_SETTING = 'system.auth.apiTokens.rateLimitPerMinute';
+const HEAVY_SETTING = 'system.auth.apiTokens.heavyRateLimitPerMinute';
+const GENERAL_DEFAULT = 120;
+const HEAVY_DEFAULT = 20;
 
 /**
- * Per-token budget after Bearer lookup, per hour. 100 is a placeholder until the real budget is chosen.
+ * Budgets count per user across all their tokens, so extra tokens do not mean extra budget.
+ * Mounted after Bearer auth, so req.apiUserId is set.
  */
-function createRestTokenRateLimit() {
+function createLimiter(server, setting, fallback) {
     return rateLimit({
         windowMs: WINDOW_MS,
-        limit: LIMIT,
+        limit: async () => {
+            const value = Number(await server.db.models['setting'].get(setting));
+            return Number.isInteger(value) && value > 0 ? value : fallback;
+        },
         standardHeaders: 'draft-8',
         legacyHeaders: false,
-        keyGenerator: (req) => {
-            if (req.apiToken && req.apiToken.id) {
-                return `api_token:${req.apiToken.id}`;
-            }
-            return ipKeyGenerator(req.ip);
-        },
+        identifier: setting,
+        keyGenerator: (req) => `api_user:${req.apiUserId}`,
         handler: (req, res) => {
             res.status(429).json({message: 'errors.rest.rateLimitExceeded'});
         },
     });
 }
 
+/**
+ * Budget for every REST request. Mounted once for all of /rest/v1.
+ */
+function createRestRateLimit(server) {
+    return createLimiter(server, GENERAL_SETTING, GENERAL_DEFAULT);
+}
+
+const heavyLimiters = new WeakMap();
+
+/**
+ * Smaller budget for expensive routes (uploads, bulk writes, imports, copies). A route that is
+ * expensive adds heavyRateLimit(server) to its own definition, so the marking sits on the route.
+ * All routes of one server share one counter.
+ */
+function heavyRateLimit(server) {
+    if (!heavyLimiters.has(server)) {
+        heavyLimiters.set(server, createLimiter(server, HEAVY_SETTING, HEAVY_DEFAULT));
+    }
+    return heavyLimiters.get(server);
+}
+
 module.exports = {
-    createRestTokenRateLimit,
-    REST_RATE_LIMIT: LIMIT,
-    REST_RATE_WINDOW_MS: WINDOW_MS,
+    createRestRateLimit,
+    heavyRateLimit,
+    GENERAL_SETTING,
+    HEAVY_SETTING,
+    GENERAL_DEFAULT,
+    HEAVY_DEFAULT,
 };
