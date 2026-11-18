@@ -45,18 +45,18 @@ import FormSelect from "@/basic/form/Select.vue";
 export default {
   name: "TemplateSelectionStep",
   components: { BasicForm, FormSelect },
-  emits: ['update:modalValue', 'update:assignmentType', 'update:workflowSteps', 'update:workflowStepsAssignment', 'update:template', 'update:workflow', 'update:isValid'],
-  subscribeTable: [
-    { filter: [{ key: "template", value: true }], table: "study" },
-    {table: "workflow"},
-    { table: "workflow_step" }
-  ],
   props: {
     modalValue: {
       type: Object,
       default: () => ({}),
     },
   },
+  emits: ['update:modalValue', 'update:assignmentType', 'update:workflowSteps', 'update:workflowStepsAssignment', 'update:template', 'update:workflow', 'update:isValid'],
+  subscribeTable: [
+    { filter: [{ key: "template", value: true }], table: "study" },
+    {table: "workflow"},
+    { table: "workflow_step" }
+  ],
   data() {
     return {
       templateSelection: {},

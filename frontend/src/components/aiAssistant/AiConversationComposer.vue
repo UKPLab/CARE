@@ -1,5 +1,5 @@
 <template>
-  <form class="conversation-composer border-top bg-body p-2" @submit.prevent="$emit('send')">
+  <form class="conversation-composer border-top bg-body p-2" @submit.prevent="submit">
     <div v-if="errorMessage" class="alert alert-danger py-2 mb-2">
       {{ errorMessage }}
     </div>
@@ -12,64 +12,37 @@
             class="btn btn-sm composer-quote-close"
             icon="x-lg"
             :tooltip="$t('ai.chat.removeQuote')"
-            @click="$emit('clear-quote')"
+            @click="clearQuote"
         />
       </div>
 
       <textarea
           ref="textarea"
-          :value="modelValue"
+          :value="draft"
           class="form-control composer-textarea border-0 shadow-none bg-transparent"
           rows="1"
           :placeholder="$t('ai.chat.placeholder')"
           :disabled="disabled"
           @input="onInput"
           @paste="onPaste"
-          @keydown.enter.exact.prevent="$emit('send')"
+          @keydown.enter.exact.prevent="submit"
       />
 
       <div class="composer-actions d-flex align-items-center justify-content-between gap-2 px-2 py-1">
-        <div class="dropdown">
-          <BasicButton
-              class="btn btn-sm composer-model d-inline-flex align-items-center gap-1"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              :disabled="disabled"
-          >
-            <BasicIcon icon-name="cpu" :size="15" />
-            <span class="composer-model-name">{{ selectedModelName }}</span>
-            <BasicIcon icon-name="chevron-down" :size="14" />
-          </BasicButton>
-          <ul class="dropdown-menu composer-model-menu">
-            <li><h6 class="dropdown-header">{{ $t('ai.chat.switchModel') }}</h6></li>
-            <li v-for="model in models" :key="model.id">
-              <BasicButton
-                  class="dropdown-item d-flex align-items-center gap-2"
-                  :class="{active: Number(model.id) === selectedModelId}"
-                  @click="$emit('update:selectedModelId', Number(model.id))"
-              >
-                <BasicIcon icon-name="cpu" :size="15" />
-                <span class="model-option-name flex-grow-1">{{ model.name }}</span>
-                <BasicIcon
-                    v-if="Number(model.id) === selectedModelId"
-                    icon-name="check2"
-                    :size="15"
-                />
-              </BasicButton>
-            </li>
-            <li v-if="models.length === 0">
-              <span class="dropdown-item disabled text-muted">{{ $t('ai.chat.noModels') }}</span>
-            </li>
-          </ul>
-        </div>
+        <AiConversationModelPicker
+            :models="models"
+            :selected-model-id="selectedModelId"
+            :disabled="disabled"
+            @update:selected-model-id="$emit('update:selectedModelId', $event)"
+        />
 
         <BasicButton
-            v-if="pending"
+            v-if="activeRequest"
             class="btn btn-outline-danger btn-sm rounded-circle composer-button"
             icon="stop-circle"
             :tooltip="$t('common.abort')"
             :disabled="aborting"
-            @click="$emit('abort')"
+            @click="abort"
         />
         <BasicButton
             v-else
@@ -77,8 +50,8 @@
             icon="send"
             :tooltip="$t('common.send')"
             :disabled="!canSend"
-            :loading="sending"
-            @click="$emit('send')"
+            :loading="!!activeRequest && !aborting"
+            @click="submit"
         />
       </div>
     </div>
@@ -86,6 +59,7 @@
 </template>
 
 <script>
+import AiConversationModelPicker from "./AiConversationModelPicker.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicIcon from "@/basic/Icon.vue";
 
@@ -93,16 +67,20 @@ import BasicIcon from "@/basic/Icon.vue";
 const MAX_TEXTAREA_HEIGHT = 100;
 
 /**
- * AI conversation input with model selector.
+ * AI conversation input with model selector. Owns the draft and the quoted
+ * reading selection until the parent confirms the submitted turn.
  *
  * @author Mohammed Rawhani
  */
 export default {
   name: "AiConversationComposer",
-  components: {BasicButton, BasicIcon},
+  components: {AiConversationModelPicker, BasicButton, BasicIcon},
+  inject: {
+    showSidebarTabOf: {default: () => () => false},
+  },
   props: {
-    modelValue: {
-      type: String,
+    studyStepId: {
+      type: Number,
       required: true,
     },
     models: {
@@ -124,22 +102,18 @@ export default {
       required: false,
       default: false,
     },
-    canSend: {
+    ready: {
       type: Boolean,
       required: false,
       default: false,
     },
-    sending: {
-      type: Boolean,
+    /** Request currently answering this conversation, if any. */
+    activeRequest: {
+      type: Object,
       required: false,
-      default: false,
+      default: null,
     },
     aborting: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    pending: {
       type: Boolean,
       required: false,
       default: false,
@@ -149,32 +123,110 @@ export default {
       required: false,
       default: false,
     },
-    quote: {
-      type: Object,
-      required: false,
-      default: null,
-    },
   },
-  emits: ["update:modelValue", "update:selectedModelId", "send", "abort", "clear-quote", "paste"],
+  emits: ["update:selectedModelId", "send", "abort", "stat"],
+  data() {
+    return {
+      draft: "",
+      quote: null,
+    };
+  },
   computed: {
     disabled() {
       return this.isBusy || this.readOnly || this.models.length === 0;
     },
-    selectedModelName() {
-      const model = this.models.find((item) => Number(item.id) === this.selectedModelId);
-      return model ? model.name : this.$t("ai.models.selectModel");
+    canSend() {
+      return this.ready && this.draft.trim().length > 0;
     },
   },
   watch: {
     // Resize when the draft changes externally (e.g. cleared after a send).
-    modelValue() {
+    draft() {
       this.$nextTick(this.autoGrow);
     },
+  },
+  created() {
+    // Reading selections are broadcast globally; keep only this step's quotes.
+    this.eventBus.on("aiChatQuote", this.onQuote);
   },
   mounted() {
     this.autoGrow();
   },
+  beforeUnmount() {
+    this.eventBus.off("aiChatQuote", this.onQuote);
+  },
   methods: {
+    /**
+     * Emits the draft (with any quote rendered as a blockquote) as one send
+     * request. The draft stays until the parent confirms acceptance via
+     * clearSubmitted.
+     *
+     * @returns {void}
+     */
+    submit() {
+      if (!this.canSend) {
+        return;
+      }
+      const question = this.draft.trim();
+      const quote = this.quote;
+      const quoted = quote ? quote.text.split("\n").map((line) => `> ${line}`).join("\n") : "";
+      this.$emit("send", {
+        type: "send",
+        requestId: this.$aiAssistant.createRequestId(),
+        draft: this.draft,
+        submittedContent: quote ? `${quoted}\n\n${question}` : question,
+        content: question,
+        quote,
+      });
+    },
+    /**
+     * Clears only the parts of a submitted turn the user has not changed since.
+     *
+     * @param {Object} request - Send request carrying the submitted draft and quote.
+     * @returns {void}
+     */
+    clearSubmitted({draft, quote} = {}) {
+      if (this.draft === draft) {
+        this.draft = "";
+      }
+      if (this.quote === quote) {
+        this.quote = null;
+      }
+    },
+    /** Reports the stop click and asks the parent to abort the active request. */
+    abort() {
+      this.$emit("stat", "aiChatAbortClick", {requestId: this.activeRequest.requestId});
+      this.$emit("abort");
+    },
+    /** Removes the quoted reading selection. */
+    clearQuote() {
+      this.quote = null;
+    },
+    /**
+     * Stores a reading selection quoted into this step's chat.
+     *
+     * @param {Object} payload - Quote payload from the reader.
+     * @param {string} payload.text - Selected text.
+     * @param {number} payload.studyStepId - Originating study step.
+     * @param {number} payload.documentId - Originating document.
+     * @returns {void}
+     */
+    onQuote({text, studyStepId, documentId}) {
+      if (Number(studyStepId) !== Number(this.studyStepId)) {
+        return;
+      }
+      const quoteText = (text || "").trim();
+      this.quote = quoteText ? {text: quoteText, studyStepId, documentId} : null;
+      if (this.quote) {
+        this.$emit("stat", "aiChatQuoteCreate", {
+          sourceStudyStepId: studyStepId,
+          sourceDocumentId: documentId,
+          length: quoteText.length,
+        });
+        this.showSidebarTabOf(this.$el, true);
+        this.focus();
+      }
+    },
     /** Focuses the message textarea when the composer is available. */
     focus() {
       this.$nextTick(() => {
@@ -190,11 +242,11 @@ export default {
      * @returns {void}
      */
     onInput(event) {
-      this.$emit("update:modelValue", event.target.value);
+      this.draft = event.target.value;
       this.autoGrow();
     },
     /**
-     * Emits pasted text.
+     * Reports pasted text as a chat behavior event.
      *
      * @param {ClipboardEvent} event - Paste event.
      * @returns {void}
@@ -202,7 +254,7 @@ export default {
     onPaste(event) {
       const text = event.clipboardData?.getData("text") || "";
       if (text) {
-        this.$emit("paste", {pastedText: text});
+        this.$emit("stat", "aiChatInputPaste", {pastedText: text});
       }
     },
     /**
@@ -287,81 +339,7 @@ export default {
   box-shadow: none;
 }
 
-/* Subtle, borderless model picker; hover/focus stay on-theme. */
-.composer-model {
-  max-width: 220px;
-  color: var(--bs-secondary-color);
-}
 
-.composer-model-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.composer-model:hover:not(:disabled),
-.composer-model:focus-visible {
-  background-color: var(--bs-secondary-bg);
-  color: var(--bs-body-color);
-}
-
-/* Ghost button: no border, ring, or shadow in any state, including the
-   active/open (.show) state and BasicButton's own hover shadow. */
-.composer-model,
-.composer-model:hover,
-.composer-model:focus,
-.composer-model:focus-visible,
-.composer-model:active,
-.composer-model.active,
-.composer-model.show {
-  border-color: transparent !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-
-/* Roomier menu: consistent padding, rounded rows, a quiet section title. */
-.composer-model-menu {
-  min-width: 12rem;
-  padding: 0.35rem;
-}
-
-.composer-model-menu .dropdown-header {
-  padding: 0.25rem 0.6rem 0.4rem;
-  font-size: 0.7rem;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  color: var(--bs-secondary-color);
-}
-
-.composer-model-menu :deep(.dropdown-item) {
-  padding: 0.4rem 0.6rem;
-  border-radius: var(--bs-border-radius);
-}
-
-.model-option-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Items are BasicButton, so reach past its scoped styles with :deep. */
-.dropdown-menu :deep(.dropdown-item:hover),
-.dropdown-menu :deep(.dropdown-item:focus),
-.dropdown-menu :deep(.dropdown-item:focus-visible) {
-  background-color: var(--bs-secondary-bg);
-  color: var(--bs-body-color);
-  outline: none;
-  box-shadow: none;
-}
-
-.dropdown-menu :deep(.dropdown-item.active) {
-  background-color: var(--bs-primary-bg-subtle);
-  color: var(--bs-primary-text-emphasis);
-  border-color: transparent;
-  box-shadow: none;
-}
 
 .composer-button {
   display: inline-flex;

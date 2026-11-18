@@ -19,7 +19,7 @@
     </template>
 
     <template #footer>
-      <div>
+      <div class="btn-group">
         <BasicButton
           :title="(selectedReviewer.length === 1) ? $t('dashboard.study.addReviewer') : $t('dashboard.study.addReviewers')"
           class="btn btn-primary"
@@ -49,12 +49,12 @@ export default {
     BasicButton,
     BasicTable,
   },
-  emits: ["hide"],
   inject: {
     mainModal: {
       default: null
     },
   },
+  emits: ["hide"],
   data() {
     return {
       selectedReviewer: [],

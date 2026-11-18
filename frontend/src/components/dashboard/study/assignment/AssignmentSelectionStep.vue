@@ -1,31 +1,21 @@
 <template>
   <div>
     <template v-if="isSessionType">
-      <BackendTable
+      <SessionSelectionTable
           v-if="queryScope"
           ref="sessionTable"
-          table="study_session"
-          :columns="sessionTableColumns"
           :query-scope="queryScope"
-          :query-filter-schema="sessionFilterSchema"
-          :query-search-columns="sessionSearchColumns"
-          :options="sessionTableOptions"
-          :max-table-height="'50vh'"
+          :bulk="bulk"
           @selection-change="onSessionSelectionChange"
       />
       <p v-else class="text-muted">
         {{ $t("dashboard.study.selectTargetWorkflow") }}
       </p>
     </template>
-    <BackendTable
+    <SubmissionSelectionTable
         v-else-if="isSubmissionType"
         ref="submissionTable"
-        table="submission"
-        :columns="submissionColumns"
-        :query-filter-schema="submissionFilterSchema"
-        :query-search-columns="submissionSearchColumns"
-        :options="sessionTableOptions"
-        :max-table-height="'50vh'"
+        :bulk="bulk"
         @selection-change="onSubmissionSelectionChange"
     />
     <BasicTable
@@ -41,8 +31,8 @@
 
 <script>
 import BasicTable from "@/basic/Table.vue";
-import BackendTable from "@/basic/BackendTable.vue";
-import {NUMERIC_OPERATORS} from "@/basic/table/searchTokens.js";
+import SessionSelectionTable from "./SessionSelectionTable.vue";
+import SubmissionSelectionTable from "./SubmissionSelectionTable.vue";
 import {
   applySavedSelection,
   cloneSelection,
@@ -60,7 +50,7 @@ import {
  */
 export default {
   name: "AssignmentSelectionStep",
-  components: { BasicTable, BackendTable },
+  components: { BasicTable, SessionSelectionTable, SubmissionSelectionTable },
   inject: {
     assignmentType: {type: String, required: false, default: "document"},
     bulk: {type: Boolean, required: false, default: true},
@@ -118,33 +108,8 @@ export default {
         pagination: 10,
       };
     },
-    sessionTableOptions() {
-      return {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        selectableRows: true,
-        singleSelect: !this.bulk,
-        onlyOneRowSelectable: !this.bulk,
-        pagination: {
-          serverSide: true,
-          itemsPerPage: 10,
-          total: 0,
-        },
-        search: true,
-        sort: {column: "id", order: "ASC"},
-      };
-    },
     documents() {
       return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
-    },
-    assignmentOptions() {
-      return this.$store.getters["table/assignment/getAll"].map((assignment) => ({
-        value: assignment.id,
-        label: this.$t("dashboard.study.assignmentOption", {name: assignment.name, id: assignment.id}),
-      }));
     },
     documentsTable() {
       return this.documents.filter((d) => d.type === 0).map((d) => {
@@ -164,122 +129,6 @@ export default {
         {name: this.$t("common.firstName"), key: "firstName"},
         {name: this.$t("common.lastName"), key: "lastName"},
       ];
-    },
-    canReadPublicInformation() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPublicInfo");
-    },
-    canReadPrivateInformation() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.studies.view.userPrivateInfo");
-    },
-    submissionColumns() {
-      const columns = [
-        {name: this.$t("common.id"), key: "id", sortable: true},
-      ];
-      if (this.canReadPublicInformation) {
-        columns.push({name: this.$t("common.userName"), key: "userName"});
-      }
-      if (this.canReadPrivateInformation) {
-        columns.push(
-          {name: this.$t("common.firstName"), key: "firstName"},
-          {name: this.$t("common.lastName"), key: "lastName"},
-        );
-      }
-      columns.push(
-        {name: this.$t("dashboard.study.roles"), key: "rolesNames"},
-        {name: this.$t("common.createdAt"), key: "createdAt", sortable: true},
-      );
-      return columns;
-    },
-    submissionFilterSchema() {
-      const schema = {
-        id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
-        assignmentId: {
-          label: this.$t("common.assignment"),
-          type: "enum",
-          operators: ["%"],
-          options: this.assignmentOptions,
-        },
-      };
-      if (this.canReadPublicInformation) {
-        schema.userName = {label: this.$t("common.userName"), type: "text"};
-      }
-      if (this.canReadPrivateInformation) {
-        schema.firstName = {label: this.$t("common.firstName"), type: "text"};
-        schema.lastName = {label: this.$t("common.lastName"), type: "text"};
-      }
-      schema.createdAt = {label: this.$t("common.createdAt"), type: "date"};
-      schema.rolesNames = {
-        label: this.$t("dashboard.study.roles"),
-        type: "enum",
-        operators: ["%"],
-        options: [...new Set((this.$store.getters["admin/getSystemRoles"] || []).map((role) => role.name))]
-            .map((name) => ({value: name, label: name})),
-      };
-      return schema;
-    },
-    submissionSearchColumns() {
-      return this.submissionColumns.map((column) => column.key).filter((key) => key !== "createdAt");
-    },
-    sessionTableColumns() {
-      const columns = [
-        {name: this.$t("common.id"), key: "id"},
-      ];
-      if (this.canReadPrivateInformation) {
-        columns.push(
-          {name: this.$t("dashboard.study.sessionUserName"), key: "completeUserName", sortable: true},
-          {name: this.$t("dashboard.study.studyOwnerUserName"), key: "studyCompleteUserName", sortable: true},
-        );
-      }
-      columns.push(
-        {name: this.$t("dashboard.study.workflowType"), key: "workflowType", sortable: true},
-        {name: this.$t("common.createdAt"), key: "createdAt", sortable: true},
-        {name: this.$t("dashboard.study.submissionGroup"), key: "submissionGroup", sortable: true},
-        {
-          name: this.$t("common.status"),
-          key: "status",
-          type: "badge",
-          sortable: true,
-          typeOptions: {
-            keyMapping: {
-              Running: this.$t("dashboard.study.running"),
-              Finished: this.$t("dashboard.study.finished"),
-            },
-            classMapping: {Running: "bg-primary", Finished: "bg-success"},
-          },
-        },
-      );
-      return columns;
-    },
-    sessionFilterSchema() {
-      const schema = {
-        id: {label: this.$t("common.id"), type: "numeric", operators: NUMERIC_OPERATORS},
-      };
-      if (this.canReadPrivateInformation) {
-        schema.completeUserName = {label: this.$t("dashboard.study.sessionUserName"), type: "text"};
-        schema.studyCompleteUserName = {label: this.$t("dashboard.study.studyOwnerUserName"), type: "text"};
-      }
-      Object.assign(schema, {
-        workflowType: {label: this.$t("dashboard.study.workflowType"), type: "text"},
-        createdAt: {label: this.$t("common.createdAt"), type: "date"},
-        submissionGroup: {label: this.$t("dashboard.study.submissionGroup"), type: "text"},
-        status: {
-          label: this.$t("common.status"),
-          type: "enum",
-          options: [
-            {value: "Running", label: this.$t("dashboard.study.running")},
-            {value: "Finished", label: this.$t("dashboard.study.finished")},
-          ],
-        },
-      });
-      return schema;
-    },
-    sessionSearchColumns() {
-      const columns = ["id"];
-      if (this.canReadPrivateInformation) {
-        columns.push("completeUserName", "studyCompleteUserName");
-      }
-      columns.push("workflowType", "submissionGroup", "status");
-      return columns;
     },
     selectedAssignmentUserIds() {
       return this.selectedAssignments

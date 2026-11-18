@@ -2,7 +2,7 @@
   <AiConversationBody
       ref="shell"
       :loading="loading"
-      :empty="messages.length === 0"
+      :empty="visibleMessages.length === 0"
       :loading-text="$t('ai.dialogue.loading')"
       :empty-title="$t('ai.dialogue.noQuestion')"
   >
@@ -40,7 +40,7 @@
 import AiConversationBody from "@/components/aiAssistant/AiConversationBody.vue";
 import AiConversationMessage from "@/components/aiAssistant/AiConversationMessage.vue";
 import DialogueQuestion from "@/components/dialogue/DialogueQuestion.vue";
-import {buildDialogueTurns} from "@/components/dialogue/dialogueMessages.js";
+import {buildDialogueAnswerMessage, buildDialoguePendingMessage, buildDialogueQuestionMessage, isDialogueQuestion, buildDialogueTurns} from "@/components/dialogue/dialogueMessages.js";
 
 /**
  * Scrollable Dialogue message body.
@@ -51,6 +51,9 @@ export default {
   name: "DialogueConversationBody",
   components: {AiConversationBody, AiConversationMessage, DialogueQuestion},
   props: {
+    currentQuestion: {type: Object, default: null}, complete: {type: Boolean, default: false},
+    pendingAnswer: {type: String, default: ''}, pendingSkipped: {type: Boolean, default: false},
+    contextKey: {type: String, required: true},
     messages: {
       type: Array,
       required: true,
@@ -85,11 +88,6 @@ export default {
       required: false,
       default: false,
     },
-    activeQuestionMessageId: {
-      type: [String, Number],
-      required: false,
-      default: null,
-    },
     retryableMessageId: {
       type: Number,
       required: false,
@@ -101,13 +99,66 @@ export default {
       default: false,
     },
   },
-  emits: ["send", "abort", "retry", "typing-started", "paste", "copy"],
+  emits: ["send", "abort", "retry", "typing-started", "paste", "copy", "question-shown"],
+  data() {return {shownQuestionKeys: new Set()};},
   computed: {
+    visibleMessages() {
+      const base = this.messages.length || !this.currentQuestion
+          ? this.messages
+          : [buildDialogueQuestionMessage(this.currentQuestion)];
+      if (!this.pendingAnswer) {
+        return base;
+      }
+      return [
+        ...base,
+        buildDialogueAnswerMessage(this.currentQuestion, this.pendingAnswer, this.pendingSkipped),
+        buildDialoguePendingMessage(this.currentQuestion),
+      ];
+    },
+    activeQuestionMessageId() {
+      const questionId = this.activeRequest?.questionId || (!this.complete && this.currentQuestion?.id);
+      if (!questionId) {
+        return null;
+      }
+      const latestQuestion = [...this.visibleMessages].reverse()
+          .find((message) =>
+            isDialogueQuestion(message)
+              && String(message.metadata?.dialogue?.questionId) === String(questionId)
+          );
+      return latestQuestion?.id || null;
+    },
     dialogueTurns() {
-      return buildDialogueTurns(this.messages);
+      return buildDialogueTurns(this.visibleMessages);
     },
   },
+  watch: {
+    contextKey() {this.shownQuestionKeys.clear();},
+    activeQuestionMessageId: {
+      handler(messageId) {
+        if (messageId) {
+          this.$nextTick(() => this.logQuestionShown(messageId));
+        }
+      },
+      immediate: true,
+    }
+  },
   methods: {
+    logQuestionShown(messageId) {
+      const message = this.visibleMessages.find((entry) => String(entry.id) === String(messageId));
+      if (!message) {
+        return;
+      }
+      const dialogue = message.metadata?.dialogue || {};
+      const key = [dialogue.kind, dialogue.questionId, dialogue.followUpIndex || 0].join(":");
+      if (this.shownQuestionKeys.has(key)) {
+        return;
+      }
+      this.shownQuestionKeys.add(key);
+      this.$emit("question-shown", {
+        questionId: dialogue.questionId,
+        followUpIndex: dialogue.followUpIndex || 0,
+      });
+    },
     /**
      * Scrolls to the newest visible message.
      *

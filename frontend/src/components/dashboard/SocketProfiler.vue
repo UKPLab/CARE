@@ -35,7 +35,7 @@
     </template>
   </DashboardListPage>
   <StartRecordingModal ref="startRecordingModal" />
-  <StartReplayModal ref="startReplayModal" @replay-start="onReplayStart" />
+  <StartReplayModal ref="startReplayModal" @replay-start="$refs.replayResultsModal.run($event)" />
   <RecordingModal ref="recordingModal" />
   <ReplayResultsModal ref="replayResultsModal" />
   <ImportRecordingModal ref="importRecordingModal" />
@@ -136,7 +136,7 @@ export default {
         createdAt: r.createdAt ? new Date(r.createdAt).toLocaleString() : "-",
         // Stored status values stay as-is (the backend compares against them);
         // this is display only.
-        statusDisplay: this.$t("socketProfiler.status." + r.status),
+        statusDisplay: this.$t(`socketProfiler.status.${r.status}`),
       }));
     },
     /**
@@ -301,82 +301,6 @@ export default {
     },
     openReplayModal(row) {
       this.$refs.startReplayModal.open(row.id);
-    },
-    onReplayStart({ recordingIds, timingMode, continueOnFailure, maxIterations, ackTimeout }) {
-      this.eventBus.emit("toast", {
-        title: this.$t("socketProfiler.toasts.replayStarted"),
-        message: this.$t("socketProfiler.toasts.replayStartedBody", { count: recordingIds.length }),
-        variant: "info",
-      });
-      // Open the results modal in progress mode first; its progress id is
-      // threaded into the run so the backend can emit progressUpdate against
-      // it while the scaling test climbs. The same modal flips to results
-      // when the ack returns.
-      const progressId = this.$refs.replayResultsModal.openProgress();
-      const runConfig = { recordingIds, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId };
-      this.$socket.emit("replayRun", runConfig, (res) => {
-        this.$refs.replayResultsModal.stopProgress();
-        if (res.success) {
-          this.downloadReplayResults(res.data, runConfig);
-          this.$refs.replayResultsModal.open(res.data);
-        } else {
-          this.$refs.replayResultsModal.close();
-          this.eventBus.emit("toast", {
-            title: this.$t("socketProfiler.toasts.replayFailed"),
-            message: resolveApiMessage(res),
-            variant: "danger",
-          });
-        }
-      });
-    },
-    /**
-     * Auto-download the replay run as a JSON file. The file captures both the
-     * full iteration results and the input configuration that produced them,
-     * so a saved run can be reviewed later without having to remember which
-     * settings were used.
-     * @param {Array<Object>} results - Iteration results from replayRun
-     * @param {Object} runConfig - The config that produced them
-     * @returns {void}
-     */
-    downloadReplayResults(results, runConfig) {
-      const allRecordings = this.rawRecordings;
-      const recordingNames = runConfig.recordingIds.map((id) => {
-        const r = allRecordings.find((rec) => rec.id === id);
-        return r ? r.name : `recording_${id}`;
-      });
-
-      // Build a filesystem-safe slug from the recording names; if there's
-      // more than one recording, summarise as "N-recordings" so the filename
-      // doesn't balloon.
-      const slug = recordingNames.length === 1
-        ? recordingNames[0].replace(/[^a-zA-Z0-9_-]+/g, "_").slice(0, 60)
-        : `${recordingNames.length}-recordings`;
-
-      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const filename = `replay_results_${timestamp}_${slug}`;
-
-      // Strip per-trace dbChanges from the exported file they bloat the JSON
-      // and aren't needed for offline review. The in-app results modal keeps
-      // them for live inspection.
-      const stripDbChanges = (results || []).map((iteration) => ({
-        ...iteration,
-        results: (iteration.results || []).map((session) => ({
-          ...session,
-          latencies: (session.latencies || []).map(({ dbChanges, ...rest }) => rest),
-          errors: (session.errors || []).map(({ dbChanges, ...rest }) => rest),
-        })),
-      }));
-
-      const payload = {
-        schemaVersion: 1,
-        completedAt: new Date().toISOString(),
-        runConfig: {
-          ...runConfig,
-          recordingNames,
-        },
-        results: stripDbChanges,
-      };
-      downloadObjectsAs(payload, filename, "json");
     },
     deleteRecording(row) {
       this.$socket.emit("recorderDelete", {

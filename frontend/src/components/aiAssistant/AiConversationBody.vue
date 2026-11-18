@@ -43,9 +43,6 @@ import BasicLoading from "@/basic/Loading.vue";
 export default {
   name: "AiConversationBody",
   components: {BasicIcon, BasicButton, BasicLoading},
-  data() {
-    return {followingLatest: true};
-  },
   props: {
     followLatest: {
       type: Boolean,
@@ -77,6 +74,9 @@ export default {
       required: false,
       default: "",
     },
+  },
+  data() {
+    return {followingLatest: true};
   },
   methods: {
     /**

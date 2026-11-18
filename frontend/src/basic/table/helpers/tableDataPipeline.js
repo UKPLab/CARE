@@ -1,3 +1,4 @@
+
 /**
  * Filter -> sort -> paginate data pipeline for Table.vue (BasicTable).
  *
@@ -273,4 +274,85 @@ export const tableDataPipelineMethods = {
     this.currentPage = 1;
     this.paginationUpdate();
   },
+};
+
+export const backendtableDataPipelineMethods = {
+setupQueryMode() {
+      if (!this.$socket) return;
+
+      this.teardownQueryMode();
+      this.deltaHandler = (payload) => this.handleDelta(payload);
+      this.staleHandler = (payload) => this.handleStale(payload);
+      // vue-3-socket.io overrides socket.io onevent and routes custom events
+      // through its emitter — $socket.on(...) never fires for studyDelta/Stale.
+      // Use sockets.subscribe (same pattern as DownloadSingle / Toast).
+      if (this.sockets?.subscribe) {
+        this.sockets.subscribe(this.table + "Delta", this.deltaHandler);
+        this.sockets.subscribe(this.table + "Stale", this.staleHandler);
+      } else {
+        this.$socket.on(this.table + "Delta", this.deltaHandler);
+        this.$socket.on(this.table + "Stale", this.staleHandler);
+      }
+      this.holdQueryMode();
+      // fetchQueryPage waits for socket.connect when autoConnect:false
+      this.fetchQueryPage();
+    },
+
+
+teardownQueryMode() {
+      this.releaseQueryMode();
+      if (!this.$socket) return;
+      if (this.deltaHandler || this.staleHandler) {
+        if (this.sockets?.unsubscribe) {
+          this.sockets.unsubscribe(this.table + "Delta");
+          this.sockets.unsubscribe(this.table + "Stale");
+        } else {
+          if (this.deltaHandler) {
+            this.$socket.off(this.table + "Delta", this.deltaHandler);
+          }
+          if (this.staleHandler) {
+            this.$socket.off(this.table + "Stale", this.staleHandler);
+          }
+        }
+      }
+      if (this.pendingConnectFetch) {
+        this.$socket.off("connect", this.pendingConnectFetch);
+      }
+      this.deltaHandler = null;
+      this.staleHandler = null;
+      this.pendingConnectFetch = null;
+    }
+};
+
+export const backendtableDataPipelineComputed = {
+hasQueryScope() {
+      return !!(this.queryScope && Object.keys(this.queryScope).length > 0);
+    },
+search() {
+      return this.searchQuery.search || "";
+    },
+activeColumnFilters() {
+      return this.searchQuery.columnFilters || {};
+    },
+total() {
+      return this.queryMeta.total;
+    },
+limit() {
+      // if manually set, use that
+      if (this.itemsPerPage !== null) {
+        if (this.itemsPerPage === 0) {
+          // "All" streams one block per scroll.
+          return this.infiniteBlockSize;
+        }
+        return this.itemsPerPage;
+      }
+      // pagination from options, otherwise all elements
+      return pageSizeFromOptions(this.options, this.total);
+    },
+pages() {
+      if (this.isInfiniteMode) {
+        return 1;
+      }
+      return Math.ceil(this.total / this.limit);
+    }
 };

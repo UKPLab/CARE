@@ -149,5 +149,20 @@ export default {
 </script>
 
 <style scoped>
+/* Pencil of a card or comment someone else is editing */
+@keyframes flickerAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
 
+.fading {
+  animation: flickerAnimation 2s infinite;
+}
 </style>

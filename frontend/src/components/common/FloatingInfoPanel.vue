@@ -7,42 +7,12 @@
     @mouseenter="onMouseEnter"
     @mouseleave="onMouseLeave"
   >
-    <div class="info-panel-header">
-      <h6 class="mb-2">{{ translateMaybeKey(selectedItem.name) }}</h6>
-    </div>
-    <div class="info-panel-content">
-      <div v-if="selectedItem.description" class="mb-3">
-        <strong>{{ $t('infoPanel.description')}}</strong>
-        <p class="mb-0 mt-1">{{ translateMaybeKey(selectedItem.description) }}</p>
-      </div>
-      
-      <!-- Show maximum points for rubric groups only (groups have maxScore) -->
-      <div v-if="selectedItem.maxScore !== undefined" class="mb-3">
-        <strong>{{ $t('infoPanel.maxPoints')}}</strong>
-        <span class="badge bg-secondary ms-2">{{ selectedItem.maxScore }} {{ $t('infoPanel.pointsAbbreviation')}}</span>
-      </div>
-      
-      <div v-if="selectedItem.scoring && selectedItem.scoring.length > 0">
-        <strong>{{ $t('infoPanel.scoringCriteria')}}</strong>
-        <div class="scoring-list mt-2">
-          <div 
-            v-for="(option, index) in selectedItem.scoring" 
-            :key="index"
-            class="scoring-item p-2 border rounded mb-2 border-secondary"
-          >
-            <div class="d-flex justify-content-between align-items-start">
-              <span class="badge bg-secondary me-2">{{ option.score ?? option.points }} {{ $t('infoPanel.pointsAbbreviation')}}</span>
-              <span class="flex-grow-1">{{ translateMaybeKey(option.description) }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+    <FloatingInfoContent :selected-item="selectedItem"/>
   </div>
 </template>
 
 <script>
-import { translateMaybeKey } from "@/assets/utils";
+import FloatingInfoContent from "./FloatingInfoContent.vue";
 
 /**
  * FloatingInfoPanel Component
@@ -54,7 +24,8 @@ import { translateMaybeKey } from "@/assets/utils";
  */
 export default {
   name: "FloatingInfoPanel",
-  
+  components: {FloatingInfoContent},
+
   props: {
     show: {
       type: Boolean,
@@ -95,7 +66,7 @@ export default {
       default: 0
     }
   },
-  
+
   emits: [
     'pin-changed',
     'mouse-enter',
@@ -105,7 +76,7 @@ export default {
     'update:referenceElement',
     'update:show'
   ],
-  
+
   data() {
     return {
       localIsPinned: this.isPinned,
@@ -114,7 +85,7 @@ export default {
       panelStyle: {}
     };
   },
-  
+
   watch: {
     isPinned(newVal) {
       this.localIsPinned = newVal;
@@ -129,7 +100,7 @@ export default {
         this.clearCloseTimer();
       }
     },
-    
+
     selectedItem() {
       if (this.show) {
         this.$nextTick(() => {
@@ -137,7 +108,7 @@ export default {
         });
       }
     },
-    
+
     referenceElement() {
       if (this.show) {
         this.$nextTick(() => {
@@ -146,26 +117,25 @@ export default {
       }
     }
   },
-  
+
   mounted() {
     // Listen for global mouse events to handle outside clicks
     document.addEventListener('mousedown', this.onGlobalMouseDown);
-    
+
     // Listen for window resize to recalculate position
     window.addEventListener('resize', this.onWindowResize);
   },
-  
+
   beforeUnmount() {
     this.clearCloseTimer();
     document.removeEventListener('mousedown', this.onGlobalMouseDown);
     window.removeEventListener('resize', this.onWindowResize);
   },
-  
+
   methods: {
-    translateMaybeKey,
     calculatePosition() {
       if (!this.referenceElement) return;
-      
+
       let refRect;
       if (typeof this.referenceElement === 'string') {
         const element = document.querySelector(this.referenceElement);
@@ -179,61 +149,61 @@ export default {
       } else {
         return;
       }
-      
+
       const windowWidth = window.innerWidth;
       const windowHeight = window.innerHeight;
       const panelWidth = typeof this.width === 'number' ? this.width : parseInt(this.width) || 350;
-      
+
       let left, top;
       let computedMaxHeight = this.maxHeight;
-      
+
       switch (this.position) {
         case 'left':
           left = refRect.left - panelWidth - this.offset;
           top = refRect.top;
-          
+
           // Adjust if panel would go off-screen
           if (left < 0) {
             left = refRect.right + this.offset;
           }
           break;
-          
+
         case 'right':
           left = refRect.right + this.offset;
           top = refRect.top;
-          
+
           // Adjust if panel would go off-screen
           if (left + panelWidth > windowWidth) {
             left = refRect.left - panelWidth - this.offset;
           }
           break;
-          
+
         case 'top':
           left = refRect.left;
           top = refRect.top - this.offset;
-          
+
           // Center horizontally relative to reference element
           left = left - (panelWidth - refRect.width) / 2;
           break;
-          
+
         case 'bottom':
           left = refRect.left;
           top = refRect.bottom + this.offset;
-          
+
           // Center horizontally relative to reference element
           left = left - (panelWidth - refRect.width) / 2;
           break;
       }
-      
+
       // Ensure panel stays within viewport bounds
       left = Math.max(10, Math.min(left, windowWidth - panelWidth - 10));
       top = Math.max(10, Math.min(top, windowHeight - 200)); // Leave some space at bottom
-      
+
       // Calculate max height if not provided
       if (!computedMaxHeight) {
         computedMaxHeight = Math.max(200, windowHeight - top - 20);
       }
-      
+
       this.panelStyle = {
         position: 'fixed',
         left: left + 'px',
@@ -243,28 +213,28 @@ export default {
         zIndex: 9999
       };
     },
-    
+
     togglePin() {
       this.localIsPinned = !this.localIsPinned;
       this.$emit('pin-changed', this.localIsPinned);
-      
+
       if (!this.localIsPinned) {
         this.requestClose();
       }
     },
-    
+
     onMouseEnter() {
       this.isHovering = true;
       this.clearCloseTimer();
       this.$emit('mouse-enter');
     },
-    
+
     onMouseLeave() {
       this.isHovering = false;
       this.$emit('mouse-leave');
       this.requestClose();
     },
-    
+
     requestClose() {
       if (this.localIsPinned) return;
       this.clearCloseTimer();
@@ -274,15 +244,15 @@ export default {
         }
       }, this.closeDelay);
     },
-    
+
     clearCloseTimer() {
       if (this.closeTimer) {
         clearTimeout(this.closeTimer);
         this.closeTimer = null;
       }
     },
-    
-    
+
+
     onWindowResize() {
       if (this.show) {
         this.$nextTick(() => {
@@ -290,7 +260,7 @@ export default {
         });
       }
     },
-    
+
     // Public methods for parent components
     open(item, referenceElement = null) {
       this.clearCloseTimer();
@@ -300,19 +270,19 @@ export default {
       }
       this.$emit('update:show', true);
     },
-    
+
     close() {
       this.localIsPinned = false;
       this.isHovering = false;
       this.clearCloseTimer();
       this.$emit('update:show', false);
     },
-    
+
     pin() {
       this.localIsPinned = true;
       this.$emit('pin-changed', true);
     },
-    
+
     unpin() {
       this.localIsPinned = false;
       this.$emit('pin-changed', false);
@@ -332,91 +302,21 @@ export default {
   font-size: 0.875rem;
 }
 
-.info-panel-header {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 8px 8px 0 0;
-  position: relative;
-}
-
-.info-panel-header h6 {
-  margin: 0;
-  color: var(--bs-body-color, #495057);
-  font-weight: 600;
-  padding-right: 30px; /* Make room for pin button */
-}
-
-.btn-close {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  background: none;
-  border: none;
-  padding: 4px;
-  cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-}
-
-.btn-close:hover {
-  opacity: 1;
-}
-
-.btn-close.pinned {
-  opacity: 1;
-  color: var(--care-primary);
-}
-
-.info-panel-content {
-  padding: 16px;
-}
-
-.info-panel-content p {
-  color: var(--bs-secondary-color, #6c757d);
-  line-height: 1.4;
-}
-
-.scoring-list {
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.scoring-item {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  transition: background-color 0.2s;
-}
-
-.scoring-item:hover {
-  background-color: var(--bs-secondary-bg, #e9ecef);
-}
-
-.badge {
-  font-size: 0.75rem;
-  min-width: 45px;
-  text-align: center;
-}
-
-/* Scrollbar styling */
-.floating-info-panel::-webkit-scrollbar,
-.scoring-list::-webkit-scrollbar {
+.floating-info-panel::-webkit-scrollbar {
   width: 6px;
 }
 
-.floating-info-panel::-webkit-scrollbar-track,
-.scoring-list::-webkit-scrollbar-track {
+.floating-info-panel::-webkit-scrollbar-track {
   background: var(--bs-tertiary-bg, #f1f1f1);
   border-radius: 3px;
 }
 
-.floating-info-panel::-webkit-scrollbar-thumb,
-.scoring-list::-webkit-scrollbar-thumb {
+.floating-info-panel::-webkit-scrollbar-thumb {
   background: var(--bs-secondary-color, #c1c1c1);
   border-radius: 3px;
 }
 
-.floating-info-panel::-webkit-scrollbar-thumb:hover,
-.scoring-list::-webkit-scrollbar-thumb:hover {
+.floating-info-panel::-webkit-scrollbar-thumb:hover {
   background: var(--bs-body-color, #a8a8a8);
 }
 </style>

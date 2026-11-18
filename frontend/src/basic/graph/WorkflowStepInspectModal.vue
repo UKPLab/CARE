@@ -65,7 +65,9 @@
       </div>
     </template>
     <template #footer>
+      <div class="btn-group">
       <BasicButton :text="$t('common.close')" class="btn btn-secondary" @click="close" />
+          </div>
     </template>
   </BasicModal>
 </template>

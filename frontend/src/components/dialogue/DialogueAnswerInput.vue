@@ -1,45 +1,14 @@
 <template>
   <form class="dialogue-answer-input mt-3" @submit.prevent="submit">
     <fieldset :disabled="isBusy || readOnly">
-      <template v-if="usesCheckboxes">
-        <div
-            v-for="option in currentOptions"
-            :key="optionValue(option)"
-            class="form-check mb-2"
-        >
-          <input
-              :id="inputId(option)"
-              v-model="selectedOptions"
-              class="form-check-input"
-              type="checkbox"
-              :name="inputName"
-              :value="optionValue(option)"
-          >
-          <label class="form-check-label" :for="inputId(option)">
-            {{ optionLabel(option) }}
-          </label>
-        </div>
-      </template>
-
-      <template v-else-if="usesRadios">
-        <div
-            v-for="option in currentOptions"
-            :key="optionValue(option)"
-            class="form-check mb-2"
-        >
-          <input
-              :id="inputId(option)"
-              v-model="selectedOption"
-              class="form-check-input"
-              type="radio"
-              :name="inputName"
-              :value="optionValue(option)"
-          >
-          <label class="form-check-label" :for="inputId(option)">
-            {{ optionLabel(option) }}
-          </label>
-        </div>
-      </template>
+      <DialogueAnswerChoices
+          v-if="usesCheckboxes || usesRadios"
+          :model-value="usesCheckboxes ? selectedOptions : selectedOption"
+          :question-id="question.id"
+          :options="currentOptions"
+          :multiple="usesCheckboxes"
+          @update:model-value="usesCheckboxes ? selectedOptions = $event : selectedOption = $event"
+      />
 
       <textarea
           v-else
@@ -91,10 +60,10 @@
 </template>
 
 <script>
+import DialogueAnswerChoices from "./DialogueAnswerChoices.vue";
 import BasicButton from "@/basic/Button.vue";
 
 const RADIO_TYPES = Object.freeze(["likert", "singleChoice"]);
-const CHECKBOX_TYPES = Object.freeze(["multipleChoice"]);
 
 /**
  * Renders the answer control for a Dialogue question.
@@ -103,7 +72,7 @@ const CHECKBOX_TYPES = Object.freeze(["multipleChoice"]);
  */
 export default {
   name: "DialogueAnswerInput",
-  components: {BasicButton},
+  components: {DialogueAnswerChoices, BasicButton},
   inject: {
     acceptStats: {default: false},
   },
@@ -114,32 +83,26 @@ export default {
     },
     readOnly: {
       type: Boolean,
-      required: false,
       default: false,
     },
     isBusy: {
       type: Boolean,
-      required: false,
       default: false,
     },
     activeRequest: {
       type: Object,
-      required: false,
       default: null,
     },
     sending: {
       type: Boolean,
-      required: false,
       default: false,
     },
     aborting: {
       type: Boolean,
-      required: false,
       default: false,
     },
     allowSkip: {
       type: Boolean,
-      required: false,
       default: false,
     },
   },
@@ -161,17 +124,11 @@ export default {
     currentOptions() {
       return this.question?.options || [];
     },
-    answerType() {
-      return this.question?.answerType || "text";
-    },
-    inputName() {
-      return `dialogue_${this.question.id}`;
-    },
     usesRadios() {
-      return RADIO_TYPES.includes(this.answerType);
+      return RADIO_TYPES.includes(this.question?.answerType || "text");
     },
     usesCheckboxes() {
-      return CHECKBOX_TYPES.includes(this.answerType);
+      return this.question?.answerType === "multipleChoice";
     },
     answerText() {
       if (this.usesCheckboxes) {
@@ -353,9 +310,6 @@ export default {
      * @param {*} option - Question option.
      * @returns {string} Input id.
      */
-    inputId(option) {
-      return `dialogue_${this.question.id}_${this.optionValue(option)}`;
-    },
     /**
      * Returns an option's stored value.
      *

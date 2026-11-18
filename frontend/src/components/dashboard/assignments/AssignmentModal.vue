@@ -66,7 +66,7 @@
 					:disabled="!submissionWarningPreview"
 					@click="previewSubmissionWarning"
 				>
-					Preview Submission Warning
+					{{ $t('assignments.dashboard.modal.previewSubmissionWarning') }}
 				</BasicButton>
 				<ConfirmModal ref="warningPreviewModal" />
 			</div>
