@@ -2,6 +2,28 @@ const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {pickObjectAttributeSubset} = require("../../utils/helper/generic");
 
+
+/**
+ * Read-only comment access for /rest/v1 only. The socket methods below do not call this.
+ */
+
+const COMMENT_FIELDS = [
+    'id', 'documentId', 'annotationId', 'parentCommentId', 'userId', 'text', 'tags', 'studySessionId',
+    'studyStepId', 'anonymous', 'createdAt', 'updatedAt',
+];
+
+/**
+ * Comments of one document that the caller may read. Same visibility rule as annotations.
+ * The route checks access to the document.
+ * Mirrors CommentSocket.getCommentsByDocument (commentGetByDocument). Differs: filtered by who may read each note.
+ */
+async function listDocumentComments({userId, documentId}, options) {
+    const {visibleNotes} = require('./annotation');
+    const models = options.models;
+    const rows = await models['comment'].getAllByKey('documentId', documentId) || [];
+    return visibleNotes(models, userId, rows, COMMENT_FIELDS, options.can);
+}
+
 /**
  * Loading the comments through websocket
  *
@@ -153,3 +175,4 @@ class CommentSocket extends Socket {
 }
 
 module.exports = CommentSocket;
+module.exports.listDocumentComments = listDocumentComments;

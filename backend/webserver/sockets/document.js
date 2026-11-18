@@ -15,6 +15,9 @@ const TranslatableError = require("../../utils/TranslatableError");
 const i18n = require("../../utils/i18n.js");
 const {getEmailContent} = require("../../utils/helper/email.js");
 
+const {userCanUseProject} = require('./project');
+const {canOf, loadByIdOrHash, pickFields} = require('../utils/restHelpers');
+
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 /**
@@ -22,30 +25,34 @@ const UPLOAD_PATH = `${__dirname}/../../../files`;
  * Pass explicit fields; do not pass a socket instance.
  */
 
-async function userIsAdmin(models, userId) {
-    const roleIds = await models['user_role_matching'].getUserRolesById(userId);
-    return models['user_role_matching'].isAdminInUserRoles(roleIds);
+// What REST returns for a document. A new column stays out of REST until it is added here.
+const DOCUMENT_PUBLIC_FIELDS = [
+    'id', 'hash', 'name', 'type', 'userId', 'projectId', 'public', 'submissionId', 'originalFilename',
+    'createdAt', 'updatedAt',
+];
+
+function publicDocument(document) {
+    return pickFields(document, DOCUMENT_PUBLIC_FIELDS);
 }
 
-async function userHasRight(models, userId, right) {
-    if (await userIsAdmin(models, userId)) {
-        return true;
-    }
-    const roleIds = await models['user_role_matching'].getUserRolesById(userId);
-    return models['user_role_matching'].hasAccessByUserRoles(roleIds, right);
+const DOCUMENTS_SEE_ALL = 'frontend.dashboard.assignments.viewAll';
+// Replacing a file clears the document's annotations, so it needs this right even on an own document.
+const DOCUMENTS_REPLACE_FILE = 'frontend.dashboard.assignments.replaceDeleteSubmissions';
+const UPLOAD_FOR_OTHERS = 'frontend.dashboard.assignments.uploadForOthers';
+const STUDIES_FULL_ACCESS = 'frontend.dashboard.studies.fullAccess';
+
+/**
+ * Over REST only the owner changes, deletes, or replaces a document. No right reaches another
+ * user's document for writing; that stays a dashboard action.
+ */
+function ownsDocument(userId, document) {
+    return document.userId === userId;
 }
 
-async function userCanManageUser(models, actingUserId, targetUserId) {
-    if (actingUserId === targetUserId) {
-        return true;
-    }
-    return userIsAdmin(models, actingUserId);
-}
-
-async function userHasDocumentAccess(models, userId, documentId) {
+async function userHasDocumentAccess(models, userId, documentId, can = async () => false) {
     const doc = await models['document'].getById(documentId);
 
-    if (doc && (doc.public || doc.userId === userId || await userIsAdmin(models, userId))) {
+    if (doc && (doc.public || doc.userId === userId || await can(DOCUMENTS_SEE_ALL))) {
         return true;
     }
 
@@ -61,7 +68,7 @@ async function userHasDocumentAccess(models, userId, documentId) {
     }
 
     for (const session of study_sessions) {
-        if (session.userId === userId || await userHasRight(models, userId, "frontend.dashboard.studies.fullAccess")) {
+        if (session.userId === userId || await can(STUDIES_FULL_ACCESS)) {
             return true;
         }
     }
@@ -69,32 +76,94 @@ async function userHasDocumentAccess(models, userId, documentId) {
     return false;
 }
 
-function parseIdOrHash(idOrHash) {
-    const raw = String(idOrHash);
-    if (/^\d+$/.test(raw)) {
-        return {identifierType: 'id', identifier: Number(raw)};
-    }
-    return {identifierType: 'hash', identifier: raw};
-}
-
 async function loadDocumentByIdOrHash(models, idOrHash) {
-    const {identifierType, identifier} = parseIdOrHash(idOrHash);
-    if (identifierType === 'hash') {
-        return models['document'].getByHash(identifier);
-    }
-    return models['document'].getById(identifier);
+    return loadByIdOrHash(models['document'], idOrHash);
 }
 
+/**
+ * Mirrors DocumentSocket list via the document table subscription. Differs: viewAll comes from the token, not admin.
+ */
 async function listDocuments({userId}, options) {
     const models = options.models;
-    if (await userIsAdmin(models, userId)) {
+    if (await canOf(options)(DOCUMENTS_SEE_ALL)) {
         return models['document'].getAll();
     }
     return models['document'].getAllByKey('userId', userId);
 }
 
+/**
+ * Write a file during a REST request and remember it in options.writtenFiles, so the route can
+ * delete it if the transaction rolls back. Without the list it is a plain write.
+ */
+async function writeTrackedFile(options, filePath, data) {
+    // Remember the path first, so a write that fails halfway is still cleaned up on rollback.
+    if (options && Array.isArray(options.writtenFiles)) {
+        options.writtenFiles.push(filePath);
+    }
+    // Async, so a large upload does not pause the backend for everyone while it is written.
+    await fs.promises.writeFile(filePath, data);
+}
+
+/**
+ * Delete the files a rolled-back REST request wrote, so no file is left without a document row.
+ * @param {string[]} filePaths
+ * @param {Object} logger
+ */
+function removeWrittenFiles(filePaths, logger) {
+    for (const filePath of filePaths || []) {
+        try {
+            fs.unlinkSync(filePath);
+        } catch (err) {
+            if (err.code !== 'ENOENT') {
+                logger.error('Could not remove file after rollback: ' + filePath + ': ' + err.message);
+            }
+        }
+    }
+}
+
+/**
+ * Current text of an HTML or modal document: the saved .delta file plus the base edits not yet
+ * written to it. A missing .delta file counts as empty.
+ * Mirrors DocumentSocket.getDocument for the base document (no study session). Differs: returns
+ * plain text too, and reads no session copies.
+ * @returns {Promise<{delta: {ops: Object[]}, text: string}>}
+ */
+async function readDocumentContent({document}, options) {
+    let delta = new Delta();
+    const deltaPath = path.join(UPLOAD_PATH, `${document.hash}.delta`);
+    if (fs.existsSync(deltaPath)) {
+        delta = new Delta(JSON.parse(fs.readFileSync(deltaPath, 'utf8')));
+    }
+    const edits = await options.models['document_edit'].findAll({
+        where: {documentId: document.id, studySessionId: null, studyStepId: null, draft: true},
+    });
+    delta = delta.compose(dbToDelta(edits));
+    const text = delta.ops.map((op) => (typeof op.insert === 'string' ? op.insert : '')).join('');
+    return {delta: {ops: delta.ops}, text};
+}
+
+/**
+ * Own or public templates only.
+ */
+async function userCanUseTemplate(models, userId, templateId) {
+    const template = await models['template'].getById(templateId);
+    if (!template || template.deleted) {
+        return false;
+    }
+    return template.public === true || template.userId === userId;
+}
+
+/**
+ * Mirrors DocumentSocket.createDocument (documentCreate). Differs: project and template must be own or public.
+ */
 async function createDocument({userId, name, type, templateId, projectId}, options) {
     const models = options.models;
+    if (projectId !== undefined && projectId !== null && !(await userCanUseProject(models, userId, projectId))) {
+        throw new TranslatableError('errors.rest.invalidProjectId');
+    }
+    if (templateId && !(await userCanUseTemplate(models, userId, templateId))) {
+        throw new TranslatableError('errors.rest.invalidTemplateId');
+    }
     const doc = await models["document"].add({
         name,
         type,
@@ -113,13 +182,16 @@ async function createDocument({userId, name, type, templateId, projectId}, optio
     return doc;
 }
 
+/**
+ * Mirrors DocumentSocket.updateDocument (documentUpdate). Differs: only name and public, own documents only.
+ */
 async function updateDocumentFields({userId, documentId, fields}, options) {
     const models = options.models;
     const doc = await models['document'].getById(documentId);
     if (!doc) {
         return null;
     }
-    if (!(await userCanManageUser(models, userId, doc.userId))) {
+    if (!ownsDocument(userId, doc)) {
         throw new TranslatableError("errors.documents.updateNotAllowed");
     }
     const allowed = {};
@@ -145,6 +217,9 @@ function storedFilePath(document) {
     return null;
 }
 
+/**
+ * Mirrors DocumentSocket.addDocument (documentAdd), nearly line for line. Differs: user from the token, no socket emits.
+ */
 async function addDocument(data, options) {
     const models = options.models;
     const server = options.server;
@@ -159,11 +234,12 @@ async function addDocument(data, options) {
     }
 
     const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
-    if (![".pdf", ".delta", ".json", ".zip"].includes(fileType)) {
+    // No .json: nothing would be created from it (the socket list has it, the upload dialog does not).
+    if (![".pdf", ".delta", ".zip"].includes(fileType)) {
         throw new TranslatableError("errors.file.invalidFileType");
     }
 
-    if ((data['userid'] && data['userid'] !== userId) && !(await userCanManageUser(models, userId, data['userId']))) {
+    if ((data['userid'] && data['userid'] !== userId) && !(await canOf(options)(UPLOAD_FOR_OTHERS))) {
         throw new TranslatableError("errors.documents.noUploadAccess");
     }
 
@@ -179,7 +255,7 @@ async function addDocument(data, options) {
             originalFilename: data.name,
         }, {transaction: options.transaction});
 
-        fs.writeFileSync(path.join(UPLOAD_PATH, `${doc.hash}.delta`), data.file);
+        await writeTrackedFile(options, path.join(UPLOAD_PATH, `${doc.hash}.delta`), data.file);
 
         const deltaContent = JSON.parse(data.file.toString());
 
@@ -209,7 +285,7 @@ async function addDocument(data, options) {
             {transaction: options.transaction}
         );
 
-        fs.writeFileSync(path.join(UPLOAD_PATH, `${doc.hash}.zip`), data.file);
+        await writeTrackedFile(options, path.join(UPLOAD_PATH, `${doc.hash}.zip`), data.file);
     } else if (fileType === ".pdf") {
         doc = await models["document"].add({
             type: docTypes.DOC_TYPE_PDF,
@@ -231,7 +307,7 @@ async function addDocument(data, options) {
                 throw new TranslatableError( "errors.documents.annotationDeleteOriginalFailed");
             }
 
-            fs.writeFileSync(target, file);
+            await writeTrackedFile(options, target, file);
         } catch (annotationRpcErr) {
             logger.warn("Failed to delete annotations from PDF", annotationRpcErr);
             if (annotationRpcErr.key) {
@@ -244,7 +320,7 @@ async function addDocument(data, options) {
             } else {
                 errors.push({message: "errors.documents.annotationDeleteFailedGeneric"});
             }
-            fs.writeFileSync(target, data.file);
+            await writeTrackedFile(options, target, data.file);
         }
 
         if (data["importAnnotations"]) {
@@ -369,12 +445,16 @@ async function clearDocumentAnnotations(models, documentId, options) {
     }
 }
 
+/**
+ * Mirrors DocumentSocket.replaceDocumentFile (documentReplaceFile). Differs: a token right instead of admin, own documents
+ * only, and a failed rename after commit reports the document id, not server paths.
+ */
 async function replaceDocumentFile({userId, documentId, idOrHash, file, name}, options) {
     const models = options.models;
     const server = options.server;
     const logger = options.logger;
 
-    if (!(await userIsAdmin(models, userId))) {
+    if (!(await canOf(options)(DOCUMENTS_REPLACE_FILE))) {
         throw new TranslatableError("errors.documents.replaceFileNoPermission");
     }
 
@@ -392,7 +472,7 @@ async function replaceDocumentFile({userId, documentId, idOrHash, file, name}, o
         if (!document) {
             return null;
         }
-        if (!(await userHasDocumentAccess(models, userId, document.id))) {
+        if (!(await userHasDocumentAccess(models, userId, document.id, canOf(options)))) {
             throw new TranslatableError("errors.documents.noAccess");
         }
     } else {
@@ -403,9 +483,12 @@ async function replaceDocumentFile({userId, documentId, idOrHash, file, name}, o
         if (!document) {
             throw generateError("DOCUMENT_NOT_FOUND", "errors.documents.doesNotExistOrDeleted");
         }
-        if (!(await userHasDocumentAccess(models, userId, document.id))) {
+        if (!(await userHasDocumentAccess(models, userId, document.id, canOf(options)))) {
             throw generateError("ACCESS_DENIED", "errors.documents.noAccess");
         }
+    }
+    if (!ownsDocument(userId, document)) {
+        throw new TranslatableError("errors.documents.noAccess");
     }
 
     const extensionMap = {
@@ -448,20 +531,17 @@ async function replaceDocumentFile({userId, documentId, idOrHash, file, name}, o
         }
     }
     const tempPath = `${target}.replace-tmp`;
-    fs.writeFileSync(tempPath, bytes);
+    await writeTrackedFile(options, tempPath, bytes);
     options.transaction.afterCommit(() => {
         try {
             fs.renameSync(tempPath, target);
         } catch (err) {
+            // Paths stay in the server log; the caller only learns which document is affected.
             logger.error(
-                `Error promoting replacement file for document #${document.id}: ${err.message}`
+                `Error promoting replacement file for document #${document.id}: ${err.message}. `
+                + `The new file is at ${tempPath}; rename it to ${target} manually.`
             );
-            throw new TranslatableError("errors.documents.replacePromoteFailed", {
-                documentId: document.id,
-                tempPath,
-                target,
-                error: err.message,
-            });
+            throw new TranslatableError("errors.rest.replacePromoteFailed", {documentId: document.id});
         }
     });
 
@@ -2457,7 +2537,10 @@ module.exports.listDocuments = listDocuments;
 module.exports.updateDocumentFields = updateDocumentFields;
 module.exports.replaceDocumentFile = replaceDocumentFile;
 module.exports.userHasDocumentAccess = userHasDocumentAccess;
-module.exports.userCanManageUser = userCanManageUser;
+module.exports.ownsDocument = ownsDocument;
+module.exports.publicDocument = publicDocument;
+module.exports.removeWrittenFiles = removeWrittenFiles;
+module.exports.readDocumentContent = readDocumentContent;
 module.exports.loadDocumentByIdOrHash = loadDocumentByIdOrHash;
 module.exports.storedFilePath = storedFilePath;
 module.exports.docTypes = docTypes;
