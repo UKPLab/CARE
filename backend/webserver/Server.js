@@ -79,6 +79,10 @@ module.exports = class Server {
             limit: "10kb" 
         }));
 
+        // REST uses Bearer tokens, never the login session. Registered before session management so
+        // script calls do not create a session row each time.
+        require("./routes/rest")(this);
+
         this.logger.debug("Initializing Session management...");
         this.session = this.#initSessionManagement();
         this.app.use(this.session);
@@ -98,7 +102,6 @@ module.exports = class Server {
         require("./routes/config")(this);
         require('./routes/auth')(this);
         require("./routes/setup")(this);
-        require("./routes/rest")(this);
 
         this.app.use((req, res, next) => {
             if (req.method !== "GET") {
