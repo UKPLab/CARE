@@ -1,5 +1,7 @@
 'use strict';
 
+const {Op} = require('sequelize');
+
 const {
     generateSecret,
     hashSecret,
@@ -8,15 +10,21 @@ const {
     hasOnlyGuestRole,
     ownerIsAdmin,
     listAttachableRights,
+    listTokenRightChoices,
 } = require('../../utils/apiTokenAuth');
 
-function publicTokenRow(token) {
+// Active tokens one user may hold at a time.
+const MAX_TOKENS_PER_USER = 25;
+
+function publicTokenRow(token, rights) {
     return {
+        rights,
         id: token.id,
         userId: token.userId,
         name: token.name,
         prefix: token.prefix,
         lastUsedAt: token.lastUsedAt,
+        expiresAt: token.expiresAt ?? null,
         createdAt: token.createdAt,
     };
 }
@@ -55,14 +63,43 @@ function registerApiTokenRoutes(server, helpers) {
                 order: [['createdAt', 'DESC']],
                 raw: true,
             });
-            return res.status(200).json({tokens: tokens.map(publicTokenRow)});
+            const rightRows = tokens.length === 0 ? [] : await models['api_token_right'].findAll({
+                where: {apiTokenId: tokens.map((token) => token.id), deleted: false},
+                attributes: ['apiTokenId', 'userRightName'],
+                raw: true,
+            });
+            const rightsByToken = {};
+            for (const row of rightRows) {
+                (rightsByToken[row.apiTokenId] ||= []).push(row.userRightName);
+            }
+            return res.status(200).json({
+                tokens: tokens.map((token) => publicTokenRow(token, (rightsByToken[token.id] || []).sort())),
+            });
         } catch (err) {
             server.logger.error('List api tokens failed: ' + err);
             return res.status(500).json({message: 'errors.server.unknownError'});
         }
     });
 
+    // What the create form may offer this user: attachable rights and role presets.
+    server.app.get('/auth/api-tokens/rights', shared.ensureAuthenticated, async (req, res) => {
+        try {
+            if (!(await requireEnabled(req, res))) {
+                return;
+            }
+            return res.status(200).json(await listTokenRightChoices(models, req.user.id));
+        } catch (err) {
+            server.logger.error('List api token right choices failed: ' + err);
+            return res.status(500).json({message: 'errors.server.unknownError'});
+        }
+    });
+
     server.app.post('/auth/api-tokens', shared.ensureAuthenticated, async (req, res) => {
+        // JSON only: another site cannot send JSON with the user's cookie without a CORS preflight,
+        // which the server refuses, so a hidden form cannot create tokens in someone's account.
+        if (!req.is('application/json')) {
+            return res.status(415).json({message: 'errors.rest.jsonRequired'});
+        }
         const t = await server.db.sequelize.transaction();
         try {
             if (!(await requireEnabled(req, res))) {
@@ -80,17 +117,39 @@ function registerApiTokenRoutes(server, helpers) {
                 return res.status(400).json({message: 'errors.rest.tokenNameRequired'});
             }
 
-            const attachable = await listAttachableRights(models, req.user.id);
-            let rights = attachable;
-            if (Array.isArray(req.body?.rights)) {
-                const requested = req.body.rights.filter((item) => typeof item === 'string');
-                const extra = requested.filter((right) => !attachable.includes(right));
-                if (extra.length) {
+            // Optional ISO date in the future. Leaving it out means no expiry.
+            let expiresAt = null;
+            if (req.body?.expiresAt !== undefined && req.body.expiresAt !== null) {
+                expiresAt = typeof req.body.expiresAt === 'string' ? new Date(req.body.expiresAt) : null;
+                if (!expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
                     await t.rollback();
-                    return res.status(403).json({message: 'errors.rest.cannotGrantMissingRight'});
+                    return res.status(400).json({message: 'errors.rest.invalidTokenExpiry'});
                 }
-                rights = requested;
             }
+
+            const active = await models['api_token'].count({
+                where: {userId: req.user.id, deleted: false, [Op.or]: [{expiresAt: null}, {expiresAt: {[Op.gt]: new Date()}}]},
+                transaction: t,
+            });
+            if (active >= MAX_TOKENS_PER_USER) {
+                await t.rollback();
+                return res.status(400).json({message: 'errors.rest.tooManyTokens', params: {max: MAX_TOKENS_PER_USER}});
+            }
+
+            const attachable = await listAttachableRights(models, req.user.id);
+            // The rights must be listed. There is no implicit "every right", same as the dashboard form.
+            const requested = Array.isArray(req.body?.rights)
+                ? [...new Set(req.body.rights.filter((item) => typeof item === 'string'))]
+                : [];
+            if (requested.length === 0) {
+                await t.rollback();
+                return res.status(400).json({message: 'errors.rest.tokenRightsRequired'});
+            }
+            if (requested.some((right) => !attachable.includes(right))) {
+                await t.rollback();
+                return res.status(403).json({message: 'errors.rest.cannotGrantMissingRight'});
+            }
+            const rights = requested;
 
             const secret = generateSecret();
             const token = await models['api_token'].add({
@@ -98,6 +157,7 @@ function registerApiTokenRoutes(server, helpers) {
                 name,
                 keyHash: hashSecret(secret),
                 prefix: displayPrefixFromSecret(secret),
+                expiresAt,
             }, {transaction: t});
 
             for (const userRightName of rights) {
@@ -110,7 +170,7 @@ function registerApiTokenRoutes(server, helpers) {
 
             await t.commit();
             return res.status(201).json({
-                token: publicTokenRow(token),
+                token: publicTokenRow(token, [...rights].sort()),
                 secret,
             });
         } catch (err) {
