@@ -76,7 +76,7 @@ async function replaceTags(models, userId, tagSet, tags, transaction) {
 async function createTagSet({userId, name, description, projectId, tags}, options) {
     const {defaultProjectFor, userCanUseProject} = require('./project');
     const models = options.models;
-    // Same rule as documents and course tasks: an own or public project.
+    // Same rule as documents and assignments: an own or public project.
     if (projectId != null && !(await userCanUseProject(models, userId, projectId))) {
         throw new TranslatableError('errors.rest.invalidProjectId');
     }

@@ -8,7 +8,7 @@ const {runWrite, is} = require('./routeHelpers');
 const ADD_SINGLE = 'frontend.dashboard.studies.addSingleAssignments';
 const ADD_BULK = 'frontend.dashboard.studies.addBulkAssignments';
 
-const {createAssignments, ASSIGNMENT_TYPES, ASSIGNMENT_MODES} = AssignmentSocket;
+const {createReviewAssignments, ASSIGNMENT_TYPES, ASSIGNMENT_MODES} = AssignmentSocket;
 
 const NOT_FOUND = new Set([
     'errors.rest.studyNotFound',
@@ -80,7 +80,7 @@ function readWorkflowMapping(raw) {
 }
 
 /**
- * Turn the request body into the arguments of createAssignments. Only known keys are read.
+ * Turn the request body into the arguments of createReviewAssignments. Only known keys are read.
  * @returns {{error: string}|{data: Object, bulk: boolean}}
  */
 function readAssignmentBody(body) {
@@ -89,7 +89,7 @@ function readAssignmentBody(body) {
     }
     for (const flag of ['notify', 'dryRun']) {
         if (body[flag] !== undefined && typeof body[flag] !== 'boolean') {
-            return {error: 'errors.rest.invalidAssignmentField'};
+            return {error: 'errors.rest.invalidReviewAssignmentField'};
         }
     }
     const data = {notify: body.notify === true, dryRun: body.dryRun === true};
@@ -106,14 +106,14 @@ function readAssignmentBody(body) {
     if (body.reviewers !== undefined) {
         reviewerIds = readIds(body.reviewers);
         if (!reviewerIds) {
-            return {error: 'errors.rest.invalidAssignmentField'};
+            return {error: 'errors.rest.invalidReviewAssignmentField'};
         }
     }
     data.reviewerIds = reviewerIds;
 
     if (hasStudy) {
         if (!Number.isInteger(body.studyId)) {
-            return {error: 'errors.rest.invalidAssignmentField'};
+            return {error: 'errors.rest.invalidReviewAssignmentField'};
         }
         if (reviewerIds.length === 0) {
             return {error: 'errors.rest.assignmentReviewersRequired'};
@@ -164,7 +164,7 @@ function readAssignmentBody(body) {
 
 /**
  * REST review assignments: one route for single, bulk, and add-reviewer. Named review-assignments
- * because the `assignment` table (course tasks with submissions) is a different thing.
+ * because the `assignment` table (assignments that collect submissions) is a different thing.
  */
 function registerRestReviewAssignmentRoutes(server) {
     server.app.post('/rest/v1/review-assignments', heavyRateLimit(server), (req, res) => {
@@ -183,7 +183,7 @@ function registerRestReviewAssignmentRoutes(server) {
             if (!(await options.can(parsed.bulk ? ADD_BULK : ADD_SINGLE))) {
                 throw new TranslatableError('errors.rest.missingTokenRight');
             }
-            return createAssignments({userId: req.apiUserId, ...parsed.data}, options);
+            return createReviewAssignments({userId: req.apiUserId, ...parsed.data}, options);
         });
     });
 }

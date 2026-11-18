@@ -8,22 +8,22 @@ const {canOf} = require("../utils/restHelpers");
 const {buildRoleBulkCsvRows} = require("../../utils/helper/roleBulkCsv.js");
 
 /**
- * Course-task assignments (the `assignment` table: a task that collects submissions) for
- * /rest/v1/assignments only. Not the review assignments above, which create review studies.
+ * Assignments (the `assignment` table: an assignment collects submissions) for
+ * /rest/v1/assignments only. Not the review assignments below, which create review studies.
  * The dashboard edits these through the generic table socket (appDataUpdate on assignment and
  * assignment_share in AssignmentModal.vue and Assignments.vue).
  */
 
-const TASK_SEE_ALL = 'frontend.dashboard.assignments.viewAll';
-const TASK_EDIT_ALL = 'frontend.dashboard.assignments.edit';
-const TASK_WRITABLE_FIELDS = [
+const ASSIGNMENTS_VIEW_ALL = 'frontend.dashboard.assignments.viewAll';
+const ASSIGNMENTS_EDIT_ALL = 'frontend.dashboard.assignments.edit';
+const ASSIGNMENT_WRITABLE_FIELDS = [
     'name', 'description', 'projectId', 'start', 'end', 'maxRevisions', 'validationConfigurationId',
     'allowReUpload', 'notifyOnSubmissionUpload', 'submissionWarning',
 ];
-const TASK_PUBLIC_FIELDS = ['id', 'userId', ...TASK_WRITABLE_FIELDS, 'closed', 'createdAt', 'updatedAt'];
+const ASSIGNMENT_PUBLIC_FIELDS = ['id', 'userId', ...ASSIGNMENT_WRITABLE_FIELDS, 'closed', 'createdAt', 'updatedAt'];
 
-/** Share rows of several tasks in one query, as {roles, users} per task id. */
-async function taskSharesByTask(models, assignmentIds, transaction) {
+/** Share rows of several assignments in one query, as {roles, users} per assignment id. */
+async function sharesByAssignment(models, assignmentIds, transaction) {
     const rows = assignmentIds.length === 0 ? [] : await models['assignment_share'].findAll({
         where: {assignmentId: assignmentIds, deleted: {[Op.not]: true}},
         attributes: ['assignmentId', 'roleId', 'userId'],
@@ -39,38 +39,38 @@ async function taskSharesByTask(models, assignmentIds, transaction) {
     }));
 }
 
-function taskWithShares(row, shares) {
+function assignmentWithShares(row, shares) {
     const plain = typeof row.get === 'function' ? row.get({plain: true}) : row;
-    const task = Object.fromEntries(TASK_PUBLIC_FIELDS.map((key) => [key, plain[key] ?? null]));
-    task.shareWith = shares.get(plain.id) || {roles: [], users: []};
-    return task;
+    const assignment = Object.fromEntries(ASSIGNMENT_PUBLIC_FIELDS.map((key) => [key, plain[key] ?? null]));
+    assignment.shareWith = shares.get(plain.id) || {roles: [], users: []};
+    return assignment;
 }
 
-async function publicTask(models, row, transaction) {
+async function publicAssignment(models, row, transaction) {
     const plain = typeof row.get === 'function' ? row.get({plain: true}) : row;
-    return taskWithShares(plain, await taskSharesByTask(models, [plain.id], transaction));
+    return assignmentWithShares(plain, await sharesByAssignment(models, [plain.id], transaction));
 }
 
 /**
  * Whether the caller may see one assignment: own, shared with them by user or role, or viewAll.
  */
-async function canSeeTask(models, userId, task, can) {
-    if (task.userId === userId || await can(TASK_SEE_ALL)) {
+async function canSeeAssignment(models, userId, assignment, can) {
+    if (assignment.userId === userId || await can(ASSIGNMENTS_VIEW_ALL)) {
         return true;
     }
     const filter = await models['assignment'].getUserFilter(userId);
-    return Boolean(filter.shared && filter.shared.id[Op.in].includes(task.id));
+    return Boolean(filter.shared && filter.shared.id[Op.in].includes(assignment.id));
 }
 
-async function loadTaskForChange(options, userId, id) {
-    const task = await options.models['assignment'].getById(id, {transaction: options.transaction});
-    if (!task) {
+async function loadAssignmentForChange(options, userId, id) {
+    const assignment = await options.models['assignment'].getById(id, {transaction: options.transaction});
+    if (!assignment) {
         return null;
     }
-    if (task.userId !== userId && !(await canOf(options)(TASK_EDIT_ALL))) {
-        throw new TranslatableError('errors.rest.assignmentTaskNoAccess');
+    if (assignment.userId !== userId && !(await canOf(options)(ASSIGNMENTS_EDIT_ALL))) {
+        throw new TranslatableError('errors.rest.assignmentNoAccess');
     }
-    return task;
+    return assignment;
 }
 
 /**
@@ -126,7 +126,7 @@ async function replaceShares(models, assignmentId, shareWith, transaction) {
 /**
  * Project and validation configuration of an assignment must exist; the project must be usable.
  */
-async function checkTaskReferences(models, userId, fields, transaction) {
+async function checkAssignmentReferences(models, userId, fields, transaction) {
     const {userCanUseProject} = require('./project');
     if (fields.projectId != null && !(await userCanUseProject(models, userId, fields.projectId))) {
         throw new TranslatableError('errors.rest.invalidProjectId');
@@ -143,108 +143,107 @@ async function checkTaskReferences(models, userId, fields, transaction) {
  * Own assignments, those shared with the caller, or all with viewAll on the token.
  * Mirrors the Assignments dashboard list (assignment table with Assignment.getUserFilter).
  */
-async function listAssignmentTasks({userId}, options) {
+async function listAssignments({userId}, options) {
     const models = options.models;
     let where = {deleted: false};
-    if (!(await canOf(options)(TASK_SEE_ALL))) {
+    if (!(await canOf(options)(ASSIGNMENTS_VIEW_ALL))) {
         const filter = await models['assignment'].getUserFilter(userId);
         where = {deleted: false, [Op.or]: [filter.owned, ...(filter.shared ? [filter.shared] : [])]};
     }
     const rows = await models['assignment'].findAll({where, order: [['id', 'ASC']], raw: true});
-    const shares = await taskSharesByTask(models, rows.map((row) => row.id));
-    return rows.map((row) => taskWithShares(row, shares));
+    const shares = await sharesByAssignment(models, rows.map((row) => row.id));
+    return rows.map((row) => assignmentWithShares(row, shares));
 }
 
-async function getAssignmentTask({userId, id}, options) {
-    const task = await options.models['assignment'].getById(id);
-    if (!task) {
+async function getAssignment({userId, id}, options) {
+    const assignment = await options.models['assignment'].getById(id);
+    if (!assignment) {
         return null;
     }
-    if (!(await canSeeTask(options.models, userId, task, canOf(options)))) {
-        throw new TranslatableError('errors.rest.assignmentTaskNoAccess');
+    if (!(await canSeeAssignment(options.models, userId, assignment, canOf(options)))) {
+        throw new TranslatableError('errors.rest.assignmentNoAccess');
     }
-    return publicTask(options.models, task);
+    return publicAssignment(options.models, assignment);
 }
 
 /**
  * Mirrors AssignmentModal.vue save (appDataUpdate on assignment, then assignment_share).
  * Differs: the owner is always the token's user; project and configuration are checked.
  */
-async function createAssignmentTask({userId, fields, shareWith}, options) {
+async function addAssignment({userId, fields, shareWith}, options) {
     const models = options.models;
     // The dashboard creates an assignment inside the current project; REST uses the same default.
     if (fields.projectId === undefined) {
         const {defaultProjectFor} = require('./project');
         fields = {...fields, projectId: await defaultProjectFor(models, userId)};
     }
-    await checkTaskReferences(models, userId, fields, options.transaction);
-    const task = await models['assignment'].add({...fields, userId}, {transaction: options.transaction});
+    await checkAssignmentReferences(models, userId, fields, options.transaction);
+    const assignment = await models['assignment'].add({...fields, userId}, {transaction: options.transaction});
     if (shareWith) {
-        await replaceShares(models, task.id, shareWith, options.transaction);
+        await replaceShares(models, assignment.id, shareWith, options.transaction);
     }
-    return publicTask(models, task, options.transaction);
+    return publicAssignment(models, assignment, options.transaction);
 }
 
 /**
  * Change fields and, when given, the whole share list. Own assignments, or any with
  * assignments.edit on the token. Mirrors AssignmentModal.vue edit.
  */
-async function updateAssignmentTask({userId, id, fields, shareWith}, options) {
+async function updateAssignment({userId, id, fields, shareWith}, options) {
     const models = options.models;
-    const task = await loadTaskForChange(options, userId, id);
-    if (!task) {
+    const assignment = await loadAssignmentForChange(options, userId, id);
+    if (!assignment) {
         return null;
     }
-    await checkTaskReferences(models, userId, fields, options.transaction);
+    await checkAssignmentReferences(models, userId, fields, options.transaction);
     if (Object.keys(fields).length > 0) {
-        await models['assignment'].updateById(task.id, fields, {transaction: options.transaction});
+        await models['assignment'].updateById(assignment.id, fields, {transaction: options.transaction});
     }
     if (shareWith) {
-        await replaceShares(models, task.id, shareWith, options.transaction);
+        await replaceShares(models, assignment.id, shareWith, options.transaction);
     }
-    return publicTask(models, await models['assignment'].getById(task.id, {transaction: options.transaction}), options.transaction);
+    return publicAssignment(models, await models['assignment'].getById(assignment.id, {transaction: options.transaction}), options.transaction);
 }
 
 /**
  * Close an assignment: no more uploads. Mirrors the close action in Assignments.vue.
  */
-async function closeAssignmentTask({userId, id}, options) {
-    const task = await loadTaskForChange(options, userId, id);
-    if (!task) {
+async function closeAssignment({userId, id}, options) {
+    const assignment = await loadAssignmentForChange(options, userId, id);
+    if (!assignment) {
         return null;
     }
-    if (task.closed) {
-        throw new TranslatableError('errors.rest.assignmentTaskAlreadyClosed');
+    if (assignment.closed) {
+        throw new TranslatableError('errors.rest.assignmentAlreadyClosed');
     }
-    const updated = await options.models['assignment'].updateById(task.id, {closed: new Date()}, {transaction: options.transaction});
-    return publicTask(options.models, updated, options.transaction);
+    const updated = await options.models['assignment'].updateById(assignment.id, {closed: new Date()}, {transaction: options.transaction});
+    return publicAssignment(options.models, updated, options.transaction);
 }
 
 /**
  * Soft-delete an assignment that has no submissions, so no student work loses its assignment.
  * Mirrors the delete action in Assignments.vue. Differs: refused while submissions exist.
  */
-async function deleteAssignmentTask({userId, id}, options) {
+async function deleteAssignment({userId, id}, options) {
     const models = options.models;
-    const task = await loadTaskForChange(options, userId, id);
-    if (!task) {
+    const assignment = await loadAssignmentForChange(options, userId, id);
+    if (!assignment) {
         return null;
     }
-    const submissions = await models['submission'].count({where: {assignmentId: task.id, deleted: false}, transaction: options.transaction});
+    const submissions = await models['submission'].count({where: {assignmentId: assignment.id, deleted: false}, transaction: options.transaction});
     if (submissions > 0) {
-        throw new TranslatableError('errors.rest.assignmentTaskHasSubmissions');
+        throw new TranslatableError('errors.rest.assignmentHasSubmissions');
     }
-    await models['assignment'].deleteById(task.id, {transaction: options.transaction});
+    await models['assignment'].deleteById(assignment.id, {transaction: options.transaction});
     return true;
 }
 
 /**
- * Assignment actions for /rest/v1/assignments only. The socket methods below do not call these.
+ * Review-assignment actions for /rest/v1/review-assignments only. The socket methods below do not call these.
  * Callers pass ids. Every row (template, items, reviewers, study) is loaded and access-checked here,
  * so a request body can never supply study fields or act as another user.
  */
 
-const ASSIGNMENTS_VIEW_ALL = 'frontend.dashboard.assignments.viewAll';
 const ASSIGNMENT_TYPES = ['document', 'submission', 'study_session'];
 const ASSIGNMENT_MODES = ['everyReviewer', 'byRole', 'byCount', 'sessionOwner'];
 const ITEM_MODEL = {document: 'document', submission: 'submission', study_session: 'study_session'};
@@ -741,7 +740,7 @@ function assignmentResult(study, itemId, sessions) {
  * @returns {Promise<{dryRun: boolean, plan?: Array, studies?: Array}>}
  * Mirrors AssignmentSocket.createAssignmentSingle, createAssignmentBulk and addReviewer (assignmentCreateSingle, assignmentCreateBulk, assignmentAdd). Differs: ids only, rows loaded and checked here.
  */
-async function createAssignments(data, options) {
+async function createReviewAssignments(data, options) {
     const models = options.models;
     const transaction = options.transaction;
     const {userId, type = 'document', mode = 'everyReviewer', notify = false, dryRun = false} = data;
@@ -1987,16 +1986,16 @@ class AssignmentSocket extends Socket {
 };
 
 module.exports = AssignmentSocket;
-module.exports.createAssignments = createAssignments;
+module.exports.createReviewAssignments = createReviewAssignments;
 module.exports.planByRole = planByRole;
 module.exports.planByReviewer = planByReviewer;
 module.exports.ASSIGNMENT_TYPES = ASSIGNMENT_TYPES;
 module.exports.ASSIGNMENT_MODES = ASSIGNMENT_MODES;
-module.exports.TASK_WRITABLE_FIELDS = TASK_WRITABLE_FIELDS;
-module.exports.listAssignmentTasks = listAssignmentTasks;
-module.exports.getAssignmentTask = getAssignmentTask;
-module.exports.canSeeTask = canSeeTask;
-module.exports.createAssignmentTask = createAssignmentTask;
-module.exports.updateAssignmentTask = updateAssignmentTask;
-module.exports.closeAssignmentTask = closeAssignmentTask;
-module.exports.deleteAssignmentTask = deleteAssignmentTask;
+module.exports.ASSIGNMENT_WRITABLE_FIELDS = ASSIGNMENT_WRITABLE_FIELDS;
+module.exports.listAssignments = listAssignments;
+module.exports.getAssignment = getAssignment;
+module.exports.canSeeAssignment = canSeeAssignment;
+module.exports.addAssignment = addAssignment;
+module.exports.updateAssignment = updateAssignment;
+module.exports.closeAssignment = closeAssignment;
+module.exports.deleteAssignment = deleteAssignment;
