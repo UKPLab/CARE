@@ -240,8 +240,12 @@ export default {
         return;
       }
       this.fetchAssessmentData(async (sessions) => {
-        const shouldClose = await this.$refs.publishingStep.publish(sessions);
-        this.$refs.assessmentStepper.setWaiting(false);
+        let shouldClose;
+        try {
+          shouldClose = await this.$refs.publishingStep.publish(sessions);
+        } finally {
+          this.$refs.assessmentStepper.setWaiting(false);
+        }
         if (shouldClose) this.$refs.assessmentStepper.close();
       });
     },

@@ -102,7 +102,7 @@
 import FormHelp from "@/basic/form/Help.vue";
 import BasicButton from "@/basic/Button.vue";
 import {translateMaybeKey} from "@/assets/utils";
-import {formatPositiveIntegerRange, isPositiveIntegerOptionValue, isPositiveIntegerRangeOptionValue} from "placeholder-tokens";
+import {formatPositiveIntegerRange, isValidOptionValue} from "placeholder-tokens";
 
 /** A placeholder's pending insert options and its add action form one editable card. */
 export default {
@@ -146,18 +146,6 @@ getOptionLabel(placeholder, optionName) {
 getOptionDef(placeholder, optionName) {
         return (placeholder.placeholderOptions || []).find((entry) => entry.name === optionName);
       },
-isValidOptionValue(optionDef, value) {
-        if (!optionDef) {
-          return false;
-        }
-        if (optionDef.valueType === "positiveInteger") {
-          return isPositiveIntegerOptionValue(value);
-        }
-        if (optionDef.valueType === "positiveIntegerRange") {
-          return isPositiveIntegerRangeOptionValue(value);
-        }
-        return value !== undefined && value !== null && String(value).trim() !== "";
-      },
 collectSelectedOptions(placeholder) {
         const rows = this.getPendingOptionRows(placeholder.id);
         const selectedOptions = {};
@@ -185,7 +173,7 @@ collectSelectedOptions(placeholder) {
           const optionValue = optionDef.valueType === "positiveIntegerRange"
             ? formatPositiveIntegerRange(row.from, row.to)
             : (row.value === undefined || row.value === null ? "" : String(row.value).trim());
-          if (!this.isValidOptionValue(optionDef, optionValue)) {
+          if (!isValidOptionValue(optionDef, optionValue)) {
             if (!optionValue) {
               applyWarnings.push(this.$t("templates.placeholders.options.warnings.noValue", { option: optionLabel }));
             } else {

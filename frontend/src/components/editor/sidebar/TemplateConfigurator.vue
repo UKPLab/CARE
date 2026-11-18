@@ -59,8 +59,7 @@
     getDuplicatePlaceholderIndexes,
     getDuplicateOptionNames,
     getNextPlaceholderIndex,
-    isPositiveIntegerOptionValue,
-    isPositiveIntegerRangeOptionValue,
+    isValidOptionValue,
     parsePlaceholderMatch,
     PLACEHOLDER_TOKEN_REGEX,
   } from "placeholder-tokens";
@@ -254,25 +253,6 @@
        */
 
       /**
-       * Whether `value` matches the option's `valueType`.
-       *
-       * @param {Object} optionDef - Option definition
-       * @param {string} value - Formatted option value
-       * @returns {boolean}
-       */
-      isValidOptionValue(optionDef, value) {
-        if (!optionDef) {
-          return false;
-        }
-        if (optionDef.valueType === "positiveInteger") {
-          return isPositiveIntegerOptionValue(value);
-        }
-        if (optionDef.valueType === "positiveIntegerRange") {
-          return isPositiveIntegerRangeOptionValue(value);
-        }
-        return value !== undefined && value !== null && String(value).trim() !== "";
-      },
-      /**
        * Build the option map for insert from pending rows. Duplicate names keep the first row.
        *
        * @param {Object} placeholder - Sidebar placeholder
@@ -305,7 +285,7 @@
             errors.push(this.$t("templates.placeholders.options.errors.unknown", { token: tokenText, name }));
             continue;
           }
-          if (!this.isValidOptionValue(optionDef, value)) {
+          if (!isValidOptionValue(optionDef, value)) {
             errors.push(this.$t("templates.placeholders.options.errors.invalid", {
               token: tokenText,
               option: translateMaybeKey(optionDef.label),

@@ -41,8 +41,8 @@
 import BasicButton from "@/basic/Button.vue";
 import AiConversationHeader from "./AiConversationHeader.vue";
 
-/** Dialogue study steps change between turns, so their chat context is refreshed. */
-const DIALOGUE_STEP_TYPE = 2;
+/** Editor study steps change the document between turns, so their chat context is refreshed. */
+const EDITOR_STEP_TYPE = 2;
 /** Delay before a timed-out snapshot load is retried once. */
 const LOAD_RETRY_DELAY = 2000;
 
@@ -84,7 +84,7 @@ export default {
   computed: {
     contextDescription() {
       const step = this.orderedStudySteps.find((item) => item.id === this.studyStepId);
-      return step?.stepType === DIALOGUE_STEP_TYPE ? this.$t("ai.chat.contextUpdateHint") : "";
+      return step?.stepType === EDITOR_STEP_TYPE ? this.$t("ai.chat.contextUpdateHint") : "";
     },
   },
   watch: {
