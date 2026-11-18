@@ -3,8 +3,7 @@
 const {
     hashSecret,
     isApiTokensEnabled,
-    hasOnlyGuestRole,
-    tokenHasRight,
+    loadTokenAccess,
 } = require('../utils/apiTokenAuth');
 
 /**
@@ -39,11 +38,20 @@ function createBearerAuthMiddleware(server) {
             if (!token) {
                 return res.status(401).json({message: 'errors.rest.invalidBearer'});
             }
-            if (await hasOnlyGuestRole(server.db.models, token.userId)) {
+            if (token.expiresAt && new Date(token.expiresAt).getTime() <= Date.now()) {
+                return res.status(401).json({message: 'errors.rest.expiredBearer'});
+            }
+            const access = await loadTokenAccess(server.db.models, token);
+            if (!access) {
+                return res.status(401).json({message: 'errors.rest.tokenOwnerDeleted'});
+            }
+            if (access.guestOnly) {
                 return res.status(403).json({message: 'errors.rest.guestCannotUseToken'});
             }
 
             req.apiToken = token;
+            // The rights this request may use: on the token and still held by the owner.
+            req.apiAccess = access;
             req.apiUserId = token.userId;
             server.db.models['api_token'].updateById(token.id, {lastUsedAt: new Date()}).catch((err) => {
                 server.logger.error('Failed to update api_token lastUsedAt: ' + err);
@@ -56,22 +64,44 @@ function createBearerAuthMiddleware(server) {
     };
 }
 
+/** True when the token behind this request may use the right (loaded once by bearerAuth). */
+function requestHasRight(req, right) {
+    return Boolean(req.apiAccess && req.apiAccess.rights.has(right));
+}
+
 function requireTokenRight(server, right) {
-    return async function (req, res, next) {
-        try {
-            const allowed = await tokenHasRight(server.db.models, req.apiToken, right);
-            if (!allowed) {
-                return res.status(403).json({message: 'errors.rest.missingTokenRight'});
-            }
-            return next();
-        } catch (err) {
-            server.logger.error('Token right check failed: ' + err);
-            return res.status(500).json({message: 'errors.server.unknownError'});
+    return function (req, res, next) {
+        if (!requestHasRight(req, right)) {
+            return res.status(403).json({message: 'errors.rest.missingTokenRight'});
         }
+        return next();
     };
+}
+
+/**
+ * Pass when the token has at least one of the rights (and its owner still has it).
+ */
+function requireAnyTokenRight(server, rights) {
+    return function (req, res, next) {
+        if (!rights.some((right) => requestHasRight(req, right))) {
+            return res.status(403).json({message: 'errors.rest.missingTokenRight'});
+        }
+        return next();
+    };
+}
+
+/**
+ * The right check REST functions receive as `options.can`. True only when the right is on the
+ * token and the owner still has it. Being an admin gives a token no reach by itself.
+ * Kept async so REST functions can await it like the socket checks.
+ */
+function tokenCan(server, req) {
+    return async (right) => requestHasRight(req, right);
 }
 
 module.exports = {
     createBearerAuthMiddleware,
     requireTokenRight,
+    requireAnyTokenRight,
+    tokenCan,
 };

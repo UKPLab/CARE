@@ -857,6 +857,13 @@ module.exports = (sequelize, DataTypes) => {
                     if (userRoles) {
                         await assignUserRoles(user, userRoles, roleMap, true, transaction);
                     }
+                    // A deleted user's API tokens are revoked, so scripts using them stop at once.
+                    if (user.deleted === true) {
+                        await sequelize.models.api_token.update(
+                            {deleted: true, deletedAt: new Date()},
+                            {where: {userId: user.id, deleted: false}, transaction}
+                        );
+                    }
                 },
             },
             indexes: [
