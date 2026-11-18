@@ -567,13 +567,30 @@
   },
   "apiTokens": {
     "title": "API-Tokens",
-    "description": "Erstellen Sie ein Token fuer Skripte, die CARE per HTTP aufrufen. Das Geheimnis wird nur einmal angezeigt. Danach senden Skripte es als Authorization Bearer an /rest/v1, nicht auf dieser Seite.",
-    "disabledByAdmin": "API-Tokens sind in den Einstellungen ausgeschaltet. Eine Administratorin kann sie unter Allgemein, API-Tokens einschalten.",
     "createTooltip": "API-Token erstellen",
     "createTitle": "API-Token erstellen",
     "nameLabel": "Name",
     "secretLabel": "Geheimnis",
+    "rightsLabel": "Rechte",
+    "rightsHelp": "Das Token kann nur, was Sie hier ankreuzen, und nie mehr als Ihr eigenes Konto. Beginnen Sie mit der kleinsten Auswahl, die das Skript braucht.",
+    "presetLabel": "Ausgehen von",
+    "presetNone": "Nichts ausgewaehlt",
+    "presetAll": "Alle meine Rechte",
+    "presetRole": "Rolle: {role}",
+    "rightsSelected": "{count} von {total} Rechten ausgewaehlt",
+    "rightName": "Recht",
+    "rightDescription": "Was es erlaubt",
+    "rightsRequired": "Waehlen Sie mindestens ein Recht.",
+    "expiryLabel": "Laeuft ab",
+    "expiryNever": "Nie",
+    "expiryDays": "In {days} Tagen",
+    "expiryHelp": "Nach diesem Datum funktioniert das Token nicht mehr und es muss ein neues erstellt werden.",
     "secretOnceWarning": "Kopieren Sie dieses Geheimnis jetzt. CARE zeigt es nicht erneut an.",
+    "showSecret": "Geheimnis anzeigen",
+    "hideSecret": "Geheimnis verbergen",
+    "copySecret": "Geheimnis kopieren",
+    "closeWithoutCopyTitle": "Ohne Kopieren schließen",
+    "closeWithoutCopyMessage": "Sie haben das Geheimnis weder kopiert noch angezeigt. CARE kann es nicht erneut anzeigen; ohne es ist das Token nicht nutzbar. Trotzdem schließen?",
     "revoke": "Widerrufen",
     "revokeConfirm": "Token \"{name}\" widerrufen? Skripte, die es nutzen, funktionieren dann nicht mehr.",
     "columns": {
@@ -581,14 +598,17 @@
       "prefix": "Praefix",
       "createdAt": "Erstellt",
       "lastUsedAt": "Zuletzt genutzt",
-      "userId": "Benutzer-ID"
+      "userId": "Benutzer-ID",
+      "rights": "Rechte",
+      "expiresAt": "Laeuft ab"
     },
     "toasts": {
       "loadFailed": "Tokens konnten nicht geladen werden",
       "createFailed": "Token konnte nicht erstellt werden",
       "revokeFailed": "Token konnte nicht widerrufen werden",
       "copied": "Geheimnis kopiert",
-      "copyFailed": "Geheimnis konnte nicht kopiert werden"
+      "copyFailed": "Geheimnis konnte nicht kopiert werden",
+      "rightsLoadFailed": "Die anhaengbaren Rechte konnten nicht geladen werden"
     }
   },
   "sessionOverview": {

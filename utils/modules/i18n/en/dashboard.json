@@ -567,13 +567,30 @@
     },
   "apiTokens": {
     "title": "API tokens",
-    "description": "Create a token for scripts that call CARE over HTTP. The secret is shown once. After that, scripts send it as Authorization Bearer on /rest/v1, not on this page.",
-    "disabledByAdmin": "API tokens are turned off in Settings. An administrator can enable them under General, API tokens.",
     "createTooltip": "Create API token",
     "createTitle": "Create API token",
     "nameLabel": "Name",
     "secretLabel": "Secret",
+    "rightsLabel": "Rights",
+    "rightsHelp": "The token can do only what you tick here, and never more than your own account. Start with the smallest set the script needs.",
+    "presetLabel": "Start from",
+    "presetNone": "Nothing selected",
+    "presetAll": "All my rights",
+    "presetRole": "Role: {role}",
+    "rightsSelected": "{count} of {total} rights selected",
+    "rightName": "Right",
+    "rightDescription": "What it allows",
+    "rightsRequired": "Select at least one right.",
+    "expiryLabel": "Expires",
+    "expiryNever": "Never",
+    "expiryDays": "In {days} days",
+    "expiryHelp": "After this date the token stops working and a new one must be created.",
     "secretOnceWarning": "Copy this secret now. CARE will not show it again.",
+    "showSecret": "Show secret",
+    "hideSecret": "Hide secret",
+    "copySecret": "Copy secret",
+    "closeWithoutCopyTitle": "Close Without Copying",
+    "closeWithoutCopyMessage": "You have not copied or shown the secret. CARE cannot show it again; without it the token cannot be used. Close anyway?",
     "revoke": "Revoke",
     "revokeConfirm": "Revoke token \"{name}\"? Scripts using it will stop working.",
     "columns": {
@@ -581,14 +598,17 @@
       "prefix": "Prefix",
       "createdAt": "Created",
       "lastUsedAt": "Last used",
-      "userId": "User id"
+      "userId": "User id",
+      "rights": "Rights",
+      "expiresAt": "Expires"
     },
     "toasts": {
       "loadFailed": "Could not load tokens",
       "createFailed": "Could not create token",
       "revokeFailed": "Could not revoke token",
       "copied": "Secret copied",
-      "copyFailed": "Could not copy secret"
+      "copyFailed": "Could not copy secret",
+      "rightsLoadFailed": "Could not load the rights you can attach"
     }
   },
   "sessionOverview": {
