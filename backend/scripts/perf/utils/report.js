@@ -12,7 +12,7 @@ const { traceStats } = require('./trace-stats');
  *
  * @param {string} mode - which mode ran (soak, ceiling, ramp, regression)
  * @param {Object} cfg - The run's config; recorded in the saved JSON so a result file is self-describing
- * @param {Object} payload - mode-specific data: { results, samples, sampler, verdict, extra }
+ * @param {Object} payload - mode-specific data: { results, metrics, sampler, verdict (regression), summary (load modes), skipped }
  * @returns {string|null} the file path written, or null on failure
  */
 function saveResults(mode, cfg, payload = {}) {
@@ -33,8 +33,17 @@ function saveResults(mode, cfg, payload = {}) {
                 concurrency: cfg.concurrency, duration: cfg.duration,
                 step: cfg.step, maxIterations: cfg.maxIterations,
                 latencyThreshold: cfg.latencyThreshold, maxFailures: cfg.maxFailures,
+                failThreshold: cfg.failThreshold, ackTimeout: cfg.ackTimeout,
             },
+            // Regression's pass/fail; the load modes report a summary instead.
             verdict: payload.verdict || null,
+            summary: payload.summary || null,
+            // Every missed vitals sample, so gaps in the monitor are on record.
+            monitor: payload.sampler ? {
+                intervalMs: payload.sampler.intervalMs,
+                coverage: payload.sampler.coverage(),
+                gaps: payload.sampler.getGaps(),
+            } : null,
             // Per-trace-type stats (errorMsgs Map converted to plain object).
             traceStats: payload.results ? traceStats(payload.results).map(s => ({
                 ...s, errorMsgs: Object.fromEntries(s.errorMsgs || []),

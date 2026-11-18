@@ -187,12 +187,14 @@ async function replayUserTraces(server, user, traces, serverUrl, timingMode, ack
                     // separately so a genuinely hanging handler still shows up.
                     results.noAck++;
                     results.noAckTraces.push({
+                        ts: start,
                         traceId: trace.id,
                         action: trace.action,
                     });
                 } else if (ack && ack.success === false) {
                     results.failed++;
                     results.errors.push({
+                        ts: start,
                         traceId: trace.id,
                         action: trace.action,
                         message: ack.message || 'Server returned success: false',
