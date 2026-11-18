@@ -177,6 +177,124 @@ test("favorite toggling adds and removes an ID without duplicating it", () => {
   assert.deepEqual(toggleFavoriteId(["1"], null), ["1"]);
 });
 
+test("recovers favorites after a lost acknowledgement and ignores late acknowledgements", async () => {
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {
+    LoadIcon: {},
+    Loading: {},
+    SidebarGroup: {},
+    SidebarFavorites: {},
+    SidebarPreview: {},
+    sidebarHoverPreviewData: () => ({}),
+    sidebarHoverPreviewComputed: {},
+    sidebarHoverPreviewMethods,
+    getFavoriteElements,
+    parseFavoriteIds,
+    SIDEBAR_FAVORITES_SETTING: "dashboard.navigation.favorites",
+    toggleFavoriteId,
+    resolveNavigationGroup,
+    resolveApiMessage: () => null,
+  });
+  const socketEvents = [];
+  const saveAcknowledgements = [];
+  const socketHandlers = new Map();
+  const settings = { "dashboard.navigation.favorites": '["1"]' };
+  const originalSetTimeout = globalThis.setTimeout;
+  const originalClearTimeout = globalThis.clearTimeout;
+  let timeoutCallback;
+  globalThis.setTimeout = callback => {
+    timeoutCallback = callback;
+    return 1;
+  };
+  globalThis.clearTimeout = () => {};
+
+  const instance = {
+    ...Sidebar.methods,
+    $socket: {
+      connected: true,
+      emit: (event, data, callback) => {
+        socketEvents.push(event);
+        if (event === "appSettingSet") saveAcknowledgements.push(callback);
+      },
+      on: (event, handler) => {
+        const handlers = socketHandlers.get(event) || [];
+        handlers.push(handler);
+        socketHandlers.set(event, handlers);
+      },
+      off: (event, handler) => {
+        socketHandlers.set(event, (socketHandlers.get(event) || []).filter(item => item !== handler));
+      },
+    },
+    $nextTick: nextTick,
+    $t: key => key,
+    eventBus: { emit: () => {}, on: () => {}, off: () => {} },
+    defaultGroupedElements: [{ elements: navElements }],
+    groupStates: {},
+    $store: {
+      getters: { "settings/getSettings": settings },
+      commit: (mutation, payload) => {
+        if (mutation === "settings/setSettings") Object.assign(settings, payload);
+        if (mutation === "settings/set") settings[payload.key] = payload.value;
+      },
+    },
+    favoriteIdsOverride: null,
+    isSavingFavorites: false,
+    favoriteSaveTimer: null,
+    favoriteSaveSequence: 0,
+    favoriteSettingsUncertain: false,
+    favoriteSettingsReconcileSequence: null,
+    syncSidebarWithRoute: () => {},
+  };
+  socketHandlers.set("appSettings", [data => instance.$store.commit("settings/setSettings", data)]);
+  Object.defineProperty(instance, "settings", {
+    get() {
+      return this.$store.getters["settings/getSettings"];
+    },
+  });
+  Object.defineProperty(instance, "favoriteIds", {
+    get() {
+      return this.favoriteIdsOverride || parseFavoriteIds(this.settings["dashboard.navigation.favorites"]);
+    },
+  });
+
+  try {
+    Sidebar.mounted.call(instance);
+    instance.toggleFavorite(navElements[1]);
+    assert.equal(instance.isSavingFavorites, true);
+    timeoutCallback();
+    assert.equal(instance.isSavingFavorites, false);
+    assert.equal(instance.favoriteSettingsUncertain, true);
+    assert.ok(socketEvents.includes("appInit"));
+
+    instance.toggleFavorite(navElements[0]);
+    assert.deepEqual(instance.favoriteIdsOverride, ["2"]);
+    saveAcknowledgements[0]({ success: true });
+    assert.equal(instance.isSavingFavorites, true);
+    assert.deepEqual(instance.favoriteIdsOverride, ["2"]);
+
+    instance.$socket.connected = false;
+    for (const handler of socketHandlers.get("disconnect") || []) handler();
+    assert.equal(instance.isSavingFavorites, false);
+    saveAcknowledgements[1]({ success: true });
+    assert.equal(instance.favoriteSettingsUncertain, true);
+    assert.deepEqual(instance.favoriteIdsOverride, ["2"]);
+
+    instance.$socket.connected = true;
+    for (const handler of socketHandlers.get("connect") || []) handler();
+    assert.equal(socketEvents.filter(event => event === "appInit").length, 2);
+    for (const handler of socketHandlers.get("appSettings") || []) handler({});
+    assert.equal(settings["dashboard.navigation.favorites"], undefined);
+    assert.deepEqual(instance.favoriteIdsOverride, []);
+    await nextTick();
+    assert.equal(instance.favoriteSettingsUncertain, false);
+    assert.deepEqual(instance.favoriteIds, []);
+    assert.equal(instance.isSavingFavorites, false);
+  } finally {
+    Sidebar.beforeUnmount.call(instance);
+    globalThis.setTimeout = originalSetTimeout;
+    globalThis.clearTimeout = originalClearTimeout;
+  }
+});
+
 test("positions a flyout inside all viewport edges and constrains tall menus", () => {
   const nearBottom = getSidebarPreviewStyle(
     { right: 680, top: 190 },

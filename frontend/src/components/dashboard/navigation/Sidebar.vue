@@ -79,6 +79,8 @@ import { getFavoriteElements, parseFavoriteIds, SIDEBAR_FAVORITES_SETTING, toggl
 import { resolveNavigationGroup } from "./helpers/navElement.js";
 import { resolveApiMessage } from "@/assets/utils";
 
+const FAVORITES_SAVE_TIMEOUT_MS = 10000;
+
 export default {
   subscribeTable: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
@@ -100,6 +102,13 @@ export default {
       groupStates: {},
       favoriteIdsOverride: null,
       isSavingFavorites: false,
+      favoriteSaveTimer: null,
+      favoriteSaveSequence: 0,
+      favoriteSettingsUncertain: false,
+      favoriteSettingsReconcileSequence: null,
+      favoriteSocketDisconnectHandler: null,
+      favoriteSocketConnectHandler: null,
+      favoriteSettingsHandler: null,
 
       // Hover preview state (hoveredGroup/previewStyle/isHoveringPreview),
       // physically declared in sidebarHoverPreview.js, spread in here
@@ -231,6 +240,12 @@ export default {
     this.eventBus.on("dashboardHome", this.syncSidebarWithRoute);
     window.addEventListener("resize", this.updatePreviewPosition);
     window.addEventListener("scroll", this.updatePreviewPosition, true);
+    this.favoriteSocketDisconnectHandler = this.handleFavoriteSocketDisconnect.bind(this);
+    this.favoriteSocketConnectHandler = this.handleFavoriteSocketConnect.bind(this);
+    this.favoriteSettingsHandler = this.handleFavoriteSettings.bind(this);
+    this.$socket.on("disconnect", this.favoriteSocketDisconnectHandler);
+    this.$socket.on("connect", this.favoriteSocketConnectHandler);
+    this.$socket.on("appSettings", this.favoriteSettingsHandler);
 
     this.initGroupStates();
     this.syncSidebarWithRoute();
@@ -240,6 +255,11 @@ export default {
     this.eventBus.off("dashboardHome", this.syncSidebarWithRoute);
     window.removeEventListener("resize", this.updatePreviewPosition);
     window.removeEventListener("scroll", this.updatePreviewPosition, true);
+    this.$socket.off("disconnect", this.favoriteSocketDisconnectHandler);
+    this.$socket.off("connect", this.favoriteSocketConnectHandler);
+    this.$socket.off("appSettings", this.favoriteSettingsHandler);
+    this.clearFavoriteSaveTimer();
+    this.favoriteSaveSequence += 1;
     this.previewResizeObserver?.disconnect();
     document.body.classList.remove('sidebar-exists');
   },
@@ -312,18 +332,99 @@ export default {
       const nextFavoriteIds = toggleFavoriteId(this.favoriteIds, element.id);
       this.favoriteIdsOverride = nextFavoriteIds;
       this.isSavingFavorites = true;
+      this.favoriteSettingsReconcileSequence = null;
+      const saveSequence = ++this.favoriteSaveSequence;
+      this.favoriteSaveTimer = setTimeout(
+        () => this.handleFavoriteSaveTimeout(saveSequence),
+        FAVORITES_SAVE_TIMEOUT_MS
+      );
       this.$socket.emit("appSettingSet", {
         key: SIDEBAR_FAVORITES_SETTING,
         value: JSON.stringify(nextFavoriteIds),
       }, result => {
+        if (saveSequence !== this.favoriteSaveSequence) {
+          return;
+        }
+
+        this.clearFavoriteSaveTimer();
         this.isSavingFavorites = false;
-        this.favoriteIdsOverride = null;
+        if (this.favoriteSettingsUncertain) {
+          this.requestFavoriteSettingsReconciliation();
+        } else {
+          this.favoriteIdsOverride = null;
+        }
         if (!result?.success) {
           this.eventBus.emit("toast", {
             title: this.$t("sidebar.favorites.saveFailedTitle"),
             message: resolveApiMessage(result, "sidebar.favorites.saveFailedMessage"),
             variant: "danger",
           });
+        }
+      });
+    },
+    clearFavoriteSaveTimer() {
+      if (this.favoriteSaveTimer !== null) {
+        clearTimeout(this.favoriteSaveTimer);
+        this.favoriteSaveTimer = null;
+      }
+    },
+    handleFavoriteSaveTimeout(saveSequence) {
+      if (saveSequence !== this.favoriteSaveSequence || !this.isSavingFavorites) {
+        return;
+      }
+
+      this.clearFavoriteSaveTimer();
+      this.isSavingFavorites = false;
+      this.favoriteSaveSequence += 1;
+      this.favoriteSettingsUncertain = true;
+      this.requestFavoriteSettingsReconciliation();
+    },
+    handleFavoriteSocketDisconnect() {
+      this.favoriteSettingsReconcileSequence = null;
+      if (this.isSavingFavorites) {
+        this.clearFavoriteSaveTimer();
+        this.isSavingFavorites = false;
+        this.favoriteSaveSequence += 1;
+        this.favoriteSettingsUncertain = true;
+      }
+    },
+    handleFavoriteSocketConnect() {
+      this.requestFavoriteSettingsReconciliation();
+    },
+    requestFavoriteSettingsReconciliation() {
+      if (
+        !this.favoriteSettingsUncertain
+        || !this.$socket?.connected
+        || this.favoriteSettingsReconcileSequence === this.favoriteSaveSequence
+      ) {
+        return;
+      }
+
+      this.favoriteSettingsReconcileSequence = this.favoriteSaveSequence;
+      this.$socket.emit("appInit");
+    },
+    handleFavoriteSettings(settings) {
+      const reconcileSequence = this.favoriteSettingsReconcileSequence;
+      if (
+        reconcileSequence === null
+        || reconcileSequence !== this.favoriteSaveSequence
+        || this.isSavingFavorites
+        || !this.favoriteSettingsUncertain
+      ) {
+        return;
+      }
+
+      this.favoriteSettingsReconcileSequence = null;
+      this.favoriteSettingsUncertain = false;
+      const serverFavoriteSetting = settings?.[SIDEBAR_FAVORITES_SETTING];
+      this.$store.commit("settings/set", {
+        key: SIDEBAR_FAVORITES_SETTING,
+        value: serverFavoriteSetting,
+      });
+      this.favoriteIdsOverride = parseFavoriteIds(serverFavoriteSetting);
+      this.$nextTick(() => {
+        if (reconcileSequence === this.favoriteSaveSequence && !this.isSavingFavorites) {
+          this.favoriteIdsOverride = null;
         }
       });
     },
