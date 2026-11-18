@@ -1,0 +1,235 @@
+'use strict';
+
+/**
+ * Workflow actions for /rest/v1 only. There is no socket class for this resource yet: the dashboard
+ * reads it through the generic table socket. If one is added, it goes in this file below these functions.
+ */
+
+const TranslatableError = require('../../utils/TranslatableError');
+
+const STEP_TYPES = [1, 2, 3, 4];
+
+async function loadOwnWorkflow(models, userId, id, transaction) {
+    const workflow = await models['workflow'].getById(id, {transaction});
+    if (!workflow) {
+        return null;
+    }
+    if (workflow.userId !== userId) {
+        throw new TranslatableError('errors.rest.workflowNoAccess');
+    }
+    return workflow;
+}
+
+/**
+ * Whether any study or study template is built on the workflow. Changing its steps or deleting it
+ * would break those studies.
+ */
+async function workflowInUse(models, workflowId, transaction) {
+    const count = await models['study'].count({where: {workflowId, deleted: false}, transaction});
+    return count > 0;
+}
+
+/**
+ * Check a step list from a request. Each step: {name, stepType 1-4, allowBackward, configuration,
+ * documentFromStep}. documentFromStep is the 1-based position of an earlier step whose document this
+ * step shows. Unknown keys are ignored.
+ * @returns {Object[]|null} null when the shape is wrong
+ */
+function readSteps(raw) {
+    if (!Array.isArray(raw) || raw.length === 0) {
+        return null;
+    }
+    const steps = [];
+    for (const [index, step] of raw.entries()) {
+        if (!step || typeof step !== 'object' || Array.isArray(step)) {
+            return null;
+        }
+        const configuration = step.configuration ?? {};
+        const from = step.documentFromStep ?? null;
+        if (typeof step.name !== 'string' || !step.name.trim() || !STEP_TYPES.includes(step.stepType)
+            || (step.allowBackward !== undefined && typeof step.allowBackward !== 'boolean')
+            || typeof configuration !== 'object' || Array.isArray(configuration)
+            || (from !== null && (!Number.isInteger(from) || from < 1 || from > index))) {
+            return null;
+        }
+        steps.push({
+            name: step.name.trim(),
+            stepType: step.stepType,
+            allowBackward: step.allowBackward === true,
+            configuration,
+            documentFromStep: from,
+        });
+    }
+    return steps;
+}
+
+/**
+ * Create the steps of a workflow in order, linking each to the one before, then set the
+ * "show the document of an earlier step" links. Same chain the dashboard import builds.
+ */
+async function writeSteps(models, workflowId, steps, transaction) {
+    const created = [];
+    for (const step of steps) {
+        created.push(await models['workflow_step'].add({
+            name: step.name,
+            workflowId,
+            stepType: step.stepType,
+            allowBackward: step.allowBackward,
+            configuration: step.configuration,
+            workflowStepPrevious: created.length ? created[created.length - 1].id : null,
+            workflowStepDocument: null,
+        }, {transaction}));
+    }
+    for (const [index, step] of steps.entries()) {
+        if (step.documentFromStep) {
+            await models['workflow_step'].updateById(created[index].id,
+                {workflowStepDocument: created[step.documentFromStep - 1].id}, {transaction});
+        }
+    }
+}
+
+/**
+ * Copy a workflow with all its steps; the caller owns the copy.
+ * Mirrors WorkflowCreateModal.copy (appDataUpdate on workflow with parentWorkflowId; the workflow
+ * model's afterCreate hook copies the steps).
+ */
+async function copyWorkflow({userId, sourceId, name}, options) {
+    const models = options.models;
+    const source = await models['workflow'].getById(sourceId, {transaction: options.transaction});
+    if (!source) {
+        return null;
+    }
+    return models['workflow'].add({
+        name: name || source.name,
+        description: source.description,
+        userId,
+        parentWorkflowId: source.id,
+        hideInFrontend: false,
+    }, {transaction: options.transaction});
+}
+
+/**
+ * Create workflows from the dashboard's workflow export file. Mirrors ImportFormatModal for
+ * workflow and workflow_step. Differs: the file's workflowStepDocument ids point at the source
+ * database (the export drops step ids), so they are ignored; documentFromStep sets the link instead.
+ */
+async function importWorkflows({userId, items}, options) {
+    const models = options.models;
+    const created = [];
+    for (const item of items) {
+        const steps = readSteps(item.workflow_step ?? item.steps);
+        if (!item || typeof item.name !== 'string' || !item.name.trim() || !steps) {
+            throw new TranslatableError('errors.rest.invalidWorkflowImport');
+        }
+        const workflow = await models['workflow'].add({
+            name: item.name.trim(),
+            description: typeof item.description === 'string' ? item.description : '',
+            userId,
+            hideInFrontend: false,
+        }, {transaction: options.transaction});
+        await writeSteps(models, workflow.id, steps, options.transaction);
+        created.push(workflow);
+    }
+    return created;
+}
+
+/**
+ * Change name, description, or hideInFrontend of an own workflow. Mirrors WorkflowRenameModal.
+ */
+async function updateWorkflow({userId, id, fields}, options) {
+    const workflow = await loadOwnWorkflow(options.models, userId, id, options.transaction);
+    if (!workflow) {
+        return null;
+    }
+    return options.models['workflow'].updateById(workflow.id, fields, {transaction: options.transaction});
+}
+
+/**
+ * Replace all steps of an own workflow, only while no study uses it. Mirrors the step editor in
+ * WorkflowEditModal, which changes one step at a time.
+ */
+async function replaceWorkflowSteps({userId, id, steps}, options) {
+    const models = options.models;
+    const workflow = await loadOwnWorkflow(models, userId, id, options.transaction);
+    if (!workflow) {
+        return null;
+    }
+    if (await workflowInUse(models, workflow.id, options.transaction)) {
+        throw new TranslatableError('errors.rest.workflowInUse');
+    }
+    const old = await models['workflow_step'].getAllByKey('workflowId', workflow.id) || [];
+    for (const step of old) {
+        await models['workflow_step'].deleteById(step.id, {transaction: options.transaction});
+    }
+    await writeSteps(models, workflow.id, steps, options.transaction);
+    return workflow;
+}
+
+/**
+ * Soft-delete an own workflow that no study uses. Mirrors deleteWorkflow in Workflows.vue.
+ */
+async function deleteWorkflow({userId, id}, options) {
+    const models = options.models;
+    const workflow = await loadOwnWorkflow(models, userId, id, options.transaction);
+    if (!workflow) {
+        return null;
+    }
+    if (await workflowInUse(models, workflow.id, options.transaction)) {
+        throw new TranslatableError('errors.rest.workflowInUse');
+    }
+    await models['workflow'].deleteById(workflow.id, {transaction: options.transaction});
+    return true;
+}
+
+/**
+ * One workflow with its steps in order. Workflows are a public table in the dashboard.
+ */
+async function getWorkflow({id}, options) {
+    const [workflow] = await listWorkflows(options, {id});
+    return workflow || null;
+}
+
+/**
+ * Steps in the order their workflowStepPrevious links give, like workflow_step.getSortedWorkflowSteps.
+ */
+function sortWorkflowSteps(steps) {
+    const sorted = [];
+    let current = steps.find((step) => step.workflowStepPrevious === null);
+    while (current) {
+        sorted.push(current);
+        current = steps.find((step) => step.workflowStepPrevious === current.id);
+    }
+    return sorted;
+}
+
+/**
+ * All workflows (or the one with `id`) with their steps in order. Workflows are a public table in
+ * the dashboard too. A step's id is what stepDocuments and workflowMapping refer to.
+ */
+async function listWorkflows(options, {id} = {}) {
+    const models = options.models;
+    const workflows = await models['workflow'].findAll({
+        where: {deleted: false, ...(id !== undefined ? {id} : {})},
+        attributes: ['id', 'name', 'description', 'userId', 'hideInFrontend', 'parentWorkflowId'],
+        order: [['id', 'ASC']],
+        raw: true,
+    });
+    // All steps in one query, then grouped per workflow.
+    const steps = workflows.length === 0 ? []
+        : await models['workflow_step'].getAllByKeyValues('workflowId', workflows.map((workflow) => workflow.id));
+    for (const workflow of workflows) {
+        workflow.steps = sortWorkflowSteps((steps || []).filter((step) => step.workflowId === workflow.id)).map((step) => ({
+            id: step.id,
+            name: step.name,
+            stepType: step.stepType,
+            allowBackward: step.allowBackward,
+            workflowStepDocument: step.workflowStepDocument,
+        }));
+    }
+    return workflows;
+}
+
+module.exports = {
+    listWorkflows, getWorkflow, copyWorkflow, importWorkflows, updateWorkflow, replaceWorkflowSteps,
+    deleteWorkflow, readSteps,
+};
