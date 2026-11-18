@@ -19,9 +19,7 @@
           <div class="card-body mx-4 my-4">
             <!-- Loading State -->
             <div v-if="validatingToken" class="text-center">
-              <div class="spinner-border text-primary" role="status">
-                <span class="visually-hidden">{{ $t('common.loading') }}</span>
-              </div>
+              <span class="text-primary" role="status"><BasicIcon icon-name="loading" /><span class="visually-hidden">{{ $t('common.loading') }}</span></span>
               <p class="mt-3">{{ $t('auth.messages.validatingResetToken') }}</p>
             </div>
 
@@ -33,7 +31,7 @@
             >
               {{ errorMessage }}
             </p>
-            
+
             <!-- Form - only show when token is validated and not successful yet -->
             <div v-if="!isSuccess && tokenValidated && !validatingToken">
               <BasicForm
@@ -78,9 +76,11 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
+import BasicIcon from "@/basic/Icon.vue";
+
 export default {
   name: "AuthResetPassword",
-  components: {LogoSvg, BasicForm, BasicButton},
+  components: { BasicIcon,LogoSvg, BasicForm, BasicButton},
   data() {
     return {
       showError: false,
@@ -147,7 +147,7 @@ export default {
       this.validatingToken = false;
       return;
     }
-    
+
     // Validate token using axios call
     await this.validateResetToken();
   },
@@ -161,7 +161,7 @@ export default {
             return status === 200 || status === 400 || status === 404;
           }
         });
-        
+
         if (response.status === 200) {
           this.tokenValidated = true;
         } else {
@@ -183,7 +183,7 @@ export default {
         this.errorMessage = this.$t('errors.auth.invalidResetToken');
         return;
       }
-      
+
       // Validate using BasicForm's validation
       if (this.$refs.resetForm && this.$refs.resetForm.validate) {
         if (!this.$refs.resetForm.validate()) {
@@ -192,7 +192,7 @@ export default {
           return;
         }
       }
-      
+
       // Additional custom validation
       if (this.validForm && this.resetToken) {
         await this.resetPassword();
@@ -203,8 +203,8 @@ export default {
     },
     async resetPassword() {
       try {
-        const response = await axios.post(getServerURL() + '/auth/reset-password', 
-          { 
+        const response = await axios.post(getServerURL() + '/auth/reset-password',
+          {
             token: this.resetToken,
             newPassword: this.formData.newPassword
           },
@@ -217,7 +217,7 @@ export default {
         );
 
         if (response.status === 200) {
-          
+
           this.isSuccess = true;
           this.showError = true; // Using this to show success message
           this.errorMessage = resolveApiMessage(response.data, 'auth.messages.passwordResetSuccess');

@@ -34,7 +34,7 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="finished">
+      <div v-if="finished" class="btn-group">
         <BasicButton
           class="btn btn-primary"
           :text="$t('studies.backToDashboard')"

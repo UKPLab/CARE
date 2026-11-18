@@ -85,7 +85,6 @@
         "copiedStep": "Étape copiée",
         "copiedStepValue": "{name} ({type})",
         "unnamedStep": "Étape sans nom",
-        "loadingWorkflow": "Chargement du processus...",
         "loadingWorkflowGraph": "Chargement du graphe du processus...",
         "savingChanges": "Enregistrement des modifications...",
         "stepTypes": {

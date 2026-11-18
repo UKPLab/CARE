@@ -22,11 +22,13 @@
     </template>
 
     <template #footer>
-      <BasicButton
-        :title="$t('common.save')"
-        class="btn btn-primary"
-        @click="$refs.filterModal.close()"
-      />
+      <div class="btn-group">
+        <BasicButton
+          :title="$t('common.save')"
+          class="btn btn-primary"
+          @click="$refs.filterModal.close()"
+        />
+      </div>
     </template>
 
   </BasicModal>

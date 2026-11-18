@@ -3,7 +3,7 @@
     <div v-if="wait">
       <BasicLoading/>
     </div>
-    
+
     <div class="mb-3">
       <h6>{{ $t('dashboard.projects.export.confirmSelection') }}</h6>
 
@@ -22,7 +22,7 @@
       <div class="alert alert-danger mt-3">
         {{ $t('dashboard.projects.export.reviewWarning') }}
       </div>
-      
+
       <div class="alert alert-info">
         <strong>{{ $t('dashboard.projects.export.summary') }}</strong><br />
         <i18n-t keypath="dashboard.projects.export.downloadSummary" tag="span">
@@ -48,6 +48,7 @@
 
 <script>
 import BasicLoading from "@/basic/Loading.vue";
+import getServerURL from "@/assets/serverUrl.js";
 
 /**
  * StepConfirmDownload
@@ -122,6 +123,36 @@ export default {
         suffix: unitKey ? this.$t(`dashboard.projects.export.unitCount.${unitKey}`, { count: row.count }) : null,
       }));
     },
-  }
+  },
+  methods: {
+    /**
+     * Start the export download: posts the payload to /export/stream through a hidden
+     * form, so the browser streams the response to disk instead of buffering it.
+     * @param {Object} payload - Export selection and options (objects are sent as JSON)
+     * @returns {void}
+     */
+    download(payload) {
+      const serverUrl = getServerURL();
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = `${serverUrl}/export/stream`;
+      form.style.display = 'none';
+      for (const [key, value] of Object.entries(payload)) {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+
+        input.value = (typeof value === 'object' && value !== null)
+          ? JSON.stringify(value)
+          : value;
+
+        form.appendChild(input);
+      }
+      document.body.appendChild(form);
+      form.submit();
+      document.body.removeChild(form);
+    },
+  },
 }
 </script>

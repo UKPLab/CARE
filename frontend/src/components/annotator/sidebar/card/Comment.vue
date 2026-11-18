@@ -27,213 +27,77 @@
       </div>
     </div>
   </div>
-  <div
-    v-if="!collapseComment"
-    ref="commentBody"
-    :class="{blockquoteMain: comment.annotationId, blockquoteSub: !comment.referenceAnnotation}"
-    class="comment card-text blockquote pb-1"
+  <CommentBody
+    ref="body"
+    :comment-id="commentId"
+    :collapsed="collapseComment"
+    :editing="edit || editedByMyself"
+    :edit="edit"
+    @submit="saveOnDeactivated(false)"
+    @escape="cancelOnEscape"
   >
-    <div v-if="edit || editedByMyself">
-      <textarea
-        ref="textarea"
-        v-model="comment.text"
-        class="form-control"
-        :placeholder="$t('components.comment.enterText')"
-        @keydown.ctrl.enter.exact.prevent="saveOnDeactivated(false)"
-        @keydown.meta.enter.exact.prevent="saveOnDeactivated(false)"
-        @keydown.esc.exact.prevent="cancelOnEscape"
-        @copy="onCopy"
-        @paste="onPaste"
-      />
-    </div>
-    <div v-else-if="comment.text != null && comment.text.length > 0" @copy="onCopy">
-      {{ comment.text }}
-    </div>
-    <div v-else>
-      <i>{{ $t('components.comment.noComment')}}</i>
-    </div>
-    <div
-      v-if="isSentimentAnalysisActive"
-      class="text-end fw-light"
-      :title="$t('components.comment.sentimentAnalysis')"
-    >
-      <span v-if="nlp_active && awaitingNlpResult && !edit">
-        <IconLoading/>
-      </span>
-      <span v-else-if="nlp_active && nlp_result !== null">
-        <span>
-          {{ nlp_result.score.toFixed(2) * 100 }}%
-        </span>
-        <span v-if="nlp_result.label === 'neu'">
-          &#129765;
-        </span>
-        <span v-else-if="nlp_result.label === 'pos'">
-          &#128578;
-        </span>
-        <span v-else-if="nlp_result.label === 'neg'">
-          &#9785;&#65039;
-        </span>
-      </span>
-    </div>
-
-    <TagSelector
-      v-if="comment"
-      v-model="comment.tags"
-      :disabled="!edit"
-      :is-editor="comment.userId === userId"
+    <CommentActions
+      v-if="level >= 1 && (!editedByMyself || !readOnly)"
+      ref="actions"
+      :comment="comment"
+      :editing="editedByMyself"
+      :save-title="$t('components.comment.saveCommand')"
+      :can-delete-others="myBotRequest"
+      :stats-props="$props"
+      @save="save"
+      @cancel="cancel"
+      @edit="editComment"
+      @delete="moveFocusToNextCard(); remove()"
+      @replied="$refs.replies.expandForNewReply()"
     />
-    <div v-if="level >= 1">
-      <div class="ms-auto">
-        <div
-          v-if="editedByMyself"
-          class="row"
-        >
-          <div
-            v-if="!readOnly"
-            class="col text-end"
-          >
-            <SidebarButton
-              :loading="false"
-              :props="$props"
-              icon="floppy"
-              :title="$t('components.comment.saveCommand')"
-              @click="save"
-            />
-            <SidebarButton
-              :loading="false"
-              :props="$props"
-              icon="x-square"
-              :title="$t('common.cancel')"
-              @click="cancel"
-            />
-          </div>
-        </div>
-        <div
-          v-else
-          class="row"
-        >
-          <div
-            class="col text-end"
-          >
-            <SidebarButton
-              v-if="settingResponse && !readOnly"
-              :loading="false"
-              :props="$props"
-              icon="reply"
-              :title="$t('common.reply')"
-              @click="reply(); maxComments = numChildComments+1"
-            />
-            <VoteButtons :comment="comment"/>
-            <SidebarButton
-              v-if="comment.userId === userId && !readOnly"
-              ref="editButton"
-              :loading="false"
-              :props="$props"
-              icon="pencil-square"
-              :title="$t('common.edit')"
-              @click="editComment"
-            />
-            <SidebarButton
-              v-if="(comment.userId === userId || myBotRequest) && !readOnly"
-              :loading="false"
-              :props="$props"
-              icon="trash3"
-              :title="$t('common.delete')"
-              @click="moveFocusToNextCard(); remove()"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-    <span v-if="level >= 1">
-      <span
-        v-for="c in displayedComments"
-        :key="c.id"
-      >
+    <AnnotationReplies
+      v-if="level >= 1"
+      ref="replies"
+      v-model:max-comments="maxComments"
+      :comment-id="commentId"
+      :level="level + 1"
+      :show-replies="!collapseComment"
+      @update:show-replies="collapseComment = !$event"
+    >
+      <template #default="{reply}">
         <hr class="hr">
         <CommentCard
-          :comment-id="c.id"
+          :comment-id="reply.id"
           :level="level + 1"
         />
-    </span>
-    <div class="btn-group">
-      <BasicButton
-        v-if="showExtenderButton"
-        ref="showMore"
-        class="btn btn-light btn-sm"
-        :text="$t('common.showMore')"
-        @click="maxComments+=5"
-      />
-      <BasicButton
-        v-if="!showExtenderButton && numChildComments > defaultNumComments"
-        class="btn btn-light btn-sm"
-        :text="$t('common.showLess')"
-        @click="showLess"
-      />
-      <BasicButton
-        v-if="maxComments > defaultNumComments"
-        class="btn btn-light btn-sm"
-        :text="$t('common.hideReplies')"
-        @click="maxComments=defaultNumComments; collapseComment = !collapseComment"
-      />
-    </div>
-    
-    </span>
-  </div>
+      </template>
+    </AnnotationReplies>
+  </CommentBody>
 </template>
 
 <script>
-import TagSelector from "./TagSelector.vue";
-import IconLoading from "@/basic/icon/IconLoading.vue";
 import LoadIcon from "@/basic/Icon.vue"
 import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
-import SidebarButton from "./Button.vue"
-import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
+import CommentBody from "./CommentBody.vue";
+import CommentActions from "./CommentActions.vue";
+import AnnotationReplies from "./AnnotationReplies.vue";
 import { focusNextAnnotationCard, formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
-import BasicButton from "@/basic/Button.vue";
 
 /**
  * Comment card in the sidebar
  *
- * SideCard, which contains only a comment, but no annotation.
+ * The main comment of an annotation card (level 0) or a reply in its thread (level 1 and deeper), with its
+ * own header, actions and replies. Edits are saved when the card loses focus, on Ctrl+Enter, or on Save.
  *
  * @author: Nils Dycke, Dennis Zyska
  */
 export default {
   name: "CommentCard",
-  components: {VoteButtons, TagSelector, SidebarButton, IconLoading, LoadIcon, Collaboration, BasicButton},
+  components: {LoadIcon, Collaboration, CommentBody, CommentActions, AnnotationReplies},
   inject: {
-    currentStudyStep: {type: Object, required: false, default: null},
-    documentId: {
-      type: Number,
-      required: true,
-    },
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    readOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    listenOnActive: {
-      type: Function,
-      required: true,
-    },
-    unlistenOnActive: {
-      type: Function,
-      required: true,
-    },
-    acceptStats: {
-      default: () => false
-    }
+    currentStudyStep: {default: null},
+    documentId: {default: null},
+    studySessionId: {default: null},
+    studyStepId: {default: null},
+    readOnly: {default: false},
+    listenOnActive: {from: "listenOnActive"},
+    unlistenOnActive: {from: "unlistenOnActive"},
+    acceptStats: {default: () => false},
   },
   props: {
     'commentId': {
@@ -254,7 +118,6 @@ export default {
   emits: ["saveCard", "cancelCard"],
   data() {
     return {
-      awaitingNlpResult: false,
       editMode: false,
       collapseComment: true,
       listeningToFocus: false,
@@ -270,97 +133,27 @@ export default {
     comment() {
       return this.$store.getters["table/comment/get"](this.commentId);
     },
-    skills() {
-      return this.$store.getters["service/getSkills"]("NLPService");
-    },
-    isSentimentAnalysisActive(){
-      return this.$store.getters["settings/getValue"]("annotator.nlp.sentiment_analysis.activated") === "true"
-    },
-    settingResponse() {
-      return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
-    },
     myBotRequest() {
       return this.comment.creator_name === "Bot"
-        && this.$store.getters["table/comment/get"](this.comment.parentCommentId).userId === this.userId;
-    },
-    userId() {
-      return this.$store.getters["auth/getUserId"];
+        && this.$store.getters["table/comment/get"](this.comment.parentCommentId).userId === this.$store.getters["auth/getUserId"];
     },
     editedByMyself() {
       return (this.comment) ? this.comment.draft || this.editMode || this.edit : false;
     },
-    childComments() {
-      return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId)
-        .sort(
-          function (a, b) {
-            let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
-            if (keyA < keyB) return -1;
-            if (keyA > keyB) return 1;
-            return 0;
-          }
-        );
-    },
-    numChildComments(){
-      if (this.childComments){
-        return this.childComments.length;
-      }
-      return 0;
-    },
-    displayedComments() {
-      return this.childComments.slice(0, this.maxComments);
-    },
-    showExtenderButton() {
-      return this.numChildComments > this.maxComments;
-    },
-    nlp_active() {
-      const conf = this.$store.getters["service/get"]("NLPService", "skillUpdate");
-      return this.$store.getters["settings/getValue"]("annotator.nlp.activated") === "true" && conf && "sentiment_classification" in conf;
-    },
-    nlp_result() {
-      const res = this.$store.getters["service/get"]("NLPService", "skillResults");
-      return res && this.commentId in res ? res[this.commentId] : null;
-    },
     openedTextarea() {
       return !this.collapseComment && (this.edit || this.editedByMyself)
     },
-    studySession() {
-      return this.$store.getters["table/study_session/get"](this.studySessionId);
-    },
-    study() {
-      if (this.studySession) {
-        return this.$store.getters["table/study/get"](this.studySession.studyId);
-      } else {
-        return null;
-      }
-    },
-    anonymize() {
-      if (this.study) {
-        return this.study.anonymize;
-      } else {
-        return false;
-      }
-    }
   },
   watch: {
-    nlp_result(newV) {
-      if (this.nlp_active) {
-        this.awaitingNlpResult = newV === null;
-      }
-    },
-    nlp_active() {
-      if (this.nlp_active && this.nlp_result === null) {
-        this.requestNlpFeedback();
-      }
-    },
     openedTextarea(newVal) {
       if (newVal) {
         this.commentTextBeforeEdit = this.comment?.text || "";
         const opener = document.activeElement;
         this.returnFocusEl = opener && opener !== document.body ? opener : null;
-        this.$nextTick(() => this.$refs.textarea.focus());
+        this.$refs.body.focusText();
       } else {
         // Runs before the editor closes, so we can tell if the keyboard was in this comment
-        const body = this.$refs.commentBody;
+        const body = this.$refs.body?.$el;
         const hadFocus = body && body.contains(document.activeElement);
         const opener = this.returnFocusEl;
         this.returnFocusEl = null;
@@ -368,7 +161,7 @@ export default {
           this.$nextTick(() => {
             // Back to the button that opened the editor; Edit is replaced while editing, so use the new one
             if (opener && opener.isConnected) opener.focus();
-            else if (this.$refs.editButton) this.$refs.editButton.$el.focus();
+            else this.$refs.actions?.focusEdit();
           });
         }
       }
@@ -384,9 +177,6 @@ export default {
     }
   },
   mounted() {
-    if (this.nlp_active && this.nlp_result === null && this.comment.text !== null) {
-      this.requestNlpFeedback();
-    }
     if (this.level <= 1 || this.comment.draft) {
       this.collapseComment = false;
     }
@@ -398,13 +188,9 @@ export default {
     }
     this.maxComments = this.defaultNumComments;
   },
-  unmounted() {
+  beforeUnmount() {
     if (this.editedByMyself) {
-      if (this.level === 0) {
-        this.saveCard();
-      } else {
-        this.save();
-      }
+      this.saveOnDeactivated(false);
 
       if (this.listeningToFocus) {
         this.unlistenOnActive({id: this.commentId, level: this.level});
@@ -436,17 +222,14 @@ export default {
         if (this.$refs.collab) {
           this.$refs.collab.removeCollab();
         }
-
-        // send to model upon save (regardless of the server response on the update (!))
-        if (this.comment.text && this.nlp_active) {
-          this.requestNlpFeedback()
-        }
+        this.$refs.body?.analyzeSentiment();
       }
     },
+    /** Saves the edit when the card loses focus; the card's main comment (level 0) is saved by the card. */
     saveOnDeactivated(active) {
       if (!active) {
         if (this.level === 0) {
-          this.saveCard();
+          this.$emit("saveCard");
         } else {
           this.save();
         }
@@ -513,73 +296,13 @@ export default {
      * @returns {void}
      */
     moveFocusToNextCard() {
-      const body = this.$refs.commentBody;
-      if (body && body.contains(document.activeElement)) {
+      const body = this.$refs.body?.$el;
+      if (body && body.contains && body.contains(document.activeElement)) {
         focusNextAnnotationCard(body);
       }
     },
-    /**
-     * Shows fewer replies; the Show less button disappears, so focus moves to Show more.
-     * @returns {void}
-     */
-    showLess() {
-      this.maxComments = this.defaultNumComments;
-      this.$nextTick(() => {
-        if (this.$refs.showMore) this.$refs.showMore.$el.focus();
-      });
-    },
     toEditMode(status) {
       this.editMode = status;
-    },
-    reply() {
-      this.$socket.emit('commentUpdate', {
-        "documentId": this.documentId,
-        "parentCommentId": this.commentId,
-        "studySessionId": this.studySessionId,
-        "studyStepId": this.studyStepId,
-        "anonymous": this.anonymize,
-      }, (res) => {
-        if (!res.success) {
-          this.eventBus.emit("toast", {
-            title: this.$t('errors.annotator.commentNotUpdated'),
-            message: resolveApiMessage(res),
-            variant: "danger",
-          });
-        }
-      });
-    },
-    saveCard() {
-      this.$emit("saveCard");
-    },
-    requestNlpFeedback() {
-      this.$socket.emit("serviceRequest",
-        {
-          service: "NLPService",
-          data: {
-            id: this.commentId,
-            name: "sentiment_classification",
-            data: {text: this.comment.text}
-          }
-        }
-      );
-      this.awaitingNlpResult = true;
-    },
-    onPaste(event) {
-      const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-      if (this.acceptStats && pastedText) {
-        this.$socket.emit("stats", {
-          action: "textPasted",
-          data: {
-            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            from: "comment",
-            commentId: this.commentId,
-            pastedText: pastedText
-          }
-        })
-      }
     },
     /**
      * Logs saved comment text changes.
@@ -604,53 +327,6 @@ export default {
         }
       })
     },
-    /**
-     * Logs copied comment text.
-     *
-     * @param {ClipboardEvent} event - Copy event.
-     * @returns {void}
-     */
-    onCopy(event) {
-      const target = event.target;
-      const copiedText = target?.value
-        ? target.value.substring(target.selectionStart, target.selectionEnd)
-        : window.getSelection()?.toString();
-      if (this.acceptStats && copiedText) {
-        this.$socket.emit("stats", {
-          action: "textCopied",
-          data: {
-            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            from: "comment",
-            commentId: this.commentId,
-            copiedText: copiedText
-          }
-        })
-      }
-    },
   }
 }
 </script>
-
-<style scoped>
-.comment {
-  color: var(--bs-secondary-color, #666666);
-  font-style: normal;
-}
-
-.blockquote {
-  padding-right: 0;
-
-}
-
-.blockquoteSub {
-  margin-left: 4px;
-}
-
-.blockquoteMain {
-  margin-left: 0
-}
-
-</style>

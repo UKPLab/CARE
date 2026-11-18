@@ -12,205 +12,67 @@
       </h5>
     </template>
 
-    <!-- STEP 1: Mode Selection -->
     <template #step-1>
-      <div class="mb-3">
-        <label class="form-label">
-          <b>{{ $t('dashboard.publishModal.selectReviewMode') }}</b>
-        </label>
-
-        <div class="form-check">
-          <label class="form-check-label">
-            <input
-              v-model="selectedMode"
-              class="form-check-input"
-              type="radio"
-              name="modeSelection"
-              value="document"
-            />
-            <b>{{ $t('dashboard.publishModal.documentBasedReviews') }}</b>
-            <div class="small text-muted">
-              {{ $t('dashboard.publishModal.documentBasedReviewsDescription') }}
-            </div>
-          </label>
-        </div>
-
-        <div class="form-check mt-2">
-          <label class="form-check-label">
-            <input
-              v-model="selectedMode"
-              class="form-check-input"
-              type="radio"
-              name="modeSelection"
-              value="submission"
-            />
-            <b>{{ $t('dashboard.publishModal.submissionBasedReviews') }}</b>
-            <div class="small text-muted">
-              {{ $t('dashboard.publishModal.submissionBasedReviewsDescription') }}
-            </div>
-          </label>
-        </div>
-      </div>
+      <ReviewPublishModeStep v-model="selectedMode" />
     </template>
 
     <template #step-2>
-      <BasicTable
-        v-model="selectedDocuments"
-        :data="documentsTable"
-        :columns="documentTableColumns"
-        :options="tableOptions"
-        :max-table-height="400"
-      />
+      <ReviewPublishDocumentStep v-model="selectedDocuments" :is-submission-mode="isSubmissionMode" />
     </template>
 
     <template #step-3>
-      <BasicTable
+      <ReviewPublishSessionStep
         v-model="selectedSessions"
-        :data="sessionsTable"
-        :columns="sessionTableColumns"
-        :options="tableOptions"
-        :max-table-height="400"
+        :selected-documents="selectedDocuments"
+        :is-submission-mode="isSubmissionMode"
       />
     </template>
 
     <template #step-4>
-      <div class="mb-3">
-        <label for="text_format" class="form-label">
-          <b>{{ $t('dashboard.publishModal.textFormat') }}</b>
-        </label>
-        <textarea
-          id="text_format"
-          v-model="text_format"
-          class="form-control"
-          rows="3"
-        ></textarea>
-        <div class="small">
-          <p>
-            <span>{{ $t('dashboard.publishModal.placeholderSessionLinks') }}<br /></span>
-            <span v-if="linkCollection === 'studies'">
-              {{ $t('dashboard.publishModal.placeholderUsername') }}
-            </span>
-          </p>
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label for="publishMethod" class="form-label">
-          <b>{{ $t('dashboard.publishModal.linkCollection') }}</b>
-        </label>
-        <select
-          id="publishMethod"
-          v-model="linkCollection"
-          class="form-select"
-        >
-          <option value="studies">{{ $t('dashboard.publishModal.basedOnStudies') }}</option>
-          <option value="sessions">{{ $t('dashboard.publishModal.basedOnSessions') }}</option>
-        </select>
-      </div>
-
-      <div class="mb-3">
-        <p><b>{{ $t('dashboard.publishModal.links') }}</b></p>
-
-        <ul v-if="linkCollection === 'studies'">
-          <li
-            v-for="doc in formattedStudies"
-            :key="doc"
-          >
-            <b>{{ doc.document.name }} ({{ doc.document.firstName }} {{ doc.document.lastName }})</b>
-            <ul>
-              <li
-                v-for="session in doc.sessions"
-                :key="session"
-              >
-                {{ session.firstName }} {{ session.lastName }} (
-                <a
-                  :href="session.link"
-                  target="_blank"
-                >
-                  {{ session.link }}
-                </a>)
-              </li>
-            </ul>
-          </li>
-        </ul>
-
-        <ul v-else-if="linkCollection === 'sessions'">
-          <li
-            v-for="session in formattedSessions"
-            :key="session"
-          >
-            <b>{{ session[0].firstName }} {{ session[0].lastName }}</b>
-            <ul>
-              <li
-                v-for="s in session"
-                :key="s"
-              >
-                {{ s.document.documentName }} (
-                <a
-                  :href="s.link"
-                  target="_blank"
-                >
-                  {{ s.link }}
-                </a>)
-              </li>
-            </ul>
-          </li>
-        </ul>
-      </div>
+      <ReviewPublishLinksStep
+        v-model:text-format="text_format"
+        v-model:link-collection="linkCollection"
+        :formatted-studies="formattedStudies"
+        :formatted-sessions="formattedSessions"
+      />
     </template>
 
     <template #step-5>
-      <div class="mb-3">
-        <label for="publishMethod" class="form-label">
-          <b>{{ $t('dashboard.publishModal.publishMethod') }}</b>
-        </label>
-        <select
-          id="publishMethod"
-          v-model="publishMethod"
-          class="form-select"
-        >
-          <option
-            v-for="opt in publishMethodOptions"
-            :key="opt.value"
-            :value="opt.value"
-            :disabled="opt.disabled"
-          >
-            {{ opt.label }}
-          </option>
-        </select>
-      </div>
-
-      <div
-        v-if="isSubmissionMode"
-        class="small"
-      >
-        <p>{{ $t('dashboard.publishModal.chooseDownloadCSV') }}</p>
-      </div>
-
-      <div v-if="publishMethod === 'moodle'">
-        <MoodleOptions
-          ref="moodleOptionsForm"
-          v-model="moodleOptions"
-          with-assignment-id
-        />
-      </div>
+      <ReviewPublishMethodStep
+        v-model:publish-method="publishMethod"
+        v-model:moodle-options="moodleOptions"
+        :is-submission-mode="isSubmissionMode"
+        :publish-method-options="publishMethodOptions"
+      />
     </template>
   </StepperModal>
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
-import MoodleOptions from "@/basic/form/MoodleOptions.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
+import ReviewPublishModeStep from "./ReviewPublishModeStep.vue";
+import ReviewPublishDocumentStep from "./ReviewPublishDocumentStep.vue";
+import ReviewPublishSessionStep from "./ReviewPublishSessionStep.vue";
+import ReviewPublishLinksStep from "./ReviewPublishLinksStep.vue";
+import ReviewPublishMethodStep from "./ReviewPublishMethodStep.vue";
 
 /**
- * Modal for publish the review links to Moodle
+ * Modal for publish the review links to Moodle.
+ * Each step is its own component; this modal keeps the selections, groups the
+ * selected sessions for the links preview, and publishes or exports them.
  * @author: Dennis Zyska, Linyin Huang
  */
 export default {
   name: "ReviewPublishModal",
-  components: { MoodleOptions, BasicTable, StepperModal },
+  components: {
+    StepperModal,
+    ReviewPublishModeStep,
+    ReviewPublishDocumentStep,
+    ReviewPublishSessionStep,
+    ReviewPublishLinksStep,
+    ReviewPublishMethodStep,
+  },
   subscribeTable: [
     {
       table: "document",
@@ -221,37 +83,15 @@ export default {
         },
       ],
     },
-    {
-      table: "submission",
-    },
-    {
-      table: "study_session",
-    },
-    {
-      table: "study_step",
-    },
-    {
-      table: "user",
-    },
-    {
-      table: "user_role",
-    },
-    {
-      table: "user_role_matching",
-    },
+    "submission",
+    "study_session",
+    "study_step",
+    "user",
+    "user_role",
+    "user_role_matching",
   ],
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        selectableRows: true,
-        pagination: 10,
-        search: true,
-      },
       selectedDocuments: [],
       selectedSessions: [],
       moodleOptions: {},
@@ -284,159 +124,17 @@ export default {
         this.publishMethod !== "moodle" || Object.values(this.moodleOptions).every((v) => v !== ""), // Step 5: Publishing options
       ];
     },
-    usersWithExtId() {
-      return this.$store.getters["table/user/getFiltered"]((u) => u.extId !== null);
-    },
     users() {
       return this.$store.getters["table/user/getAll"];
     },
-    studies() {
-      return this.$store.getters["table/study/getFiltered"]((s) => s.closed);
-    },
-    documents() {
-      return this.$store.getters["table/document/getFiltered"]((d) => d.readyForReview);
-    },
     submissions() {
       return this.$store.getters["table/submission/getAll"];
-    },
-    studySteps() {
-      return this.$store.getters["table/study_step/getAll"];
-    },
-    studySessions() {
-      return this.$store.getters["table/study_session/getAll"];
     },
     userRoles() {
       return this.$store.getters["table/user_role/getAll"];
     },
     userRoleMatchings() {
       return this.$store.getters["table/user_role_matching/getAll"];
-    },
-    documentsTable() {
-      if (!this.isSubmissionMode) {
-        return this.documents
-          .map((document) => {
-            // find all study steps that are associated with this document
-            const studySteps = this.studySteps.filter((step) => step.documentId === document.id);
-            // get unique study ids from the study steps
-            const studyIds = [...new Set(studySteps.map((step) => step.studyId))].filter((id) => this.studies.find((s) => s.id === id));
-
-            if (studyIds.length === 0) {
-              return null;
-            }
-
-            // get sessions for each study
-            const studySessionIds = this.studySessions.filter((session) => studyIds.includes(session.studyId)).map((session) => session.id);
-            if (studySessionIds.length === 0) {
-              return null;
-            }
-
-            const user = this.usersWithExtId.find((u) => u.id === document.userId);
-            if (!user) {
-              return null;
-            }
-
-            return {
-              ...document,
-              studyIds,
-              documentName: document.name.length <= 40 ? document.name : document.name.substring(0, 40) + "...",
-              sessionIds: studySessionIds,
-              studies: studyIds.length,
-              sessions: studySessionIds.length,
-              extId: user.extId,
-              firstName: user.firstName,
-              lastName: user.lastName,
-            };
-          })
-          .filter((s) => s !== null);
-      }
-
-      // submission mode: aggregate sessions across documents belonging to the submission
-      return this.submissions
-        .map((submission) => {
-          const docs = this.$store.getters["table/document/getFiltered"]((d) => d.submissionId === submission.id);
-
-          // per document, collect closed studyIds
-          const docSummaries = docs.map((doc) => {
-            const steps = this.studySteps.filter((step) => step.documentId === doc.id);
-            const closedStudyIds = [...new Set(steps.map((s) => s.studyId))].filter((id) => this.studies.find((st) => st.id === id));
-            return {
-              id: doc.id,
-              name: doc.name,
-              documentName: doc.name.length <= 40 ? doc.name : doc.name.substring(0, 40) + "...",
-              submissionId: doc.submissionId,
-              studyIds: closedStudyIds,
-            };
-          });
-
-          const uniqueStudyIds = [...new Set(docSummaries.flatMap((d) => d.studyIds))];
-          if (uniqueStudyIds.length === 0) {
-            return null;
-          }
-          const studySessionIds = this.studySessions.filter((session) => uniqueStudyIds.includes(session.studyId)).map((session) => session.id);
-          if (studySessionIds.length === 0) {
-            return null;
-          }
-
-          const user = this.usersWithExtId.find((u) => u.id === submission.userId);
-          if (!user) {
-            return null;
-          }
-
-          return {
-            id: submission.id,
-            submissionId: submission.extId,
-            documents: docSummaries,
-            studyIds: uniqueStudyIds,
-            sessionIds: studySessionIds,
-            studies: uniqueStudyIds.length,
-            sessions: studySessionIds.length,
-            extId: user.extId,
-            firstName: user.firstName,
-            lastName: user.lastName,
-          };
-        })
-        .filter((s) => s !== null);
-    },
-    sessionsTable() {
-      return this.selectedDocuments.flatMap((d) =>
-        d.sessionIds.map((sId) => {
-          const session = this.studySessions.find((s) => sId === s.id);
-          const study = this.studies.find((s) => s.id === session.studyId);
-          const user = this.users.find((u) => u.id === session.userId);
-
-          // resolve document per session in submission mode
-          const foundDoc = this.isSubmissionMode && d.documents
-            ? d.documents.find((doc) => doc.studyIds.includes(session.studyId)) || null
-            : null;
-          const docRef = this.isSubmissionMode && d.documents
-            ? (foundDoc
-                ? {
-                    ...foundDoc,
-                    // carry owner info from submission-level row
-                    extId: d.extId,
-                    firstName: d.firstName,
-                    lastName: d.lastName,
-                  }
-                : null)
-            : d;
-
-          return {
-            studyName: study.name,
-            firstName: user ? user.firstName : "unknown",
-            lastName: user ? user.lastName : "unknown",
-            userId: session.userId,
-            studyId: session.studyId,
-            sessionId: session.id,
-            link: window.location.origin + "/review/" + session.hash,
-            documentName: docRef ? docRef.documentName || docRef.name || "-" : "-",
-            document: docRef,
-            extId: user ? user.extId : "",
-            start: session.start,
-            end: session.end,
-            hash: session.hash,
-          };
-        })
-      );
     },
     formattedStudies() {
       if (this.isSubmissionMode) {
@@ -474,35 +172,6 @@ export default {
         return acc;
       }, {});
     },
-    documentTableColumns() {
-      if (!this.isSubmissionMode) {
-        return [
-          { name: this.$t('dashboard.publishModal.columns.extId'), key: "extId" },
-          { name: this.$t('common.firstName'), key: "firstName" },
-          { name: this.$t('common.lastName'), key: "lastName" },
-          { name: this.$t('dashboard.publishModal.columns.documentTitle'), key: "documentName" },
-          { name: this.$t('dashboard.publishModal.columns.studies'), key: "studies" },
-          { name: this.$t('dashboard.publishModal.columns.sessions'), key: "sessions" },
-        ];
-      }
-      return [
-        { name: this.$t('dashboard.publishModal.columns.extId'), key: "extId" },
-        { name: this.$t('dashboard.publishModal.columns.submissionId'), key: "submissionId" },
-        { name: this.$t('dashboard.publishModal.columns.group'), key: "group" },
-        { name: this.$t('common.firstName'), key: "firstName" },
-        { name: this.$t('common.lastName'), key: "lastName" },
-        { name: this.$t('dashboard.publishModal.columns.studies'), key: "studies" },
-        { name: this.$t('dashboard.publishModal.columns.sessions'), key: "sessions" },
-      ];
-    },
-    sessionTableColumns() {
-      return [
-        { name: this.$t('dashboard.publishModal.columns.studyName'), key: "studyName" },
-        { name: this.$t('common.firstName'), key: "firstName" },
-        { name: this.$t('common.lastName'), key: "lastName" },
-        { name: this.$t('dashboard.publishModal.columns.documentTitle'), key: "documentName" },
-      ];
-    },
     publishMethodOptions() {
       return [
         { value: "csv", label: this.$t('dashboard.publishModal.downloadCSV'), disabled: false },
@@ -531,16 +200,13 @@ export default {
         })
         .join(", ");
     },
+    /** Opens the wizard with a fresh selection and CSV as the default publish method. */
     open() {
-      this.reset();
-      // set default publish method per mode
-      this.publishMethod = "csv";
-      this.$refs.reviewStepper.open();
-    },
-    reset() {
       this.selectedMode = "document";
       this.selectedDocuments = [];
       this.selectedSessions = [];
+      this.publishMethod = "csv";
+      this.$refs.reviewStepper.open();
     },
     publishReviewLinks() {
       const feedback =
@@ -654,10 +320,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.form-check-label {
-  display: block;
-  cursor: pointer;
-}
-</style>

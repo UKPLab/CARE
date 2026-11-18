@@ -106,90 +106,12 @@ function isListOperator(operator) {
 }
 
 /** null, empty string, or the word "null". */
-function isMissingItem(item) {
+export function isMissingItem(item) {
   return item === null || item === "" || (typeof item === "string" && /^null$/i.test(item.trim()));
 }
 
-/**
- * Cell text → tokens. `2,3` / `[1, 2]` / `2` / empty (missing).
- * @param {*} value
- * @returns {string[]}
- */
-export function parseCellTokens(value) {
-  if (value === null || value === undefined) return [];
-  const text = String(value).trim();
-  if (isMissingItem(text)) return [];
-  const inner = text.startsWith("[") && text.endsWith("]") ? text.slice(1, -1).trim() : text;
-  if (!inner) return [];
-  return inner.split(",").map((item) => item.trim()).filter((item) => !isMissingItem(item));
-}
-
-/** Which items are real values, and whether the list also asks for missing / no group. */
-function queryListParts(value) {
-  const items = Array.isArray(value) ? value : [value];
-  const present = [];
-  let missing = false;
-  items.forEach((item) => {
-    if (isMissingItem(item)) missing = true;
-    else present.push(String(item).trim());
-  });
-  return {present, missing};
-}
-
-/** Same items, ignoring order and duplicates (`=`). */
-function sameTokenSet(left, right) {
-  const a = [...new Set(left.map(String))].sort();
-  const b = [...new Set(right.map(String))].sort();
-  return a.length === b.length && a.every((item, index) => item === b[index]);
-}
-
-/** At least one item in common (`%`, `!=`). */
-function tokenSetsOverlap(left, right) {
-  const set = new Set(left.map(String));
-  return right.some((item) => set.has(String(item)));
-}
-
-/** Cell has every required item; extras are fine (`~`). */
-function tokenSetContainsAll(cell, required) {
-  const set = new Set(cell.map(String));
-  return required.every((item) => set.has(String(item)));
-}
-
-/** `=` / `~` cannot mean both "has 1" and "is missing". */
-function mixedMissingInvalid(operator, missing, hasPresent) {
+export function mixedMissingInvalid(operator, missing, hasPresent) {
   return (operator === "=" || operator === "~") && missing && hasPresent;
-}
-
-/**
- * List chip vs a cell: `=` exact set, `~` has all, `%` has any, `!=` none of.
- * Mixed `[1,null]` on `=` / `~` is invalid (returns false).
- * @returns {boolean}
- */
-export function matchesTokenList(cellValue, operator, filterValue) {
-  const cell = parseCellTokens(cellValue);
-  const cellMissing = cell.length === 0;
-  const {present, missing} = queryListParts(filterValue);
-  if (operator === "=") {
-    if (mixedMissingInvalid(operator, missing, present.length > 0)) return false;
-    if (missing) return cellMissing;
-    return !cellMissing && sameTokenSet(cell, present);
-  }
-  if (operator === "!=") {
-    if (present.length > 0 && tokenSetsOverlap(cell, present)) return false;
-    if (missing && cellMissing) return false;
-    return true;
-  }
-  if (operator === "~") {
-    if (mixedMissingInvalid(operator, missing, present.length > 0)) return false;
-    if (missing) return cellMissing;
-    return present.length > 0 && tokenSetContainsAll(cell, present);
-  }
-  if (operator === "%") {
-    if (present.length > 0 && tokenSetsOverlap(cell, present)) return true;
-    if (missing && cellMissing) return true;
-    return false;
-  }
-  return false;
 }
 
 /**

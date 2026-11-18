@@ -39,7 +39,6 @@
         "idRequiredNoPeriod": "Configuration ID is required",
         "contentRequiredNoPeriod": "Configuration content is required",
         "notFound": "Configuration not found.",
-        "accessDenied": "Access denied",
         "createForOtherUsersDenied": "You do not have permission to create configurations for other users."
     },
     "validation": {
@@ -390,7 +389,6 @@
         "emptyValue": "Empty value found for {key} at index {index}",
         "duplicateId": "Duplicate id found: {extId} at index {index}",
         "duplicateEmail": "Duplicate email found: {email} at index {index}",
-        "rolesNotCommaSeparated": "Roles not comma-separated for id {id} at index {index}",
         "invalidEmailFormat": "Invalid email format for id {id} at index {index}: {email}",
         "parseError": "Error parsing file: {message}"
     },

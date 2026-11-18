@@ -19,6 +19,7 @@
       </div>
     </div>
     <div class="card-body mx-4 my-4">
+      <p v-if="showError || accountError" class="text-danger text-center">{{ errorMessage || accountError }}</p>
       <p class="text-muted mb-3">Review your choices before finishing.</p>
 
       <div v-if="!hasAdmin" class="mb-4">
@@ -63,7 +64,7 @@
           :class="{ 'ms-auto': currentStep === 0 }"
           :title="finishing ? 'Saving…' : 'Finish'"
           :disabled="finishing"
-          @click="$emit('finish')"
+          @click="finish"
         />
       </div>
     </div>
@@ -73,6 +74,8 @@
 <script>
 import BasicButton from "@/basic/Button.vue";
 import BasicEditor from "@/basic/editor/Editor.vue";
+import axios from "axios";
+import getServerURL from "@/assets/serverUrl";
 
 /**
  * Renders the first-time setup wizard summary step: admin recap, grouped settings for review,
@@ -102,10 +105,6 @@ export default {
       type: Object,
       required: true,
     },
-    summaryFieldGroups: {
-      type: Array,
-      required: true,
-    },
     settingsFromFile: {
       type: Object,
       required: false,
@@ -119,13 +118,79 @@ export default {
       type: Number,
       required: true,
     },
-    finishing: {
-      type: Boolean,
-      required: true,
+    createAdmin: {type: Function, required: true},
+    accountError: {type: String, default: ''},
+  },
+  emits: ["download-template", "open-import-modal", "toggle-show-file-settings", "previous", "finish-start", "error"],
+  data() {return {finishing: false, showError: false, errorMessage: ''};},
+  computed: {
+    summaryFieldGroups() {
+      const stepTitles = {
+        general: "General",
+        mail: "Mail",
+        registration: "Registration",
+        moodle: "Moodle",
+      };
+      const byStep = {};
+      for (const s of this.wizardSettings || []) {
+        const step = s.wizardStep || "general";
+        if (!byStep[step]) byStep[step] = [];
+        byStep[step].push(s);
+      }
+      const order = ["general", "mail", "registration", "moodle"];
+      return order.filter((step) => byStep[step]?.length).map((step) => ({
+        title: stepTitles[step],
+        settings: byStep[step],
+      }));
     },
   },
-  emits: ["download-template", "open-import-modal", "toggle-show-file-settings", "previous", "finish"],
   methods: {
+    async finish() {
+      this.$emit("finish-start");
+      this.$emit("error", "");
+      this.showError = false;
+      this.errorMessage = "";
+
+      if (!this.hasAdmin) {
+        const created = await this.createAdmin();
+        if (!created) return;
+      }
+
+      const merged = { ...this.formSettings, ...(this.settingsFromFile || {}) };
+      if (merged["system.mailService.enabled"] !== "true") {
+        merged["app.register.emailVerification"] = "false";
+      }
+      const payload = Object.entries(merged).map(([key, v]) => ({
+        key,
+        value: v === null || v === undefined ? "" : (typeof v === "boolean" ? (v ? "true" : "false") : (typeof v === "object" ? JSON.stringify(v) : String(v))),
+      }));
+      this.finishing = true;
+      this.showError = false;
+      try {
+        const res = await axios.post(
+          getServerURL() + "/setup/complete",
+          { settings: payload },
+          {
+            withCredentials: true,
+            validateStatus: (status) => status === 200 || (status >= 400 && status < 500),
+          }
+        );
+        if (res.status !== 200 || !res.data?.success) {
+          this.finishing = false;
+          this.showError = true;
+          this.errorMessage = res.data?.message || "Failed to save settings.";
+          this.$emit("error", this.errorMessage);
+          return;
+        }
+        this.$router.push("/dashboard");
+        this.$router.go(0);
+      } catch (err) {
+        this.finishing = false;
+        this.showError = true;
+        this.errorMessage = err?.response?.data?.message || err?.message || "Failed to complete setup.";
+        this.$emit("error", this.errorMessage);
+      }
+    },
     settingLabel(key) {
       const s = (this.wizardSettings || []).find((x) => x.key === key);
       return s?.displayName || key;

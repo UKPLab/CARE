@@ -83,6 +83,38 @@ export default {
           && context.conversationId === this.activeConversationId;
     },
     /**
+     * Runs one snapshot load and drops its outcome when a newer load or study
+     * context has replaced it.
+     * @param {Object} options - Load steps supplied by the host.
+     * @param {boolean} [options.silent] - Whether to keep the visible loading state and error.
+     * @param {function(Object): Promise<Object>} options.fetch - Requests the snapshot for a load context.
+     * @param {function(Object, Object): boolean} options.apply - Applies a current result; returns whether it was used.
+     * @param {function(Error, Object): void} options.fail - Records a current failure.
+     * @param {function(Object): void} [options.settle] - Runs after every load, current or not.
+     * @returns {Promise<boolean>} Whether the snapshot was applied.
+     */
+    async loadSnapshot({silent = false, fetch, apply, fail, settle}) {
+      const context = this.beginSnapshotLoad();
+      if (!silent) {
+        this.loading = true;
+        this.errorMessage = "";
+      }
+      try {
+        const result = await fetch(context);
+        return this.isCurrentSnapshotLoad(context) && apply(result, context);
+      } catch (error) {
+        if (this.isCurrentSnapshotLoad(context)) {
+          fail(error, context);
+        }
+        return false;
+      } finally {
+        if (context.loadId === this.snapshotLoadId) {
+          this.loading = false;
+        }
+        settle?.(context);
+      }
+    },
+    /**
      * Merges persisted messages in database order.
      * @param {Object[]} incoming - Updated message rows.
      * @param {Object[]} [existing] - Persisted rows from the same conversation.

@@ -126,7 +126,7 @@ export default {
         { key: "confirm", title: this.$t('common.confirm') },
         { key: "result", title: this.$t('dashboard.users.result') },
       ];
-      return [sourceStep, { key: "roleMapping", title: "Role Mapping" }, ...commonSteps];
+      return [sourceStep, { key: "roleMapping", title: this.$t("dashboard.users.roleMappingStep") }, ...commonSteps];
     },
     stepValid() {
       const sourceIsValid = this.importType === "csv"

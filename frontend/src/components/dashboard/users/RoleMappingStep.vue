@@ -4,43 +4,45 @@
       class="alert alert-warning"
       role="alert"
     >
-      Re-importing an existing user replaces their current CARE roles. Each user will receive the basic User role plus the CARE roles mapped below. Selecting “No extra CARE role” does not preserve previous roles.
+      {{ $t('dashboard.users.roleMappingWarning') }}
     </div>
-    <table class="table table-sm align-middle">
-      <thead>
-        <tr><th>{{ sourceLabel }} Role</th><th>Users</th><th>CARE Role</th></tr>
-      </thead>
-      <tbody>
-        <tr v-for="role in roleRows" :key="role.raw">
-          <td>
-            {{ role.label }}
-          </td>
-          <td>{{ role.count }}</td>
-          <td>
-            <select
-              :value="mappedRoleValue(role.raw)"
-              class="form-select form-select-sm"
-              @change="updateRoleMapping(role.raw, $event.target.value)"
-            >
-              <option
-                value="__unmapped"
-                disabled
-              >
-                Select mapping
-              </option>
-              <option v-for="option in careRoleOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </td>
-        </tr>
-        <tr v-if="roleRows.length === 0">
-          <td colspan="3" class="text-center text-muted">
-            No roles were found. Imported users will receive CARE's basic user role.
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <div class="row fw-semibold border-bottom pb-2 mx-0">
+      <div class="col-5">{{ $t('dashboard.users.roleMappingSourceRole', { source: sourceLabel }) }}</div>
+      <div class="col-2">{{ $t('dashboard.users.roleMappingUsers') }}</div>
+      <div class="col-5">{{ $t('dashboard.users.roleMappingCareRole') }}</div>
+    </div>
+    <div
+      v-for="role in roleRows"
+      :key="role.raw"
+      class="row align-items-center border-bottom py-1 mx-0"
+    >
+      <div class="col-5">{{ role.label }}</div>
+      <div class="col-2">{{ role.count }}</div>
+      <div class="col-5">
+        <select
+          :value="mappedRoleValue(role.raw)"
+          class="form-select form-select-sm"
+          :aria-label="$t('dashboard.users.roleMappingCareRole')"
+          @change="updateRoleMapping(role.raw, $event.target.value)"
+        >
+          <option
+            value="__unmapped"
+            disabled
+          >
+            {{ $t('dashboard.users.roleMappingSelect') }}
+          </option>
+          <option v-for="option in careRoleOptions" :key="option.value" :value="option.value">
+            {{ option.label }}
+          </option>
+        </select>
+      </div>
+    </div>
+    <p
+      v-if="roleRows.length === 0"
+      class="text-center text-muted py-2 mb-0"
+    >
+      {{ $t('dashboard.users.roleMappingNoRoles') }}
+    </p>
   </div>
 </template>
 
@@ -79,7 +81,7 @@ export default {
           value: role.name,
           label: role.name.charAt(0).toUpperCase() + role.name.slice(1),
         })),
-        { value: "", label: "No extra CARE role" }
+        { value: "", label: this.$t("dashboard.users.roleMappingNoExtraRole") }
       ];
     },
     roleRows() {

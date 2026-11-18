@@ -66,6 +66,18 @@ export default {
       clockTimer: null,
     }
   },
+  computed: {
+    localeCode() {
+      const locale = this.$i18n?.locale;
+      return typeof locale === "string" ? locale : locale?.value;
+    },
+    today() {
+      return this.formatLocalDate(this.now);
+    },
+    currentTime() {
+      return this.formatLocalTime(this.now);
+    },
+  },
   watch: {
     modelValue(oldVal, newVal) {
       if (oldVal !== newVal) {
@@ -102,18 +114,6 @@ export default {
         this.emitDate();
       }
     }
-  },
-  computed: {
-    localeCode() {
-      const locale = this.$i18n?.locale;
-      return typeof locale === "string" ? locale : locale?.value;
-    },
-    today() {
-      return this.formatLocalDate(this.now);
-    },
-    currentTime() {
-      return this.formatLocalTime(this.now);
-    },
   },
 
   mounted() {

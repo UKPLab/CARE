@@ -9,24 +9,23 @@
     </template>
     <template #body>
       <div class="modal-body justify-content-center">
-        <div
+        <BasicLoading
           v-if="loading"
-          class="spinner-border m-5 "
-          role="status"
-        >
-          <span class="visually-hidden">{{ $t("common.loading") }}</span>
-        </div>
+          class="m-5"
+        />
         <div v-else>
           <SkillListing ref="skillListing" v-model="config" />
         </div>
       </div>
     </template>
     <template #footer>
-       <BasicButton
-        class="btn btn-secondary"
-        :text="$t('common.close')"
-        data-bs-dismiss="modal"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :text="$t('common.close')"
+          data-bs-dismiss="modal"
+        />
+      </div>
     </template>
   </Modal>
 </template>
@@ -35,6 +34,7 @@
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import SkillListing from "./SkillListing.vue";
+import BasicLoading from "@/basic/Loading.vue";
 
 /* NlpSkillModal.vue - modal for details on a given NLP Skill
 
@@ -43,7 +43,7 @@ Source: -
 */
 export default {
   name: "NlpSkillModal",
-  components: {SkillListing, Modal, BasicButton},
+  components: {BasicLoading, SkillListing, Modal, BasicButton},
   data() {
     return {
       show: false,

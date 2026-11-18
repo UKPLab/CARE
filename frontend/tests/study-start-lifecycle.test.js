@@ -23,14 +23,22 @@ Object.assign(globalThis, {
     SVGElement: window.SVGElement,
     Node: window.Node,
     Event: window.Event,
+    FileReader: window.FileReader,
+    requestAnimationFrame: window.requestAnimationFrame.bind(window),
+    cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
     getComputedStyle: window.getComputedStyle.bind(window),
 })
 
-const {compile, createApp, h, nextTick} = await import('vue')
+const vueRuntime = await import('vue')
+const {compile, createApp, h, nextTick, reactive} = vueRuntime
 const {createI18n} = await import('vue-i18n')
 const {Modal: BootstrapModal} = createRequire(import.meta.url)('bootstrap')
 
 const MESSAGES = {
+    common: JSON.parse(readFileSync(new URL('../../utils/modules/i18n/en/common.json', import.meta.url), 'utf8')),
+    navigation: JSON.parse(readFileSync(new URL('../../utils/modules/i18n/en/navigation.json', import.meta.url), 'utf8')),
+    components: JSON.parse(readFileSync(new URL('../../utils/modules/i18n/en/components.json', import.meta.url), 'utf8')),
+    modals: {closeModal: 'Close modal'},
     studies: {
         study: 'Study',
         startStudy: 'Start study',
@@ -49,16 +57,345 @@ const SETTLE_MS = 3 * DIALOG_TRANSITION_MS
 
 /** Evaluates the options object and the template of an SFC, replacing its imports with the given stubs. */
 function loadComponent(path, stubs = {}) {
-    const source = readFileSync(new URL(`../src/${path}`, import.meta.url), 'utf8')
-    const script = source.match(/<script>([\s\S]*?)<\/script>/)[1]
-    const importPattern = /^import\s+([^'"]*?)\s+from\s+['"][^'"]+['"];?[ \t]*$/gm
-    const names = [...script.matchAll(importPattern)].flatMap(([, clause]) =>
-        clause.replace(/[{}]/g, '').split(',').map(name => name.trim().split(/\s+as\s+/).pop()).filter(Boolean))
-    const options = new Function(...names, script.replace(importPattern, '').replace('export default', 'return'))(
-        ...names.map(name => stubs[name] ?? {}))
+    const url = new URL(`../src/${path}`, import.meta.url)
+    const source = readFileSync(url, 'utf8')
+    const options = loadOptions(url, stubs).default
     const template = source.match(/<template>([\s\S]*)<\/template>/)[1]
     return {...options, render: compile(template, {isCustomElement: tag => tag === 'vr'})}
 }
+
+// Load real child components and helpers while allowing services or leaf views to be stubbed.
+function loadOptions(url, stubs) {
+    const source = readFileSync(url, 'utf8')
+    const script = url.pathname.endsWith('.vue') ? source.match(/<script>([\s\S]*?)<\/script>/)[1] : source
+    const importPattern = /^import\s+([^'"]*?)\s+from\s+['"]([^'"]+)['"];?[ \t]*$/gm
+    const names = [], values = []
+    for (const [, clause, specifier] of script.matchAll(importPattern)) {
+        let dependency
+        const bindings = clause.replace(/[{}]/g, '').split(',').map(s => s.trim()).filter(Boolean)
+        const fullyStubbed = bindings.every(item => item.split(/\s+as\s+/).at(-1) in stubs)
+        if (!fullyStubbed && specifier.startsWith('.') && specifier.endsWith('.vue')) {
+            const target = new URL(specifier, url)
+            dependency = loadOptions(target, stubs)
+        }
+        if (!fullyStubbed && specifier.startsWith('.') && specifier.endsWith('.js')) {
+            dependency = loadOptions(new URL(specifier, url), stubs)
+        }
+        if (!fullyStubbed && specifier.startsWith('@/basic/table/helpers/')) {
+            dependency = loadOptions(new URL(`../src/${specifier.slice(2)}`, import.meta.url), stubs)
+        }
+        if (specifier === 'vue') dependency = vueRuntime
+        if (['deep-equal', 'lodash.debounce'].includes(specifier)) {
+            dependency = {default: createRequire(import.meta.url)(specifier)}
+        }
+        for (const item of bindings) {
+            const [exported, local = exported] = item.split(/\s+as\s+/)
+            names.push(local)
+            values.push(stubs[local] ?? dependency?.[clause.includes('{') ? exported : 'default'] ?? {})
+        }
+    }
+    const exports = [...script.matchAll(/export\s+(?:const|let|function)\s+(\w+)/g)].map(m => m[1])
+    const body = script.replace(importPattern, '').replace(/export default/, 'const defaultExport =')
+        .replace(/export (?=(?:const|let|function)\b)/g, '')
+    const result = new Function(...names, `${body}\nreturn {${exports.join(',')}${exports.length ? ',' : ''} default: typeof defaultExport === 'undefined' ? undefined : defaultExport};`)(...values)
+    const template = source.match(/<template>([\s\S]*)<\/template>/)
+    if (result.default && template) result.default.render = compile(template[1], {isCustomElement: tag => tag === 'vr'})
+    return result
+}
+
+test('two-factor setup retains the server secret and generates its QR code', async () => {
+    const requests = []
+    const events = []
+    const options = loadOptions(new URL('../src/auth/TotpEnrollment.vue', import.meta.url), {
+        axios: {post: async (...args) => {
+            requests.push(args)
+            return {status: 200, data: {secretBase32: 'TESTSECRET', otpauthUrl: 'otpauth://totp/test'}}
+        }},
+        QRCode: {toDataURL: async url => `qr:${url}`},
+        getServerURL: () => 'https://care.test',
+    }).default
+    const state = {...options.data(), ...options.methods, $emit: event => events.push(event)}
+    await state.initiateTotpSetup()
+    assert.equal(state.totpSecret, 'TESTSECRET')
+    assert.equal(state.totpQrCode, 'qr:otpauth://totp/test')
+    assert.equal(state.totpSetupStep, 'initiate')
+    assert.equal(requests[0][0], 'https://care.test/auth/2fa/totp/setup/initiate')
+    assert.equal(requests[0][2].withCredentials, true)
+    state.cancelTotpSetup()
+    assert.equal(state.totpSecret, null)
+    assert.equal(state.totpQrCode, null)
+    assert.deepEqual(events, ['cancel'])
+})
+
+test('two-factor enrollment stays busy until its status refresh completes', async () => {
+    const options = loadOptions(new URL('../src/auth/TotpEnrollment.vue', import.meta.url), {
+        axios: {post: async () => ({status: 200})}, getServerURL: () => '',
+    }).default
+    const events = []
+    let finishRefresh
+    const state = {...options.data(), ...options.methods, canVerifyTotpSetup: true,
+        $t: key => key, eventBus: {emit() {}}, $emit: event => events.push(event),
+        refreshStatus: () => new Promise(resolve => { finishRefresh = resolve })}
+    const pending = state.verifyTotpSetup()
+    await Promise.resolve()
+    assert.equal(state.isSubmitting, true)
+    assert.equal(events.includes('complete'), false)
+    finishRefresh()
+    await pending
+    assert.equal(state.isSubmitting, false)
+    assert.deepEqual(events, ['complete'])
+})
+
+test('a rejected two-factor setup clears the pending state and reports the failure', async () => {
+    const toasts = []
+    const events = []
+    const options = loadOptions(new URL('../src/auth/TotpEnrollment.vue', import.meta.url), {
+        axios: {post: async () => ({status: 400, data: {message: 'Setup failed'}})},
+        getServerURL: () => '',
+        resolveApiMessage: response => response.message,
+    }).default
+    const state = {...options.data(), ...options.methods, $t: key => key, $emit: event => events.push(event),
+        eventBus: {emit: (name, payload) => toasts.push({name, ...payload})}}
+    await state.initiateTotpSetup()
+    assert.deepEqual(events, ['cancel'])
+    assert.equal(state.totpSecret, null)
+    assert.equal(toasts[0].name, 'toast')
+    assert.equal(toasts[0].variant, 'danger')
+    assert.equal(toasts[0].message, 'Setup failed')
+})
+
+test('searchable select filters, chooses an option, and closes on an outside click', async t => {
+    const component = loadComponent('basic/form/SearchableSelect.vue', {translateMaybeKey: value => value})
+    const state = reactive({value: -1})
+    const blurs = []
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const app = createApp({render: () => h(component, {
+        modelValue: state.value,
+        selectOptions: [{value: 'first', name: 'First'}, {value: 'second', name: 'Second'}],
+        options: {},
+        'onUpdate:modelValue': value => { state.value = value },
+        onBlur: value => blurs.push(value),
+    })})
+    app.config.globalProperties.$t = key => key
+    app.mount(host)
+    t.after(() => {app.unmount(); host.remove()})
+    host.querySelector('button').click()
+    await nextTick()
+    const search = host.querySelector('input')
+    search.value = 'SECOND'
+    search.dispatchEvent(new window.Event('input', {bubbles: true}))
+    await nextTick()
+    const items = host.querySelectorAll('.dropdown-item')
+    assert.equal(items.length, 1)
+    assert.match(items[0].textContent, /Second/)
+    items[0].dispatchEvent(new window.MouseEvent('mousedown', {bubbles: true}))
+    await nextTick()
+    assert.equal(state.value, 'second')
+    assert.deepEqual(blurs, [true])
+    assert.equal(host.querySelector('.dropdown-menu'), null)
+    host.querySelector('button').click()
+    await nextTick()
+    document.body.dispatchEvent(new window.MouseEvent('mousedown', {bubbles: true}))
+    await nextTick()
+    assert.equal(host.querySelector('.dropdown-menu'), null)
+})
+
+test('auth fields retain input attributes and emit typed text and blur', async t => {
+    const component = loadComponent('auth/AuthInputField.vue')
+    const updates = [], blurs = []
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const app = createApp(component, {modelValue: 'initial', label: 'Email',
+        input: {id: 'email', name: 'email', type: 'email', required: true},
+        'onUpdate:modelValue': value => updates.push(value), onBlur: () => blurs.push(true)})
+    app.mount(host)
+    t.after(() => {app.unmount(); host.remove()})
+    const input = host.querySelector('input')
+    assert.equal(input.value, 'initial')
+    assert.equal(input.required, true)
+    assert.equal(host.querySelector('label').htmlFor, 'email')
+    input.value = 'person@example.test'
+    input.dispatchEvent(new window.Event('input', {bubbles: true}))
+    input.dispatchEvent(new window.Event('blur'))
+    assert.deepEqual(updates, ['person@example.test'])
+    assert.deepEqual(blurs, [true])
+    updates.length = 0
+    input.dispatchEvent(new window.Event('compositionstart'))
+    input.value = 'intermediate composition'
+    input.dispatchEvent(new window.Event('input'))
+    assert.deepEqual(updates, [])
+    input.value = '完成@example.test'
+    input.dispatchEvent(new window.Event('compositionend'))
+    assert.deepEqual(updates, ['完成@example.test'])
+})
+
+test('import file picker parses browser files and normalizes a single record into a list', async t => {
+    const component = loadComponent('basic/modal/ImportFilePicker.vue', {
+        getSupportedImportFormats: () => [{extensions: ['.json'], parse: JSON.parse}],
+    })
+    const parsed = []
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const app = createApp(component, {onParsed: value => parsed.push(value)})
+    app.config.globalProperties.$t = key => key
+    const vm = app.mount(host)
+    t.after(() => {app.unmount(); host.remove()})
+    const record = {name: 'Workflow', children: [{name: 'First step'}]}
+    await vm.processFile(new window.File([JSON.stringify(record)], 'Workflow.JSON', {type: 'application/json'}))
+    assert.deepEqual(parsed, [[record]])
+    vm.reset()
+    assert.equal(vm.selectedFile, null)
+    assert.equal(vm.parseError, null)
+    assert.equal(host.querySelector('input').value, '')
+})
+
+test('post-login prompts request consent before enforced two-factor setup', async t => {
+    const events = []
+    const modal = name => ({
+        data: () => ({visible: false}),
+        methods: {
+            isVisible() {return this.visible},
+            open() {if (!this.visible) {this.visible = true; events.push(`${name}:open`)}},
+            close() {this.visible = false; events.push(`${name}:close`)},
+        },
+        render: () => h('div'),
+    })
+    const component = loadComponent('auth/PostLoginPrompts.vue', {
+        ConsentModal: modal('consent'), TwoFactorSettingsModal: modal('two-factor'),
+    })
+    const user = reactive({acceptTerms: false, loginMethod: 'local', twoFactorMethods: []})
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const app = createApp(component)
+    app.config.globalProperties.$store = {getters: {
+        'auth/getUser': user, 'settings/getValue': () => 'true',
+    }}
+    app.mount(host)
+    t.after(() => {app.unmount(); host.remove()})
+    await nextTick()
+    assert.deepEqual(events, ['consent:open'])
+    user.acceptTerms = true
+    await nextTick()
+    await nextTick()
+    assert.deepEqual(events, ['consent:open', 'consent:close', 'two-factor:open'])
+    user.twoFactorMethods.push('totp')
+    await nextTick()
+    await nextTick()
+    assert.equal(events.at(-1), 'two-factor:close')
+})
+
+test('chat streaming accepts only the active request and clears its preview when it ends', async t => {
+    const messageTypes = await import('../src/assets/aiMessageTypes.js')
+    const component = loadComponent('components/aiAssistant/AiConversationTranscript.vue', {
+        ...messageTypes,
+        AiConversationBody: {render() {return h('div', this.$slots.default?.())}},
+        AiConversationMessage: {props: ['message'], render() {return h('pre', this.message.content)}},
+    })
+    const state = reactive({request: null})
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    let vm
+    const app = createApp({render: () => h(component, {
+        ref: value => {vm = value}, activeRequest: state.request,
+        snapshot: {messages: [], activeConversationId: 7}, studyStepId: 3,
+    })})
+    app.provide('studySessionId', 5)
+    app.config.globalProperties.$t = key => key
+    app.mount(host)
+    t.after(() => {app.unmount(); host.remove()})
+    state.request = {type: 'send', requestId: 'request-1', submittedContent: 'Question', conversationId: 7}
+    await nextTick()
+    const sendDelta = data => component.sockets.serviceRefresh.call(vm, {
+        service: 'AIAssistantService', type: 'conversationDelta', data: {
+            requestId: 'request-1', studySessionId: 5, studyStepId: 3,
+            conversationId: 7, assistantMessageId: 9, ...data,
+        },
+    })
+    sendDelta({text: 'Hello '})
+    sendDelta({requestId: 'another-request', text: 'wrong request'})
+    sendDelta({studySessionId: 99, text: 'wrong session'})
+    sendDelta({text: 'world'})
+    await waitFor(() => host.textContent.includes('Hello world'), 'streamed reply')
+    assert.equal(host.textContent.includes('wrong'), false)
+    state.request = null
+    await nextTick()
+    assert.equal(host.textContent.includes('Hello world'), false)
+})
+
+test('an edited comment saves and requests sentiment before its body unmounts', async () => {
+    const leaf = {render: () => h('span')}
+    const component = loadComponent('components/annotator/sidebar/card/Comment.vue', {
+        LoadIcon: leaf, IconLoading: leaf, TagSelector: leaf,
+        Collaboration: {...leaf, methods: {removeCollab() {}}},
+        CommentActions: leaf, AnnotationReplies: leaf,
+        formatLocalizedDate: value => value,
+    })
+    const comment = reactive({id: 1, userId: 1, creator_name: 'Human', text: 'Edited text', tags: [], draft: true})
+    const events = []
+    mount({
+        provide: () => ({listenOnActive() {}, unlistenOnActive() {}}),
+        render: () => h(component, {commentId: 1}),
+    }, {
+        $store: {getters: {
+            'table/comment/get': () => comment, 'auth/getUserId': 1,
+            'settings/getValue': key => key.includes('defaultNumsShown') ? '1' : 'true',
+            'service/get': (_service, type) => type === 'skillUpdate' ? {sentiment_classification: {}} : {},
+        }},
+        $socket: {emit: (event, data, ack) => {
+            events.push({event, data})
+            ack?.({success: true})
+        }},
+    })
+    await nextTick()
+    events.length = 0
+    cleanups.pop()()
+    assert.deepEqual(events.map(item => item.event), ['commentUpdate', 'serviceRequest'])
+    assert.equal(events[1].data.data.data.text, 'Edited text')
+})
+
+test('the extracted editor sidebar renders without reading undeclared state', async t => {
+    const lookBack = await import('../src/components/study/helpers/lookBack.js')
+    const leaf = {render: () => h('span')}
+    const component = loadComponent('components/editor/sidebar/EditorSidebar.vue', {
+        ...lookBack,
+        BasicSidebar: {render: () => h('aside')}, SidebarTemplate: leaf,
+        SidebarHistory: leaf, SidebarConfigurator: leaf, TemplateConfigurator: leaf,
+    })
+    const warnings = []
+    const host = document.createElement('div')
+    document.body.appendChild(host)
+    const app = createApp(component, {withoutHistory: true})
+    app.config.globalProperties.$store = {getters: {
+        'auth/isAdmin': false, 'settings/getValue': () => 'false',
+    }}
+    app.config.globalProperties.$t = key => key
+    app.config.warnHandler = warning => warnings.push(warning)
+    app.mount(host)
+    t.after(() => {app.unmount(); host.remove()})
+    assert.ok(host.querySelector('aside'))
+    assert.equal(warnings.some(warning => warning.includes('not defined')), false)
+})
+
+test('two-factor settings cannot disable the last required method', async () => {
+    for (const [file, flag, method] of [
+        ['EmailTwoFactorSettings', 'emailEnabled', 'disableEmail2FA'],
+        ['TotpTwoFactorSettings', 'totpEnabled', 'disableTotp2FA'],
+    ]) {
+        const requests = [], toasts = []
+        const options = loadOptions(new URL(`../src/auth/${file}.vue`, import.meta.url), {
+            axios: {post: (...args) => requests.push(args)},
+        }).default
+        const state = {...options.data.call({enabled: true}), ...options.methods,
+            isTwoFactorRequired: true, enabledMethods: ['single'],
+            $t: key => key, eventBus: {emit: (_name, payload) => toasts.push(payload)}}
+        state[flag] = false
+        await state[method]()
+        assert.equal(state[flag], true)
+        assert.equal(requests.length, 0)
+        assert.equal(toasts[0].variant, 'warning')
+    }
+})
 
 const BasicModal = loadComponent('basic/Modal.vue', {Modal: BootstrapModal, uuid: () => 'uuid'})
 const StudyModal = loadComponent('components/study/StudyModal.vue', {
@@ -114,11 +451,12 @@ function mount(component, globals = {}) {
 
 /** Resolves once the condition holds, fails the test if it never does. */
 async function waitFor(condition, label) {
-    for (let i = 0; i < 200; i++) {
+    const deadline = Date.now() + 3000
+    while (Date.now() < deadline) {
         if (condition()) {
             return
         }
-        await wait(2)
+        await wait(5)
     }
     assert.fail(`Timed out waiting for ${label}`)
 }
@@ -495,4 +833,469 @@ test('unmounting an open parent with an open nested modal leaves nothing behind'
     await wait(SETTLE_MS)
 
     assertPageClean()
+})
+
+function wizardState(file, props, stubs = {}) {
+    const options = loadOptions(new URL(`../src/components/wizard/${file}.vue`, import.meta.url), stubs).default
+    const state = {...props, ...options.data?.call(props)}
+    for (const [name, method] of Object.entries(options.methods ?? {})) state[name] = method.bind(state)
+    for (const [name, getter] of Object.entries(options.computed ?? {})) {
+        Object.defineProperty(state, name, {get: () => getter.call(state)})
+    }
+    return state
+}
+
+test('setup Next validates without creating an account; Finish creates the account before saving settings', async () => {
+    const requests = [], navigation = []
+    let hasAdmin = false
+    const axios = {post: async (url, payload, config) => {
+        requests.push({url, payload, config})
+        return {status: 200, data: {success: true}}
+    }}
+    const admin = wizardState('SetupWizardAdminStep', {
+        formData: {userName: ' admin ', email: ' admin@example.test ', password: 'validpass'},
+        $emit: event => {if (event === 'created') hasAdmin = true},
+    }, {axios, getServerURL: () => 'https://care.test'})
+    admin.submitAdmin()
+    assert.equal(requests.length, 0)
+    const summary = wizardState('SetupWizardSummaryStep', {
+        hasAdmin: false, createAdmin: admin.createAccount, $emit: () => {},
+        formSettings: {'system.mailService.enabled': 'false', 'app.register.emailVerification': 'true', count: 5},
+        settingsFromFile: {count: '7', extra: false},
+        $router: {push: route => navigation.push(route), go: value => navigation.push(value)},
+    }, {axios, getServerURL: () => 'https://care.test'})
+    await summary.finish()
+    assert.equal(hasAdmin, true)
+    assert.deepEqual(requests.map(request => request.url), [
+        'https://care.test/auth/setup-admin', 'https://care.test/setup/complete',
+    ])
+    assert.deepEqual(requests[0].payload, {userName: 'admin', email: 'admin@example.test', password: 'validpass'})
+    assert.equal(requests[0].config.withCredentials, true)
+    assert.deepEqual(Object.fromEntries(requests[1].payload.settings.map(({key, value}) => [key, value])), {
+        'system.mailService.enabled': 'false', 'app.register.emailVerification': 'false', count: '7', extra: 'false',
+    })
+    assert.deepEqual(navigation, ['/dashboard', 0])
+})
+
+test('setup does not save settings when administrator creation fails', async () => {
+    const requests = [], errors = []
+    const axios = {post: async url => {
+        requests.push(url)
+        return {status: 400, data: {message: 'Name already exists'}}
+    }}
+    const admin = wizardState('SetupWizardAdminStep', {
+        formData: {userName: 'admin', email: 'admin@example.test', password: 'validpass'},
+        $emit: (event, message) => {if (event === 'error' && message) errors.push(message)},
+    }, {axios, getServerURL: () => ''})
+    const summary = wizardState('SetupWizardSummaryStep', {
+        hasAdmin: false, createAdmin: admin.createAccount, formSettings: {}, settingsFromFile: null, $emit: () => {},
+    }, {axios, getServerURL: () => ''})
+    await summary.finish()
+    assert.deepEqual(requests, ['/auth/setup-admin'])
+    assert.deepEqual(errors, ['Name already exists'])
+    assert.equal(summary.finishing, false)
+})
+
+// BackendTable and its table search, mounted with all their real parts (table/server, table/search).
+
+// v-model reads these when it updates a text input.
+Object.assign(globalThis, {Document: window.Document, ShadowRoot: window.ShadowRoot})
+
+/** Socket double: records every emit, answers queryTable through `reply`, keeps listeners per event. */
+function fakeTableSocket(reply) {
+    const listeners = new Map()
+    const emitted = []
+    const add = (event, fn) => listeners.set(event, [...(listeners.get(event) || []), fn])
+    const socket = {
+        id: 'socket-1',
+        connected: true,
+        emitted,
+        listeners,
+        on: add,
+        once: add,
+        off(event, fn) {
+            listeners.set(event, (listeners.get(event) || []).filter(listener => listener !== fn))
+        },
+        emit(event, payload, ack) {
+            emitted.push({event, payload})
+            if (event === 'queryTable' && ack) setTimeout(() => ack(reply(payload)))
+        },
+        timeout() {
+            return {emit: (event, payload, ack) => socket.emit(event, payload, response => ack(null, response))}
+        },
+        fire(event, payload) {
+            for (const listener of listeners.get(event) || []) listener(payload)
+        },
+    }
+    return socket
+}
+
+const TABLE_ROWS = Array.from({length: 25}, (_, index) => ({id: index + 1, name: `Study ${index + 1}`}))
+
+/** Server double for queryTable: keyset pages of TABLE_ROWS, filtered by the free-text search. */
+function queryTableReply({query}) {
+    let rows = TABLE_ROWS.filter(row => !query.search || row.name.includes(query.search))
+    if (query.sort?.direction === 'DESC') rows = [...rows].reverse()
+    let start = 0
+    if (query.after) start = rows.findIndex(row => row.id === query.after) + 1
+    if (query.before) start = Math.max(0, rows.findIndex(row => row.id === query.before) - query.limit)
+    if (query.fromEnd) start = Math.max(0, rows.length - query.limit)
+    const items = rows.slice(start, start + query.limit)
+    return {success: true, data: {items, meta: {
+        total: rows.length, page: 1, pageSize: query.limit, totalPages: Math.ceil(rows.length / query.limit),
+        startCursor: items[0]?.id ?? null, endCursor: items.at(-1)?.id ?? null,
+    }}}
+}
+
+const TABLE_STUBS = {
+    LoadIcon: {render: () => h('i', {class: 'icon-stub'})},
+    Loader: {render: () => null},
+    DatetimePicker: {render: () => null},
+    TCell: {props: ['column', 'row'], render() {
+        return h('span', {class: 'cell-text'}, String(this.row[this.column.key]))
+    }},
+    resolveApiMessage: response => response?.message ?? 'error',
+}
+
+async function mountBackendTable(props = {}) {
+    const BackendTable = loadComponent('basic/BackendTable.vue', TABLE_STUBS)
+    const socket = fakeTableSocket(queryTableReply)
+    const toasts = []
+    const holder = reactive({show: true})
+    let table
+    mount({render: () => holder.show ? h(BackendTable, {
+        ref: instance => {table = instance ?? table},
+        table: 'study',
+        columns: [{key: 'name', name: 'Name', sortable: true}],
+        options: {pagination: 10, selectableRows: true, search: true},
+        queryFilterSchema: {state: {label: 'State', type: 'enum', options: ['open', 'closed']}},
+        ...props,
+    }) : null}, {$socket: socket, eventBus: {emit: (event, payload) => toasts.push(payload)}})
+    const rowNames = () => [...document.querySelectorAll('tbody tr[data-row] .cell-text')].map(cell => cell.textContent)
+    await waitFor(() => rowNames().length > 0, 'first page')
+    return {table: () => table, socket, toasts, holder, rowNames}
+}
+
+const tableQueries = socket => socket.emitted.filter(({event}) => event === 'queryTable').map(({payload}) => payload.query)
+const tableRows = () => [...document.querySelectorAll('tbody tr[data-row]')]
+
+test('a mounted BackendTable loads its first page over the socket and renders the rows', async () => {
+    const {socket, rowNames} = await mountBackendTable()
+    assert.deepEqual(rowNames(), TABLE_ROWS.slice(0, 10).map(row => row.name))
+    assert.deepEqual(tableQueries(socket), [{limit: 10, sort: {column: 'id', direction: 'ASC'}}])
+    assert.equal(socket.emitted.filter(({event}) => event === 'queryTableAcquire').length, 1)
+    assert.equal(socket.listeners.get('studyDelta').length, 1)
+    assert.equal(socket.listeners.get('studyStale').length, 1)
+    assert.deepEqual(errors.map(String), [])
+})
+
+test('BackendTable row clicks and the header checkbox drive getSelection and applySelection', async () => {
+    const {table, rowNames} = await mountBackendTable()
+    tableRows()[1].dispatchEvent(new window.Event('click'))
+    await nextTick()
+    assert.deepEqual(table().getSelection().ids, [2])
+    assert.equal(document.querySelectorAll('tbody tr[data-row] input:checked').length, 1)
+
+    const all = document.querySelector('thead input[type=checkbox]')
+    all.dispatchEvent(new window.Event('change'))
+    await nextTick()
+    let selection = table().getSelection()
+    assert.equal(selection.allMatching, true)
+    assert.equal(selection.count, TABLE_ROWS.length)
+    assert.equal(document.querySelectorAll('tbody tr[data-row] input:checked').length, rowNames().length)
+    // Unticking one row while everything matches excludes it.
+    tableRows()[0].dispatchEvent(new window.Event('click'))
+    await nextTick()
+    selection = table().getSelection()
+    assert.deepEqual(selection.excludeIds, [1])
+    assert.equal(all.indeterminate, true)
+
+    table().applySelection({ids: [3, 4]})
+    await nextTick()
+    selection = table().getSelection()
+    assert.equal(selection.allMatching, false)
+    assert.deepEqual(selection.ids, [3, 4])
+    assert.deepEqual(tableRows().filter(row => row.querySelector('input').checked)
+        .map(row => row.textContent.trim()), ['Study 3', 'Study 4'])
+    assert.deepEqual(errors.map(String), [])
+})
+
+test('BackendTable pages forward by cursor and sorts from the header', async () => {
+    const {table, socket, rowNames} = await mountBackendTable()
+    table().paginationPageChange(2)
+    await waitFor(() => rowNames()[0] === 'Study 11', 'second page')
+    assert.equal(tableQueries(socket).at(-1).after, 10)
+
+    table().paginationPageChange(1)
+    await waitFor(() => rowNames()[0] === 'Study 1', 'first page again')
+
+    document.querySelector('thead th:not(:first-child) .icon-stub').dispatchEvent(new window.MouseEvent('click'))
+    await waitFor(() => tableQueries(socket).at(-1).sort.column === 'name', 'sorted query')
+    assert.deepEqual(errors.map(String), [])
+})
+
+test('BackendTable search bar and applySearch refetch with the query, unmount releases the socket', async () => {
+    const {table, socket, holder, rowNames} = await mountBackendTable()
+    const input = document.querySelector('.token-input')
+    input.value = 'Study 2'
+    input.dispatchEvent(new window.Event('input'))
+    await waitFor(() => tableQueries(socket).at(-1).search === 'Study 2', 'search query')
+    await waitFor(() => rowNames().length === 7, 'searched rows')
+    assert.equal(document.querySelectorAll('.search-bar-btn').length, 2)
+
+    table().applySearch({search: '', columnFilters: {state: {operator: '=', value: 'open'}}})
+    await waitFor(() => tableQueries(socket).at(-1).columnFilters?.state?.value === 'open', 'filter query')
+    await nextTick()
+    assert.equal(document.querySelectorAll('.token-chip').length, 1)
+    assert.equal(document.querySelector('.token-input').value, '')
+
+    holder.show = false
+    await nextTick()
+    assert.equal(socket.emitted.at(-1).event, 'queryTableRelease')
+    assert.equal(socket.listeners.get('studyDelta').length, 0)
+    assert.equal(socket.listeners.get('studyStale').length, 0)
+    assert.equal(socket.listeners.get('connect').length, 0)
+    assert.deepEqual(errors.map(String), [])
+})
+
+test('BackendTable applies socket deltas: an update highlights, a delete marks the row', async () => {
+    const {socket, rowNames} = await mountBackendTable()
+    socket.fire('studyDelta', {operation: 'update', row: {id: 2, name: 'Renamed'}, originSocketId: 'other'})
+    await nextTick()
+    await nextTick()
+    assert.equal(rowNames()[1], 'Renamed')
+    assert.ok(tableRows()[1].classList.contains('row-updated'))
+    socket.fire('studyDelta', {operation: 'delete', row: {id: 3}, originSocketId: 'other'})
+    await nextTick()
+    assert.ok(tableRows()[2].classList.contains('row-deleting'))
+    assert.deepEqual(errors.map(String), [])
+})
+
+test('a mounted BasicTable selects rows and filters them by its search input', async () => {
+    const BasicTable = loadComponent('basic/Table.vue', TABLE_STUBS)
+    const state = reactive({selected: []})
+    mount({render: () => h(BasicTable, {
+        data: TABLE_ROWS,
+        modelValue: state.selected,
+        'onUpdate:modelValue': value => {state.selected = value},
+        columns: [{key: 'name', name: 'Name'}],
+        options: {pagination: 10, selectableRows: true, search: true},
+    })})
+    const names = () => [...document.querySelectorAll('tbody tr .cell-text')].map(cell => cell.textContent)
+    await waitFor(() => names().length === 10, 'first page')
+    document.querySelectorAll('tbody tr')[2].dispatchEvent(new window.Event('click'))
+    await waitFor(() => state.selected.length > 0, 'selection')
+    assert.deepEqual(state.selected.map(row => row.id), [3])
+    assert.equal(document.querySelector('tbody tr:nth-child(3) input').checked, true)
+
+    const input = document.querySelector('input[aria-label="table-search"]')
+    input.value = 'Study 2'
+    input.dispatchEvent(new window.Event('input'))
+    await waitFor(() => names().length === 7, 'filtered rows')
+    assert.deepEqual(errors.map(String), [])
+})
+
+test('a mounted BasicSidebar switches tabs, emits actions and toggles from the top bar', async () => {
+    // Aliased imports are not followed by loadOptions, so the sidebar parts are handed in.
+    const TopBarButton = {props: ['show', 'title', 'disabled'], render() {
+        return h('button', {title: this.title, disabled: this.disabled}, this.$slots.default?.())
+    }}
+    const parts = Object.fromEntries(['SidebarHeader', 'SidebarResizeHandle', 'SidebarToggle', 'SidebarContent',
+        'SidebarPeekZone'].map(name => [name, loadComponent(`basic/sidebar/${name}.vue`, {...TABLE_STUBS, TopBarButton})]))
+    const BasicSidebar = loadComponent('basic/Sidebar.vue', {...parts, scrollElement: async () => {}})
+    const topBar = document.createElement('ul')
+    topBar.id = 'topBarNavItems'
+    document.body.append(topBar)
+    const events = []
+    const tab = title => ({render() {
+        return h('div', {class: `pane-${title}`}, title)
+    }, props: ['title', 'icon', 'buttons']})
+    const First = tab('first'), Second = tab('second')
+    mount({render: () => h(BasicSidebar, {
+        buttons: [{action: 'general', title: 'General', isGeneral: true}],
+        onSidebarChange: slot => events.push(['change', slot]),
+        onSidebarAction: ({action, slotName}) => events.push(['action', action, slotName]),
+        onSidebarVisibilityChange: visible => events.push(['visible', visible]),
+    }, {
+        first: () => h(First, {title: 'first', icon: 'a', buttons: [{action: 'own', title: 'Own'}]}),
+        second: () => h(Second, {title: 'second', icon: 'b'}),
+    })}, {$socket: {emit: () => {}}})
+    await waitFor(() => document.querySelectorAll('.sidebar-header .nav-link').length === 2, 'tabs')
+    const shown = () => [...document.querySelectorAll('[data-sidebar-slot]')]
+        .filter(pane => pane.style.display !== 'none').map(pane => pane.dataset.sidebarSlot)
+    assert.deepEqual(shown(), ['first'])
+    assert.equal(document.querySelectorAll('.sidebar-action-button').length, 2)
+
+    document.querySelectorAll('.sidebar-action-button')[1].dispatchEvent(new window.MouseEvent('click'))
+    document.querySelectorAll('.sidebar-header .nav-link')[1].dispatchEvent(new window.MouseEvent('click'))
+    await nextTick()
+    assert.deepEqual(shown(), ['second'])
+    assert.equal(document.querySelectorAll('.sidebar-action-button').length, 1)
+
+    topBar.querySelector('button, .btn').dispatchEvent(new window.MouseEvent('click'))
+    await nextTick()
+    assert.equal(document.querySelector('#sidebarContainer').style.display, 'none')
+    assert.deepEqual(events, [
+        ['change', 'first'], ['visible', true], ['action', 'own', 'first'], ['change', 'second'], ['visible', false],
+    ])
+    assert.deepEqual(errors.map(String), [])
+})
+
+// Assignment wizard (dashboard/study/AssignmentModal): the root orchestrates steps and selection
+// snapshots, the confirmation step owns the create requests.
+
+const ASSIGNMENT_DIR = 'components/dashboard/study'
+const selectionModule = loadOptions(new URL('../src/basic/table/emptySelection.js', import.meta.url), {})
+
+/** Options-API instance double: data, computed getters and bound methods over the given props. */
+function assignmentState(file, props, stubs = {}) {
+    const options = loadOptions(new URL(`../src/${ASSIGNMENT_DIR}/${file}.vue`, import.meta.url), stubs).default
+    const state = {$t: key => key, $options: options, ...props}
+    Object.assign(state, options.data?.call(state), props)
+    state.$data = state
+    for (const [name, method] of Object.entries(options.methods ?? {})) state[name] = method.bind(state)
+    for (const [name, getter] of Object.entries(options.computed ?? {})) {
+        Object.defineProperty(state, name, {get: () => getter.call(state)})
+    }
+    return state
+}
+
+/** Socket double answering each event from `replies` and recording its payload. */
+function assignmentSocket(replies) {
+    const emitted = []
+    return {emitted, emit: (event, payload, ack) => {
+        emitted.push({event, payload})
+        ack(replies[event])
+    }}
+}
+
+function confirmationState(props) {
+    const toasts = [], settled = [], downloads = []
+    const state = assignmentState('assignment/ConfirmationStep', {
+        bulk: true, template: {id: 1}, assignmentType: 'document', targetWorkflowId: null,
+        newStudyOwner: 'session_owner', selectedAssignments: [], selectedReviewer: [],
+        reviewerSelectionMode: {}, workflowSteps: [], roles: [], roleSelection: {}, reviewerSelection: {},
+        enableEmailNotification: false, workflowMapping: undefined,
+        eventBus: {emit: (event, toast) => toasts.push(toast)},
+        $emit: (event, value) => settled.push([event, value]),
+        $store: {getters: {'table/document/getFiltered': () => []}},
+        ...props,
+    }, {
+        downloadObjectsAs: (...args) => downloads.push(args),
+        resolveApiMessage: res => `api:${res?.message}`,
+    })
+    return {state, toasts, settled, downloads}
+}
+
+test('bulk confirmation sends query-table snapshots, downloads role CSV rows and settles successfully', () => {
+    const socket = assignmentSocket({assignmentCreateBulk: {success: true, data: {csvRows: [{reviewer: 7}]}}})
+    const {state, toasts, settled, downloads} = confirmationState({
+        assignmentType: 'submission', selectedReviewer: [{id: 7}], reviewerSelectionMode: {mode: 'role'},
+        roles: [{id: 2, name: 'Student'}], roleSelection: {2: 1}, enableEmailNotification: true, $socket: socket,
+    })
+    const reviewers = {allMatching: true, count: 30}, submissions = {allMatching: true, count: 12}
+    state.submit('progress-1', {reviewerQuerySelection: reviewers, assignmentSelection: submissions})
+    assert.deepEqual(socket.emitted.map(({event}) => event), ['assignmentCreateBulk'])
+    const payload = socket.emitted[0].payload
+    assert.equal(payload.progressId, 'progress-1')
+    assert.equal(payload.mode, 'role')
+    assert.equal(payload.enableEmailNotification, true)
+    assert.equal(payload.reviewerQuerySelection, reviewers)
+    assert.equal(payload.assignmentSelection, submissions)
+    assert.equal(payload.documents, undefined)
+    assert.deepEqual(downloads, [[[{reviewer: 7}], 'assignments', 'csv']])
+    assert.equal(toasts[0].variant, 'success')
+    assert.deepEqual(settled, [['settled', true]])
+})
+
+test('single confirmation resolves the selection first and maps documents onto workflow steps', () => {
+    const socket = assignmentSocket({
+        assignmentBulkResolveSelection: {success: true, data: {selectedAssignments: [], selectedReviewer: [{id: 8}]}},
+        assignmentCreateSingle: {success: false, message: 'denied'},
+    })
+    const {state, toasts, settled} = confirmationState({
+        bulk: false, selectedAssignments: [{id: 5}], workflowSteps: [{id: 11}, {id: 12}], $socket: socket,
+    })
+    const selection = {assignmentType: 'document', reviewerQuerySelection: {ids: [8]}}
+    state.submit('unused', selection)
+    assert.deepEqual(socket.emitted.map(({event}) => event), ['assignmentBulkResolveSelection', 'assignmentCreateSingle'])
+    assert.equal(socket.emitted[0].payload, selection)
+    const payload = socket.emitted[1].payload
+    assert.deepEqual(payload.selectedAssignments, [{id: 5}])
+    assert.deepEqual(payload.reviewer, [{id: 8}])
+    assert.deepEqual(payload.documents, [{documentId: 5, workflowStepId: 11}, {documentId: null, workflowStepId: 12}])
+    assert.deepEqual(toasts, [{title: 'dashboard.study.failedToCreateAssignment', message: 'api:denied', variant: 'danger'}])
+    assert.deepEqual(settled, [['settled', false]])
+})
+
+test('a failed single-assignment resolve settles without creating anything', () => {
+    const socket = assignmentSocket({assignmentBulkResolveSelection: {success: false, message: 'gone'}})
+    const {state, settled} = confirmationState({bulk: false, assignmentType: 'study_session', $socket: socket})
+    state.submit('unused', {})
+    assert.deepEqual(socket.emitted.map(({event}) => event), ['assignmentBulkResolveSelection'])
+    assert.deepEqual(settled, [['settled', false]])
+})
+
+test('distribution step reports mode, quotas and review count as one modal value', () => {
+    const state = assignmentState('assignment/DistributionStep', {
+        modalValue: {reviewerSelectionMode: {mode: 'role'}, roleSelection: {2: '2', 3: '1'}},
+        selectedReviewer: [], selectedAssignments: [{id: 1}], assignmentCount: 4, assignmentType: 'study_session', roles: [],
+    })
+    assert.deepEqual(state.reviewerSelectionModeFields[0].options.map(option => option.value), ['role', 'reviewer', 'session_user'])
+    assert.equal(state.isValid, true)
+    assert.equal(state.distribution.numberOfReviews, 12)
+    state.reviewerSelectionMode = {mode: 'reviewer'}
+    state.reviewerSelection = {7: '3'}
+    assert.equal(state.remainingAssignments, 1)
+    assert.equal(state.isValid, false)
+    assert.equal(state.distribution.numberOfReviews, 3)
+})
+
+test('assignment wizard snapshots live selections across steps and hands them to the confirmation step', () => {
+    const submitted = [], waiting = [], progress = []
+    const liveReviewers = {allMatching: true, count: 9}
+    const socket = assignmentSocket({
+        assignmentBulkResolveSelection: {success: true, data: {selectedAssignments: [{id: 1}], selectedReviewer: [{id: 2}]}},
+    })
+    const state = assignmentState('AssignmentModal', {$socket: socket}, {
+        resolveApiMessage: () => '', cloneSelection: selectionModule.cloneSelection, emptySelection: selectionModule.emptySelection,
+    })
+    state.$refs = {
+        assignmentStepper: {
+            setWaiting: value => waiting.push(value),
+            startProgress: () => 'progress-2',
+            stopProgress: () => progress.push('stop'),
+            close: () => progress.push('close'),
+        },
+    }
+    Object.assign(state, {bulk: true, assignmentType: 'study_session'})
+    assert.deepEqual(state.steps.map(step => step.panel), [
+        'template', 'workflow-mapping', 'session-selection', 'reviewer-selection', 'distribution', 'confirmation',
+    ])
+    state.assignmentSelection = {allMatching: true, count: 4}
+    state.activeStep = 3
+    state.$refs.reviewerSelectionStep = {getSelection: () => liveReviewers}
+    state.onStepChange(4)
+    assert.deepEqual(state.reviewerQuerySelection, liveReviewers)
+    assert.notEqual(state.reviewerQuerySelection, liveReviewers)
+    assert.deepEqual(socket.emitted[0].payload.assignmentSelection, {allMatching: true, count: 4})
+    assert.deepEqual([state.assignmentModalValue, state.selectedReviewer], [[{id: 1}], [{id: 2}]])
+    assert.deepEqual(waiting, [true, false])
+    assert.equal(state.assignmentCount, 4)
+
+    delete state.$refs.reviewerSelectionStep
+    state.$refs.confirmationStep = {submit: (...args) => submitted.push(args)}
+    state.onSubmit()
+    assert.equal(submitted[0][0], 'progress-2')
+    assert.deepEqual(submitted[0][1].reviewerQuerySelection, liveReviewers)
+    assert.deepEqual(submitted[0][1].assignmentSelection, {allMatching: true, count: 4})
+    state.onSettled(false)
+    state.onSettled(true)
+    assert.deepEqual(progress, ['stop', 'stop', 'close'])
+
+    const key = state.stepResetKey
+    state.reset()
+    assert.deepEqual([state.bulk, state.stepResetKey, state.assignmentType, state.activeStep], [true, key + 1, 'document', 0])
+    assert.deepEqual(state.reviewerQuerySelection, selectionModule.emptySelection())
+    assert.equal(state.steps.length, 5)
 })

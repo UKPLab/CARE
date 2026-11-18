@@ -26,11 +26,13 @@
      <small v-if="!filteredUserName" class="text-muted me-auto">
          {{ $t('users.activeSessions.activeUsers', { count: stats.activeUsers }) }}
      </small>
-      <BasicButton
-          class="btn btn-secondary"
-          :title="$t('common.close')"
-          @click="$refs.modal.close()"
-      />
+      <div class="btn-group">
+        <BasicButton
+            class="btn btn-secondary"
+            :title="$t('common.close')"
+            @click="$refs.modal.close()"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

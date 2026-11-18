@@ -55,7 +55,8 @@
               @retry="$emit('retry', $event)"
           />
 
-          <BasicButton v-if="entry.answer && !activeRequest && isActiveQuestion(entry.question) && allowSkip && !readOnly"
+          <BasicButton
+v-if="entry.answer && !activeRequest && isActiveQuestion(entry.question) && allowSkip && !readOnly"
                        :disabled="isBusy" @click="$emit('send', {skipped: true, followUpIndex: questionFromMessage(entry.question).followUpIndex})">{{ $t("ai.dialogue.skip") }}</BasicButton>
           <DialogueAnswerInput
               v-if="isActiveQuestion(entry.question) && (!entry.answer || activeRequest)"
