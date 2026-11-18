@@ -4,7 +4,7 @@ const os = require('os');
 const path = require('path');
 const Server = require('../webserver/Server.js');
 const DocumentSocket = require('../webserver/sockets/document');
-const {addResearcherUser} = require('./utils.js');
+const {addResearcherUser, enableRestForTests, allTokenRights} = require('./utils.js');
 
 const PORT = 3121;
 const SETTING = 'system.auth.apiTokens.enabled';
@@ -21,7 +21,7 @@ describe('REST documents', () => {
         server = new Server();
         server.start(PORT);
         await server.devAdminReady;
-        await server.db.models['setting'].set(SETTING, 'true');
+        await enableRestForTests(server.db.models);
 
         const login = await request(server.http)
             .post('/auth/login')
@@ -36,7 +36,7 @@ describe('REST documents', () => {
         const created = await request(server.http)
             .post('/auth/api-tokens')
             .set('Cookie', cookie)
-            .send({name: 'documents tests'});
+            .send({name: 'documents tests', rights: await allTokenRights(server, cookie)});
         expect(created.statusCode).toBe(201);
         secret = created.body.secret;
         tokenId = created.body.token.id;
@@ -89,7 +89,11 @@ describe('REST documents', () => {
             expect(res.body.document.name).toBe('REST blank html');
             expect(res.body.document.type).toBe(1);
             expect(res.body.document.userId).toBe(ownerId);
-            expect(res.body.document.uploadedByUserId).toBeNull();
+            const stored = await server.db.models['document'].getById(res.body.document.id);
+            expect(stored.uploadedByUserId).toBeNull();
+            // Internal columns are not part of the REST document.
+            expect(res.body.document.uploadedByUserId).toBeUndefined();
+            expect(res.body.document.deleted).toBeUndefined();
             await server.db.models['document'].deleteById(res.body.document.id);
         });
 
@@ -126,6 +130,15 @@ describe('REST documents', () => {
             expect(res.body.message).toBe('errors.rest.invalidProjectId');
         });
 
+        test('POST rejects a project or template that does not exist', async () => {
+            const project = await bearerPost({name: 'missing project', projectId: 99999999});
+            expect(project.statusCode).toBe(400);
+            expect(project.body.message).toBe('errors.rest.invalidProjectId');
+            const template = await bearerPost({name: 'missing template', templateId: 99999999});
+            expect(template.statusCode).toBe(400);
+            expect(template.body.message).toBe('errors.rest.invalidTemplateId');
+        });
+
         test('POST rejects a non-integer templateId', async () => {
             const res = await bearerPost({name: 'bad template', templateId: 'nope'});
             expect(res.statusCode).toBe(400);
@@ -152,10 +165,10 @@ describe('REST documents', () => {
             const missing = '/rest/v1/documents/99999999';
             const calls = [
                 bearerGet(missing),
-                bearerGet(missing + '/upload'),
+                bearerGet(missing + '/file'),
                 request(server.http).patch(missing).set(auth()).send({name: 'x'}),
                 request(server.http).delete(missing).set(auth()),
-                request(server.http).put(missing + '/upload').set(auth())
+                request(server.http).put(missing + '/file').set(auth())
                     .attach('file', writeTempZip('care-rest-missing-put.zip'), 'missing.zip'),
             ];
             for (const res of await Promise.all(calls)) {
@@ -228,7 +241,7 @@ describe('REST documents', () => {
             expect(uploaded.body.document.type).toBe(4);
             expect(uploaded.body.document.userId).toBe(ownerId);
             const id = uploaded.body.document.id;
-            const fileRes = await bearerGet('/rest/v1/documents/' + id + '/upload');
+            const fileRes = await bearerGet('/rest/v1/documents/' + id + '/file');
             expect(fileRes.statusCode).toBe(200);
             await server.db.models['document'].deleteById(id);
         });
@@ -261,13 +274,13 @@ describe('REST documents', () => {
             expect(uploaded.statusCode).toBe(201);
             try {
                 const onHtml = await request(server.http)
-                    .put('/rest/v1/documents/' + html.body.document.id + '/upload')
+                    .put('/rest/v1/documents/' + html.body.document.id + '/file')
                     .set(auth())
                     .attach('file', zipPath, 'typed.zip');
                 expect(onHtml.statusCode).toBe(400);
                 expect(onHtml.body.message).toBe('errors.documents.replaceOnlyPdfZip');
                 const mismatch = await request(server.http)
-                    .put('/rest/v1/documents/' + uploaded.body.document.id + '/upload')
+                    .put('/rest/v1/documents/' + uploaded.body.document.id + '/file')
                     .set(auth())
                     .attach('file', zipPath, 'typed.pdf');
                 expect(mismatch.statusCode).toBe(400);
@@ -281,7 +294,7 @@ describe('REST documents', () => {
         test('GET file for HTML is 400', async () => {
             const created = await bearerPost({name: 'REST no pdf'});
             expect(created.statusCode).toBe(201);
-            const res = await bearerGet('/rest/v1/documents/' + created.body.document.id + '/upload');
+            const res = await bearerGet('/rest/v1/documents/' + created.body.document.id + '/file');
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toBe('errors.rest.documentHasNoBinaryFile');
             await server.db.models['document'].deleteById(created.body.document.id);
@@ -300,7 +313,7 @@ describe('REST documents', () => {
             expect(fs.existsSync(filePath)).toBe(true);
             fs.unlinkSync(filePath);
             try {
-                const res = await bearerGet('/rest/v1/documents/' + doc.id + '/upload');
+                const res = await bearerGet('/rest/v1/documents/' + doc.id + '/file');
                 expect(res.statusCode).toBe(404);
                 expect(res.body.message).toBe('errors.rest.documentFileMissing');
             } finally {
@@ -319,22 +332,108 @@ describe('REST documents', () => {
             const hash = uploaded.body.document.hash;
             const replacement = writeTempZip('care-rest-replace-b.zip');
             const replaced = await request(server.http)
-                .put('/rest/v1/documents/' + id + '/upload')
+                .put('/rest/v1/documents/' + id + '/file')
                 .set(auth())
                 .attach('file', replacement, 'replaced.zip');
             expect(replaced.statusCode).toBe(200);
             expect(replaced.body.documentId).toBe(id);
             expect(replaced.body.hash).toBe(hash);
-            const fileRes = await bearerGet('/rest/v1/documents/' + hash + '/upload');
+            const fileRes = await bearerGet('/rest/v1/documents/' + hash + '/file');
             expect(fileRes.statusCode).toBe(200);
             await server.db.models['document'].deleteById(id);
+        });
+
+        test('a non-ASCII file name is stored as sent and downloads without error', async () => {
+            const name = 'Übersicht – تقرير.zip';
+            const uploaded = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', writeTempZip('care-rest-unicode.zip'), name);
+            expect(uploaded.statusCode).toBe(201);
+            const id = uploaded.body.document.id;
+            try {
+                expect(uploaded.body.document.name).toBe('Übersicht – تقرير');
+                const fileRes = await bearerGet('/rest/v1/documents/' + id + '/file');
+                expect(fileRes.statusCode).toBe(200);
+                // The name travels encoded, as RFC 6266 filename*.
+                expect(fileRes.headers['content-disposition']).toContain("filename*=UTF-8''");
+            } finally {
+                await server.db.models['document'].deleteById(id);
+            }
+        });
+
+        test('a chunked upload without Content-Length is refused, because its size cannot be checked', async () => {
+            const http = require('http');
+            const boundary = 'carerestboundary';
+            const body = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="chunked.zip"\r\n`
+                + `Content-Type: application/zip\r\n\r\nPK\r\n--${boundary}--\r\n`;
+            const res = await new Promise((resolve, reject) => {
+                const req = http.request({
+                    host: '127.0.0.1',
+                    port: PORT,
+                    path: '/rest/v1/documents/upload',
+                    method: 'POST',
+                    headers: {
+                        ...auth(),
+                        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+                        'Transfer-Encoding': 'chunked',
+                    },
+                }, (response) => {
+                    let data = '';
+                    response.on('data', (chunk) => (data += chunk));
+                    response.on('end', () => resolve({status: response.statusCode, body: JSON.parse(data)}));
+                });
+                req.on('error', reject);
+                req.write(body);
+                req.end();
+            });
+            expect(res.status).toBe(411);
+            expect(res.body.message).toBe('errors.rest.contentLengthRequired');
+        });
+
+        test('a .json upload is refused instead of creating nothing', async () => {
+            const res = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', Buffer.from('{}'), 'notes.json');
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toBe('errors.file.invalidFileType');
+        });
+
+        test('a replace whose final rename fails keeps the new file, hides paths, and answers 500', async () => {
+            const uploaded = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', writeTempZip('care-rest-rename-a.zip'), 'rename.zip');
+            expect(uploaded.statusCode).toBe(201);
+            const document = await server.db.models['document'].getById(uploaded.body.document.id);
+            const target = DocumentSocket.storedFilePath(document);
+            const tempPath = target + '.replace-tmp';
+            // A directory where the file should go makes the rename after commit fail.
+            fs.unlinkSync(target);
+            fs.mkdirSync(path.join(target, 'block'), {recursive: true});
+            try {
+                const res = await request(server.http)
+                    .put('/rest/v1/documents/' + document.id + '/file')
+                    .set(auth())
+                    .attach('file', writeTempZip('care-rest-rename-b.zip'), 'rename.zip');
+                expect(res.statusCode).toBe(500);
+                expect(res.body.message).toBe('errors.rest.replacePromoteFailed');
+                expect(res.body.params).toEqual({documentId: document.id});
+                expect(JSON.stringify(res.body)).not.toContain(target);
+                expect(fs.existsSync(tempPath)).toBe(true);
+            } finally {
+                fs.rmSync(target, {recursive: true, force: true});
+                fs.rmSync(tempPath, {force: true});
+                await server.db.models['document'].deleteById(document.id);
+            }
         });
 
         test('PUT upload with no file is 400', async () => {
             const created = await bearerPost({name: 'REST put no file'});
             expect(created.statusCode).toBe(201);
             const res = await request(server.http)
-                .put('/rest/v1/documents/' + created.body.document.id + '/upload')
+                .put('/rest/v1/documents/' + created.body.document.id + '/file')
                 .set(auth());
             expect(res.statusCode).toBe(400);
             expect(res.body.message).toBe('errors.rest.fileRequired');
@@ -391,27 +490,13 @@ describe('REST documents', () => {
             }
         });
 
-        test('empty rights list cannot call documents', async () => {
+        test('a token cannot be created with an empty rights list', async () => {
             const scoped = await request(server.http)
                 .post('/auth/api-tokens')
                 .set('Cookie', cookie)
-                .send({
-                    name: 'no rights',
-                    rights: [],
-                });
-            expect(scoped.statusCode).toBe(201);
-            try {
-                const denied = await request(server.http)
-                    .post('/rest/v1/documents')
-                    .set('Authorization', 'Bearer ' + scoped.body.secret)
-                    .send({name: 'should fail'});
-                expect(denied.statusCode).toBe(403);
-                expect(denied.body.message).toBe('errors.rest.missingTokenRight');
-            } finally {
-                await request(server.http)
-                    .delete('/auth/api-tokens/' + scoped.body.token.id)
-                    .set('Cookie', cookie);
-            }
+                .send({name: 'empty rights', rights: []});
+            expect(scoped.statusCode).toBe(400);
+            expect(scoped.body.message).toBe('errors.rest.tokenRightsRequired');
         });
     });
 
@@ -439,7 +524,7 @@ describe('REST documents', () => {
                 .set('Cookie', researcherCookie)
                 .send({
                     name: 'researcher docs',
-                    rights: [DOCUMENTS_VIEW],
+                    rights: [DOCUMENTS_VIEW, 'frontend.dashboard.documents.upload'],
                 });
             expect(created.statusCode).toBe(201);
             researcherSecret = created.body.secret;
@@ -538,7 +623,7 @@ describe('REST documents', () => {
             const replacement = writeTempZip('care-rest-researcher-put.zip');
             try {
                 const res = await request(server.http)
-                    .put('/rest/v1/documents/' + uploaded.body.document.id + '/upload')
+                    .put('/rest/v1/documents/' + uploaded.body.document.id + '/file')
                     .set(researcherAuth())
                     .attach('file', replacement, 'own.zip');
                 expect(res.statusCode).toBe(403);
@@ -546,6 +631,128 @@ describe('REST documents', () => {
             } finally {
                 await server.db.models['document'].deleteById(uploaded.body.document.id);
             }
+        });
+    });
+
+    describe('document text', () => {
+        test('GET content returns the delta and plain text of an HTML document', async () => {
+            const created = await bearerPost({name: 'REST content doc'});
+            const id = created.body.document.id;
+            try {
+                const res = await bearerGet('/rest/v1/documents/' + id + '/content');
+                expect(res.statusCode).toBe(200);
+                expect(res.body.document.id).toBe(id);
+                expect(Array.isArray(res.body.delta.ops)).toBe(true);
+                expect(typeof res.body.text).toBe('string');
+            } finally {
+                await server.db.models['document'].deleteById(id);
+            }
+        });
+
+        test('GET content on a ZIP document is 400 and on a missing one 404', async () => {
+            const zipPath = writeTempZip('care-rest-content.zip');
+            const uploaded = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', zipPath, 'content.zip');
+            try {
+                const res = await bearerGet('/rest/v1/documents/' + uploaded.body.document.id + '/content');
+                expect(res.statusCode).toBe(400);
+                expect(res.body.message).toBe('errors.rest.documentHasNoText');
+                expect((await bearerGet('/rest/v1/documents/99999999/content')).statusCode).toBe(404);
+            } finally {
+                await server.db.models['document'].deleteById(uploaded.body.document.id);
+            }
+        });
+    });
+
+    describe('files after a failed upload', () => {
+        test('a rolled-back upload leaves no file on disk', async () => {
+            const {UPLOAD_PATH} = require('../webserver/sockets/document');
+            const before = new Set(fs.readdirSync(UPLOAD_PATH));
+            // A .delta upload writes its file first and then parses it; broken JSON fails after the write.
+            const res = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', Buffer.from('this is not json'), 'rollback.delta');
+            expect(res.statusCode).toBeGreaterThanOrEqual(400);
+            const added = fs.readdirSync(UPLOAD_PATH).filter((name) => !before.has(name));
+            expect(added).toEqual([]);
+        });
+    });
+
+    describe('upload size', () => {
+        test('a file over 100 MB is refused with 413 and nothing is created', async () => {
+            const {MAX_UPLOAD_BYTES} = require('../webserver/routes/rest/routeHelpers');
+            const before = await server.db.models['document'].count({where: {deleted: false}});
+            const res = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', Buffer.alloc(MAX_UPLOAD_BYTES + 1024), 'too-big.pdf');
+            expect(res.statusCode).toBe(413);
+            expect(res.body.message).toBe('errors.rest.fileTooLarge');
+            expect(await server.db.models['document'].count({where: {deleted: false}})).toBe(before);
+        }, 60000);
+    });
+
+    describe('admin owner with a narrow token', () => {
+        let other;
+        let otherDoc;
+        let narrow;
+
+        beforeAll(async () => {
+            other = (await addResearcherUser(server.db.models)).user;
+            otherDoc = await server.db.models['document'].add({name: 'someone else private', type: 1, userId: other.id});
+            const created = await request(server.http)
+                .post('/auth/api-tokens')
+                .set('Cookie', cookie)
+                .send({name: 'admin narrow', rights: [DOCUMENTS_VIEW]});
+            expect(created.statusCode).toBe(201);
+            narrow = created.body;
+        });
+
+        afterAll(async () => {
+            await request(server.http).delete('/auth/api-tokens/' + narrow.token.id).set('Cookie', cookie);
+            await server.db.models['document'].deleteById(otherDoc.id);
+            await server.db.models['user'].deleteById(other.id);
+        });
+
+        function narrowAuth() {
+            return {'Authorization': 'Bearer ' + narrow.secret};
+        }
+
+        test('the full admin token sees and can delete another user document', async () => {
+            const res = await request(server.http).get('/rest/v1/documents/' + otherDoc.id).set(auth());
+            expect(res.statusCode).toBe(200);
+        });
+
+        test('list returns only the owner documents, not everyone', async () => {
+            const res = await request(server.http).get('/rest/v1/documents').set(narrowAuth());
+            expect(res.statusCode).toBe(200);
+            expect(res.body.documents.some((doc) => doc.id === otherDoc.id)).toBe(false);
+            expect(res.body.documents.every((doc) => doc.userId === ownerId)).toBe(true);
+        });
+
+        test('get, patch, and delete of another user document are 403', async () => {
+            const got = await request(server.http).get('/rest/v1/documents/' + otherDoc.id).set(narrowAuth());
+            expect(got.statusCode).toBe(403);
+            const patched = await request(server.http)
+                .patch('/rest/v1/documents/' + otherDoc.id)
+                .set(narrowAuth())
+                .send({name: 'taken over'});
+            expect(patched.statusCode).toBe(403);
+            const deleted = await request(server.http).delete('/rest/v1/documents/' + otherDoc.id).set(narrowAuth());
+            expect(deleted.statusCode).toBe(403);
+            expect((await server.db.models['document'].getById(otherDoc.id)).name).toBe('someone else private');
+        });
+
+        test('upload needs the upload right on the token', async () => {
+            const res = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(narrowAuth())
+                .attach('file', Buffer.from('{"ops":[{"insert":"hi\\n"}]}'), 'narrow.delta');
+            expect(res.statusCode).toBe(403);
+            expect(res.body.message).toBe('errors.rest.missingTokenRight');
         });
     });
 });

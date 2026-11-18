@@ -63,3 +63,27 @@ exports.addResearcherUser = async function (models) {
     });
     return {user, password};
 }
+
+/**
+ * Turn the REST API on for a test suite and lift its rate limits, since a suite sends far more
+ * requests per minute than a script would. The limits themselves are tested in rest.api_token.
+ * @param {object} models
+ */
+exports.enableRestForTests = async function (models) {
+    await models['setting'].set('system.auth.apiTokens.enabled', 'true');
+    await models['setting'].set('system.auth.apiTokens.rateLimitPerMinute', '100000');
+    await models['setting'].set('system.auth.apiTokens.heavyRateLimitPerMinute', '100000');
+};
+
+/**
+ * Every right the logged-in user may put on a token, for tests that need a full token.
+ * Creating a token requires a rights list; there is no implicit "everything".
+ * @param {object} server
+ * @param {string|string[]} cookie session cookie of that user
+ * @returns {Promise<string[]>}
+ */
+exports.allTokenRights = async function (server, cookie) {
+    const res = await request(server.http).get('/auth/api-tokens/rights').set('Cookie', cookie);
+    return res.body.rights.map((right) => right.name);
+};
+

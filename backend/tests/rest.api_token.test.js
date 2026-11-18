@@ -1,8 +1,8 @@
 const request = require('supertest');
 const Server = require('../webserver/Server.js');
-const {addResearcherUser} = require('./utils.js');
+const {addResearcherUser, enableRestForTests, allTokenRights} = require('./utils.js');
 const {listAttachableRights} = require('../webserver/utils/apiTokenAuth');
-const {REST_RATE_LIMIT} = require('../webserver/middleware/restRateLimit');
+const {GENERAL_SETTING, HEAVY_SETTING} = require('../webserver/middleware/restRateLimit');
 
 const PORT = 3120;
 const SETTING = 'system.auth.apiTokens.enabled';
@@ -16,7 +16,7 @@ describe('REST API tokens', () => {
         server = new Server();
         server.start(PORT);
         await server.devAdminReady;
-        await server.db.models['setting'].set(SETTING, 'true');
+        await enableRestForTests(server.db.models);
     });
 
     afterAll(async () => {
@@ -39,11 +39,13 @@ describe('REST API tokens', () => {
         return login(process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
     }
 
+    // A token with every right its owner may attach, unless the test lists rights itself.
     async function mint(cookie, body) {
+        const withRights = body.rights ? body : {...body, rights: await allTokenRights(server, cookie)};
         const res = await request(server.http)
             .post('/auth/api-tokens')
             .set('Cookie', cookie)
-            .send(body);
+            .send(withRights);
         expect(res.statusCode).toBe(201);
         return res.body;
     }
@@ -76,6 +78,47 @@ describe('REST API tokens', () => {
     });
 
     describe('cookie create and list', () => {
+        test('a userId in the body is ignored: the token always belongs to the logged-in user', async () => {
+            const {cookie, userId} = await adminSession();
+            const created = await mint(cookie, {name: 'not for someone else', userId: 999999});
+            expect(created.token.userId).toBe(userId);
+            const row = await server.db.models['api_token'].getById(created.token.id);
+            expect(row.userId).toBe(userId);
+            await revoke(cookie, created.token.id);
+        });
+
+        test('GET rights lists attachable rights with descriptions and role presets within them', async () => {
+            const {cookie} = await adminSession();
+            const res = await request(server.http).get('/auth/api-tokens/rights').set('Cookie', cookie);
+            expect(res.statusCode).toBe(200);
+            const names = res.body.rights.map((right) => right.name);
+            expect(names).toContain('frontend.dashboard.documents.view');
+            expect(Object.keys(res.body.rights[0]).sort()).toEqual(['description', 'name']);
+            expect(res.body.roles.some((role) => role.name === 'admin')).toBe(false);
+            for (const role of res.body.roles) {
+                expect(role.rights.every((name) => names.includes(name))).toBe(true);
+            }
+        });
+
+        test('GET rights without a session is 401', async () => {
+            const res = await request(server.http).get('/auth/api-tokens/rights');
+            expect(res.statusCode).toBe(401);
+        });
+
+        test('list and create return the rights stored on the token', async () => {
+            const {cookie} = await adminSession();
+            const created = await request(server.http)
+                .post('/auth/api-tokens')
+                .set('Cookie', cookie)
+                .send({name: 'rights echo', rights: ['frontend.dashboard.documents.view', 'frontend.dashboard.documents.view']});
+            expect(created.statusCode).toBe(201);
+            expect(created.body.token.rights).toEqual(['frontend.dashboard.documents.view']);
+            const listed = await request(server.http).get('/auth/api-tokens').set('Cookie', cookie);
+            const row = listed.body.tokens.find((token) => token.id === created.body.token.id);
+            expect(row.rights).toEqual(['frontend.dashboard.documents.view']);
+            await request(server.http).delete('/auth/api-tokens/' + created.body.token.id).set('Cookie', cookie);
+        });
+
         test('create requires a name', async () => {
             const {cookie} = await adminSession();
             const empty = await request(server.http)
@@ -91,7 +134,7 @@ describe('REST API tokens', () => {
             const created = await request(server.http)
                 .post('/auth/api-tokens')
                 .set('Cookie', cookie)
-                .send({name: 'lab script'});
+                .send({name: 'lab script', rights: await allTokenRights(server, cookie)});
             expect(created.statusCode).toBe(201);
             expect(created.body.secret).toMatch(/^care_/);
             expect(created.body.token.prefix).toMatch(/^care_/);
@@ -156,13 +199,64 @@ describe('REST API tokens', () => {
         });
     });
 
+    describe('expiry', () => {
+        test('create rejects an expiry that is not a future date', async () => {
+            const {cookie} = await adminSession();
+            for (const expiresAt of ['nope', '2001-01-01T00:00:00.000Z', 5]) {
+                const res = await request(server.http)
+                    .post('/auth/api-tokens')
+                    .set('Cookie', cookie)
+                    .send({name: 'bad expiry', expiresAt});
+                expect({expiresAt, status: res.statusCode, message: res.body.message})
+                    .toEqual({expiresAt, status: 400, message: 'errors.rest.invalidTokenExpiry'});
+            }
+        });
+
+        test('any future expiry is accepted, also more than a year ahead', async () => {
+            const {cookie} = await adminSession();
+            const twoYears = new Date(Date.now() + 2 * 365 * 24 * 60 * 60 * 1000).toISOString();
+            const created = await mint(cookie, {name: 'long expiry', expiresAt: twoYears});
+            expect(created.token.expiresAt).toBe(twoYears);
+            await revoke(cookie, created.token.id);
+        });
+
+        test('a token works before its expiry and is 401 after it', async () => {
+            const {cookie} = await adminSession();
+            const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+            const created = await mint(cookie, {name: 'expiring', expiresAt});
+            expect(created.token.expiresAt).toBe(expiresAt);
+            try {
+                const before = await bearerGet('/rest/v1/me', created.secret);
+                expect(before.statusCode).toBe(200);
+                expect(before.body.token.expiresAt).toBe(expiresAt);
+
+                await server.db.models['api_token'].update(
+                    {expiresAt: new Date(Date.now() - 1000)},
+                    {where: {id: created.token.id}}
+                );
+                const after = await bearerGet('/rest/v1/me', created.secret);
+                expect(after.statusCode).toBe(401);
+                expect(after.body.message).toBe('errors.rest.expiredBearer');
+            } finally {
+                await revoke(cookie, created.token.id);
+            }
+        });
+
+        test('a token without an expiry has expiresAt null', async () => {
+            const {cookie} = await adminSession();
+            const created = await mint(cookie, {name: 'no expiry'});
+            expect(created.token.expiresAt).toBeNull();
+            await revoke(cookie, created.token.id);
+        });
+    });
+
     describe('revoke', () => {
         test('revoke then Bearer is invalid', async () => {
             const {cookie} = await adminSession();
             const created = await request(server.http)
                 .post('/auth/api-tokens')
                 .set('Cookie', cookie)
-                .send({name: 'to revoke'});
+                .send({name: 'to revoke', rights: await allTokenRights(server, cookie)});
             expect(created.statusCode).toBe(201);
 
             const revoked = await request(server.http)
@@ -262,7 +356,7 @@ describe('REST API tokens', () => {
             const created = await request(server.http)
                 .post('/auth/api-tokens')
                 .set('Cookie', cookie)
-                .send({name: 'admin owned'});
+                .send({name: 'admin owned', rights: await allTokenRights(server, cookie)});
             expect(created.statusCode).toBe(201);
 
             const res = await request(server.http)
@@ -276,16 +370,15 @@ describe('REST API tokens', () => {
                 .set('Cookie', cookie);
         });
 
-        test('token without a rights list gets every right the owner has', async () => {
-            const created = await mint(researcherCookie, {name: 'researcher default rights'});
-            const rows = await server.db.models['api_token_right'].findAll({
-                where: {apiTokenId: created.token.id, deleted: false},
-                raw: true,
-            });
-            const ownerRights = await listAttachableRights(server.db.models, researcherUserId);
-            expect(rows.map((row) => row.userRightName).sort()).toEqual([...ownerRights].sort());
-            const revoked = await revoke(researcherCookie, created.token.id);
-            expect(revoked.statusCode).toBe(200);
+        test('a token cannot be created without a rights list', async () => {
+            for (const body of [{name: 'no rights'}, {name: 'empty rights', rights: []}, {name: 'bad rights', rights: [5]}]) {
+                const res = await request(server.http)
+                    .post('/auth/api-tokens')
+                    .set('Cookie', researcherCookie)
+                    .send(body);
+                expect({body, status: res.statusCode, message: res.body.message})
+                    .toEqual({body, status: 400, message: 'errors.rest.tokenRightsRequired'});
+            }
         });
 
         test('admin can revoke another user token', async () => {
@@ -301,7 +394,7 @@ describe('REST API tokens', () => {
         test('a stored right the owner does not have is refused', async () => {
             const ownerRights = await listAttachableRights(server.db.models, researcherUserId);
             expect(ownerRights).not.toContain(STUDIES_MANAGE);
-            const created = await mint(researcherCookie, {name: 'stale right', rights: []});
+            const created = await mint(researcherCookie, {name: 'stale right', rights: ['frontend.dashboard.api_tokens.view']});
             await server.db.models['api_token_right'].add({
                 apiTokenId: created.token.id,
                 userRightName: STUDIES_MANAGE,
@@ -324,13 +417,13 @@ describe('REST API tokens', () => {
             const adminToken = await request(server.http)
                 .post('/auth/api-tokens')
                 .set('Cookie', adminCookie)
-                .send({name: 'admin list marker'});
+                .send({name: 'admin list marker', rights: await allTokenRights(server, adminCookie)});
             expect(adminToken.statusCode).toBe(201);
 
             const researcherToken = await request(server.http)
                 .post('/auth/api-tokens')
                 .set('Cookie', researcherCookie)
-                .send({name: 'researcher listed'});
+                .send({name: 'researcher listed', rights: await allTokenRights(server, researcherCookie)});
             expect(researcherToken.statusCode).toBe(201);
 
             try {
@@ -359,6 +452,78 @@ describe('REST API tokens', () => {
                     .delete('/auth/api-tokens/' + adminToken.body.token.id)
                     .set('Cookie', adminCookie);
             }
+        });
+    });
+
+    describe('owner deleted, form posts, and the token cap', () => {
+        async function freshResearcher() {
+            const researcher = await addResearcherUser(server.db.models);
+            const session = await login(researcher.user.email, researcher.password);
+            return {...researcher, cookie: session.cookie};
+        }
+
+        test('deleting a user revokes their tokens', async () => {
+            const researcher = await freshResearcher();
+            const created = await mint(researcher.cookie, {name: 'owner will be deleted'});
+            expect((await bearerGet('/rest/v1/me', created.secret)).statusCode).toBe(200);
+            await server.db.models['user'].updateById(researcher.user.id, {deleted: true});
+            const row = await server.db.models['api_token'].findOne({where: {id: created.token.id}, raw: true});
+            expect(row.deleted).toBe(true);
+            const after = await bearerGet('/rest/v1/me', created.secret);
+            expect(after.statusCode).toBe(401);
+        });
+
+        test('a token whose owner is deleted is 401 even if the token row was left', async () => {
+            const researcher = await freshResearcher();
+            const created = await mint(researcher.cookie, {name: 'owner deleted, row left'});
+            // Without hooks, so the token row stays and only bearerAuth's owner check can stop it.
+            await server.db.models['user'].update({deleted: true}, {where: {id: researcher.user.id}, hooks: false});
+            const after = await bearerGet('/rest/v1/me', created.secret);
+            expect(after.statusCode).toBe(401);
+            expect(after.body.message).toBe('errors.rest.tokenOwnerDeleted');
+        });
+
+        test('a token stops working when its owner loses the role that held the right', async () => {
+            const researcher = await freshResearcher();
+            const created = await mint(researcher.cookie, {name: 'role removed', rights: ['frontend.dashboard.documents.view']});
+            expect((await bearerGet('/rest/v1/documents', created.secret)).statusCode).toBe(200);
+            const matching = server.db.models['user_role_matching'];
+            const roleIds = await matching.getUserRolesById(researcher.user.id);
+            await matching.deleteUserRoles(researcher.user.id, roleIds);
+            const after = await bearerGet('/rest/v1/documents', created.secret);
+            expect(after.statusCode).toBe(403);
+            expect(after.body.message).toBe('errors.rest.missingTokenRight');
+            await server.db.models['user'].deleteById(researcher.user.id);
+        });
+
+        test('create refuses a form post, so another site cannot create tokens', async () => {
+            const {cookie} = await adminSession();
+            const res = await request(server.http)
+                .post('/auth/api-tokens')
+                .set('Cookie', cookie)
+                .type('form')
+                .send('name=forged&rights[]=frontend.dashboard.documents.view');
+            expect(res.statusCode).toBe(415);
+            expect(res.body.message).toBe('errors.rest.jsonRequired');
+        });
+
+        test('a user may hold at most 25 unexpired tokens', async () => {
+            const researcher = await freshResearcher();
+            const rights = ['frontend.dashboard.documents.view'];
+            const ids = [];
+            for (let i = 0; i < 25; i++) {
+                ids.push((await mint(researcher.cookie, {name: 'cap ' + i, rights})).token.id);
+            }
+            const over = await request(server.http).post('/auth/api-tokens').set('Cookie', researcher.cookie)
+                .send({name: 'one too many', rights});
+            expect(over.statusCode).toBe(400);
+            expect(over.body.message).toBe('errors.rest.tooManyTokens');
+            // An expired token does not count.
+            await server.db.models['api_token'].update({expiresAt: new Date(Date.now() - 1000)}, {where: {id: ids[0]}});
+            const again = await request(server.http).post('/auth/api-tokens').set('Cookie', researcher.cookie)
+                .send({name: 'room again', rights});
+            expect(again.statusCode).toBe(201);
+            await server.db.models['user'].deleteById(researcher.user.id);
         });
     });
 
@@ -412,25 +577,77 @@ describe('REST API tokens', () => {
             }
         });
 
-        test('rate limit blocks a token after REST_RATE_LIMIT requests and leaves other tokens alone', async () => {
-            const {cookie} = await adminSession();
-            const first = await mint(cookie, {name: 'rate a'});
-            const second = await mint(cookie, {name: 'rate b'});
+        test('rate limit counts per user across tokens, answers 429 with text, and leaves other users alone', async () => {
+            // Fresh users, so no earlier request in this suite counts against the budget.
+            const one = await addResearcherUser(server.db.models);
+            const two = await addResearcherUser(server.db.models);
+            const oneSession = await login(one.user.email, one.password);
+            const twoSession = await login(two.user.email, two.password);
+            const first = await mint(oneSession.cookie, {name: 'rate a'});
+            const second = await mint(oneSession.cookie, {name: 'rate b'});
+            const theirs = await mint(twoSession.cookie, {name: 'rate other user'});
+            await server.db.models['setting'].set(GENERAL_SETTING, '4');
             try {
-                for (let count = 1; count <= REST_RATE_LIMIT; count++) {
-                    const res = await bearerGet('/rest/v1/documents', first.secret);
-                    expect({count, status: res.statusCode}).toEqual({count, status: 200});
+                for (let count = 1; count <= 2; count++) {
+                    expect((await bearerGet('/rest/v1/me', first.secret)).statusCode).toBe(200);
+                    expect((await bearerGet('/rest/v1/me', second.secret)).statusCode).toBe(200);
                 }
-                const blocked = await bearerGet('/rest/v1/documents', first.secret);
+                const blocked = await bearerGet('/rest/v1/me', second.secret);
                 expect(blocked.statusCode).toBe(429);
                 expect(blocked.body.message).toBe('errors.rest.rateLimitExceeded');
+                expect(blocked.body.error).toMatch(/too many requests/i);
 
-                const other = await bearerGet('/rest/v1/documents', second.secret);
+                const other = await bearerGet('/rest/v1/me', theirs.secret);
                 expect(other.statusCode).toBe(200);
-                expect(Number(/r=(\d+)/.exec(other.headers['ratelimit'])[1])).toBe(REST_RATE_LIMIT - 1);
+                expect(other.headers['ratelimit']).toBeTruthy();
             } finally {
-                await revoke(cookie, first.token.id);
-                await revoke(cookie, second.token.id);
+                await server.db.models['setting'].set(GENERAL_SETTING, '100000');
+                await server.db.models['user'].deleteById(one.user.id);
+                await server.db.models['user'].deleteById(two.user.id);
+            }
+        });
+
+        test('uploads, bulk writes, and imports have their own smaller budget', async () => {
+            const {cookie} = await adminSession();
+            const created = await mint(cookie, {name: 'heavy'});
+            await server.db.models['setting'].set(HEAVY_SETTING, '1');
+            try {
+                const importOne = () => request(server.http)
+                    .post('/rest/v1/templates/import')
+                    .set('Authorization', 'Bearer ' + created.secret)
+                    .send({name: 'heavy limit', description: 'x', type: 8, template_content: []});
+                const first = await importOne();
+                expect(first.statusCode).toBe(201);
+                await server.db.models['template'].deleteById(first.body.templates[0].id);
+                expect((await importOne()).statusCode).toBe(429);
+                expect((await bearerGet('/rest/v1/me', created.secret)).statusCode).toBe(200);
+            } finally {
+                await server.db.models['setting'].set(HEAVY_SETTING, '100000');
+                await revoke(cookie, created.token.id);
+            }
+        });
+
+        test('errors carry the English text next to the key', async () => {
+            const res = await bearerGet('/rest/v1/me', 'care_wrong');
+            expect(res.statusCode).toBe(401);
+            expect(res.body.message).toBe('errors.rest.invalidBearer');
+            expect(res.body.error).toBe('Invalid or revoked API token.');
+        });
+
+        test('broken JSON in a REST body is a JSON 400, not an HTML page', async () => {
+            const {cookie} = await adminSession();
+            const created = await mint(cookie, {name: 'bad json'});
+            try {
+                const res = await request(server.http)
+                    .post('/rest/v1/documents')
+                    .set('Authorization', 'Bearer ' + created.secret)
+                    .set('Content-Type', 'application/json')
+                    .send('{"name": ');
+                expect(res.statusCode).toBe(400);
+                expect(res.headers['content-type']).toMatch(/json/);
+                expect(res.body.message).toBe('errors.rest.invalidJson');
+            } finally {
+                await revoke(cookie, created.token.id);
             }
         });
     });
@@ -441,7 +658,7 @@ describe('REST API tokens', () => {
             const created = await request(server.http)
                 .post('/auth/api-tokens')
                 .set('Cookie', cookie)
-                .send({name: 'before disable'});
+                .send({name: 'before disable', rights: await allTokenRights(server, cookie)});
             expect(created.statusCode).toBe(201);
 
             await server.db.models['setting'].set(SETTING, 'false');

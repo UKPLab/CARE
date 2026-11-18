@@ -1,7 +1,7 @@
 const request = require('supertest');
 const yaml = require('js-yaml');
 const Server = require('../webserver/Server.js');
-const {addResearcherUser} = require('./utils.js');
+const {addResearcherUser, enableRestForTests, allTokenRights} = require('./utils.js');
 
 const PORT = 3122;
 const SETTING = 'system.auth.apiTokens.enabled';
@@ -20,7 +20,7 @@ describe('REST studies', () => {
         server = new Server();
         server.start(PORT);
         await server.devAdminReady;
-        await server.db.models['setting'].set(SETTING, 'true');
+        await enableRestForTests(server.db.models);
 
         const login = await request(server.http)
             .post('/auth/login')
@@ -35,7 +35,7 @@ describe('REST studies', () => {
         const created = await request(server.http)
             .post('/auth/api-tokens')
             .set('Cookie', cookie)
-            .send({name: 'studies tests'});
+            .send({name: 'studies tests', rights: await allTokenRights(server, cookie)});
         expect(created.statusCode).toBe(201);
         secret = created.body.secret;
         tokenId = created.body.token.id;
@@ -218,6 +218,9 @@ describe('REST studies', () => {
                 [{timeLimit: 'soon'}, 'errors.rest.invalidStudyField'],
                 [{start: 5}, 'errors.rest.invalidStudyField'],
                 [{stepDocuments: 'all'}, 'errors.rest.invalidStudyField'],
+                [{stepDocuments: [{documentId: 1}]}, 'errors.rest.invalidStudyField'],
+                [{stepDocuments: [{id: 1, documentId: 'x'}]}, 'errors.rest.invalidStudyField'],
+                [{stepDocuments: [{id: 1, documentId: 99999999}]}, 'errors.rest.stepDocumentNotFound'],
             ];
             for (const [body, message] of cases) {
                 const res = await request(server.http)
@@ -435,6 +438,91 @@ describe('REST studies', () => {
             await server.db.models['study'].deleteById(study.id);
         });
 
+        test('POST import keeps only study fields and ignores owner and state columns', async () => {
+            const res = await request(server.http)
+                .post('/rest/v1/studies/import')
+                .set(auth())
+                .send([{
+                    name: 'REST import allow-list',
+                    workflowId: workflow.id,
+                    userId: 999999,
+                    createdByUserId: 999999,
+                    closed: '2020-01-01T00:00:00.000Z',
+                    template: false,
+                }]);
+            expect(res.statusCode).toBe(201);
+            const imported = res.body.studies[0];
+            expect(imported.userId).toBe(ownerId);
+            expect(imported.template).toBe(true);
+            expect(imported.closed == null).toBe(true);
+            expect(imported.createdByUserId).not.toBe(999999);
+            await server.db.models['study'].deleteById(imported.id);
+        });
+
+        test('POST import that fails on the second study keeps nothing of the first', async () => {
+            const res = await request(server.http)
+                .post('/rest/v1/studies/import')
+                .set(auth())
+                .send([
+                    {name: 'REST import halfway first', workflowId: workflow.id},
+                    {name: 'REST import halfway second', workflowId: workflow.id, stepDocuments: [{id: 1, documentId: 99999999}]},
+                ]);
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toBe('errors.rest.stepDocumentNotFound');
+            // Rolled back, not soft-deleted: no row at all.
+            expect(await server.db.models['study'].count({where: {name: 'REST import halfway first'}})).toBe(0);
+        });
+
+        test('export then import keeps the steps with their documents', async () => {
+            const models = server.db.models;
+            const stepWorkflow = await models['workflow'].add({name: 'REST step workflow', description: 'one step', userId: ownerId});
+            const step = await models['workflow_step'].add({
+                workflowId: stepWorkflow.id, stepType: 1, workflowStepPrevious: null, allowBackward: true,
+            });
+            const doc = await models['document'].add({name: 'REST step document', type: 1, userId: ownerId});
+            const created = [];
+            try {
+                // The shape export returns: study fields plus study_step rows.
+                const first = await request(server.http)
+                    .post('/rest/v1/studies/import')
+                    .set(auth())
+                    .send([{name: 'REST import with steps', workflowId: stepWorkflow.id,
+                        study_step: [{workflowStepId: step.id, documentId: doc.id, configuration: {}}]}]);
+                expect(first.statusCode).toBe(201);
+                created.push(first.body.studies[0].id);
+                const stepsOf = (studyId) => models['study_step'].findAll({where: {studyId, deleted: false}, raw: true});
+                expect((await stepsOf(created[0])).map((row) => row.documentId)).toEqual([doc.id]);
+
+                const exported = await request(server.http)
+                    .get('/rest/v1/studies/' + created[0] + '/export?format=json')
+                    .set(auth());
+                expect(exported.statusCode).toBe(200);
+                const again = await request(server.http)
+                    .post('/rest/v1/studies/import')
+                    .set(auth())
+                    .send(exported.body);
+                expect(again.statusCode).toBe(201);
+                created.push(again.body.studies[0].id);
+                expect((await stepsOf(created[1])).map((row) => row.documentId)).toEqual([doc.id]);
+            } finally {
+                for (const id of created) {
+                    await models['study'].deleteById(id);
+                }
+                await models['document'].deleteById(doc.id);
+                await models['workflow_step'].deleteById(step.id);
+                await models['workflow'].deleteById(stepWorkflow.id);
+            }
+        });
+
+        test('POST import rejects a badly typed study field', async () => {
+            const res = await request(server.http)
+                .post('/rest/v1/studies/import')
+                .set(auth())
+                .send([{name: 'REST import bad type', workflowId: workflow.id, collab: 'yes'}]);
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toBe('errors.rest.invalidStudyField');
+        });
+
         test('POST import rejects empty, unparsable, and unknown-format content', async () => {
             const cases = [
                 [{}, 'errors.rest.importContentRequired'],
@@ -603,6 +691,161 @@ describe('REST studies', () => {
                 .send({templateId: template.id, name: 'researcher create'});
             expect(res.statusCode).toBe(403);
             expect(res.body.message).toBe('errors.rest.missingTokenRight');
+        });
+    });
+
+    describe('admin owner with a narrow token', () => {
+        let other;
+        let otherStudy;
+        let narrow;
+
+        beforeAll(async () => {
+            other = (await addResearcherUser(server.db.models)).user;
+            otherStudy = await server.db.models['study'].add({
+                name: 'someone else study',
+                workflowId: workflow.id,
+                userId: other.id,
+                template: false,
+            }, {context: {stepDocuments: []}});
+            const created = await request(server.http)
+                .post('/auth/api-tokens')
+                .set('Cookie', cookie)
+                .send({name: 'admin narrow studies', rights: [STUDIES_VIEW, 'frontend.dashboard.studies.canManageStudies']});
+            expect(created.statusCode).toBe(201);
+            narrow = created.body;
+        });
+
+        afterAll(async () => {
+            await request(server.http).delete('/auth/api-tokens/' + narrow.token.id).set('Cookie', cookie);
+            await server.db.models['study'].deleteById(otherStudy.id);
+            await server.db.models['user'].deleteById(other.id);
+        });
+
+        test('without studies.fullAccess on the token another user study is hidden and cannot be changed', async () => {
+            const bearer = {'Authorization': 'Bearer ' + narrow.secret};
+            const listed = await request(server.http).get('/rest/v1/studies').set(bearer);
+            expect(listed.statusCode).toBe(200);
+            expect(listed.body.studies.some((study) => study.id === otherStudy.id)).toBe(false);
+            const got = await request(server.http).get('/rest/v1/studies/' + otherStudy.id).set(bearer);
+            expect(got.statusCode).toBe(403);
+            const patched = await request(server.http)
+                .patch('/rest/v1/studies/' + otherStudy.id)
+                .set(bearer)
+                .send({name: 'taken over'});
+            expect(patched.statusCode).toBe(403);
+            const deleted = await request(server.http).delete('/rest/v1/studies/' + otherStudy.id).set(bearer);
+            expect(deleted.statusCode).toBe(403);
+        });
+
+        test('the full admin token still reaches that study', async () => {
+            const got = await request(server.http).get('/rest/v1/studies/' + otherStudy.id).set(auth());
+            expect(got.statusCode).toBe(200);
+        });
+    });
+    describe('review fixes', () => {
+        test('a study date that is not a date is 400, not a server error', async () => {
+            const study = await createStudy('REST bad date');
+            try {
+                const res = await request(server.http)
+                    .patch('/rest/v1/studies/' + study.id)
+                    .set(auth())
+                    .send({start: 'next week'});
+                expect(res.statusCode).toBe(400);
+                expect(res.body.message).toBe('errors.rest.invalidStudyField');
+                const ok = await request(server.http)
+                    .patch('/rest/v1/studies/' + study.id)
+                    .set(auth())
+                    .send({start: '2030-01-01T00:00:00.000Z', end: null});
+                expect(ok.statusCode).toBe(200);
+            } finally {
+                await server.db.models['study'].deleteById(study.id);
+            }
+        });
+
+        test('a bulk close sends its emails one study at a time, after answering', async () => {
+            const models = server.db.models;
+            const reader = await addResearcherUser(models);
+            const studies = [];
+            for (const name of ['REST mail one', 'REST mail two', 'REST mail three']) {
+                const study = await createStudy(name);
+                // Only an open session is needed; without hooks, so the template needs no steps.
+                await models['study_session'].create({studyId: study.id, userId: reader.user.id, hash: require('crypto').randomUUID(), deleted: false}, {hooks: false});
+                studies.push(study);
+            }
+            const original = server.sendMail;
+            let active = 0;
+            let maxActive = 0;
+            let sent = 0;
+            server.sendMail = async () => {
+                active += 1;
+                maxActive = Math.max(maxActive, active);
+                await new Promise((resolve) => setTimeout(resolve, 50));
+                active -= 1;
+                sent += 1;
+            };
+            try {
+                const res = await request(server.http)
+                    .post('/rest/v1/studies/close')
+                    .set(auth())
+                    .send({ids: studies.map((study) => study.id), notifySessions: true});
+                expect(res.statusCode).toBe(200);
+                expect(res.body.closedCount).toBe(3);
+                const end = Date.now() + 5000;
+                while (sent < 3 && Date.now() < end) {
+                    await new Promise((resolve) => setTimeout(resolve, 25));
+                }
+                expect(sent).toBe(3);
+                expect(maxActive).toBe(1);
+            } finally {
+                server.sendMail = original;
+                for (const study of studies) {
+                    await models['study'].deleteById(study.id);
+                }
+                await models['user'].deleteById(reader.user.id);
+            }
+        });
+
+        test('bulk routes take at most 100 ids', async () => {
+            const ids = Array.from({length: 101}, (_, i) => i + 1);
+            for (const route of ['close', 'open', 'delete']) {
+                const res = await request(server.http)
+                    .post('/rest/v1/studies/' + route)
+                    .set(auth())
+                    .send({ids});
+                expect({route, status: res.statusCode, message: res.body.message})
+                    .toEqual({route, status: 400, message: 'errors.rest.tooManyStudyIds'});
+            }
+        });
+
+        test('the list uses the system default project when the user has none of their own', async () => {
+            const models = server.db.models;
+            const systemDefault = parseInt(await models['setting'].get('projects.default'), 10);
+            const own = await models['user_setting'].get('projects.default', ownerId);
+            const project = await models['project'].add({name: 'REST other project', userId: ownerId});
+            const study = await models['study'].add({
+                name: 'REST study in other project', workflowId: workflow.id, userId: ownerId,
+                projectId: project.id, template: false,
+            }, {context: {stepDocuments: []}});
+            const listedIds = async () => (await request(server.http).get('/rest/v1/studies').set(auth()))
+                .body.studies.map((row) => row.id);
+            // Plain SQL: user_setting has no id column, and removing the row restores "no own setting" exactly.
+            const dropOwnSetting = () => server.db.sequelize.query(
+                'DELETE FROM "user_setting" WHERE "userId" = :userId AND "key" = \'projects.default\'',
+                {replacements: {userId: ownerId}});
+            try {
+                expect(project.id).not.toBe(systemDefault);
+                await dropOwnSetting();
+                expect(await listedIds()).not.toContain(study.id);
+                await models['user_setting'].set('projects.default', String(project.id), ownerId);
+                expect(await listedIds()).toContain(study.id);
+            } finally {
+                await dropOwnSetting();
+                if (own !== null) {
+                    await models['user_setting'].set('projects.default', own, ownerId);
+                }
+                await models['study'].deleteById(study.id);
+                await models['project'].deleteById(project.id);
+            }
         });
     });
 });
