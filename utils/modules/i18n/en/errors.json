@@ -35,6 +35,45 @@
         "noCommentAccess": "You don't have access to this comment",
         "noPreprocessSubmissionPermission": "You do not have permission to preprocess submissions"
     },
+    "assessment": {
+        "accessDenied": "You do not have access to the Assessment Management Dashboard.",
+        "fieldRequired": "{field} is required.",
+        "fieldInvalid": "{field} is invalid.",
+        "optionInvalid": "Scoring option {position}: {field} is invalid.",
+        "pointsRange": "Minimum points must not be greater than maximum points.",
+        "versionNumberNotAllowed": "The version number is assigned automatically and cannot be set.",
+        "versionConflict": "Another version was created at the same time. Please try again.",
+        "settingsInvalid": "Settings must be an object with at most {max} entries.",
+        "settingsKeyInvalid": "The setting key \"{key}\" is empty, too long or not allowed.",
+        "settingsKeyDuplicate": "The setting key \"{key}\" is used more than once.",
+        "settingsValueInvalid": "The value of setting \"{key}\" must be text, a number or true/false.",
+        "optionBelowMin": "Scoring option {position}: points must not be below the criterion's minimum of {min}.",
+        "optionAboveMax": "Scoring option {position}: points must not be above the criterion's maximum of {max}.",
+        "criterion": {
+            "notFound": "Criterion not found.",
+            "groupNotFound": "Criterion group not found.",
+            "copySourceMismatch": "The version to copy does not belong to this criterion group.",
+            "inUse": "Cannot delete '{name}' (version {version}) because it is used by {count} rubric version(s): {references}.",
+            "inUseUnknown": "Cannot delete '{name}' (version {version}) because it is still used by a rubric."
+        },
+        "rubric": {
+            "notFound": "Rubric not found.",
+            "groupNotFound": "Rubric group not found.",
+            "copySourceMismatch": "The version to copy does not belong to this rubric group.",
+            "duplicateCriterion": "Criterion version {criterionId} is selected more than once.",
+            "criteriaNotFound": "Criterion version(s) not found: {criterionIds}.",
+            "inUse": "Cannot delete '{name}' (version {version}) because it is used by {count} assessment version(s): {references}.",
+            "inUseUnknown": "Cannot delete '{name}' (version {version}) because it is still used by an assessment."
+        },
+        "assessment": {
+            "notFound": "Assessment not found.",
+            "groupNotFound": "Assessment group not found.",
+            "copySourceMismatch": "The version to copy does not belong to this assessment group.",
+            "duplicateRubric": "Rubric version {rubricId} is selected more than once.",
+            "rubricsNotFound": "Rubric version(s) not found: {rubricIds}.",
+            "inUse": "Cannot delete '{name}' (version {version}) because it is still used. Studies: {studySteps}; study templates: {templateSteps}; triggers: {triggers}; trigger actions: {triggerActions}; pending trigger runs: {queuedRuns}."
+        }
+    },
     "configuration": {
         "idRequiredNoPeriod": "Configuration ID is required",
         "contentRequiredNoPeriod": "Configuration content is required",

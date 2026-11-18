@@ -1,0 +1,163 @@
+{
+    "title": "Assessments",
+    "recordCount": "{count} records",
+    "tabs": {
+        "assessments": "Assessments",
+        "rubrics": "Rubrics",
+        "criteria": "Criteria"
+    },
+    "actions": {
+        "delete": "Delete",
+        "next": "Next",
+        "view": "View",
+        "newVersion": "Create new version",
+        "versions": "Versions",
+        "retry": "Retry"
+    },
+    "kinds": {
+        "criterion": "criterion",
+        "rubric": "rubric",
+        "assessment": "assessment"
+    },
+    "versions": {
+        "title": "Versions of \"{name}\"",
+        "empty": "No versions."
+    },
+    "bounds": {
+        "inactive": "Not set: no limit applies"
+    },
+    "settings": {
+        "title": "Advanced Settings",
+        "description": "Optional key/value pairs",
+        "empty": "No settings.",
+        "key": "Key",
+        "value": "Value",
+        "add": "Add setting",
+        "remove": "Remove setting",
+        "emptyEditable": "No settings. Add a key and a value if you need one."
+    },
+    "fields": {
+        "id": "ID",
+        "name": "Name",
+        "assessmentName": "Assessment name",
+        "description": "Description",
+        "version": "Version",
+        "rubrics": "Rubrics",
+        "criteria": "Criteria",
+        "points": "Points",
+        "minPoints": "Minimum points",
+        "maxPoints": "Maximum points",
+        "calculation": "Calculation method",
+        "defaultPoints": "Default points",
+        "defaultPointsHelp": "Starting score; the criterion scores are added to it.",
+        "isBonus": "Bonus rubric",
+        "scoringDescription": "Scoring description",
+        "latestVersion": "Latest version",
+        "versions": "Versions",
+        "createdAt": "Created at"
+    },
+    "calculation": {
+        "sum": "Summation",
+        "min": "Capped sum (older rubrics)",
+        "max": "Base + adjustments"
+    },
+    "assessment": {
+        "listTitle": "Assessment definitions",
+        "add": "Add Assessment",
+        "addTitle": "Add Assessment",
+        "viewTitle": "View Assessment — v{version}",
+        "versionTitle": "Create New Assessment Version",
+        "create": "Create Assessment",
+        "createVersion": "Create New Version",
+        "stepDetails": "Assessment Details",
+        "stepRubrics": "Rubrics Selection & Order",
+        "detailsTitle": "Assessment Details",
+        "rubricsTitle": "Rubrics Selection & Order",
+        "rubricsHelp": "Use the selection table to add rubric versions and arrange them in the intended order.",
+        "noRubricsSelected": "No rubrics selected yet.",
+        "empty": "No assessments yet. Add the first one."
+    },
+    "rubric": {
+        "listTitle": "Rubric library",
+        "add": "Add Rubric",
+        "addTitle": "Add Rubric",
+        "viewTitle": "View Rubric — v{version}",
+        "versionTitle": "Create New Rubric Version",
+        "create": "Create Rubric",
+        "createVersion": "Create New Version",
+        "stepDetails": "Rubric Details",
+        "stepCriteria": "Criteria Selection & Order",
+        "detailsTitle": "Rubric Details",
+        "criteriaTitle": "Criteria Selection & Order",
+        "criteriaHelp": "Use the selection table to add criterion versions and arrange them in the intended order.",
+        "noCriteriaSelected": "No criteria selected yet.",
+        "bonusHelp": "A bonus rubric adds its points as extra points to the achieved score, but it does not increase the assessment's maximum score. The final score cannot exceed 100%.",
+        "empty": "No rubrics yet. Add the first one."
+    },
+    "criterion": {
+        "listTitle": "Criterion library",
+        "add": "Add Criterion",
+        "addTitle": "Add Criterion",
+        "stepDetails": "Criterion Details",
+        "stepScoring": "Scoring Options",
+        "detailsTitle": "Criterion Details",
+        "scoringTitle": "Scoring Options",
+        "scoringHelp": "Define how each point value is awarded for {name}.",
+        "optionCount": "{count} options",
+        "optionNumber": "Scoring option {number}",
+        "addOption": "Add Scoring Option",
+        "removeOption": "Remove scoring option",
+        "viewTitle": "View Criterion — v{version}",
+        "versionTitle": "Create New Criterion Version",
+        "create": "Create Criterion",
+        "createVersion": "Create New Version",
+        "noOptions": "No scoring options.",
+        "empty": "No criteria yet. Add the first one."
+    },
+    "selection": {
+        "selectedOrder": "Selected order",
+        "selectedCount": "{count} selected",
+        "reorderHint": "Reorder below",
+        "moveUp": "Move up",
+        "moveDown": "Move down",
+        "remove": "Remove from list"
+    },
+    "errors": {
+        "required": "This field is required.",
+        "maxBelowMin": "Maximum points must be greater than or equal to minimum points.",
+        "selectRubric": "Select at least one rubric.",
+        "selectCriterion": "Select at least one criterion.",
+        "number": "Enter a number.",
+        "tooLong": "Use at most 255 characters.",
+        "pointsBetween": "Points must be between {min} and {max}.",
+        "pointsAtLeast": "Points must be at least {min}.",
+        "pointsAtMost": "Points must be at most {max}.",
+        "settingsKeyRequired": "Enter a key.",
+        "settingsKeyTooLong": "A key can have at most 255 characters.",
+        "settingsKeyUnsafe": "This key name is not allowed.",
+        "settingsKeyDuplicate": "This key is used more than once.",
+        "settingsValueTooLong": "A value can have at most 10000 characters.",
+        "settingsTooMany": "At most {max} settings are allowed."
+    },
+    "confirm": {
+        "title": "Delete version",
+        "deleteVersion": "Delete version \"{version}\" of the {kind} \"{name}\"? Only this version is deleted, other versions stay. It cannot be deleted while it is still used."
+    },
+    "messages": {
+        "saved": "Saved",
+        "deleted": "Deleted",
+        "assessmentCreated": "Assessment \"{name}\" (version {version}) was created.",
+        "assessmentVersionCreated": "Version {version} of the assessment \"{name}\" was created.",
+        "rubricCreated": "Rubric \"{name}\" (version {version}) was created.",
+        "rubricVersionCreated": "Version {version} of the rubric \"{name}\" was created.",
+        "loading": "Loading…",
+        "error": "Error",
+        "deleteFailed": "Delete failed",
+        "notConnected": "Not connected to the server. Check the connection and try again.",
+        "timeout": "The server did not answer in time. Try again.",
+        "criterionCreated": "Criterion \"{name}\" (version {version}) was created.",
+        "criterionVersionCreated": "Version {version} of the criterion \"{name}\" was created.",
+        "versionDeleted": "Version {version} of the {kind} \"{name}\" was deleted.",
+        "requestFailed": "The request failed. Please try again."
+    }
+}
