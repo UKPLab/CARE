@@ -1,0 +1,98 @@
+/* ========================================
+   1. ROOT LAYOUT
+======================================== */
+
+#wrapper {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  background-color: var(--bs-tertiary-bg, #f2f2f2);
+}
+
+#sidebar-wrapper {
+  position: relative;
+  -webkit-transition: width .25s ease-out;
+  -moz-transition: width .25s ease-out;
+  -o-transition: width .25s ease-out;
+  transition: width .25s ease-out;
+  transition-delay: 0.1s;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-height: 0;
+  width: 13rem;
+
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
+}
+
+@media (min-width: 768px) {
+  #wrapper #sidebar-wrapper.collapsed {
+    width: 64px;
+  }
+}
+
+/* ========================================
+   2. SCROLLBARS
+======================================== */
+
+/* Chrome / Edge / Safari */
+#sidebar-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+#sidebar-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#sidebar-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.35);
+  border-radius: 999px;
+  transition: background 0.2s ease;
+}
+
+#sidebar-wrapper:hover::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.5);
+}
+
+#sidebar-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(120, 120, 120, 0.7);
+}
+
+/* ========================================
+   3. BASE ELEMENTS (shared across Sidebar.vue, SidebarGroup.vue,
+      SidebarNavItem.vue and SidebarPreview.vue)
+======================================== */
+
+.list-group-item-custom {
+  display: flex !important;
+  justify-content: flex-start;
+  align-items: center;
+  flex-shrink: 0;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  border: none;
+  background-color: var(--bs-tertiary-bg, #f2f2f2);
+}
+
+.sidebar-icon {
+  height: 25px;
+  width: 25px;
+  flex-shrink: 0;
+  margin-right: 12px;
+  margin-left: -2px;
+}
+
+/* ========================================
+   4. COLLAPSED SIDEBAR MODE (own markup only; SidebarGroup.vue,
+      SidebarPreview.vue and SidebarFooter.vue own their collapsed-mode rules)
+======================================== */
+
+#sidebar-wrapper.collapsed .sidebar-icon {
+  margin-right: 0;
+  margin-left: 0;
+}

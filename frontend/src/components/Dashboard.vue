@@ -1,13 +1,13 @@
 <template>
-  <Loading v-if="navElements > 0 || settings === null" />
+  <Loading v-if="!navigationDataReady" />
   <div v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column dashboard-wrapper">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
         <div 
           id="sidebarContainer"
-          class="col border mh-100 col-sm-auto g-0"
+          class="col border h-100 mh-100 col-sm-auto g-0 d-flex flex-column"
         >
-          <Sidebar />
+          <Sidebar :active-element="activeNavigationElement" />
         </div>
         <div
           id="viewerContainer"
@@ -41,6 +41,7 @@ import NotFoundPage from "@/auth/NotFound.vue";
 
 
 const dashboardModules = import.meta.glob("./dashboard/*.vue");
+const DEFAULT_DASHBOARD_SETTING = "dashboard.navigation.component.default";
 
 export default {
   name: "DashboardRoute",
@@ -59,44 +60,65 @@ export default {
     settings() {
       return this.$store.getters["settings/getSettings"];
     },
-    defaultComponent() {
-      if (this.settings && "dashboard.navigation.component.default" in this.settings) {
-        return this.navElements.find((e) => e.name.toLowerCase() === this.settings["dashboard.navigation.component.default"].toLowerCase());
+    navigationDataReady() {
+      return Array.isArray(this.navElements) && this.settings !== null && this.settings !== undefined;
+    },
+    currentNavigationElement() {
+      if (!this.navigationDataReady) {
+        return null;
       }
-      return undefined;
+
+      if (!Array.isArray(this.navElements)) {
+        return null;
+      }
+
+      if (typeof this.catchAll === "string" && this.catchAll.trim()) {
+        const explicitElement = this.navElements.find(
+          element => element && typeof element.path === "string" && element.path.toLowerCase() === this.catchAll.toLowerCase()
+        );
+        if (explicitElement) {
+          return explicitElement;
+        }
+      }
+
+      const defaultName = this.settings?.[DEFAULT_DASHBOARD_SETTING];
+      if (typeof defaultName !== "string" || !defaultName.trim()) {
+        return null;
+      }
+
+      return this.navElements.find(
+        element => element && typeof element.name === "string" && element.name.toLowerCase() === defaultName.trim().toLowerCase()
+      ) || null;
+    },
+    activeNavigationElement() {
+      const element = this.currentNavigationElement;
+      if (!element) {
+        return null;
+      }
+
+      const requiredRight = `frontend.dashboard.${element.path}.view`;
+      if (!this.$store.getters["auth/checkRight"](requiredRight)) {
+        return null;
+      }
+
+      return dashboardModules[`./dashboard/${element.component}.vue`] ? element : null;
     },
     currentComponent() {
-      let component = undefined;
-      if (this.navElements.length > 0 && this.catchAll !== undefined) {
-        component = this.navElements.find((element) => element.path.toLowerCase() === this.catchAll.toLowerCase());
-      }
-      if (component === undefined && this.defaultComponent) {
-        component = this.defaultComponent;
+      if (!this.navigationDataReady) {
+        return Loading;
       }
 
-      if (component !== undefined) {
-        // Check access before loading component
-        const requiredRight = `frontend.dashboard.${component.path}.view`;
-        const hasAccess = this.$store.getters["auth/checkRight"](requiredRight);
-        
-        if (!hasAccess) {
-          return NotFoundPage;
-        }
+      const element = this.currentNavigationElement;
+      if (!element || !this.activeNavigationElement) {
+        return NotFoundPage;
+      }
 
-        const modulePath = `./dashboard/${component.component}.vue`;
-        const loader = dashboardModules[modulePath];
-        if (!loader) {
-          return NotFoundPage;
-        }
-
-        return defineAsyncComponent({
+      const loader = dashboardModules[`./dashboard/${element.component}.vue`];
+      return defineAsyncComponent({
           loader,
           loadingComponent: Loading,
           errorComponent: NotFoundPage,
-        });
-      } else {
-        return Loading;
-      }
+      });
     },
   },
 };
