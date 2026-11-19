@@ -1,0 +1,160 @@
+{
+    "button": "Problem melden",
+    "title": "Problem melden",
+    "form": {
+        "problemType": "Um welche Art von Problem handelt es sich?",
+        "blocked": "Können Sie nicht weiterarbeiten?",
+        "frequency": "Wie oft passiert das?",
+        "description": "Was ist passiert?",
+        "attachments": "Screenshots oder Videos",
+        "optional": "(optional)",
+        "required": "(erforderlich)",
+        "yes": "Ja",
+        "no": "Nein",
+        "attachmentsHint": "Bilder oder Videos. Bis zu {count} Dateien, je {fileMb} MB, insgesamt {totalMb} MB.",
+        "selectedAttachments": "Ausgewählte Anhänge",
+        "remove": "Entfernen",
+        "removeAttachment": "{name} entfernen"
+    },
+    "types": {
+        "error": "Fehler",
+        "wrongOrMissing": "Falsch oder fehlend",
+        "slowOrStuck": "Langsam oder hängt",
+        "otherOrSuggestion": "Sonstiges oder Vorschlag"
+    },
+    "frequencies": {
+        "firstTime": "Zum ersten Mal",
+        "sometimes": "Manchmal",
+        "everyTime": "Jedes Mal",
+        "notSure": "Nicht sicher"
+    },
+    "diagnosticTypes": {
+        "error": "Skriptfehler",
+        "unhandledRejection": "Unbehandelter Fehler",
+        "vueError": "Oberflächenfehler",
+        "failedOperation": "Fehlgeschlagene Aktion",
+        "connection": "Verbindung",
+        "navigation": "Seitenwechsel"
+    },
+    "summary": {
+        "problemTypes": "Problemart",
+        "blocked": "Blockiert",
+        "frequency": "Häufigkeit",
+        "description": "Was ist passiert",
+        "attachments": "Anhänge",
+        "none": "Keine",
+        "notAnswered": "Nicht beantwortet",
+        "unknown": "Unbekannt",
+        "page": "Seite",
+        "reportedAt": "Details erfasst",
+        "version": "CARE-Version",
+        "build": "Build",
+        "browser": "Browser",
+        "os": "Betriebssystem",
+        "diagnostics": "Aktuelle Diagnoseprotokolle ({count})",
+        "noDiagnostics": "Es wurden keine Diagnoseprotokolle aufgezeichnet. Der Bericht kann trotzdem gesendet werden.",
+        "technical": "Technische Details",
+        "submittedAt": "Gesendet",
+        "viewport": "Fenstergröße",
+        "activity": "Letzte Aktivität ({count})",
+        "databaseHealth": "Zustand der CARE-Datenbank",
+        "entry": "{time} · {type}"
+    },
+    "visibility": {
+        "label": "Wer diesen Bericht sehen kann:",
+        "text": "Nur CARE-Administratoren. Der Bericht wird privat in CARE gespeichert und nirgendwo veröffentlicht."
+    },
+    "notice": {
+        "label": "Was wir speichern:",
+        "text": "Ihr Bericht, Anhänge, Konto, Seite, Berichtszeit, Browser- und Gerätedetails sowie aktuelle Fehlerprotokolle.",
+        "activity": "Letzte Klicks, Mausbewegungen und Seitenaktivit?ten sind mit Ihrer Zustimmung enthalten.",
+        "noActivity": "Aktivit?tsdaten sind nicht enthalten."
+    },
+    "actions": {
+        "submit": "Bericht senden"
+    },
+    "messages": {
+        "submitFailed": "Bericht nicht gesendet",
+        "timeout": "Der Server hat nicht geantwortet. Ihr Bericht ist noch da; bitte versuchen Sie es erneut.",
+        "submitted": "Bericht gesendet",
+        "submittedText": "Vielen Dank. Bericht #{id} wurde an die CARE-Administratoren gesendet.",
+        "loadFailed": "Berichtsformular nicht verfügbar"
+    },
+    "admin": {
+        "exportCsv": "Exportieren",
+        "attachmentFiles": "Anhangdateien",
+        "exportFailed": "Berichte nicht exportiert",
+        "title": "Problemberichte",
+        "description": "Berichte, die über die Fehler-Schaltfläche in der oberen Leiste gesendet wurden. Nur Administratoren können sie sehen.",
+        "columns": {
+            "blocked": "Blockiert",
+            "id": "ID",
+            "reporter": "Gemeldet von"
+        },
+        "view": "Bericht ansehen",
+        "detailTitle": "Problembericht #{id}",
+        "loadAttachment": "Anzeigen",
+        "loadAttachmentFor": "{name} anzeigen",
+        "download": "Herunterladen",
+        "loadFailed": "Berichte nicht geladen",
+        "attachmentFailed": "Anhang nicht geladen",
+        "downloadFor": "{name} herunterladen"
+    },
+    "details": {
+        "title": "Mit diesem Bericht gesendete Details",
+        "loading": "Automatische Details werden erfasst…",
+        "loadingShort": "Wird erfasst…",
+        "unavailable": "Einige technische Details sind nicht verfügbar. Ihr Bericht kann trotzdem gesendet werden.",
+        "collectedOnSubmit": "Wird beim Senden erfasst",
+        "capturedAt": "Erfasst am {time}, als Sie auf Bericht geklickt haben.",
+        "expired": "Diese Details wurden vor zu langer Zeit erfasst und wurden aktualisiert. Bitte prüfen Sie sie und senden Sie erneut."
+    },
+    "activityTypes": {
+        "click": "Klick",
+        "mouseMove": "Mausposition",
+        "scroll": "Scrollen",
+        "windowFocus": "Fensterfokus",
+        "visibility": "Tab-Sichtbarkeit",
+        "navigation": "Seitenwechsel"
+    },
+    "activity": {
+        "scrollPosition": "gescrollt zu {x}, {y}",
+        "focused": "Fenster aktiv",
+        "blurred": "Fenster verlassen",
+        "hidden": "Tab ausgeblendet",
+        "visible": "Tab sichtbar",
+        "noConsent": "Nicht enthalten: Sie haben der Nutzungsstatistik nicht zugestimmt. Sie können das in Ihren Einstellungen ändern.",
+        "disabled": "Nicht enthalten: Die Aktivitätserfassung ist ausgeschaltet.",
+        "none": "Kurz vor dem Erfassen der Details wurde keine Aktivität aufgezeichnet.",
+        "notCollected": "Für diesen Bericht nicht erfasst."
+    },
+    "databaseHealth": {
+        "capturedAt": "Erfasst",
+        "status": "Status",
+        "ok": "Verfügbar",
+        "timeout": "Nicht verfügbar (Zeitüberschreitung)",
+        "unavailable": "Nicht verfügbar",
+        "pool": "Verbindungspool des CARE-Servers",
+        "poolValue": "{using} in Benutzung, {available} frei, {size} offen von {max}, {waiting} wartend",
+        "connections": "Verbindungen zur CARE-Datenbank",
+        "connectionsValue": "{total} insgesamt, {active} aktiv, {idle} untätig, {idleInTransaction} untätig in einer Transaktion, {waitingOnLock} warten auf eine Sperre",
+        "longestQuery": "Längste laufende Abfrage",
+        "longestTransaction": "Längste offene Transaktion",
+        "milliseconds": "{ms} ms",
+        "locks": "Sperren",
+        "locksValue": "{total} gehalten, {waiting} wartend",
+        "lockModes": "Sperren nach Modus",
+        "transactions": "Transaktionen",
+        "transactionsValue": "{commits} bestätigt, {rollbacks} zurückgesetzt ({rollbackPct} %)",
+        "cache": "Cache",
+        "cacheValue": "{hitPct} % Trefferquote ({hits} Treffer, {reads} Lesezugriffe auf die Festplatte)",
+        "problems": "Deadlocks, Konflikte, temporäre Dateien",
+        "problemsValue": "{deadlocks} Deadlocks, {conflicts} Konflikte, {tempFiles} temporäre Dateien ({tempBytes} Bytes)",
+        "countersSince": "Zähler seit",
+        "countersSinceUnknown": "Beginn der Datenbankstatistik",
+        "disabled": "Nicht enthalten: Die Erfassung des Datenbankzustands ist ausgeschaltet.",
+        "notCollected": "Für diesen Bericht nicht erfasst.",
+        "details": "Details",
+        "adminOnly": "Werden mit Ihrem Bericht nur für Administratoren gespeichert."
+    }
+}
