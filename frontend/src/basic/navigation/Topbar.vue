@@ -83,6 +83,22 @@
               </div>
             </div>
           </li>
+          <li class="nav-item d-flex align-items-center">
+            <a
+              class="btn care-focus-ring"
+              href="https://github.com/UKPLab/CARE"
+              target="_blank"
+              rel="noopener noreferrer"
+              :title="$t('navigation.topbar.starOnGitHub')"
+              :aria-label="$t('navigation.topbar.starOnGitHub')"
+            >
+              <LoadIcon
+                icon-name="star"
+                :size="18"
+                aria-hidden="true"
+              />
+            </a>
+          </li>
           <ProfileMenu />
         </ul>
       </div>
