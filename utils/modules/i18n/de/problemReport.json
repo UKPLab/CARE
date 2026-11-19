@@ -81,7 +81,8 @@
         "loadFailed": "Berichtsformular nicht verfügbar"
     },
     "admin": {
-        "exportCsv": "CSV exportieren",
+        "exportCsv": "CSV + Anh?nge exportieren",
+        "attachmentFiles": "Anhangdateien",
         "exportFailed": "Berichte nicht exportiert",
         "title": "Problemberichte",
         "description": "Berichte, die über die Fehler-Schaltfläche in der oberen Leiste gesendet wurden. Nur Administratoren können sie sehen.",

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import JSZip from 'jszip';
 import Papa from 'papaparse';
-import { collectReports, reportsCsv } from '../src/assets/problemReportExport.js';
+import { collectReports, reportsCsv, reportsArchive } from '../src/assets/problemReportExport.js';
 
 test('CSV export fetches reports beyond the visible page', async () => {
     const calls = [];
@@ -22,7 +23,7 @@ test('failed pages reject the export instead of returning a partial file', async
 
 test('CSV keeps headers for an empty list and preserves full quoted descriptions safely', () => {
     const t = (key) => key;
-    assert.equal(Papa.parse(reportsCsv([], t)).data[0].length, 10);
+    assert.equal(Papa.parse(reportsCsv([], t)).data[0].length, 11);
     const description = 'A long report, with "quotes"\nand new lines. '.repeat(10);
     const rows = Papa.parse(reportsCsv([
         { id: 1, description, blocked: false, attachments: [{ id: 1 }] },
@@ -33,4 +34,38 @@ test('CSV keeps headers for an empty list and preserves full quoted descriptions
     assert.equal(rows[1][9], '1');
     assert.equal(rows[2][3], "'+formula");
     assert.equal(rows[2][8], "'=HYPERLINK(\"https://example.com\")");
+});
+
+
+test('archive attachment paths exactly match CSV, including duplicate and unsafe names', async () => {
+    const reports = [
+        { id: 42, description: 'Report', attachments: [
+            { id: 'a', name: '../../screenshot.png' },
+            { id: 'b', name: '../../screenshot.png' },
+        ] },
+        { id: 43, attachments: [{ id: 'c', name: '../../screenshot.png' }] },
+    ];
+    const calls = [];
+    const archive = await reportsArchive(reports, (key) => key, async (request) => {
+        calls.push(request);
+        return { file: new TextEncoder().encode(request.attachmentId) };
+    });
+    const zip = await JSZip.loadAsync(archive);
+    const csv = await zip.file('problem-reports.csv').async('string');
+    const rows = Papa.parse(csv, { header: true }).data;
+    const paths = rows.flatMap((row) => row['problemReport.admin.attachmentFiles'].split('\n'));
+    assert.equal(new Set(paths).size, 3);
+    assert.ok(paths.every((path) => !path.split('/').includes('..')));
+    for (const [index, path] of paths.entries()) {
+        assert.equal(await zip.file(path).async('string'), ['a', 'b', 'c'][index]);
+    }
+    assert.deepEqual(calls, [
+        { reportId: 42, attachmentId: 'a' }, { reportId: 42, attachmentId: 'b' },
+        { reportId: 43, attachmentId: 'c' },
+    ]);
+});
+
+test('attachment failures reject the archive instead of silently omitting a file', async () => {
+    await assert.rejects(reportsArchive([{ id: 1, attachments: [{ id: 'a', name: 'x.png' }] }],
+        (key) => key, async () => { throw new Error('Attachment missing'); }), /Attachment missing/);
 });

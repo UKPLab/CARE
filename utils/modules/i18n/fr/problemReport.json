@@ -81,7 +81,8 @@
         "loadFailed": "Formulaire de signalement indisponible"
     },
     "admin": {
-        "exportCsv": "Exporter en CSV",
+        "exportCsv": "Exporter CSV + pi?ces jointes",
+        "attachmentFiles": "Fichiers joints",
         "exportFailed": "Rapports non export?s",
         "title": "Signalements de problème",
         "description": "Signalements envoyés avec le bouton de bogue de la barre supérieure. Seuls les administrateurs peuvent les voir.",

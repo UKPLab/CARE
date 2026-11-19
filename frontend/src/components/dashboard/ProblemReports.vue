@@ -2,7 +2,7 @@
   <Card :title="$t('problemReport.admin.title')">
     <template #headerButtons>
       <BasicButton
-        class="btn-primary"
+        class="btn-primary btn-sm"
         icon="download"
         :text="$t('problemReport.admin.exportCsv')"
         :loading="exporting"
@@ -35,7 +35,7 @@
 <script>
 import BasicButton from "@/basic/Button.vue";
 import FileSaver from "file-saver";
-import { collectReports, reportsCsv } from "@/assets/problemReportExport.js";
+import { collectReports, reportsArchive } from "@/assets/problemReportExport.js";
 import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
 import ProblemReportDetailModal from "@/components/dashboard/problem_reports/ProblemReportDetailModal.vue";
@@ -117,15 +117,17 @@ export default {
       if (this.exporting) return;
       this.exporting = true;
       try {
-        const reports = await collectReports((pagination) => new Promise((resolve, reject) => {
-          this.$socket.timeout(30000).emit("problemReportGetAll", pagination, (error, response) => {
+        const request = (event, payload) => new Promise((resolve, reject) => {
+          this.$socket.timeout(30000).emit(event, payload, (error, response) => {
             if (error) reject(new Error(this.$t('problemReport.messages.timeout')));
             else if (!response.success) reject(new Error(resolveApiMessage(response)));
             else resolve(response.data);
           });
-        }));
-        const csv = reportsCsv(reports, this.$t);
-        FileSaver.saveAs(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }), "problem-reports.csv");
+        });
+        const reports = await collectReports((pagination) => request("problemReportGetAll", pagination));
+        const archive = await reportsArchive(reports, this.$t,
+          (attachment) => request("problemReportAttachmentGet", attachment));
+        FileSaver.saveAs(new Blob([archive], { type: "application/zip" }), "problem-reports.zip");
       } catch (error) {
         this.eventBus.emit("toast", {
           title: this.$t('problemReport.admin.exportFailed'),
