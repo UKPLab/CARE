@@ -83,6 +83,22 @@
               </div>
             </div>
           </li>
+          <li class="nav-item d-flex align-items-center me-2">
+            <a
+              class="github-star care-focus-ring"
+              href="https://github.com/UKPLab/CARE"
+              target="_blank"
+              rel="noopener noreferrer"
+              :title="$t('navigation.topbar.starOnGitHub')"
+              :aria-label="$t('navigation.topbar.starOnGitHub')"
+            >
+              <LoadIcon
+                icon-name="star-fill"
+                :size="18"
+                aria-hidden="true"
+              />
+            </a>
+          </li>
           <ProfileMenu />
         </ul>
       </div>
@@ -325,4 +341,53 @@ body.sidebar-exists #backButton {
   50% { opacity: 0.4; }
 }
 
+</style>
+
+<style scoped>
+/* GitHub star link: a borderless round icon link sized to the avatar button. */
+.github-star {
+  --star-color: color-mix(in srgb, var(--bs-warning) 40%, var(--bs-warning-text-emphasis));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  color: var(--star-color);
+  text-decoration: none;
+  transition: background-color 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+[data-bs-theme="dark"] .github-star {
+  --star-color: var(--bs-warning);
+}
+
+.github-star:hover {
+  background-color: var(--bs-secondary-bg);
+  color: var(--star-color);
+}
+
+.github-star:hover :deep(svg) {
+  transform: scale(1.12);
+}
+
+.github-star :deep(svg) {
+  transition: transform 0.15s ease-in-out;
+}
+
+/* Round ring outside the circle instead of the inset square default. */
+.github-star.care-focus-ring:focus-visible {
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .github-star,
+  .github-star :deep(svg) {
+    transition: none;
+  }
+
+  .github-star:hover :deep(svg) {
+    transform: none;
+  }
+}
 </style>
