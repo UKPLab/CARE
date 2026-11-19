@@ -2,12 +2,12 @@
   <!-- Error state when document not found or deleted -->
   <div v-if="documentError" class="document-error-page d-flex flex-column align-items-center justify-content-center min-vh-100">
     <div class="error-card text-center p-5 bg-body rounded shadow">
-      <i class="bi bi-file-earmark-x text-danger" style="font-size: 5rem;"></i>
+      <BasicIcon icon-name="file-earmark-x" class="text-danger" :size="80"/>
       <h2 class="mt-4 text-danger">{{ documentError.title }}</h2>
       <p class="text-muted mb-4">{{ documentError.message }}</p>
       <div class="d-flex gap-3 justify-content-center">
         <router-link to="/" class="btn btn-primary">
-          <i class="bi bi-house me-2"></i>{{ $t('components.documentRoute.errors.goToDashboard') }}
+          <BasicIcon icon-name="house" class="me-2"/>{{ $t('components.documentRoute.errors.goToDashboard') }}
         </router-link>
       </div>
     </div>
@@ -35,6 +35,7 @@
  * @author: Dennis Zyska, Nils Dycke
  */
 
+import BasicIcon from "@/basic/Icon.vue";
 import Annotator from "./annotator/Annotator.vue";
 import Loader from "@/basic/Loading.vue";
 import Editor from "@/components/editor/Editor.vue"
@@ -42,7 +43,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "DocumentRoute",
-  components: {Annotator, Loader, Editor},
+  components: {BasicIcon, Annotator, Loader, Editor},
   props: {
     'documentHash': {
       type: String,

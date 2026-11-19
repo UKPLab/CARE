@@ -71,7 +71,9 @@
         "previousAssessmentResult": "Vorheriges Bewertungsergebnis",
         "assessmentConfiguration": "Bewertungskonfiguration",
         "submissionFiles": "Einreichungsdatei",
-        "studyContext": "Studienkontext"
+        "studyContext": "Studienkontext",
+        "dialogueDecision": "Dialog-Entscheidungseingabe",
+        "dialogueAnchors": "Dialog-Ankerkandidaten"
       }
     },
     "descriptions": {
@@ -114,7 +116,9 @@
         "previousAssessmentResult": "Gespeicherte Rubrik aus dem vorherigen Schritt, wenn eine Übernahme konfiguriert ist.",
         "assessmentConfiguration": "In diesem Schritt verwendete Bewertungskonfiguration.",
         "submissionFiles": "Text aus Einreichungsdateien, die den Slots im Hook-Schritt zugeordnet sind.",
-        "studyContext": "Grundlegende Metadaten aus dem aktuellen Studien-, Schritt- und Dokumentkontext."
+        "studyContext": "Grundlegende Metadaten aus dem aktuellen Studien-, Schritt- und Dokumentkontext.",
+        "dialogueDecision": "Die aktuelle Dialogfrage und die letzte Antwort, von CARE ausgefüllt.",
+        "dialogueAnchors": "Die verankerten Dialogfragen mit Auszügen aus der zugehörigen Rezension, von CARE ausgefüllt."
       }
     },
     "help": {

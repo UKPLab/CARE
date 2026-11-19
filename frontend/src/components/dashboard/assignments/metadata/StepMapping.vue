@@ -27,8 +27,8 @@
             class="form-select"
             @change="updatePrimaryKeyField('targetField', $event.target.value)"
           >
-            <option value="extId">extId</option>
-            <option value="email">email</option>
+            <option value="extId">{{ $t('assignments.metadata.mapping.targetFieldExtId') }}</option>
+            <option value="email">{{ $t('assignments.metadata.mapping.targetFieldEmail') }}</option>
           </select>
         </div>
       </div>
@@ -58,7 +58,7 @@
         <BasicButton
           class="btn btn-outline-primary btn-sm"
           :title="$t('assignments.metadata.mapping.addMapping')"
-          @click="$emit('add-mapping')"
+          @click="addMappingRow"
         />
       </div>
 
@@ -106,7 +106,7 @@
             class="btn btn-outline-danger btn-sm"
             :title="$t('assignments.metadata.mapping.remove')"
             :disabled="metadataMappings.length === 1"
-            @click="$emit('remove-mapping', index)"
+            @click="removeMappingRow(index)"
           />
         </div>
       </div>
@@ -145,13 +145,98 @@ export default {
       type: Array,
       default: () => [],
     },
-    mappingValidationMessages: {
+    /** Parsed upload rows, to check that every primary key value is present and unique. */
+    rows: {
       type: Array,
       default: () => [],
     },
   },
-  emits: ["update:primaryKeyMapping", "update:metadataMappings", "add-mapping", "remove-mapping"],
+  emits: ["update:primaryKeyMapping", "update:metadataMappings", "validity"],
+  computed: {
+    normalizedMetadataMappings() {
+      return this.metadataMappings.map((mapping) => ({
+        sourceField: String(mapping.sourceField || "").trim(),
+        metaKey: String(mapping.metaKey || "").trim(),
+      }));
+    },
+    hasDuplicateMetaKeys() {
+      const metaKeys = this.normalizedMetadataMappings
+        .map((mapping) => mapping.metaKey)
+        .filter(Boolean);
+      return new Set(metaKeys).size !== metaKeys.length;
+    },
+    hasDuplicatePrimaryKeyValues() {
+      if (!this.primaryKeyMapping.sourceField) {
+        return false;
+      }
+
+      const seen = new Set();
+      for (const row of this.rows) {
+        const value = row?.[this.primaryKeyMapping.sourceField];
+        const normalized = value == null ? "" : String(value).trim().toLowerCase();
+        if (!normalized) {
+          return true;
+        }
+        if (seen.has(normalized)) {
+          return true;
+        }
+        seen.add(normalized);
+      }
+      return false;
+    },
+    mappingValidationMessages() {
+      const messages = [];
+
+      if (!this.primaryKeyMapping.sourceField) {
+        messages.push(this.$t("assignments.metadata.validation.selectSourceKey"));
+      }
+
+      if (!this.primaryKeyMapping.targetField) {
+        messages.push(this.$t("assignments.metadata.validation.selectTargetField"));
+      }
+
+      if (this.metadataMappings.length === 0) {
+        messages.push(this.$t("assignments.metadata.validation.addMapping"));
+      }
+
+      if (this.normalizedMetadataMappings.some((mapping) => !mapping.sourceField)) {
+        messages.push(this.$t("assignments.metadata.validation.mappingNeedsSource"));
+      }
+
+      if (this.normalizedMetadataMappings.some((mapping) => !mapping.metaKey)) {
+        messages.push(this.$t("assignments.metadata.validation.mappingNeedsMetaKey"));
+      }
+
+      if (this.hasDuplicateMetaKeys) {
+        messages.push(this.$t("assignments.metadata.validation.uniqueMetaKeys"));
+      }
+
+      if (this.hasDuplicatePrimaryKeyValues) {
+        messages.push(this.$t("assignments.metadata.validation.uniquePrimaryKeys"));
+      }
+
+      return messages;
+    },
+  },
+  watch: {
+    mappingValidationMessages: {
+      immediate: true,
+      handler(messages) {
+        this.$emit("validity", messages.length === 0);
+      },
+    },
+  },
   methods: {
+    addMappingRow() {
+      const nextId = Math.max(0, ...this.metadataMappings.map((mapping) => Number(mapping.id) || 0)) + 1;
+      this.$emit("update:metadataMappings", [...this.metadataMappings, { id: nextId, sourceField: "", metaKey: "" }]);
+    },
+    removeMappingRow(index) {
+      if (this.metadataMappings.length === 1) {
+        return;
+      }
+      this.$emit("update:metadataMappings", this.metadataMappings.filter((_mapping, i) => i !== index));
+    },
     updatePrimaryKeyField(field, value) {
       this.$emit("update:primaryKeyMapping", {
         ...this.primaryKeyMapping,

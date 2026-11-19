@@ -49,37 +49,7 @@
     </template>
   </Modal>
 
-  <!-- JSON Configuration Editor Modal -->
-  <Modal ref="editModal" name="json-editor" size="xl">
-    <template #title>
-      {{ $t('basic.configuration.editor.title', { name: selectedConfig?.name }) }}
-    </template>
-    <template #body>
-      <div v-if="selectedConfig" class="json-editor-container">
-        <div
-            ref="quillContainer"
-            class="quill-editor-container"
-        ></div>
-      </div>
-    </template>
-    <template #footer>
-      <div class="btn-group">
-        <BasicButton
-          class="btn btn-secondary"
-          :text="$t('common.cancel')"
-          data-bs-dismiss="modal"
-          @click="$refs.editModal.close()"
-        />
-        <BasicButton
-          class="btn btn-primary"
-          :text="$t('common.save')"
-          :loading="saving"
-          :disabled="saving"
-          @click="saveConfiguration"
-        />
-      </div>
-    </template>
-  </Modal>
+  <ConfigurationEditModal ref="editModal" />
 </template>
 
 <script>
@@ -90,9 +60,8 @@ import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Modal from "@/basic/Modal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
-import {Editor} from "@/components/editor/editorStore.js";
+import ConfigurationEditModal from "./configurations/ConfigurationEditModal.vue";
 import { dashboardRowAction, confirmSoftDelete } from "@/basic/dashboard/actions.js";
-import {resolveApiMessage} from "@/assets/utils";
 
 /**
  * Configuration Files Dashboard Component
@@ -110,14 +79,12 @@ export default {
     ImportFormatModal,
     ConfirmModal,
     Modal,
+    ConfigurationEditModal,
   },
   data() {
     return {
       selectedConfig: null,
       configContent: "",
-      editableConfigContent: null,
-      quillEditor: null,
-      saving: false,
       options: withSearch(),
     };
   },
@@ -151,22 +118,14 @@ export default {
       ];
     },
     configurationsTable() {
+      const fields = this.$store.getters["table/configuration/getFields"] || [];
+      const typeOptions = fields.find(field => field.key === "type")?.options || [];
       return this.$store.getters["table/configuration/getAll"].map(cfg => {
         const newC = {...cfg};
-        newC.typeName = cfg.type === 0 ? this.$t('basic.configuration.types.assessment') : this.$t('basic.configuration.types.validation');
+        const typeName = typeOptions.find(option => Number(option.value) === Number(cfg.type))?.name;
+        newC.typeName = typeName ? this.$t(typeName) : "";
         return newC;
       });
-    },
-  },
-  watch: {
-    // Clean up Quill editor when modal is closed
-    "$refs.editModal": {
-      handler(newVal) {
-        if (!newVal || !newVal.isOpen) {
-          this.cleanupQuillEditor();
-        }
-      },
-      deep: true,
     },
   },
   methods: {
@@ -176,7 +135,7 @@ export default {
           this.viewConfiguration(data.params);
           break;
         case "edit":
-          this.editConfiguration(data.params);
+          this.$refs.editModal.open(data.params);
           break;
         case "delete":
           this.deleteConfiguration(data.params);
@@ -206,108 +165,6 @@ export default {
       }
     },
 
-    editConfiguration(config) {
-      this.selectedConfig = config;
-
-      try {
-        if (!config || !config.content) {
-          throw new Error(this.$t('basic.configuration.toasts.contentUnavailable'));
-        }
-        this.editableConfigContent = JSON.stringify(config.content, null, 2);
-        this.$refs.editModal.openModal();
-
-        // Initialize Quill editor after modal is opened
-        this.$nextTick(() => {
-          this.initializeQuillEditor();
-        });
-      } catch (error) {
-        this.eventBus.emit("toast", {
-          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
-          message: this.$t('basic.configuration.toasts.loadErrorMessage', { error: error.message }),
-          variant: "danger",
-        });
-      }
-    },
-
-    initializeQuillEditor() {
-      if (this.$refs.quillContainer && !this.quillEditor) {
-        this.quillEditor = new Editor(this.$refs.quillContainer, {
-          theme: "snow",
-          modules: {
-            toolbar: false // No toolbar for JSON editing
-          },
-          placeholder: this.$t('basic.configuration.editor.placeholder')
-        });
-
-        // Set the formatted JSON content
-        this.quillEditor.getEditor().setText(this.editableConfigContent);
-      }
-    },
-
-    saveConfiguration() {
-      if (!this.quillEditor) {
-        this.eventBus.emit("toast", {
-          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
-          message: this.$t('basic.configuration.toasts.editorNotInit'),
-          variant: "danger",
-        });
-        return;
-      }
-
-      // Get content from Quill editor
-      const editorContent = this.quillEditor.getEditor().getText().trim();
-
-      if (!editorContent) {
-        this.eventBus.emit("toast", {
-          title: this.$t('basic.configuration.toasts.loadErrorTitle'),
-          message: this.$t('basic.configuration.toasts.noContent'),
-          variant: "danger",
-        });
-        return;
-      }
-
-      // Validate JSON before saving
-      try {
-        JSON.parse(editorContent);
-      } catch (error) {
-        this.eventBus.emit("toast", {
-          title: this.$t('basic.configuration.toasts.invalidJsonTitle'),
-          message: this.$t('basic.configuration.toasts.invalidJsonMessage', { error: error.message }),
-          variant: "danger",
-        });
-        return;
-      }
-
-      this.saving = true;
-
-      const jsonContent = JSON.parse(editorContent);
-      this.$socket.emit("configurationUpdate", {
-            configurationId: this.selectedConfig.id,
-            content: jsonContent,
-          },
-          (response) => {
-            this.saving = false;
-
-            if (response && response.success) {
-              this.eventBus.emit("toast", {
-                title: this.$t('basic.configuration.toasts.updatedTitle'),
-                message: this.$t('basic.configuration.toasts.updatedMessage'),
-                variant: "success",
-              });
-              setTimeout(() => {
-                this.$refs.editModal.close();
-              }, 100);
-            } else {
-              this.eventBus.emit("toast", {
-                title: this.$t('basic.configuration.toasts.updateErrorTitle'),
-                message: resolveApiMessage(response, 'errors.documents.documentEditFailed'),
-                variant: "danger",
-              });
-            }
-          }
-      );
-    },
-
     deleteConfiguration(config) {
       confirmSoftDelete(
         {
@@ -323,12 +180,6 @@ export default {
           failTitle: this.$t('basic.configuration.toasts.deleteFailedTitle'),
         }
       );
-    },
-
-    cleanupQuillEditor() {
-      if (this.quillEditor) {
-        this.quillEditor = null;
-      }
     },
   },
 };
@@ -352,35 +203,5 @@ export default {
   white-space: pre-wrap;
   word-wrap: break-word;
   color: var(--bs-body-color, #212529);
-}
-
-.json-editor-container {
-  max-height: 70vh;
-  overflow: auto;
-}
-
-.quill-editor-container {
-  min-height: 400px;
-}
-
-.quill-editor-container .ql-editor {
-  font-family: 'Courier New', monospace !important;
-  font-size: 0.875rem !important;
-  line-height: 1.5 !important;
-  background-color: var(--bs-tertiary-bg, #f8f9fa) !important;
-  border: 1px solid var(--bs-border-color, #dee2e6) !important;
-  border-radius: 0.375rem !important;
-  padding: 1rem !important;
-  color: var(--bs-body-color, #212529) !important;
-  min-height: 400px !important;
-}
-
-.quill-editor-container .ql-container {
-  border: none !important;
-  font-family: 'Courier New', monospace !important;
-}
-
-.quill-editor-container .ql-toolbar {
-  display: none !important;
 }
 </style>

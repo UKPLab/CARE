@@ -23,7 +23,7 @@
   <AssignmentSubmissionsModal ref="assignmentSubmissionsModal" />
   <AssignmentMetadataModal ref="assignmentMetadataModal" />
   <ImportModal ref="importModal" />
-  <ConfirmModal ref="deleteConf" />
+  <AssignmentConfirmDialog ref="confirmDialog" />
 </template>
 
 <script>
@@ -32,10 +32,10 @@ import AssignmentModal from "@/components/dashboard/assignments/AssignmentModal.
 import AssignmentSubmissionsModal from "@/components/dashboard/assignments/AssignmentSubmissionsModal.vue";
 import AssignmentMetadataModal from "@/components/dashboard/assignments/AssignmentMetadataModal.vue";
 import ImportModal from "@/components/dashboard/submission/ImportModal.vue";
-import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
+import AssignmentConfirmDialog from "@/components/dashboard/assignments/AssignmentConfirmDialog.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
-import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton, confirmSoftDelete } from "@/basic/dashboard/actions.js";
+import { DASHBOARD_BADGES, dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
 import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 
@@ -49,7 +49,7 @@ export default {
     AssignmentSubmissionsModal,
     AssignmentMetadataModal,
     ImportModal,
-    ConfirmModal,
+    AssignmentConfirmDialog,
   },
   data() {
     return {
@@ -58,6 +58,7 @@ export default {
   },
   computed: {
     tableColumns() {
+      const yesNo = { true: this.$t("common.yes"), false: this.$t("common.no") };
       return [
         { name: this.$t("submission.dashboard.columns.id"), key: "id" },
         { name: this.$t("common.name"), key: "name" },
@@ -81,166 +82,61 @@ export default {
         { name: this.$t("assignments.dashboard.columns.assignedTo"), key: "assignedRoles" },
         { name: this.$t("assignments.dashboard.columns.maxRevisions"), key: "maxRevisions" },
         {
-          name: this.$t("assignments.dashboard.columns.disable"),
-          key: "disable",
-          type: "badge",
-          typeOptions: {
-            keyMapping: {
-              true: this.$t("common.yes"),
-              false: this.$t("common.no"),
-            },
-            classMapping: { ...DASHBOARD_BADGES.disabled },
-          },
+          name: this.$t("assignments.dashboard.columns.disable"), key: "disable", type: "badge",
+          typeOptions: { keyMapping: yesNo, classMapping: { ...DASHBOARD_BADGES.disabled } },
         },
         {
-          name: this.$t("assignments.dashboard.columns.allowReUpload"),
-          key: "allowReUpload",
-          type: "badge",
-          typeOptions: {
-            keyMapping: { true: this.$t("common.yes"), false: this.$t("common.no") },
-            classMapping: { ...DASHBOARD_BADGES.yesNo },
-          },
+          name: this.$t("assignments.dashboard.columns.allowReUpload"), key: "allowReUpload", type: "badge",
+          typeOptions: { keyMapping: yesNo, classMapping: { ...DASHBOARD_BADGES.yesNo } },
         },
-        {
-          name: this.$t("assignments.dashboard.columns.parentAssignmentId"),
-          key: "parentAssignmentId",
-        },
+        { name: this.$t("assignments.dashboard.columns.parentAssignmentId"), key: "parentAssignmentId" },
       ];
     },
     tableButtons() {
+      // Every assignment row button is small and reports the assignment id in its stats.
+      const small = { options: { specifiers: { "btn-sm": true } }, stats: { assignmentId: "id" } };
+      const editable = [{ key: "canEditAssignment", value: true }];
       return [
         dashboardRowAction("edit", {
-          filter: [{ key: "canEditAssignment", value: true }],
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("assignments.dashboard.actions.editAssignment"),
-          action: "editAssignment",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small, filter: editable,
+          title: this.$t("assignments.dashboard.actions.editAssignment"), action: "editAssignment",
         }),
         dashboardRowAction("delete", {
-          filter: [{ key: "canEditAssignment", value: true }],
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("assignments.dashboard.actions.deleteAssignment"),
-          action: "deleteAssignment",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small, filter: editable,
+          title: this.$t("assignments.dashboard.actions.deleteAssignment"), action: "deleteAssignment",
         }),
         dashboardRowAction("submissions", {
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("assignments.dashboard.actions.inspectSubmissions"),
-          action: "inspectSubmissions",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small,
+          title: this.$t("assignments.dashboard.actions.inspectSubmissions"), action: "inspectSubmissions",
         }),
         dashboardRowButton("upload", {
-          filter: [{ key: "canEditAssignment", value: true }],
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("assignments.dashboard.actions.uploadMetadata"),
-          action: "uploadMetadata",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small, filter: editable,
+          title: this.$t("assignments.dashboard.actions.uploadMetadata"), action: "uploadMetadata",
         }),
         dashboardRowAction("enable", {
-          filter: [
-            { key: "canEditAssignment", value: true },
-            { key: "disable", value: true },
-          ],
-          filterMode: "and",
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("assignments.dashboard.actions.toggleDisable"),
-          action: "toggleDisable",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small, filter: [...editable, { key: "disable", value: true }], filterMode: "and",
+          title: this.$t("assignments.dashboard.actions.toggleDisable"), action: "toggleDisable",
         }),
         dashboardRowAction("disable", {
-          filter: [
-            { key: "canEditAssignment", value: true },
-            { key: "disable", value: false },
-          ],
-          filterMode: "and",
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("assignments.dashboard.actions.toggleDisable"),
-          action: "toggleDisable",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small, filter: [...editable, { key: "disable", value: false }], filterMode: "and",
+          title: this.$t("assignments.dashboard.actions.toggleDisable"), action: "toggleDisable",
         }),
         dashboardRowAction("copy", {
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("assignments.dashboard.actions.copyAssignment"),
-          action: "copyAssignment",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small,
+          title: this.$t("assignments.dashboard.actions.copyAssignment"), action: "copyAssignment",
         }),
         dashboardRowButton("box-arrow-in-down", {
-          filter: [{ key: "canEditAssignment", value: true }],
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("submission.dashboard.buttons.importMoodle"),
-          action: "importMoodle",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small, filter: editable,
+          title: this.$t("submission.dashboard.buttons.importMoodle"), action: "importMoodle",
         }),
         dashboardRowAction("close", {
-          filter: [
-            { key: "canCloseAssignment", value: true },
-          ],
-          options: {
-            specifiers: {
-              "btn-sm": true,
-            },
-          },
-          title: this.$t("assignments.dashboard.actions.closeAssignment"),
-          action: "closeAssignment",
-          stats: {
-            assignmentId: "id",
-          },
+          ...small, filter: [{ key: "canCloseAssignment", value: true }],
+          title: this.$t("assignments.dashboard.actions.closeAssignment"), action: "closeAssignment",
         }),
       ];
     },
     canViewAllAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.admin.viewAll");
-    },
-    canUploadForOthers() {
-      return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.admin.uploadForOthers");
     },
     canEditAssignments() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.edit");
@@ -272,11 +168,13 @@ export default {
           .map((e) => (e.roleId ? rolesById[e.roleId] : null) || (e.userId ? usersById[e.userId] : null))
           .filter(Boolean)
           .join(", ") || "-";
+        const isOwner = assignment.userId === this.userId;
+        const canEditAssignment = isOwner || this.canEditAssignments;
         return {
           ...assignment,
-          isOwner: assignment.userId === this.userId,
-          canEditAssignment: this.isAssignmentOwner(assignment) || this.canEditAssignments,
-          canCloseAssignment: (this.isAssignmentOwner(assignment) || this.canEditAssignments) && !assignment.closed,
+          isOwner,
+          canEditAssignment,
+          canCloseAssignment: canEditAssignment && !assignment.closed,
           submissionStatus: this.getSubmissionStatus(assignment),
           assignedRoles,
           maxRevisions: assignment.maxRevisions === -1 ? "∞" : (assignment.maxRevisions ?? 0),
@@ -289,9 +187,6 @@ export default {
     },
   },
   methods: {
-    isAssignmentOwner(assignment) {
-      return assignment.userId === this.userId;
-    },
     getSubmissionStatus(assignment) {
       if (assignment.closed) {
         return "closed";
@@ -316,14 +211,7 @@ export default {
     action(data) {
       switch (data.action) {
         case "editAssignment":
-          if (!data.params.isOwner && !this.canEditAssignments) {
-            this.eventBus.emit("toast", {
-              title: this.$t("common.accessDenied"),
-              message: this.$t("assignments.dashboard.toasts.noPermissionEdit"),
-              variant: "warning",
-            });
-            return;
-          }
+          if (!this.canModify(data.params, this.$t("assignments.dashboard.toasts.noPermissionEdit"))) return;
           this.$refs.assignmentModal.open(data.params.id);
           break;
         case "deleteAssignment":
@@ -349,60 +237,27 @@ export default {
           break;
       }
     },
+    /**
+     * Owners and users with the edit right may change an assignment; everyone else gets a toast.
+     * @param {Object} params - Assignment row
+     * @param {string} deniedMessage - Toast message when access is denied
+     * @returns {boolean} true when the action may proceed
+     */
+    canModify(params, deniedMessage) {
+      if (params.isOwner || this.canEditAssignments) return true;
+      this.eventBus.emit("toast", {
+        title: this.$t("common.accessDenied"),
+        message: deniedMessage,
+        variant: "warning",
+      });
+      return false;
+    },
     closeAssignment(params) {
-      if (!params.isOwner && !this.canEditAssignments) {
-        this.eventBus.emit("toast", {
-          title: this.$t("common.accessDenied"),
-          message: this.$t("assignments.dashboard.toasts.noPermissionClose"),
-          variant: "warning",
-        });
-        return;
-      }
-
-      this.$refs.deleteConf.open(
-        this.$t("assignments.dashboard.confirm.close.title"),
-        this.$t("assignments.dashboard.confirm.close.message"),
-        "",
-        (confirmed) => {
-          if (!confirmed) return;
-
-          this.$socket.emit(
-            "appDataUpdate",
-            {
-              table: "assignment",
-              data: {
-                id: params.id,
-                closed: new Date().toISOString(),
-              },
-            },
-            (result) => {
-              if (result.success) {
-                this.eventBus.emit("toast", {
-                  title: this.$t("assignments.dashboard.toasts.closeSuccess.title"),
-                  message: this.$t("assignments.dashboard.toasts.closeSuccess.message"),
-                  variant: "success",
-                });
-              } else {
-                this.eventBus.emit("toast", {
-                  title: this.$t("assignments.dashboard.toasts.closeFailed"),
-                  message: resolveApiMessage(result),
-                  variant: "danger",
-                });
-              }
-            }
-          );
-        }
-      );
+      if (!this.canModify(params, this.$t("assignments.dashboard.toasts.noPermissionClose"))) return;
+      this.$refs.confirmDialog.confirmClose(params);
     },
     toggleDisable(params) {
-      if (!params.isOwner && !this.canEditAssignments) {
-        this.eventBus.emit("toast", {
-          title: this.$t("common.accessDenied"),
-          message: this.$t("assignments.dashboard.toasts.noPermissionDisable"),
-          variant: "warning",
-        });
-        return;
-      }
+      if (!this.canModify(params, this.$t("assignments.dashboard.toasts.noPermissionDisable"))) return;
       const newDisableState = !params.disable;
       this.$socket.emit(
         "appDataUpdate",
@@ -433,36 +288,8 @@ export default {
       );
     },
     deleteAssignment(params) {
-      if (!params.isOwner && !this.canEditAssignments) {
-        this.eventBus.emit("toast", {
-          title: this.$t("common.accessDenied"),
-          message: this.$t("assignments.dashboard.toasts.noPermissionDelete"),
-          variant: "warning",
-        });
-        return;
-      }
-      confirmSoftDelete(
-        {
-          confirmRef: this.$refs.deleteConf,
-          socket: this.$socket,
-          eventBus: this.eventBus,
-        },
-        {
-          table: "assignment",
-          id: params.id,
-          title: this.$t("assignments.dashboard.confirm.delete.title"),
-          message: this.$t("assignments.dashboard.confirm.delete.message"),
-          warning: "",
-          failTitle: this.$t("assignments.dashboard.toasts.deleteFailed"),
-          onSuccess: () => {
-            this.eventBus.emit("toast", {
-              title: this.$t("assignments.dashboard.toasts.deleteSuccess.title"),
-              message: this.$t("assignments.dashboard.toasts.deleteSuccess.message"),
-              variant: "success",
-            });
-          },
-        }
-      );
+      if (!this.canModify(params, this.$t("assignments.dashboard.toasts.noPermissionDelete"))) return;
+      this.$refs.confirmDialog.confirmDelete(params);
     },
     copyAssignment(params) {
       const originalAssignment = this.$store.getters["table/assignment/get"](params.id);

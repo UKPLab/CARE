@@ -70,7 +70,7 @@ class AssignmentSocket extends Socket {
                     contextData = {
                         assignmentType: assignmentType,
                         submissionId: data['assignment']?.id || null,
-                        documentId: null
+                        documentId: stepDocumentId || null
                     };
                 } else {
                     assignmentType = 'document';
@@ -779,7 +779,7 @@ class AssignmentSocket extends Socket {
             if (value?.isTemplate) {
                 switch (context.assignmentType) {
                     case 'submission':
-                        result[key] = { ...value, submissionId: context.submissionId };
+                        result[key] = { ...value, submissionId: context.submissionId, documentId: context.documentId };
                         break;
                     case 'document':
                         result[key] = { ...value, documentId: context.documentId };

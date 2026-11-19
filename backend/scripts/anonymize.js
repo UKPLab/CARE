@@ -35,6 +35,8 @@ const DELETE_MODELS = [
     'comment_state',
     'comment_vote',
     'user_role_matching',
+    'ai_log',
+    'ai_conversation',
     'study_session',
     'collab',
     'comment',
@@ -111,7 +113,9 @@ function shuffleArray(arr) {
  * @returns {Promise<void>}
  */
 async function removeUserData(userIds, adminId) {
-    if (userIds.length === 0) return;
+    if (userIds.length === 0) {
+        return;
+    }
 
     for (const modelName of DELETE_MODELS) {
         const Model = db.models[modelName];
@@ -141,7 +145,9 @@ async function removeUserData(userIds, adminId) {
  * @returns {Promise<void>}
  */
 async function introspectionSafetyNet(userIds) {
-    if (userIds.length === 0) return;
+    if (userIds.length === 0) {
+        return;
+    }
 
     const handledTables = new Set([
         ...DELETE_MODELS.map(m => db.models[m]?.getTableName()).filter(Boolean),
@@ -221,6 +227,9 @@ async function pseudonymizeAndWipeSecrets(adminId) {
     }
 }
 async function removeAffectedStudies(userIds) {
+    if (userIds.length === 0) {
+        return;
+    }
     const rows = await db.sequelize.query(
         `SELECT DISTINCT ss."studyId"
          FROM study_step ss
@@ -231,7 +240,19 @@ async function removeAffectedStudies(userIds) {
     const ids = rows.map(r => r.studyId);
     if (ids.length === 0) return;
     console.log(`  deleting ${ids.length} studies referencing non-consenting documents`);
-    await db.models['study'].destroy({ where: { id: ids }, force: true });
+    await db.sequelize.transaction(async (transaction) => {
+        const options = {where: {studyId: ids}, attributes: ['id'], raw: true, transaction};
+        const sessions = await db.models.study_session.findAll(options);
+        const steps = await db.models.study_step.findAll(options);
+        // These prompts may contain a non-consenting author's document text.
+        await db.models.ai_log.destroy({
+            where: {[db.Sequelize.Op.or]: [
+                {studySessionId: sessions.map(row => row.id)},
+                {studyStepId: steps.map(row => row.id)},
+            ]}, force: true, transaction,
+        });
+        await db.models.study.destroy({where: {id: ids}, force: true, transaction});
+    });
 } 
 
 

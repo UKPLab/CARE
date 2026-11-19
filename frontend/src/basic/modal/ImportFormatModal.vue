@@ -13,28 +13,7 @@
 
     <!-- Step 1: File picker -->
     <template #step-1>
-      <div class="form-field d-flex flex-column">
-        <label class="form-label w-100 text-start mb-2">
-          {{ $t('modals.importExport.import.selectFile', { extensions: acceptedExtensions.join(', ') }) }}
-        </label>
-        <div class="w-100">
-          <input
-            ref="fileInput"
-            class="form-control"
-            type="file"
-            :accept="acceptString"
-            @change="handleFileSelect"
-          />
-        </div>
-      </div>
-      <div v-if="selectedFile" class="mt-2">
-        <small class="text-muted">
-          {{ $t('modals.importExport.import.selectedFile', { file: selectedFile.name }) }}
-        </small>
-      </div>
-      <div v-if="parseError" class="mt-2 text-danger">
-        <small>{{ parseError }}</small>
-      </div>
+      <ImportFilePicker ref="filePicker" @file-selected="fileSelected" @parsed="fileParsed" />
     </template>
 
     <!-- Step 2: Item selection -->
@@ -72,7 +51,7 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
-import { getSupportedImportFormats, resolveApiMessage } from "@/assets/utils";
+import { resolveApiMessage } from "@/assets/utils";
 
 /**
  * Import Format Modal Component
@@ -84,18 +63,14 @@ import { getSupportedImportFormats, resolveApiMessage } from "@/assets/utils";
  *
  * @author Karim Ouf
  */
+import ImportFilePicker from './ImportFilePicker.vue';
+
 export default {
   name: "ImportFormatModal",
-  components: { StepperModal, BasicTable },
+  components: { StepperModal, BasicTable, ImportFilePicker },
   props: {
-    title: {
-      type: String,
-      default: null,
-    },
-    columns: {
-      type: Array,
-      default: null,
-    },
+    title: {type: String, default: null},
+    columns: {type: Array, default: null},
   },
   emits: ["itemsSelected"],
   data() {
@@ -107,7 +82,6 @@ export default {
       selectedFile: null,
       parsedData: null,
       selectedItems: [],
-      parseError: null,
     };
   },
   computed: {
@@ -117,15 +91,7 @@ export default {
     userId() {
       return this.$store.getters["auth/getUserId"];
     },
-    supportedImportFormats() {
-      return getSupportedImportFormats();
-    },
-    acceptedExtensions() {
-      return this.supportedImportFormats.flatMap((f) => f.extensions);
-    },
-    acceptString() {
-      return this.acceptedExtensions.join(",");
-    },
+
     itemLabel() {
       return this.table
         ? this.humanizeTableName(this.table)
@@ -202,6 +168,8 @@ export default {
     },
   },
   methods: {
+    fileSelected(file){this.selectedFile=file;this.parsedData=null;this.selectedItems=[];},
+    fileParsed(data){this.parsedData=data;this.selectedItems=this.displayData.slice();},
     /**
      * Turns an internal table id (snake_case) into display text for toasts and step titles.
      * e.g. "tag_set" → "Tag Set"
@@ -235,53 +203,9 @@ export default {
       this.selectedFile = null;
       this.parsedData = null;
       this.selectedItems = [];
-      this.parseError = null;
-      if (this.$refs.fileInput) {
-        this.$refs.fileInput.value = "";
-      }
+      this.$refs.filePicker?.reset();
     },
-    handleFileSelect(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      this.selectedFile = file;
-      this.parsedData = null;
-      this.selectedItems = [];
-      this.parseError = null;
-      this.processFile(file);
-    },
-    async processFile(file) {
-      try {
-        const content = await this.readFile(file);
-        const ext = "." + file.name.toLowerCase().split(".").pop();
-        const format = this.supportedImportFormats.find((f) =>
-          f.extensions.includes(ext)
-        );
-        if (!format) {
-          throw new Error(this.$t('modals.importExport.import.errors.unsupportedFileType', { ext }));
-        }
-        let parsed = format.parse(content);
-        if (parsed && !Array.isArray(parsed)) {
-          parsed = [parsed];
-        }
-        this.parsedData = parsed;
-        this.selectedItems = this.displayData.slice();
-      } catch (error) {
-        console.error("Error processing file:", error);
-        this.parseError = this.$t('modals.importExport.import.errors.parseFileFailed', {
-          message: error.message,
-        });
-        this.selectedFile = null;
-        this.parsedData = null;
-      }
-    },
-    readFile(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
-        reader.onerror = () => reject(new Error(this.$t('modals.importExport.import.errors.readFileFailed')));
-        reader.readAsText(file);
-      });
-    },
+
     socketEmit(event, data) {
       return new Promise((resolve) => {
         this.$socket.emit(event, data, (r) => resolve(r));
@@ -344,7 +268,7 @@ export default {
             data: { ...itemData, ...this.overrides, userId: this.userId },
           });
         }
-        
+
         if (result.success) {
           importedCount++;
 
@@ -421,5 +345,3 @@ export default {
   min-width: 160px;
 }
 </style>
-
-

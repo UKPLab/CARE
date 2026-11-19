@@ -377,6 +377,17 @@
     "userCannotBeAdded": "Benutzer mit externer ID {extId} kann nicht hinzugefügt werden: {message}",
     "uploadToMoodle": "In Moodle hochladen",
     "downloadResultCsv": "Ergebnis-CSV herunterladen",
+    "moodleCredentialsTitle": "Zugangsdaten an Moodle senden",
+    "moodleCredentialsIntro": "CARE hat Benutzernamen und Initialpasswörter für die importierten Benutzer erzeugt. Wählen Sie das Moodle-Assignment, in dem diese Zugangsdaten als Feedback veröffentlicht werden sollen, oder laden Sie sie als CSV-Datei herunter.",
+    "roleReplacementWarning": "Die bestehenden CARE-Rollen dieser Benutzer werden durch die Basisrolle User und die im vorherigen Schritt zugeordneten Rollen ersetzt.",
+    "roleMappingWarning": "Beim erneuten Import eines bestehenden Benutzers werden seine aktuellen CARE-Rollen ersetzt. Jeder Benutzer erhält die Basisrolle User sowie die unten zugeordneten CARE-Rollen. „Keine zusätzliche CARE-Rolle“ behält vorherige Rollen nicht bei.",
+    "roleMappingSourceRole": "{source}-Rolle",
+    "roleMappingUsers": "Benutzer",
+    "roleMappingCareRole": "CARE-Rolle",
+    "roleMappingSelect": "Zuordnung auswählen",
+    "roleMappingNoExtraRole": "Keine zusätzliche CARE-Rolle",
+    "roleMappingStep": "Rollenzuordnung",
+    "roleMappingNoRoles": "Keine Rollen gefunden. Importierte Benutzer erhalten die CARE-Basisrolle User.",
     "moodle": "Moodle",
     "preview": "Vorschau",
     "result": "Ergebnis",
@@ -577,7 +588,5 @@
       "numberOfSteps": "Anzahl der Schritte"
     }
   },
-  "ai": {
-    "loadModels": "Modelle laden"
-  }
+  "ai": {}
 }

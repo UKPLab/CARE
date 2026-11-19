@@ -98,19 +98,19 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "aiHookId",
-                label: "AI Hook",
+                label: "ai.resources.hook",
                 type: "select",
                 required: true,
             },
             {
                 key: "aiModelId",
-                label: "Model",
+                label: "ai.common.model",
                 type: "select",
                 required: true,
             },
             {
                 key: "priority",
-                label: "Priority",
+                label: "ai.hooks.priority",
                 type: "number",
                 required: true,
             },

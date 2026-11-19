@@ -175,7 +175,19 @@ export default {
     resetFieldState () {
       this.invalidField = false;
       this.emptyField = false;
-    }
+    },
+    /**
+     * Set validation feedback for a custom field rule.
+     * @param {boolean} invalid Whether the field is invalid.
+     * @returns {void}
+     */
+    setInvalid(invalid) {
+      this.invalidField = invalid;
+
+      if (invalid) {
+        this.shakeIt();
+      }
+    },
   }
 }
 </script>

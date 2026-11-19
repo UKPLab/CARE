@@ -57,12 +57,9 @@ export default {
   components: { BackendTable },
   inject: {
     assignmentType: {from: "assignmentType", default: "document"},
+    bulk: {from: "bulk", default: true},
   },
   props: {
-    bulk: {
-      type: Boolean,
-      default: true,
-    },
     /** Session / submission BackendTable getSelection() snapshot. */
     assignmentSelection: {
       type: Object,

@@ -103,71 +103,11 @@
               />
             </BasicButton>
           </li>
-          <li class="nav-item dropdown">
-            <div
-              class="dropdown"
-              @click="toggleProfileDropdown()"
-              @focusout="toggleProfileDropdown()"
-            >
-              <button
-                id="dropdownMenuButton"
-                aria-expanded="false"
-                aria-haspopup="true"
-                class="btn btn-secondary dropdown-toggle"
-                data-toggle="dropdown"
-                type="button"
-              >
-                {{ firstLetterUsername }}
-              </button>
-              <div
-                id="dropdown-show"
-                aria-labelledby="dropdownMenuButton"
-                class="dropdown-menu dropdown-menu-right"
-              >
-                <a class="dropdown-item display-username">
-                  {{ $t('navigation.topbar.signedInAs', { username }) }}
-                </a>
-                <a
-                  class="dropdown-item"
-                  href="#"
-                  @click="$refs.preferencesModal.open()"
-                >
-                  {{ $t('auth.preferences.title') }}
-                </a>
-                <a
-                  class="dropdown-item"
-                  href="#"
-                  @click="$refs.twoFactorSettingsModal.open()"
-                >
-                  {{ $t('auth.twoFactor.configure') }}
-                </a>
-                <a
-                  class="dropdown-item"
-                  href="#"
-                  @click="$refs.passwordModal.open(userId)"
-                >
-                  {{ $t('auth.changePassword') }}
-                </a>
-                <a
-                  class="dropdown-item"
-                  href="#"
-                  @click.prevent="toggleTheme()"
-                >{{ isDarkMode ? $t('navigation.topbar.lightMode') : $t('navigation.topbar.darkMode') }}</a>
-                <a
-                  class="dropdown-item"
-                  href="#"
-                  @click="logout()"
-                >{{ $t('auth.logout') }}</a>
-              </div>
-            </div>
-          </li>
+          <ProfileMenu />
         </ul>
       </div>
     </nav>
   </div>
-  <PasswordModal ref="passwordModal" />
-  <PreferencesModal ref="preferencesModal" />
-  <TwoFactorSettingsModal ref="twoFactorSettingsModal" />
   <ProblemReportModal
     v-if="problemReportEnabled"
     ref="problemReportModal"
@@ -175,6 +115,7 @@
 </template>
 
 <script>
+import ProfileMenu from './ProfileMenu.vue';
 /**
  *  Topbar shown everywhere throughout the app
  *
@@ -186,20 +127,15 @@
  */
 
 import LoadIcon from "@/basic/Icon.vue";
-import { applyTheme, resolveTheme, returnToDashboard } from "@/assets/utils";
+import { returnToDashboard } from "@/assets/utils";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
-import axios from "axios";
-import getServerURL from "@/assets/serverUrl";
-import PasswordModal from "@/basic/modal/PasswordModal.vue";
-import PreferencesModal from "@/basic/modal/PreferencesModal.vue";
-import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
 import BasicButton from "@/basic/Button.vue";
 import ProblemReportModal from "@/components/problem_report/ProblemReportModal.vue";
 import { readReportSettings } from "@/assets/problemReport.js";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, LogoSvg, PasswordModal, PreferencesModal, TwoFactorSettingsModal, BasicButton, ProblemReportModal},
+  components: {LoadIcon, LogoSvg, ProfileMenu, BasicButton, ProblemReportModal},
   data() {
     return {
       showProjectDropdown: false,
@@ -213,6 +149,10 @@ export default {
     table: 'recording',
   }],
   computed: {
+    // Hidden when report settings are missing or the feature is disabled.
+    problemReportEnabled() {
+      return readReportSettings(this.$store.getters["settings/getValue"]).enabled;
+    },
     allProjects() {
       return this.$store.getters["table/project/getAll"] || [];
     },
@@ -236,15 +176,7 @@ export default {
       }
       return project.name;
     },
-    username() {
-      return this.$store.getters['auth/getUsername'];
-    },
-    firstLetterUsername() {
-      return this.$store.getters['auth/getUsername'].charAt(0).toUpperCase();
-    },
-    userId() {
-      return this.$store.getters["auth/getUserId"];
-    },
+
     isAdmin() {
       return this.$store.getters["auth/isAdmin"];
     },
@@ -286,13 +218,7 @@ export default {
       }
       return "You're being recorded for testing purposes";
     },
-    // Hidden when the problem report settings are missing or the feature is disabled
-    problemReportEnabled() {
-      return readReportSettings(this.$store.getters["settings/getValue"]).enabled;
-    },
-    isDarkMode() {
-      return resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")) === "dark";
-    },
+
   },
   mounted() {
     this.$refs.topbar.addEventListener('click', this.handleClickOutside);
@@ -328,11 +254,7 @@ export default {
       this.$socket.emit("appSettingSet", { key: "projects.default", value: projectId });
       this.showProjectDropdown = false;
     },
-    toggleTheme() {
-      const next = this.isDarkMode ? "light" : "dark";
-      applyTheme(next);
-      this.$socket.emit("appSettingSet", {key: "app.theme.mode", value: next});
-    },
+
     handleClickOutside(event) {
         if (!this.$el.contains(event.target)) {
           this.showProjectDropdown = false;
@@ -344,10 +266,7 @@ export default {
     removeSidebarFlag() {
       document.body.classList.remove('sidebar-exists');
     },
-    async logout() {
-      await axios.get(getServerURL() + '/auth/logout', {withCredentials: true})
-      await this.$router.push("/login");
-    },
+
     async goBack() {
       await returnToDashboard(this.$router, this.homeRoute);
     },
@@ -361,54 +280,12 @@ export default {
         this.$router.push('/dashboard/socket_profiler');
       }
     },
-    toggleProfileDropdown() {
-      const dropdown = document.getElementById('dropdown-show');
-      var close = false;
-      if (event.type === 'focusout') {
-        if (event.relatedTarget != null && event.relatedTarget.classList.contains("dropdown-item")) {
-          return;
-        }
-        close = true;
-      }
-      this.actuallyToggle(dropdown, close);
-    },
-    actuallyToggle(dropdownElement, close) {
-      if (close || dropdownElement.classList.contains("show")) {
-        dropdownElement.classList.remove("show");
-      } else {
-        dropdownElement.classList.add("show");
-      }
-    },
+
   },
 }
-
 </script>
 
 <style>
-
-#dropdownMenuButton::after {
-  display: none;
-}
-
-#dropdownMenuButton {
-  width: 35px;
-  height: 35px;
-  display: table-cell;
-  text-align: center;
-  vertical-align: middle;
-  border-radius: 50%;
-  font-size: 1em;
-  color: #fff;
-  background: darkblue;
-  position: relative;
-  border: none;
-}
-
-#dropdown-show {
-  margin-top: 8px;
-  right: 0;
-  position: absolute;
-}
 
 /* Quiet circular icon button, sized to match the avatar next to it. The id
    selector outranks Bootstrap's .btn radius, border and padding. */
@@ -436,11 +313,6 @@ export default {
   outline: 2px solid var(--care-primary);
   outline-offset: 2px;
   box-shadow: none;
-}
-
-.display-username {
-  font-style: italic;
-  pointer-events: none;
 }
 
 body.sidebar-exists #backButton {
@@ -478,11 +350,6 @@ body.sidebar-exists #backButton {
 .project-box:hover {
   background-color: darkblue;
   color: white;
-}
-
-[data-bs-theme="dark"] #dropdownMenuButton {
-  background: var(--care-accent);
-  color: var(--care-on-accent);
 }
 
 [data-bs-theme="dark"] .project-box {
