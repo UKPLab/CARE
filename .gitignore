@@ -54,3 +54,8 @@ email-mappings.py
 gitleaks-clean.sh
 .mailmap
 .DS_Store
+
+# local AI skill installations
+/.agents/
+/.claude/
+/skills-lock.json
