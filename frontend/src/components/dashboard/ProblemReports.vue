@@ -1,5 +1,14 @@
 <template>
   <Card :title="$t('problemReport.admin.title')">
+    <template #headerButtons>
+      <BasicButton
+        class="btn-primary"
+        icon="download"
+        :text="$t('problemReport.admin.exportCsv')"
+        :loading="exporting"
+        @click="exportCsv"
+      />
+    </template>
     <template #body>
       <p class="text-body-secondary small">
         {{ $t('problemReport.admin.description') }}
@@ -24,6 +33,9 @@
 </template>
 
 <script>
+import BasicButton from "@/basic/Button.vue";
+import FileSaver from "file-saver";
+import { collectReports, reportsCsv } from "@/assets/problemReportExport.js";
 import BasicTable from "@/basic/Table.vue";
 import Card from "@/basic/dashboard/card/Card.vue";
 import ProblemReportDetailModal from "@/components/dashboard/problem_reports/ProblemReportDetailModal.vue";
@@ -41,10 +53,11 @@ const DESCRIPTION_PREVIEW_LENGTH = 120;
  */
 export default {
   name: "ProblemReports",
-  components: { Card, BasicTable, ProblemReportDetailModal },
+  components: { BasicButton, Card, BasicTable, ProblemReportDetailModal },
   data() {
     return {
       reports: [],
+      exporting: false,
       selectedReport: null,
       options: {
         striped: true,
@@ -100,6 +113,29 @@ export default {
     this.load({ page: 0, limit: this.options.pagination.itemsPerPage });
   },
   methods: {
+    async exportCsv() {
+      if (this.exporting) return;
+      this.exporting = true;
+      try {
+        const reports = await collectReports((pagination) => new Promise((resolve, reject) => {
+          this.$socket.timeout(30000).emit("problemReportGetAll", pagination, (error, response) => {
+            if (error) reject(new Error(this.$t('problemReport.messages.timeout')));
+            else if (!response.success) reject(new Error(resolveApiMessage(response)));
+            else resolve(response.data);
+          });
+        }));
+        const csv = reportsCsv(reports, this.$t);
+        FileSaver.saveAs(new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8" }), "problem-reports.csv");
+      } catch (error) {
+        this.eventBus.emit("toast", {
+          title: this.$t('problemReport.admin.exportFailed'),
+          message: error.message,
+          variant: "danger",
+        });
+      } finally {
+        this.exporting = false;
+      }
+    },
     load(pagination) {
       this.$socket.emit("problemReportGetAll", { page: pagination.page, limit: pagination.limit }, (response) => {
         if (response.success) {
