@@ -317,9 +317,15 @@ export default {
     this.revokeAttachmentUrls();
   },
   methods: {
+    /**
+     * @returns {Object} Empty report answers.
+     */
     emptyForm() {
       return { problemTypes: [], blocked: null, frequency: null };
     },
+    /**
+     * @returns {void} Loads effective settings and opens the report form.
+     */
     open() {
       if (this.loadingConfig) return;
       // Details describe the moment Report was clicked; a kept draft keeps its original snapshot
@@ -389,6 +395,9 @@ export default {
         }
       });
     },
+    /**
+     * @returns {boolean} Whether required answers and description limits are satisfied.
+     */
     validate() {
       this.errors.problemTypes = this.form.problemTypes.length === 0
         ? this.$t('errors.problemReport.problemTypeRequired')
@@ -403,11 +412,17 @@ export default {
       }
       return !this.errors.problemTypes && descriptionValid;
     },
+    /**
+     * @returns {void} Focuses the description field after validation fails.
+     */
     focusDescription() {
       this.$refs.descriptionForm?.$el.querySelector(`textarea[name="${DESCRIPTION_INPUT_ID}"]`)?.focus();
     },
     /**
      * The automatic details to send: the snapshot captured when Report was clicked.
+     */
+    /**
+     * @returns {Object} Captured details with current consent applied.
      */
     submissionSnapshot() {
       const snapshot = this.capturedSnapshot || this.captureSnapshot();
@@ -417,6 +432,9 @@ export default {
         databaseHealthCapturedAt: this.details?.result?.databaseHealth?.capturedAt,
       };
     },
+    /**
+     * @returns {Promise<void>} Sends a validated report, retaining its draft on failure.
+     */
     async submit() {
       if (this.submitting || this.preparing || !this.validate()) {
         return;
@@ -480,6 +498,9 @@ export default {
         }
       });
     },
+    /**
+     * @returns {void} Clears the draft unless a submission is pending.
+     */
     cancel() {
       if (this.submitting) {
         return;
@@ -487,9 +508,15 @@ export default {
       this.reset();
       this.$refs.modal.close();
     },
+    /**
+     * @returns {void} Releases preview object URLs.
+     */
     revokeAttachmentUrls() {
       this.attachments.forEach((attachment) => URL.revokeObjectURL(attachment.url));
     },
+    /**
+     * @returns {void} Clears answers and invalidates pending preparation responses.
+     */
     reset() {
       this.capturedSnapshot = null;
       this.detailsExpanded = false;

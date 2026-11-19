@@ -651,3 +651,56 @@ User Socket Functions (`user.js`)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. js:autoclass:: UserSocket
    :members:
+
+Problem report sockets
+----------------------
+
+``ProblemReportSocket`` stores private support reports in ``problem_report``.
+It is deliberately not an autoTable: authenticated users can submit reports,
+but only administrators can list reports, export them or retrieve attachments.
+All events use the normal ``{success, data}`` acknowledgement. Errors contain
+translated error keys and a correlation ``errorId`` that also appears in server logs.
+
+* ``problemReportConfig({})`` returns the effective form options and bounded
+  attachment, diagnostics and activity limits. A disabled feature rejects the request.
+* ``problemReportPrepare({clientRequestId, context, diagnostics, activity})``
+  sanitizes the browser snapshot and returns ``context``, ``diagnostics``,
+  ``activity``, ``databaseHealth`` and ``databaseHealthExpiresInMs``. Database
+  counters stay server-side; the reporter receives only status and capture time.
+* ``problemReportSubmit({clientRequestId, problemTypes, description, blocked,
+  frequency, context, diagnostics, activity, databaseHealthCapturedAt, attachments})``
+  validates the report and returns ``{id, duplicate}``. Optional fields can be
+  omitted. Attachments are ``{name, file}`` objects with binary content. The
+  server detects permitted image/video types and replaces the filename extension
+  with the detected format. Reusing a form's request ID returns the existing
+  report. Rate limiting and duplicate checks share a transaction and reporter
+  row lock. Failed transactions remove any files written by that submission.
+* ``problemReportGetAll({page, limit})`` returns administrator-only ``{rows, count}``.
+  Dashboard pages are zero-based and limited to 100 rows. Retry IDs are excluded.
+* ``problemReportExportPage({beforeId, limit})`` returns administrator-only
+  ``{rows, nextCursor}``, ordered by decreasing ID. Start with a null cursor and
+  pass ``nextCursor`` as the next ``beforeId`` until it is null. The exclusive
+  cursor prevents new submissions from shifting later pages. This traversal is
+  not a database snapshot of rows concurrently deleted by maintenance.
+* ``problemReportAttachmentGet({reportId, attachmentId})`` returns administrator-only
+  ``{name, mimeType, file}``. The server verifies the report and attachment ID;
+  the client never supplies a filesystem path. Legacy download names are also
+  normalized to their stored detected extension.
+
+The dashboard's **Export** action downloads one ``problem-reports.zip`` with
+``problem-reports.csv`` and attachment files under ``attachments/report-<id>/``.
+The CSV includes full descriptions and the exact relative paths of the ZIP
+entries. Position prefixes keep attachments with identical names distinct.
+A failed page or attachment request aborts the download rather than producing
+an incomplete archive.
+
+Consent and limits
+~~~~~~~~~~~~~~~~~~
+
+Activity is included only when current server-side usage-statistics consent
+permits it. Browser events contain structural metadata, not text, typed values,
+IDs or CSS classes. Diagnostic payloads omit request data; sanitization removes
+secrets and limits stored fields, count, age and length. Aggregate database
+snapshots are cached with per-user and total limits and expiry. Administrators
+can disable the feature or individual collection types through settings.
+See :doc:`../../for_researchers/basics` for the setting keys and user workflow.

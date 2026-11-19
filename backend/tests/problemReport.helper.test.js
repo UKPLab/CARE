@@ -319,3 +319,23 @@ describe("problem report attachments", () => {
         expect(() => validateClientRequestId(undefined)).toThrow("errors.problemReport.invalidRequest");
     });
 });
+
+
+describe("attachment download names", () => {
+    test.each([
+        ["capture.html", "capture.png"], ["capture", "capture.png"],
+        ["capture.jpeg", "capture.png"], ["capture.png", "capture.png"],
+        ["", "attachment.png"],
+    ])("uses the detected extension for %s", async (name, expected) => {
+        const [attachment] = validateAttachments([{name, file: PNG}], await settingsWith());
+        expect(attachment.name).toBe(expected);
+    });
+
+    test("normalizes legacy names before administrator listing or export", () => {
+        const {reportForAdmin} = require("../utils/helper/problemReport");
+        const result = reportForAdmin({id: 1, clientRequestId: "private-retry-token",
+            attachments: [{id: "a", name: "capture.html", extension: "png"}]});
+        expect(result.attachments[0].name).toBe("capture.png");
+        expect(result).not.toHaveProperty("clientRequestId");
+    });
+});

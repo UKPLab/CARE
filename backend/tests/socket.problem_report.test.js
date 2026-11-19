@@ -1,8 +1,12 @@
+require("./reportTestSetup");
+// These socket tests do not exercise the unrelated HTTP export router.
+jest.mock("../webserver/routes/export", () => () => {});
 const fs = require("fs");
 const path = require("path");
 const {randomUUID} = require("crypto");
 const Server = require("../webserver/Server.js");
-const {getSocketClient} = require("./utils.js");
+const httpRequest = require("supertest");
+const {io: Client} = require("socket.io-client");
 
 const PORT = 3121;
 const ATTACHMENT_PATH = path.join(__dirname, "..", "..", "files", "problem_reports");
@@ -15,7 +19,33 @@ const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3
  * @param {Object} data Payload
  * @returns {Promise<Object>}
  */
-const request = (socket, event, data) => new Promise((resolve) => socket.emit(event, data, resolve));
+const request = (socket, event, data) => new Promise((resolve, reject) => {
+    socket.timeout(5000).emit(event, data, (error, response) => {
+        if (error) reject(new Error(`${event}: no acknowledgement`));
+        else resolve(response);
+    });
+});
+
+/**
+ * Authenticate an owned fixture and wait until the server has registered its handlers.
+ * @param {Object} server Running server.
+ * @param {Object} account Fixture email and password.
+ * @returns {Promise<Object>} Ready Socket.IO client.
+ */
+async function connectClient(server, account) {
+    const response = await httpRequest(server.http).post("/auth/login")
+        .send({username: account.email, password: account.password}).expect(200);
+    const socket = Client(`http://127.0.0.1:${PORT}`, {
+        autoConnect: false, reconnection: false, transports: ["websocket"],
+        extraHeaders: {Cookie: response.headers["set-cookie"][0]},
+    });
+    return await new Promise((resolve, reject) => {
+        const timer = setTimeout(() => { socket.disconnect(); reject(new Error("Socket setup timed out")); }, 5000);
+        socket.once("ready", () => { clearTimeout(timer); resolve(socket); });
+        socket.once("connect_error", (error) => { clearTimeout(timer); socket.disconnect(); reject(error); });
+        socket.connect();
+    });
+}
 
 const report = (overrides = {}) => ({
     clientRequestId: randomUUID(),
@@ -55,6 +85,7 @@ describe("Test Websockets - Problem reports", () => {
     let guest;
     let admin;
     const createdIds = [];
+    const fixtureIds = [];
     const originalSettings = {};
 
     /**
@@ -84,15 +115,33 @@ describe("Test Websockets - Problem reports", () => {
 
     beforeAll(async () => {
         server = new Server();
-        server.start(PORT);
-        guest = await getSocketClient(server, PORT, process.env.GUEST_EMAIL, process.env.GUEST_PWD);
-        admin = await getSocketClient(server, PORT, process.env.ADMIN_EMAIL, process.env.ADMIN_PWD);
+        const roleIds = await server.db.models["user"].getRoleIdMap();
+        const fixtures = [];
+        // The setup migration intentionally removes the seeded admin. These tests
+        // own their accounts rather than relying on a developer's wizard state.
+        for (const role of ["user", "admin"]) {
+            const suffix = randomUUID();
+            const email = `report-${suffix}@example.test`;
+            const password = randomUUID();
+            const user = await server.db.models["user"].add({
+                userName: `report-${suffix}`, email, password,
+                firstName: "Report", lastName: "Test", emailVerified: true,
+                acceptTerms: true, acceptStats: true, initialPassword: false,
+            }, {});
+            fixtureIds.push(user.id);
+            await server.db.models["user_role_matching"].add({userId: user.id, userRoleId: roleIds[role]}, {});
+            fixtures.push({email, password});
+        }
+        await new Promise((resolve) => server.start(PORT).once("listening", resolve));
+        guest = await connectClient(server, fixtures[0]);
+        admin = await connectClient(server, fixtures[1]);
+
         await setSetting("problemReport.reportsPerHour", "1000");
-        guestUser = await server.db.models["user"].findOne({where: {email: process.env.GUEST_EMAIL}, raw: true});
+        guestUser = await server.db.models["user"].getById(fixtureIds[0]);
     });
 
     afterAll(async () => {
-        await setGuestConsent(guestUser.acceptStats);
+        if (guestUser) await setGuestConsent(guestUser.acceptStats);
         for (const [key, value] of Object.entries(originalSettings)) {
             await server.db.models["setting"].update({value}, {where: {key}});
         }
@@ -102,9 +151,13 @@ describe("Test Websockets - Problem reports", () => {
         }
         // Test rows only: remove them so reruns start from the same rate-limit state
         await server.db.models["problem_report"].destroy({where: {id: createdIds}});
-        guest.disconnect();
-        admin.disconnect();
-        server.stop();
+        guest?.disconnect();
+        admin?.disconnect();
+        // Remove only accounts created by this suite after their reports are gone.
+        await server.db.models["user_role_matching"].destroy({where: {userId: fixtureIds}});
+        // Server audit rows can reference these accounts; retain those foreign keys.
+        for (const id of fixtureIds) await server.db.models["user"].deleteById(id);
+        await server.stop();
     });
 
     test("prepare returns the sanitized details and a server database snapshot without saving, even for an empty form", async () => {
@@ -350,4 +403,29 @@ describe("Test Websockets - Problem reports", () => {
         const otherReport = await request(admin, "problemReportAttachmentGet", {reportId: createdIds[0] === created.data.id ? -1 : createdIds[1], attachmentId});
         expect(otherReport.key).toBe("errors.problemReport.attachmentNotFound");
     });
+
+    test("export cursors exclude later submissions and use matching safe attachment names", async () => {
+        const create = async () => {
+            const result = await request(guest, "problemReportSubmit", report({attachments: [{name: "capture.html", file: PNG}]}));
+            expect(result.success).toBe(true);
+            createdIds.push(result.data.id);
+            return result.data.id;
+        };
+        const firstId = await create();
+        const secondId = await create();
+        const forbidden = await request(guest, "problemReportExportPage", {});
+        expect(forbidden.key).toBe("errors.problemReport.noAccess");
+        const first = await request(admin, "problemReportExportPage", {limit: 1});
+        expect(first.data.rows[0].id).toBe(secondId);
+        const laterId = await create();
+        const second = await request(admin, "problemReportExportPage", {limit: 1, beforeId: first.data.nextCursor});
+        expect(second.data.rows[0].id).toBe(firstId);
+        expect(second.data.rows.map((row) => row.id)).not.toContain(laterId);
+        expect(second.data.rows[0].attachments[0].name).toBe("capture.png");
+        const attachmentId = second.data.rows[0].attachments[0].id;
+        const file = await request(admin, "problemReportAttachmentGet", {reportId: firstId, attachmentId});
+        expect(file.data.name).toBe("capture.png");
+        expect(Buffer.from(file.data.file).equals(PNG)).toBe(true);
+    });
+
 });

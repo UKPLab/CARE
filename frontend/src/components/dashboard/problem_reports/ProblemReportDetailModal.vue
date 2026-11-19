@@ -99,15 +99,29 @@ export default {
     Object.values(this.urls).forEach((url) => URL.revokeObjectURL(url));
   },
   methods: {
+    /**
+     * @returns {void} Opens the report details dialog.
+     */
     open() {
       this.$refs.modal.open();
     },
+    /**
+     * @returns {void} Notifies the parent that the dialog closed.
+     */
     onHide() {
       this.$emit("hide");
     },
+    /**
+     * @param {Object} attachment Previously loaded attachment.
+     * @returns {void} Saves the attachment with its normalized name.
+     */
     download(attachment) {
       FileSaver.saveAs(this.blobs[attachment.key], attachment.name);
     },
+    /**
+     * @param {Object} attachment Stored attachment metadata.
+     * @returns {void} Fetches binary content and creates its preview URL.
+     */
     loadAttachment(attachment) {
       if (this.loading.includes(attachment.key)) {
         return;

@@ -64,9 +64,17 @@ export default {
   },
   emits: ["update:modelValue"],
   methods: {
+    /**
+     * @param {*} value Choice value.
+     * @returns {boolean} Whether the choice is selected.
+     */
     isSelected(value) {
       return this.multiple ? (this.modelValue || []).includes(value) : this.modelValue === value;
     },
+    /**
+     * @param {*} value Choice value.
+     * @returns {void} Emits the updated single or multiple selection.
+     */
     toggle(value) {
       if (this.multiple) {
         const selected = this.modelValue || [];

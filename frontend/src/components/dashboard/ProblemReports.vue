@@ -113,6 +113,10 @@ export default {
     this.load({ page: 0, limit: this.options.pagination.itemsPerPage });
   },
   methods: {
+    /**
+     * Download all reports and their attachments as one ZIP.
+     * @returns {Promise<void>} Resolves after saving or showing the failure toast.
+     */
     async exportCsv() {
       if (this.exporting) return;
       this.exporting = true;
@@ -124,7 +128,7 @@ export default {
             else resolve(response.data);
           });
         });
-        const reports = await collectReports((pagination) => request("problemReportGetAll", pagination));
+        const reports = await collectReports((pagination) => request("problemReportExportPage", pagination));
         const archive = await reportsArchive(reports, this.$t,
           (attachment) => request("problemReportAttachmentGet", attachment));
         FileSaver.saveAs(new Blob([archive], { type: "application/zip" }), "problem-reports.zip");
@@ -138,6 +142,11 @@ export default {
         this.exporting = false;
       }
     },
+    /**
+     * Load one dashboard page.
+     * @param {Object} pagination Zero-based page and limit.
+     * @returns {void}
+     */
     load(pagination) {
       this.$socket.emit("problemReportGetAll", { page: pagination.page, limit: pagination.limit }, (response) => {
         if (response.success) {
@@ -152,6 +161,10 @@ export default {
         }
       });
     },
+    /**
+     * @param {boolean|null} blocked Optional answer.
+     * @returns {string} Translated answer or empty text.
+     */
     blockedText(blocked) {
       if (blocked === true) {
         return this.$t('problemReport.form.yes');
@@ -161,6 +174,10 @@ export default {
       }
       return "";
     },
+    /**
+     * @param {Object} data Table action and row parameters.
+     * @returns {void} Opens the selected report.
+     */
     onAction(data) {
       if (data.action === "viewReport") {
         this.selectedReport = this.reports.find((report) => report.id === data.params.id) || null;

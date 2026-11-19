@@ -72,6 +72,23 @@ module.exports = (sequelize, DataTypes) => {
                 raw: true,
             });
         }
+
+        /**
+         * Export reports by decreasing ID so concurrent inserts cannot shift pages.
+         * @param {number|null} beforeId Exclusive cursor, or null for the first page.
+         * @param {number} limit Page size.
+         * @returns {Promise<{rows: Object[], nextCursor: number|null}>} Rows and continuation.
+         */
+        static async getExportPage(beforeId, limit) {
+            const rows = await this.findAll({
+                where: {deleted: false, ...(beforeId === null ? {} : {id: {[Op.lt]: beforeId}})},
+                order: [["id", "DESC"]],
+                limit: limit + 1,
+                raw: true,
+            });
+            const page = rows.slice(0, limit);
+            return {rows: page, nextCursor: rows.length > limit ? page[page.length - 1].id : null};
+        }
     }
 
     ProblemReport.init({

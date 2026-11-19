@@ -239,9 +239,17 @@ export default {
     },
   },
   methods: {
+    /**
+     * @param {string|null} value ISO timestamp.
+     * @returns {string} Localized timestamp or empty text.
+     */
     formatTime(value) {
       return value ? new Date(value).toLocaleString(this.$i18n.locale) : "";
     },
+    /**
+     * @param {Object} entry Sanitized diagnostic event.
+     * @returns {string} Available diagnostic metadata.
+     */
     describeDiagnostic(entry) {
       const details = DETAIL_FIELDS.filter((field) => entry[field] !== undefined).map((field) => `${field}: ${entry[field]}`);
       if (entry.source) {

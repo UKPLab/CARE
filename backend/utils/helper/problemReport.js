@@ -417,7 +417,20 @@ function sanitizeContext(context, now = new Date()) {
 function sanitizeAttachmentName(name, extension) {
     const base = typeof name === "string" ? name.split(/[\\/]/).pop() : "";
     const cleaned = base.replace(/[\u0000-\u001f\u007f<>:"|?*]+/g, "_").trim().slice(0, ATTACHMENT_NAME_MAX_LENGTH);
-    return cleaned || `attachment.${extension}`;
+    const stem = cleaned.replace(/\.[^.]*$/, "").replace(/[. ]+$/, "") || "attachment";
+    return `${stem}.${extension}`;
+}
+
+/**
+ * Prepare a stored report for an administrator, including legacy attachment names.
+ * @param {Object} row Stored report.
+ * @returns {Object} Report without the client retry token and with safe download names.
+ */
+function reportForAdmin(row) {
+    const {clientRequestId, ...report} = row;
+    return {...report, attachments: (report.attachments || []).map((attachment) => ({
+        ...attachment, name: sanitizeAttachmentName(attachment.name, attachment.extension),
+    }))};
 }
 
 /**
@@ -471,7 +484,7 @@ function parseFlag(value, fallback) {
  * Read the "problemReport.*" settings and clamp them to the fixed safety bounds.
  * Missing or invalid values fall back to the defaults seeded by the settings migration.
  *
- * @param {function(string): Promise<string|null>} getSetting Returns the raw value of a setting key
+ * @param {Function} getSetting Returns the raw value of a setting key
  * @returns {Promise<Object>} Effective report configuration
  */
 async function loadReportSettings(getSetting) {
@@ -653,4 +666,6 @@ module.exports = {
     normalizeReport,
     validateAttachments,
     validateClientRequestId,
+    reportForAdmin,
+    sanitizeAttachmentName,
 };

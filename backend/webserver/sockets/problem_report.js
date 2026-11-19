@@ -9,6 +9,8 @@ const {
     normalizeReport,
     validateAttachments,
     validateClientRequestId,
+    reportForAdmin,
+    sanitizeAttachmentName,
 } = require("../../utils/helper/problemReport.js");
 const {databaseHealthCache, publicDatabaseHealth} = require("../../utils/helper/problemReportHealthCache.js");
 const {currentDatabaseHealth} = require("../../db/stats.js");
@@ -139,6 +141,8 @@ class ProblemReportSocket extends Socket {
      *
      * @param {string} clientRequestId Form id
      * @param {Object} config Report settings
+     * @param {string} [expectedCapturedAt] Capture timestamp acknowledged by the browser.
+     * @throws {TranslatableError} When the acknowledged snapshot has expired.
      * @returns {Promise<Object|null>} null when database health is turned off
      */
     async databaseHealthForSubmit(clientRequestId, config, expectedCapturedAt) {
@@ -172,7 +176,7 @@ class ProblemReportSocket extends Socket {
      * @param {Object} [data.context] Page, capture time, version, build, browser, OS, viewport size
      * @param {Object[]} [data.diagnostics] Recent diagnostic events
      * @param {Object[]} [data.activity] Recent activity (kept only with usage statistics consent)
-     * @param {{name: string, file: Buffer}[]} [data.attachments] Images or videos
+     * @param {Object[]} [data.attachments] Images or videos as name/file pairs
      * @param {Object} options Socket options; this handler owns its database transaction
      * @returns {Promise<{id: number, duplicate: boolean}>}
      * @throws {TranslatableError} On invalid input or when the rate limit is reached
@@ -191,6 +195,9 @@ class ProblemReportSocket extends Socket {
         const written = [];
         let result;
         try {
+            // Own the transaction so health queries run before locking, and failed commits
+            // finish rolling back before the catch removes files. createSocket's outer
+            // transaction cannot provide that filesystem cleanup boundary.
             result = await this.server.db.sequelize.transaction(async (transaction) => {
                 return await this.saveReport(data, {transaction, config, clientRequestId, databaseHealth}, written);
             });
@@ -219,7 +226,7 @@ class ProblemReportSocket extends Socket {
         const model = this.models["problem_report"];
 
         // Serialize reports from the same user so retries and rate checks see committed rows.
-        const user = await this.models["user"].findByPk(this.userId, {
+        const user = await this.models["user"].getById(this.userId, {
             transaction: options.transaction,
             lock: options.transaction.LOCK.UPDATE,
         });
@@ -287,8 +294,33 @@ class ProblemReportSocket extends Socket {
         const page = Number.isInteger(data?.page) && data.page >= 0 ? data.page : 0;
         const limit = Number.isInteger(data?.limit) && data.limit > 0 ? Math.min(data.limit, MAX_PAGE_SIZE) : 25;
         const result = await this.models["problem_report"].getPage(page, limit);
-        result.rows = result.rows.map(({clientRequestId, ...row}) => row);
+        result.rows = result.rows.map(reportForAdmin);
         return await this.updateCreatorName(result);
+    }
+
+    /**
+     * Export one cursor page for administrators, independent of dashboard pagination.
+     * @socketEvent problemReportExportPage
+     * @param {Object} data Cursor request.
+     * @param {number|null} [data.beforeId] Exclusive ID cursor.
+     * @param {number} [data.limit=100] Page size, capped at 100.
+     * @param {Object} options Socket options.
+     * @returns {Promise<{rows: Object[], nextCursor: number|null}>} Export page.
+     * @throws {TranslatableError} When access or the cursor is invalid.
+     */
+    async getExportPage(data, options) {
+        if (!(await this.isAdmin())) {
+            throw new TranslatableError("errors.problemReport.noAccess");
+        }
+        const beforeId = data?.beforeId ?? null;
+        if (beforeId !== null && (!Number.isSafeInteger(beforeId) || beforeId <= 0)) {
+            throw new TranslatableError("errors.problemReport.invalidRequest");
+        }
+        const limit = Number.isInteger(data?.limit) && data.limit > 0 ? Math.min(data.limit, MAX_PAGE_SIZE) : MAX_PAGE_SIZE;
+        const result = await this.models["problem_report"].getExportPage(beforeId, limit);
+        result.rows = result.rows.map(reportForAdmin);
+        result.rows = await this.updateCreatorName(result.rows);
+        return result;
     }
 
     /**
@@ -319,7 +351,7 @@ class ProblemReportSocket extends Socket {
         if (!fs.existsSync(filePath)) {
             throw new TranslatableError("errors.problemReport.attachmentNotFound");
         }
-        return {name: attachment.name, mimeType: attachment.mimeType, file: fs.readFileSync(filePath)};
+        return {name: sanitizeAttachmentName(attachment.name, attachment.extension), mimeType: attachment.mimeType, file: fs.readFileSync(filePath)};
     }
 
     init() {
@@ -327,6 +359,7 @@ class ProblemReportSocket extends Socket {
         this.createSocket("problemReportPrepare", this.prepareDetails, {}, false);
         this.createSocket("problemReportSubmit", this.submitReport, {}, false);
         this.createSocket("problemReportGetAll", this.getAllReports, {}, false);
+        this.createSocket("problemReportExportPage", this.getExportPage, {}, false);
         this.createSocket("problemReportAttachmentGet", this.getAttachment, {}, false);
     }
 }

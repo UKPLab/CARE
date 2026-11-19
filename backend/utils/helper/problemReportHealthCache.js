@@ -15,7 +15,11 @@ const MAX_ENTRIES = 1000;
 const MAX_ENTRIES_PER_USER = 3;
 const MIN_CAPTURE_INTERVAL_MS = 5000;
 
+/** Bounded, intentionally process-wide store keyed by reporter and opened form. */
 class DatabaseHealthCache {
+    /**
+     * @param {Object} [options] Entry limits and capture reuse interval.
+     */
     constructor({maxEntries = MAX_ENTRIES, maxEntriesPerUser = MAX_ENTRIES_PER_USER, minCaptureIntervalMs = MIN_CAPTURE_INTERVAL_MS} = {}) {
         this.maxEntries = maxEntries;
         this.maxEntriesPerUser = maxEntriesPerUser;
@@ -26,6 +30,11 @@ class DatabaseHealthCache {
         this.capturing = new Map();
     }
 
+    /**
+     * @param {number} userId Reporter ID.
+     * @param {string} clientRequestId Opened form ID.
+     * @returns {string} Cache key scoped to the reporter.
+     */
     key(userId, clientRequestId) {
         return `${userId}:${clientRequestId}`;
     }
@@ -65,10 +74,19 @@ class DatabaseHealthCache {
         return {snapshot, expiresAt: entry.expiresAt};
     }
 
+    /**
+     * @param {number} userId Reporter ID.
+     * @param {string} clientRequestId Submitted form ID.
+     * @returns {void}
+     */
     delete(userId, clientRequestId) {
         this.entries.delete(this.key(userId, clientRequestId));
     }
 
+    /**
+     * @param {number} [now] Current epoch milliseconds.
+     * @returns {void} Removes expired snapshots.
+     */
     prune(now = Date.now()) {
         for (const [key, entry] of this.entries) {
             if (entry.expiresAt <= now) {
@@ -82,7 +100,7 @@ class DatabaseHealthCache {
      *
      * @param {number} userId
      * @param {string} clientRequestId
-     * @param {function(): Promise<Object>} capture Takes the snapshot; must not throw
+     * @param {Function} capture Takes the snapshot; must not throw
      * @param {number} maxAgeMs How long the snapshot can be saved with a report
      * @returns {Promise<{snapshot: Object, expiresAt: number}>}
      */

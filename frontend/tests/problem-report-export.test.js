@@ -4,20 +4,34 @@ import JSZip from 'jszip';
 import Papa from 'papaparse';
 import { collectReports, reportsCsv, reportsArchive } from '../src/assets/problemReportExport.js';
 
-test('CSV export fetches reports beyond the visible page', async () => {
+test('CSV export fetches every cursor page', async () => {
     const calls = [];
-    const reports = await collectReports(async ({ page, limit }) => {
-        calls.push({ page, limit });
-        return { count: 101, rows: Array.from({ length: page === 0 ? 100 : 1 }, (_, i) => ({ id: page * 100 + i })) };
+    const reports = await collectReports(async ({ beforeId, limit }) => {
+        calls.push({ beforeId, limit });
+        return beforeId === null
+            ? { rows: Array.from({ length: 100 }, (_, i) => ({ id: 101 - i })), nextCursor: 2 }
+            : { rows: [{ id: 1 }], nextCursor: null };
     });
     assert.equal(reports.length, 101);
-    assert.deepEqual(calls, [{ page: 0, limit: 100 }, { page: 1, limit: 100 }]);
+    assert.deepEqual(calls, [{ beforeId: null, limit: 100 }, { beforeId: 2, limit: 100 }]);
+});
+
+test('new reports between export pages do not omit or duplicate original reports', async () => {
+    const original = Array.from({ length: 200 }, (_, i) => ({ id: 200 - i }));
+    const stored = [...original];
+    const reports = await collectReports(async ({ beforeId, limit }) => {
+        if (beforeId !== null) stored.unshift({ id: 201 });
+        const matching = stored.filter((row) => beforeId === null || row.id < beforeId);
+        const rows = matching.slice(0, limit);
+        return { rows, nextCursor: matching.length > limit ? rows.at(-1).id : null };
+    });
+    assert.deepEqual(reports, original);
 });
 
 test('failed pages reject the export instead of returning a partial file', async () => {
-    await assert.rejects(collectReports(async ({ page }) => {
-        if (page) throw new Error('Access denied');
-        return { count: 101, rows: [{ id: 1 }] };
+    await assert.rejects(collectReports(async ({ beforeId }) => {
+        if (beforeId !== null) throw new Error('Access denied');
+        return { rows: [{ id: 2 }], nextCursor: 2 };
     }), /Access denied/);
 });
 

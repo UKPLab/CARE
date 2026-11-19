@@ -111,15 +111,31 @@ export default {
     },
   },
   methods: {
+    /**
+     * @param {string|null} value ISO timestamp.
+     * @returns {string} Localized timestamp or empty text.
+     */
     formatTime(value) {
       return value ? new Date(value).toLocaleString(this.$i18n.locale) : "";
     },
+    /**
+     * @param {number|null} value Counter value.
+     * @returns {string} Localized counter or unavailable marker.
+     */
     num(value) {
       return typeof value === "number" ? value.toLocaleString(this.$i18n.locale) : "-";
     },
+    /**
+     * @param {number|null} ms Duration in milliseconds.
+     * @returns {string} Translated duration or unavailable marker.
+     */
     duration(ms) {
       return typeof ms === "number" ? this.$t('problemReport.databaseHealth.milliseconds', { ms: this.num(ms) }) : "-";
     },
+    /**
+     * @param {Object|null} pool Single or replicated pool counters.
+     * @returns {string} Translated pool summary.
+     */
     poolText(pool) {
       if (!pool) {
         return "-";
