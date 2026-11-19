@@ -2,7 +2,7 @@
   <ConnectionStatus :disconnected="disconnected" />
   <div v-if="requireAuth">
     <TopBar v-if="!hideTopbar && appLoaded"/>
-    <ApplicationLoading v-if="!appLoaded" :text="appLoadText" />
+    <ApplicationLoading v-if="!appLoaded" :stages="loaded" :connected="$socket.connected" />
     <div v-else>
       <PostLoginPrompts />
       <router-view class="top-padding"/>
@@ -116,26 +116,7 @@ export default {
       return this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar;
     },
     appLoaded() {
-      return this.appLoadPercent === 100;
-    },
-    appLoadPercent() {
-      const stages = Object.values(this.loaded);
-      return stages.filter(Boolean).length / stages.length * 100;
-    },
-    appLoadStep() {
-      return Object.keys(this.loaded).find((k) => !this.loaded[k]);
-    },
-    appLoadText() {
-      if (!this.$socket.connected) {
-        return this.$t('common.connecting');
-      }
-      if (this.appLoadPercent < 100) {
-        return this.$t('common.loadingProgress', {
-          appLoadStep: this.appLoadStep,
-          percent: this.appLoadPercent,
-        });
-      }
-      return this.$t('common.loading');
+      return Object.values(this.loaded).every(Boolean);
     },
     acceptStats() {
       if (this.$store.getters["auth/isAuthenticated"]) {
@@ -233,7 +214,7 @@ export default {
     this.connect();
   },
   async mounted() {
-    this.initTheme();
+    applyTheme(resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")));
     if (this.$route.meta.checkLogin) {
       await this.runCheckLoginFlow();
     }
@@ -245,9 +226,6 @@ export default {
     clearActivity();
   },
   methods: {
-    initTheme() {
-      applyTheme(resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")));
-    },
     async runCheckLoginFlow() {
       const response = await axios.get(getServerURL() + "/auth/check", {
         withCredentials: true,

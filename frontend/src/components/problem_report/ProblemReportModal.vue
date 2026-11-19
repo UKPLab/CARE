@@ -8,123 +8,27 @@
       {{ $t('problemReport.title') }}
     </template>
     <template #body>
-      <fieldset :disabled="submitting">
-      <fieldset class="mb-3">
-        <legend
-          :id="ids.problemTypes"
-          class="fs-6 mb-2"
-        >
-          {{ $t('problemReport.form.problemType') }}
-          <span
-            class="text-danger"
-            aria-hidden="true"
-          >*</span>
-          <span class="visually-hidden">{{ $t('problemReport.form.required') }}</span>
-        </legend>
-        <ChoiceChips
-          v-model="form.problemTypes"
-          multiple
-          :options="problemTypeOptions"
-          :labelledby="ids.problemTypes"
-          :describedby="errors.problemTypes ? `${ids.problemTypes}-error` : null"
-        />
-        <div
-          v-if="errors.problemTypes"
-          :id="`${ids.problemTypes}-error`"
-          class="invalid-feedback d-block"
-        >
-          {{ errors.problemTypes }}
-        </div>
-      </fieldset>
-
-      <fieldset
-        v-if="settings.askBlocked"
-        class="mb-3"
-      >
-        <legend
-          :id="ids.blocked"
-          class="fs-6 mb-2"
-        >
-          {{ $t('problemReport.form.blocked') }}
-          <span class="text-body-secondary small">{{ $t('problemReport.form.optional') }}</span>
-        </legend>
-        <ChoiceChips
-          v-model="form.blocked"
-          :options="blockedOptions"
-          :labelledby="ids.blocked"
-        />
-      </fieldset>
-
-      <fieldset
-        v-if="frequencyOptions.length > 0"
-        class="mb-3"
-      >
-        <legend
-          :id="ids.frequency"
-          class="fs-6 mb-2"
-        >
-          {{ $t('problemReport.form.frequency') }}
-          <span class="text-body-secondary small">{{ $t('problemReport.form.optional') }}</span>
-        </legend>
-        <ChoiceChips
-          v-model="form.frequency"
-          :options="frequencyOptions"
-          :labelledby="ids.frequency"
-        />
-      </fieldset>
-
-      <BasicForm
-        ref="descriptionForm"
-        v-model="descriptionData"
-        class="mb-1"
-        :fields="descriptionFields"
-      />
-      <div
-        v-if="errors.descriptionTooLong"
-        class="invalid-feedback d-block mb-2"
-      >
-        {{ errors.descriptionTooLong }}
-      </div>
-
-      <AttachmentPicker
-        v-if="attachmentsEnabled"
-        ref="attachmentPicker"
-        v-model="attachments"
-        class="mt-2 mb-3"
+      <ProblemReportFields
+        ref="fields"
+        v-model:form="form"
+        v-model:description-data="descriptionData"
+        v-model:attachments="attachments"
+        :disabled="submitting"
         :settings="settings"
+        :errors="errors"
+        :ids="ids"
       />
-
-      </fieldset>
-      <FormCollapsible
-        :key="clientRequestId"
-        :title="$t('problemReport.details.title')"
-        :collapsed="!detailsExpanded"
-      >
-        <p
-          class="small text-body-secondary mb-2"
-          aria-live="polite"
-        >
-          {{ detailsStatusText }}
-        </p>
-        <div
-          v-if="detailsNotice"
-          class="alert alert-warning small py-2"
-          role="status"
-        >
-          {{ detailsNotice }}
-        </div>
-        <ReportSummary
-          :report="liveReport"
-          :attachments="previewAttachments"
-          :details-state="detailsState"
-          :note="`${$t('problemReport.visibility.label')} ${$t('problemReport.visibility.text')}`"
-        />
-      </FormCollapsible>
-
-      <p class="small text-body-secondary border-top pt-2 mt-3 mb-0">
-        <strong>{{ $t('problemReport.notice.label') }}</strong>
-        {{ noticeText }}
-      </p>
+      <ProblemReportPreview
+        :form="form"
+        :description="description"
+        :settings="settings"
+        :attachments="attachments"
+        :activity-allowed="activityAllowed"
+        :client-request-id="clientRequestId"
+        :details="details"
+        :details-expanded="detailsExpanded"
+        :details-notice="detailsNotice"
+      />
     </template>
     <template #footer>
       <span class="btn-group">
@@ -150,14 +54,11 @@
 import { v4 as uuid } from "uuid";
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
-import BasicForm from "@/basic/Form.vue";
-import FormCollapsible from "@/basic/form/Collapsible.vue";
-import ChoiceChips from "@/components/problem_report/ChoiceChips.vue";
-import AttachmentPicker from "@/components/problem_report/AttachmentPicker.vue";
-import ReportSummary from "@/components/problem_report/ReportSummary.vue";
+import ProblemReportFields from "@/components/problem_report/ProblemReportFields.vue";
+import ProblemReportPreview from "@/components/problem_report/ProblemReportPreview.vue";
 import { getDiagnostics } from "@/assets/diagnostics.js";
 import { getActivity } from "@/assets/activityTrail.js";
-import { buildReportContext, choiceLabel, normalizeAnswers, readReportSettings } from "@/assets/problemReport.js";
+import { buildReportContext, readReportSettings } from "@/assets/problemReport.js";
 import { resolveApiMessage } from "@/assets/utils";
 
 const CONFIG_TIMEOUT_MS = 15 * 1000;
@@ -188,7 +89,7 @@ const DESCRIPTION_INPUT_ID = "problemReportDescription";
  */
 export default {
   name: "ProblemReportModal",
-  components: { BasicModal, BasicButton, BasicForm, FormCollapsible, ChoiceChips, AttachmentPicker, ReportSummary },
+  components: { BasicModal, BasicButton, ProblemReportFields, ProblemReportPreview },
   inject: {
     acceptStats: { default: () => false },
   },
@@ -210,6 +111,7 @@ export default {
       effectiveSettings: null,
       submitting: false,
       ids: {
+        description: DESCRIPTION_INPUT_ID,
         problemTypes: "problem-report-types",
         blocked: "problem-report-blocked",
         frequency: "problem-report-frequency",
@@ -221,85 +123,13 @@ export default {
     settings() {
       return this.effectiveSettings || readReportSettings(this.$store.getters["settings/getValue"]);
     },
-    descriptionFields() {
-      return [{
-        key: DESCRIPTION_INPUT_ID,
-        type: "textarea",
-        label: `${this.$t('problemReport.form.description')} *`,
-        required: true,
-        // At least one non-space character; the backend trims and checks again
-        pattern: "\\S",
-        invalidText: "errors.problemReport.descriptionRequired",
-        rows: 4,
-      }];
-    },
-    problemTypeOptions() {
-      return this.settings.problemTypes.map((value) => ({ value, label: choiceLabel(this.$t, "problemTypes", value) }));
-    },
-    frequencyOptions() {
-      return this.settings.frequencies.map((value) => ({ value, label: choiceLabel(this.$t, "frequencies", value) }));
-    },
-    blockedOptions() {
-      return [
-        { value: true, label: this.$t('problemReport.form.yes') },
-        { value: false, label: this.$t('problemReport.form.no') },
-      ];
-    },
-    attachmentsEnabled() {
-      return this.settings.attachmentTypes.length > 0 && this.settings.attachmentsMaxCount !== null;
-    },
     activityAllowed() {
       return this.acceptStats === true && this.settings.activityEnabled === true;
     },
     description() {
       return this.descriptionData[DESCRIPTION_INPUT_ID] || "";
     },
-    // Answers as the backend saves them, followed by the backend-checked automatic details
-    liveReport() {
-      const result = this.details && this.details.result ? this.details.result : {};
-      return {
-        ...normalizeAnswers(this.form, this.description, this.settings),
-        context: result.context || null,
-        diagnostics: result.diagnostics || [],
-        activity: this.activityAllowed
-          ? result.activity || null
-          : { status: this.settings.activityEnabled ? "noConsent" : "disabled", entries: [] },
-        databaseHealth: result.databaseHealth,
-      };
-    },
-    detailsState() {
-      if (!this.details) {
-        return "loading";
-      }
-      return this.details.error ? "unavailable" : "ready";
-    },
-    detailsStatusText() {
-      if (this.detailsState === "loading") {
-        return this.$t('problemReport.details.loading');
-      }
-      if (this.detailsState === "unavailable") {
-        return this.$t('problemReport.details.unavailable');
-      }
-      const time = new Date(this.details.result.context.reportedAt).toLocaleString(this.$i18n.locale);
-      return this.$t('problemReport.details.capturedAt', { time });
-    },
-    noticeText() {
-      const parts = [this.$t('problemReport.notice.text')];
-      // Nothing is said about activity when administrators turned it off
-      if (this.settings.activityEnabled) {
-        parts.push(this.activityAllowed ? this.$t('problemReport.notice.activity') : this.$t('problemReport.notice.noActivity'));
-      }
-      return parts.join(" ");
-    },
-    previewAttachments() {
-      return this.attachments.map((attachment) => ({
-        key: attachment.key,
-        name: attachment.file.name,
-        size: attachment.file.size,
-        mimeType: attachment.file.type,
-        url: attachment.url,
-      }));
-    },
+
   },
   watch: {
     "form.problemTypes"(value) {
@@ -406,17 +236,11 @@ export default {
       this.errors.descriptionTooLong = tooLong
         ? this.$t('errors.problemReport.descriptionTooLong', { max: this.settings.descriptionMaxLength })
         : null;
-      const descriptionValid = this.$refs.descriptionForm.validate() && !tooLong;
+      const descriptionValid = this.$refs.fields.validateDescription() && !tooLong;
       if (!descriptionValid) {
-        this.focusDescription();
+        this.$refs.fields?.focusDescription();
       }
       return !this.errors.problemTypes && descriptionValid;
-    },
-    /**
-     * @returns {void} Focuses the description field after validation fails.
-     */
-    focusDescription() {
-      this.$refs.descriptionForm?.$el.querySelector(`textarea[name="${DESCRIPTION_INPUT_ID}"]`)?.focus();
     },
     /**
      * The automatic details to send: the snapshot captured when Report was clicked.
@@ -532,7 +356,7 @@ export default {
       this.details = null;
       this.detailsNotice = null;
       this.clientRequestId = uuid();
-      this.$refs.attachmentPicker?.clearErrors();
+      this.$refs.fields?.clearErrors();
     },
   },
 };

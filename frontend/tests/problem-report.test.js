@@ -174,16 +174,27 @@ function createModal({ acceptStats = true, activityEnabled = true } = {}) {
     setInterval: (callback, interval) => { calls.timer = {callback, interval}; return 1; },
     clearInterval: () => { calls.timer = null; },
   };
-  for (const name of ['BasicModal', 'BasicButton', 'BasicForm', 'FormCollapsible', 'ChoiceChips', 'AttachmentPicker', 'ReportSummary']) context[name] = {};
+  for (const name of ['BasicModal', 'BasicButton', 'BasicForm', 'FormCollapsible', 'ChoiceChips', 'AttachmentPicker', 'ReportSummary', 'ProblemReportFields', 'ProblemReportPreview']) context[name] = {};
   vm.createContext(context);
   vm.runInContext(script.replace(/^import .*;\r?$/gm, '').replace('export default', 'globalThis.component ='), context);
   const component = context.component;
+  const previewSource = fs.readFileSync(new URL('../src/components/problem_report/ProblemReportPreview.vue', import.meta.url), 'utf8');
+  const previewScript = parse(previewSource).descriptor.script.content;
+  vm.runInContext(previewScript.replace(/^import .*;\r?$/gm, '').replace('export default', 'globalThis.previewComponent ='), context);
 
   const instance = { ...component.methods };
   for (const [name, getter] of Object.entries(component.computed)) {
     Object.defineProperty(instance, name, { get: () => getter.call(instance) });
   }
   Object.assign(instance, component.data.call(instance));
+  const preview = { $t: (key) => key, $i18n: { locale: 'en' } };
+  for (const key of Object.keys(context.previewComponent.props)) {
+    Object.defineProperty(preview, key, { get: () => instance[key] });
+  }
+  for (const [name, getter] of Object.entries(context.previewComponent.computed)) {
+    Object.defineProperty(preview, name, { get: () => getter.call(preview) });
+  }
+  instance.preview = preview;
   const emitted = [];
   const toasts = [];
   instance.emitted = emitted;
@@ -199,7 +210,7 @@ function createModal({ acceptStats = true, activityEnabled = true } = {}) {
   };
   instance.$refs = {
     modal: { open() { instance.opened = true; }, close() { instance.opened = false; } },
-    descriptionForm: { validate: () => instance.description.trim().length > 0, $el: { querySelector: () => null } },
+    fields: { validateDescription: () => instance.description.trim().length > 0, focusDescription() {}, clearErrors() {} },
   };
   instance.eventBus = { emit: (event, payload) => { if (event === 'toast') toasts.push(payload); } };
   instance.effectiveSettings = {
@@ -237,28 +248,28 @@ test('opening the form shows the automatic details right away, without answering
   const prepare = last(modal, 'problemReportPrepare');
   assert.ok(prepare, 'details are requested on open');
   assert.equal(prepare.payload.clientRequestId, modal.clientRequestId);
-  assert.equal(modal.detailsState, 'loading');
-  assert.equal(modal.detailsStatusText, 'problemReport.details.loading');
+  assert.equal(modal.preview.detailsState, 'loading');
+  assert.equal(modal.preview.detailsStatusText, 'problemReport.details.loading');
 
   prepare.callback(null, prepared(prepare.payload));
-  assert.equal(modal.detailsState, 'ready');
-  assert.equal(modal.liveReport.context.page, '/dashboard');
-  assert.equal(modal.liveReport.databaseHealth.status, 'ok');
-  assert.equal(modal.liveReport.description, '');
+  assert.equal(modal.preview.detailsState, 'ready');
+  assert.equal(modal.preview.liveReport.context.page, '/dashboard');
+  assert.equal(modal.preview.liveReport.databaseHealth.status, 'ok');
+  assert.equal(modal.preview.liveReport.description, '');
 
   // The answers below the form follow the form as the user types
   modal.descriptionData.problemReportDescription = '  It hangs  ';
   modal.form.problemTypes = ['slowOrStuck'];
-  assert.equal(modal.liveReport.description, 'It hangs');
-  assert.deepEqual([...modal.liveReport.problemTypes], ['slowOrStuck']);
+  assert.equal(modal.preview.liveReport.description, 'It hangs');
+  assert.deepEqual([...modal.preview.liveReport.problemTypes], ['slowOrStuck']);
 });
 
 test('a failed details request shows an unavailable state and submit captures details then', async () => {
   const modal = createModal();
   modal.prepareDetails();
   last(modal, 'problemReportPrepare').callback(new Error('timeout'));
-  assert.equal(modal.detailsState, 'unavailable');
-  assert.equal(modal.detailsStatusText, 'problemReport.details.unavailable');
+  assert.equal(modal.preview.detailsState, 'unavailable');
+  assert.equal(modal.preview.detailsStatusText, 'problemReport.details.unavailable');
 
   modal.form.problemTypes = ['error'];
   modal.descriptionData.problemReportDescription = 'Broken';
@@ -277,7 +288,7 @@ test('an older details response never replaces a newer one', () => {
   second.callback(null, prepared(second.payload));
   first.callback(null, { success: true, data: { ...prepared(first.payload).data, context: { page: '/stale' } } });
   assert.equal(modal.details.payload.context, second.payload.context);
-  assert.notEqual(modal.liveReport.context.page, '/stale');
+  assert.notEqual(modal.preview.liveReport.context.page, '/stale');
   assert.equal(modal.preparing, false);
 });
 
@@ -368,13 +379,13 @@ test('activity is not read without statistics consent', () => {
   const prepare = last(modal, 'problemReportPrepare');
   assert.equal(modal.calls.activity, 0);
   assert.deepEqual([...prepare.payload.activity], []);
-  assert.ok(modal.noticeText.includes('problemReport.notice.noActivity'));
+  assert.ok(modal.preview.noticeText.includes('problemReport.notice.noActivity'));
 
   const consented = createModal({ acceptStats: true });
   consented.prepareDetails();
   assert.equal(consented.calls.activity, 1);
-  assert.ok(consented.noticeText.includes('problemReport.notice.activity'));
-  assert.ok(!consented.noticeText.includes('problemReport.notice.databaseHealth'));
+  assert.ok(consented.preview.noticeText.includes('problemReport.notice.activity'));
+  assert.ok(!consented.preview.noticeText.includes('problemReport.notice.databaseHealth'));
 });
 
 test('withdrawn consent immediately hides activity and excludes it from submission', () => {
@@ -383,8 +394,8 @@ test('withdrawn consent immediately hides activity and excludes it from submissi
   const prepare = last(modal, 'problemReportPrepare');
   prepare.callback(null, prepared(prepare.payload));
   modal.acceptStats = false;
-  assert.equal(modal.liveReport.activity.status, 'noConsent');
-  assert.equal(modal.liveReport.activity.entries.length, 0);
+  assert.equal(modal.preview.liveReport.activity.status, 'noConsent');
+  assert.equal(modal.preview.liveReport.activity.entries.length, 0);
   assert.equal(modal.submissionSnapshot().activity.length, 0);
 });
 
@@ -397,7 +408,7 @@ test('a server-discarded snapshot refreshes details and keeps the draft', async 
   prepare.callback(null, prepared(prepare.payload));
   await modal.submit();
   const submit = last(modal, 'problemReportSubmit');
-  assert.equal(submit.payload.databaseHealthCapturedAt, modal.liveReport.databaseHealth.capturedAt);
+  assert.equal(submit.payload.databaseHealthCapturedAt, modal.preview.liveReport.databaseHealth.capturedAt);
   submit.callback(null, {success: false, key: 'errors.problemReport.detailsExpired'});
   assert.equal(modal.description, 'Broken');
   assert.equal(modal.detailsNotice, 'problemReport.details.expired');
