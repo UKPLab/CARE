@@ -87,6 +87,7 @@
         "title": "Problem Reports",
         "description": "Reports submitted with the bug button in the top bar. Only administrators can see them.",
         "columns": {
+            "blocked": "Blocked",
             "id": "ID",
             "reporter": "Reporter"
         },

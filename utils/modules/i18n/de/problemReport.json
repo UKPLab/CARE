@@ -87,6 +87,7 @@
         "title": "Problemberichte",
         "description": "Berichte, die über die Fehler-Schaltfläche in der oberen Leiste gesendet wurden. Nur Administratoren können sie sehen.",
         "columns": {
+            "blocked": "Blockiert",
             "id": "ID",
             "reporter": "Gemeldet von"
         },

@@ -87,6 +87,7 @@
         "title": "Signalements de problème",
         "description": "Signalements envoyés avec le bouton de bogue de la barre supérieure. Seuls les administrateurs peuvent les voir.",
         "columns": {
+            "blocked": "Bloqu?",
             "id": "ID",
             "reporter": "Auteur"
         },

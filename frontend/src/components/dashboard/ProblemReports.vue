@@ -81,7 +81,7 @@ export default {
         { name: this.$t('problemReport.summary.reportedAt'), key: "reportedAt", width: 2 },
         { name: this.$t('problemReport.admin.columns.reporter'), key: "creator_name", width: 1 },
         { name: this.$t('problemReport.summary.problemTypes'), key: "types", width: 2 },
-        { name: this.$t('problemReport.summary.blocked'), key: "blockedText", width: 1 },
+        { name: this.$t('problemReport.admin.columns.blocked'), key: "blockedText", width: 1 },
         { name: this.$t('problemReport.summary.page'), key: "page", width: 2 },
         { name: this.$t('problemReport.summary.description'), key: "descriptionPreview", width: 4 },
         { name: this.$t('problemReport.summary.attachments'), key: "attachmentCount", width: 1 },
