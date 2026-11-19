@@ -81,7 +81,7 @@
         "loadFailed": "Report form not available"
     },
     "admin": {
-        "exportCsv": "Export CSV + attachments",
+        "exportCsv": "Export",
         "attachmentFiles": "Attachment files",
         "exportFailed": "Reports not exported",
         "title": "Problem Reports",
