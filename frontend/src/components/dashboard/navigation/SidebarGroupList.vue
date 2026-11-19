@@ -14,7 +14,7 @@
           :active-element-id="activeElementId"
           :favorite-ids="favoriteIds"
           :favorite-disabled="favoriteDisabled"
-          @toggle="$emit('toggle', subgroup.key)"
+          @toggle="$emit('toggle', $event, subgroup.key)"
           @hover="$emit('hover', $event, subgroup.key)"
           @leave="$emit('leave', $event, subgroup.key)"
           @toggle-favorite="$emit('toggle-favorite', $event)"

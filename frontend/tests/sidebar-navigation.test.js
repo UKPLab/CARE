@@ -2,19 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { afterEach, test } from "node:test";
 import { Window } from "happy-dom";
-import {
-  resolveNavigationElement,
-  resolveNavigationGroup,
-} from "../src/components/dashboard/navigation/helpers/navElement.js";
-import {
-  getFavoriteElements,
-  parseFavoriteIds,
-  toggleFavoriteId,
-} from "../src/components/dashboard/navigation/helpers/sidebarFavorites.js";
-import {
-  getSidebarPreviewStyle,
-  sidebarHoverPreviewMethods,
-} from "../src/components/dashboard/navigation/helpers/sidebarHoverPreview.js";
+const defaultStubs = {};
 
 const window = new Window();
 Object.assign(globalThis, {
@@ -51,8 +39,10 @@ function loadComponent(path, stubs) {
   );
   const options = new Function(
     ...names,
-    script.replace(importPattern, "").replace("export default", "return")
-  )(...names.map(name => stubs[name] ?? {}));
+    script.replace(importPattern, "")
+      .replace('const dashboardModules = import.meta.glob("./dashboard/*.vue");', "const dashboardModules = {};")
+      .replace("export default", "return")
+  )(...names.map(name => stubs?.[name] ?? defaultStubs[name] ?? {}));
   const template = source.match(/<template>([\s\S]*)<\/template>/)[1];
   return { ...options, render: compile(template) };
 }
@@ -63,6 +53,8 @@ function mount(component, props, { components = {}, globals = {}, parent = docum
   if (globals.onToggle) listeners.onToggle = globals.onToggle;
   if (globals.onToggleFavorite) listeners.onToggleFavorite = globals.onToggleFavorite;
   if (globals.onNavigate) listeners.onNavigate = globals.onNavigate;
+  if (globals.onHover) listeners.onHover = globals.onHover;
+  if (globals.onLeave) listeners.onLeave = globals.onLeave;
   const app = createApp({
     render: () => h(component, {
       ...props,
@@ -95,30 +87,69 @@ const navElements = [
 ];
 
 test("resolves the configured home item and preserves explicit dashboard routes", () => {
+  const Dashboard = loadComponent("components/Dashboard.vue", {
+    defineAsyncComponent: value => value,
+    Loading: {},
+    Sidebar: {},
+    NotFoundPage: {},
+  });
+  const resolve = settings => Dashboard.computed.currentNavigationElement.call({
+    navigationDataReady: true,
+    navElements,
+    catchAll: undefined,
+    settings,
+  });
   const settings = { "dashboard.navigation.component.default": "hOmE" };
-  assert.equal(resolveNavigationElement(navElements, undefined, settings), navElements[0]);
-  assert.equal(resolveNavigationElement(navElements, undefined, {
+  assert.equal(resolve(settings), navElements[0]);
+  assert.equal(resolve({
     "dashboard.navigation.component.default": "Documents",
   }), navElements[1]);
-  assert.equal(resolveNavigationElement(navElements, "documents", settings), navElements[1]);
-  assert.equal(resolveNavigationElement(navElements, "unknown", settings), navElements[0]);
+  assert.equal(Dashboard.computed.currentNavigationElement.call({
+    navigationDataReady: true,
+    navElements,
+    catchAll: "documents",
+    settings,
+  }), navElements[1]);
+  assert.equal(Dashboard.computed.currentNavigationElement.call({
+    navigationDataReady: true,
+    navElements,
+    catchAll: "unknown",
+    settings,
+  }), navElements[0]);
 });
 
 test("does not invent a home item when settings or navigation data are missing", () => {
-  assert.equal(resolveNavigationElement(navElements, undefined, {}), null);
-  assert.equal(resolveNavigationElement(navElements, undefined, {
+  const Dashboard = loadComponent("components/Dashboard.vue", {
+    defineAsyncComponent: value => value,
+    Loading: {},
+    Sidebar: {},
+    NotFoundPage: {},
+  });
+  const resolve = (navItems, settings) => Dashboard.computed.currentNavigationElement.call({
+    navigationDataReady: true,
+    navElements: navItems,
+    catchAll: undefined,
+    settings,
+  });
+  assert.equal(resolve(navElements, {}), null);
+  assert.equal(resolve(navElements, {
     "dashboard.navigation.component.default": 12,
   }), null);
-  assert.equal(resolveNavigationElement(undefined, undefined, {
+  assert.equal(resolve(undefined, {
     "dashboard.navigation.component.default": "Home",
   }), null);
 });
 
 test("only marks a group active when the resolved item is in the visible group list", () => {
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {});
   const groups = [{ key: "Home", elements: [navElements[0]] }];
-  assert.equal(resolveNavigationGroup(groups, navElements[0]), "Home");
-  assert.equal(resolveNavigationGroup(groups, navElements[1]), null);
-  assert.equal(resolveNavigationGroup(groups, null), null);
+  const resolve = activeElement => Sidebar.computed.activeSubgroup.call({
+    defaultGroupedElements: groups,
+    activeElement,
+  });
+  assert.equal(resolve(navElements[0]), "Home");
+  assert.equal(resolve(navElements[1]), null);
+  assert.equal(resolve(null), null);
 });
 
 test("opens the configured home dashboard group on the base dashboard route", async () => {
@@ -126,16 +157,7 @@ test("opens the configured home dashboard group on the base dashboard route", as
     LoadIcon: {},
     Loading: {},
     SidebarGroup: {},
-    SidebarFavorites: {},
     SidebarPreview: {},
-    sidebarHoverPreviewData: () => ({}),
-    sidebarHoverPreviewComputed: {},
-    sidebarHoverPreviewMethods,
-    getFavoriteElements,
-    parseFavoriteIds,
-    SIDEBAR_FAVORITES_SETTING: "dashboard.navigation.favorites",
-    toggleFavoriteId,
-    resolveNavigationGroup,
     resolveApiMessage: () => null,
   });
   const instance = {
@@ -163,18 +185,21 @@ test("opens the configured home dashboard group on the base dashboard route", as
 });
 
 test("parses favorites as unique string IDs and ignores invalid IDs", () => {
-  assert.deepEqual(parseFavoriteIds('[1,"2",1,"",null,{}]'), ["1", "2"]);
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {});
+  assert.deepEqual(Sidebar.methods.parseFavoriteIds('[1,"2",1,"",null,{}]'), ["1", "2"]);
 });
 
 test("favorites are filtered to available items and keep navigation order", () => {
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {});
   const available = [navElements[1], navElements[0]];
-  assert.deepEqual(getFavoriteElements(available, ["1", "404", "2"]), available);
+  assert.deepEqual(Sidebar.methods.getFavoriteElements(available, ["1", "404", "2"]), available);
 });
 
 test("favorite toggling adds and removes an ID without duplicating it", () => {
-  assert.deepEqual(toggleFavoriteId(["1"], 2), ["1", "2"]);
-  assert.deepEqual(toggleFavoriteId(["1", "2"], 1), ["2"]);
-  assert.deepEqual(toggleFavoriteId(["1"], null), ["1"]);
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {});
+  assert.deepEqual(Sidebar.methods.toggleFavoriteId(["1"], 2), ["1", "2"]);
+  assert.deepEqual(Sidebar.methods.toggleFavoriteId(["1", "2"], 1), ["2"]);
+  assert.deepEqual(Sidebar.methods.toggleFavoriteId(["1"], null), ["1"]);
 });
 
 test("recovers favorites after a lost acknowledgement and ignores late acknowledgements", async () => {
@@ -182,16 +207,7 @@ test("recovers favorites after a lost acknowledgement and ignores late acknowled
     LoadIcon: {},
     Loading: {},
     SidebarGroup: {},
-    SidebarFavorites: {},
     SidebarPreview: {},
-    sidebarHoverPreviewData: () => ({}),
-    sidebarHoverPreviewComputed: {},
-    sidebarHoverPreviewMethods,
-    getFavoriteElements,
-    parseFavoriteIds,
-    SIDEBAR_FAVORITES_SETTING: "dashboard.navigation.favorites",
-    toggleFavoriteId,
-    resolveNavigationGroup,
     resolveApiMessage: () => null,
   });
   const socketEvents = [];
@@ -252,7 +268,7 @@ test("recovers favorites after a lost acknowledgement and ignores late acknowled
   });
   Object.defineProperty(instance, "favoriteIds", {
     get() {
-      return this.favoriteIdsOverride || parseFavoriteIds(this.settings["dashboard.navigation.favorites"]);
+      return this.favoriteIdsOverride || this.parseFavoriteIds(this.settings["dashboard.navigation.favorites"]);
     },
   });
 
@@ -296,7 +312,9 @@ test("recovers favorites after a lost acknowledgement and ignores late acknowled
 });
 
 test("positions a flyout inside all viewport edges and constrains tall menus", () => {
-  const nearBottom = getSidebarPreviewStyle(
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {});
+  const getFlyoutStyle = Sidebar.methods.getFlyoutStyle;
+  const nearBottom = getFlyoutStyle(
     { right: 680, top: 190 },
     { width: 228, height: 160 },
     { width: 700, height: 240 }
@@ -308,7 +326,7 @@ test("positions a flyout inside all viewport edges and constrains tall menus", (
     maxHeight: "224px",
   });
 
-  const tall = getSidebarPreviewStyle(
+  const tall = getFlyoutStyle(
     { right: 64, top: 200 },
     { width: 228, height: 500 },
     { width: 700, height: 240 }
@@ -318,12 +336,138 @@ test("positions a flyout inside all viewport edges and constrains tall menus", (
 });
 
 test("handles a non-element relatedTarget without throwing", () => {
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {});
   assert.equal(
-    sidebarHoverPreviewMethods._isRelatedTargetInGroup.call({}, {
+    Sidebar.methods._isRelatedTargetInGroup.call({}, {
       relatedTarget: {},
     }, "Home", ".submenu-preview"),
     false
   );
+});
+
+test("collapsed group flyout distinguishes hover dismissal from click pinning", () => {
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {});
+  const SidebarGroup = loadComponent("components/dashboard/navigation/SidebarGroup.vue", {
+    BasicButton,
+    LoadIcon: { render: () => null },
+    SidebarNavItem: { render: () => null },
+  });
+  const SidebarGroupList = loadComponent("components/dashboard/navigation/SidebarGroupList.vue", {
+    SidebarGroup,
+  });
+  const sidebar = {
+    ...Sidebar.methods,
+    groupStates: { Study: false },
+    hoveredGroup: null,
+    pinnedPreviewGroup: null,
+    previewStyle: {},
+    previewAnchor: null,
+    previewResizeObserver: null,
+    isHoveringPreview: false,
+    isCollapsed: true,
+    $nextTick: () => {},
+    $refs: { sidebarPreview: { $el: document.createElement("div") } },
+  };
+  sidebar.$refs.sidebarPreview.$el.classList.add("submenu-preview");
+  const mountOptions = {
+    globals: {
+      onToggle: (anchor, groupName) => Sidebar.methods.toggleGroup.call(sidebar, anchor, groupName),
+      onHover: (event, groupName) => Sidebar.methods.handleGroupMouseEnter.call(sidebar, event, groupName),
+      onLeave: (event, groupName) => Sidebar.methods.handleGroupMouseLeave.call(sidebar, event, groupName),
+    },
+  };
+
+  mount(SidebarGroupList, {
+    groups: [
+      { key: "Study", name: "Study", elements: [] },
+      { key: "Manage", name: "Manage", elements: [] },
+    ],
+    groupStates: sidebar.groupStates,
+    isCollapsed: true,
+    activeGroup: null,
+    hoveredGroup: null,
+  }, mountOptions);
+
+  const group = document.querySelector(".default-subgroup");
+  const heading = group.querySelector(".sidebar-subgroup-heading");
+  heading.getBoundingClientRect = () => ({ top: 100, right: 64 });
+  heading.dispatchEvent(new window.MouseEvent("mouseenter"));
+
+  assert.equal(sidebar.hoveredGroup, "Study");
+  assert.equal(sidebar.previewStyle.left, "64px");
+
+  const leaveForOutside = new window.MouseEvent("mouseleave");
+  Object.defineProperty(leaveForOutside, "relatedTarget", { value: document.createElement("div") });
+  heading.dispatchEvent(leaveForOutside);
+  assert.equal(sidebar.hoveredGroup, null);
+
+  heading.dispatchEvent(new window.MouseEvent("mouseenter"));
+  assert.equal(sidebar.hoveredGroup, "Study");
+
+  const flyout = document.createElement("div");
+  flyout.className = "submenu-preview";
+  flyout.dataset.groupKey = "Study";
+  sidebar.$refs.sidebarPreview.$el.append(flyout);
+  const leaveForFlyout = new window.MouseEvent("mouseleave");
+  Object.defineProperty(leaveForFlyout, "relatedTarget", { value: flyout });
+  heading.dispatchEvent(leaveForFlyout);
+
+  assert.equal(sidebar.hoveredGroup, "Study");
+
+  document.querySelectorAll(".sidebar-subgroup-heading")[0].click();
+  assert.equal(sidebar.pinnedPreviewGroup, "Study");
+  Sidebar.methods.handlePreviewMouseLeave.call(sidebar, {
+    relatedTarget: document.createElement("div"),
+  }, "Study");
+  assert.equal(sidebar.hoveredGroup, "Study");
+
+  document.querySelectorAll(".sidebar-subgroup-heading")[1].click();
+  assert.equal(sidebar.pinnedPreviewGroup, "Manage");
+  document.querySelectorAll(".sidebar-subgroup-heading")[1].click();
+  assert.equal(sidebar.pinnedPreviewGroup, null);
+
+  document.querySelectorAll(".sidebar-subgroup-heading")[0].click();
+  Sidebar.methods.handlePinnedPreviewOutsideClick.call(sidebar, {
+    target: flyout,
+  });
+  assert.equal(sidebar.pinnedPreviewGroup, "Study");
+  Sidebar.methods.handlePinnedPreviewOutsideClick.call(sidebar, {
+    target: document.createElement("div"),
+  });
+  assert.equal(sidebar.pinnedPreviewGroup, null);
+  assert.equal(sidebar.hoveredGroup, null);
+
+  document.querySelectorAll(".sidebar-subgroup-heading")[0].click();
+  const SidebarPreview = loadComponent("components/dashboard/navigation/SidebarPreview.vue", {
+    SidebarNavItem: {
+      emits: ["navigate"],
+      render() {
+        return h("button", {
+          class: "preview-nav",
+          onClick: () => this.$emit("navigate"),
+        });
+      },
+    },
+  });
+  mount(SidebarPreview, {
+    subgroup: { key: "Study", name: "Study", elements: [{ id: 1 }] },
+    isCollapsed: true,
+    previewStyle: {},
+  }, {
+    globals: { onNavigate: () => Sidebar.methods.resetPreview.call(sidebar) },
+  });
+  document.querySelector(".preview-nav").click();
+  assert.equal(sidebar.pinnedPreviewGroup, null);
+
+  document.querySelectorAll(".sidebar-subgroup-heading")[0].click();
+  sidebar.syncSidebarWithRoute = () => {};
+  Sidebar.methods.toggleSidebar.call(sidebar);
+  assert.equal(sidebar.pinnedPreviewGroup, null);
+
+  Sidebar.methods.handlePreviewMouseLeave.call(sidebar, {
+    relatedTarget: document.createElement("div"),
+  }, "Study");
+  assert.equal(sidebar.hoveredGroup, null);
 });
 
 test("group headers are keyboard-focusable native buttons that expose expanded state", () => {
@@ -332,7 +476,6 @@ test("group headers are keyboard-focusable native buttons that expose expanded s
     BasicButton,
     LoadIcon: { render: () => null },
     SidebarNavItem: { props: ["element"], render: () => null },
-    navGroupLabel: (_translate, _exists, group) => group.name,
   });
   mount(SidebarGroup, {
     subgroup: { key: "Home", name: "Home", icon: "house", elements: [] },
@@ -359,7 +502,6 @@ test("favorite controls expose their state and emit without activating the dashb
   const SidebarNavItem = loadComponent("components/dashboard/navigation/SidebarNavItem.vue", {
     BasicButton,
     LoadIcon: { render: () => null },
-    navElementLabel: (_translate, _exists, element) => element.name,
   });
   const RouterLink = {
     props: ["to"],
@@ -391,91 +533,73 @@ test("favorite controls expose their state and emit without activating the dashb
   assert.deepEqual(navigations, [true]);
 });
 
-test("favorites open in a popup and close on outside click or Escape", async () => {
-  const SidebarFavorites = loadComponent("components/dashboard/navigation/SidebarFavorites.vue", {
-    BasicButton,
-    LoadIcon: { render: () => null },
-    SidebarNavItem: {
-      props: ["element"],
-      emits: ["navigate"],
-      render() {
-        return h("a", {
-          href: `/dashboard/${this.element.path}`,
-          onClick: event => {
-            event.preventDefault();
-            this.$emit("navigate");
-          },
-        }, this.element.name);
-      },
+test("pinned items are displayed directly at the top of the sidebar above groups and hidden when empty", () => {
+  const Sidebar = loadComponent("components/dashboard/navigation/Sidebar.vue", {
+    LoadIcon: {},
+    Loading: {},
+    SidebarGroupList: {},
+    SidebarNavItem: {},
+    SidebarPreview: {},
+    SidebarFooter: {},
+    resolveApiMessage: () => null,
+  });
+
+  const available = [navElements[0], navElements[1]];
+  const instance = {
+    ...Sidebar.methods,
+    defaultGroupedElements: [
+      { key: "Home", name: "Home", elements: [navElements[0]] },
+      { key: "Study", name: "Study", elements: [navElements[1]] },
+    ],
+    favoriteIdsOverride: null,
+    settings: { "dashboard.navigation.favorites": '["1", "2"]' },
+    favoriteIds: ["1", "2"],
+  };
+
+  Object.defineProperty(instance, "favoriteElements", {
+    get() {
+      const all = this.defaultGroupedElements.flatMap(g => g.elements);
+      return this.getFavoriteElements(all, this.favoriteIds);
     },
-    getSidebarPreviewStyle,
-  });
-  mount(SidebarFavorites, {
-    elements: [navElements[0]],
-    activeElementId: 1,
   });
 
-  const trigger = document.querySelector(".sidebar-favorites-heading");
-  trigger.click();
-  await nextTick();
-  await nextTick();
-  assert.equal(trigger.getAttribute("aria-expanded"), "true");
-  assert.ok(document.querySelector('[role="dialog"]'));
+  assert.deepEqual(instance.favoriteElements, available);
 
-  const outside = document.createElement("button");
-  document.body.append(outside);
-  outside.dispatchEvent(new window.Event("pointerdown", { bubbles: true }));
-  await nextTick();
-  assert.equal(document.querySelector('[role="dialog"]'), null);
-  assert.equal(trigger.getAttribute("aria-expanded"), "false");
-
-  trigger.click();
-  await nextTick();
-  await nextTick();
-  document.querySelector('[role="dialog"]').dispatchEvent(new window.KeyboardEvent("keydown", {
-    key: "Escape",
-    bubbles: true,
-  }));
-  await nextTick();
-  await nextTick();
-  assert.equal(document.querySelector('[role="dialog"]'), null);
-  assert.equal(document.activeElement, trigger);
-
-  trigger.click();
-  await nextTick();
-  await nextTick();
-  document.querySelector(".sidebar-favorites-popover a").click();
-  await nextTick();
-  assert.equal(document.querySelector('[role="dialog"]'), null);
+  instance.favoriteIds = [];
+  assert.deepEqual(instance.favoriteElements, []);
 });
 
-test("repositions an open favorites popup after the sidebar width transition", async () => {
-  const SidebarFavorites = loadComponent("components/dashboard/navigation/SidebarFavorites.vue", {
+test("pinned items navigate and preserve active highlighting", () => {
+  const navigations = [];
+  const SidebarNavItem = loadComponent("components/dashboard/navigation/SidebarNavItem.vue", {
     BasicButton,
     LoadIcon: { render: () => null },
-    SidebarNavItem: { render: () => null },
-    getSidebarPreviewStyle,
   });
-  const sidebar = document.createElement("div");
-  sidebar.id = "sidebar-wrapper";
-  document.body.append(sidebar);
-  const instance = mount(SidebarFavorites, { elements: [navElements[0]] }, { parent: sidebar });
-
-  let triggerRight = 208;
-  document.querySelector(".sidebar-favorites-heading").getBoundingClientRect = () => ({
-    right: triggerRight,
-    bottom: 76,
+  const RouterLink = {
+    props: ["to"],
+    render() {
+      return h("a", { href: this.to, class: "sidebar-nav-link" }, this.$slots.default?.());
+    },
+  };
+  mount(SidebarNavItem, {
+    element: navElements[0],
+    variant: "default",
+    isFavorite: true,
+    isActive: true,
+  }, {
+    components: { "router-link": RouterLink },
+    globals: {
+      onNavigate: () => navigations.push(true),
+    },
   });
-  document.querySelector(".sidebar-favorites-heading").click();
-  await nextTick();
-  await nextTick();
-  assert.equal(document.querySelector(".sidebar-favorites-popover").style.left, "208px");
 
-  triggerRight = 64;
-  instance.handleSidebarTransitionEnd({ target: sidebar, propertyName: "width" });
-  await nextTick();
+  const link = document.querySelector(".sidebar-nav-link");
+  assert.equal(link.getAttribute("href"), "/dashboard/home");
+  link.click();
+  assert.deepEqual(navigations, [true]);
 
-  assert.equal(document.querySelector(".sidebar-favorites-popover").style.left, "64px");
+  const button = document.querySelector(".sidebar-favorite-toggle");
+  assert.equal(button.getAttribute("aria-pressed"), "true");
 });
 
 test("group list forwards favorite state and actions to its groups", () => {

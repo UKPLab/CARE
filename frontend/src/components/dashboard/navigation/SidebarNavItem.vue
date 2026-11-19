@@ -29,7 +29,7 @@
       @click="$emit('toggle-favorite', element)"
     >
       <LoadIcon
-        :icon-name="isFavorite ? 'star-fill' : 'star'"
+        :icon-name="isFavorite ? 'pin-angle-fill' : 'pin-angle'"
         :size="16"
       />
     </BasicButton>
@@ -44,7 +44,6 @@
  */
 import LoadIcon from "@/basic/Icon.vue";
 import BasicButton from "@/basic/Button.vue";
-import { navElementLabel } from "./helpers/navLabels.js";
 
 export default {
   name: "SidebarNavItem",
@@ -82,7 +81,8 @@ export default {
       return `${this.variant}-subitem`;
     },
     label() {
-      return navElementLabel(this.$t, this.$te, this.element);
+      const key = `sidebar.nav.${this.element.path}`;
+      return this.$te(key) ? this.$t(key) : this.element.name;
     },
     favoriteLabel() {
       const key = this.isFavorite ? "sidebar.favorites.remove" : "sidebar.favorites.add";
@@ -147,17 +147,43 @@ export default {
   transform: translateY(-50%);
   border: 0;
   border-radius: var(--bs-border-radius, 0.375rem);
-  background: transparent;
-  color: var(--bs-secondary-color, #6c757d);
+  background: transparent !important;
+  color: var(--bs-body-color, inherit);
   cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.sidebar-nav-item:hover .sidebar-favorite-toggle,
+.sidebar-nav-item:focus-within .sidebar-favorite-toggle,
+.sidebar-favorite-toggle[aria-pressed="true"] {
+  opacity: 1;
 }
 
 .sidebar-favorite-toggle:hover:not(:disabled) {
-  background: var(--bs-secondary-bg, #e0e0e0);
-  color: var(--bs-emphasis-color, #222);
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--bs-emphasis-color, var(--bs-body-color, inherit));
 }
 
-.sidebar-favorite-toggle:focus-visible,
+.sidebar-favorite-toggle[aria-pressed="true"] {
+  color: var(--bs-emphasis-color, var(--bs-body-color, inherit));
+}
+
+.sidebar-favorite-toggle[aria-pressed="true"]:hover:not(:disabled) {
+  background: transparent !important;
+  box-shadow: none !important;
+  color: var(--bs-emphasis-color, var(--bs-body-color, inherit));
+}
+
+.sidebar-favorite-toggle:focus-visible {
+  outline: 2px solid var(--bs-emphasis-color, currentColor);
+  outline-offset: -2px;
+  background: transparent !important;
+  box-shadow: none !important;
+  z-index: 1;
+}
+
 .sidebar-nav-link:focus-visible {
   outline: 2px solid var(--bs-primary, #0d6efd);
   outline-offset: -2px;
@@ -184,27 +210,17 @@ export default {
   background-color: var(--bs-secondary-bg, #e0e0e0) !important;
 }
 
-#sidebar-wrapper.collapsed .sidebar-favorites .list-group-item-text {
+#sidebar-wrapper.collapsed .sidebar-pinned-list .list-group-item-text {
   display: none !important;
 }
 
-#sidebar-wrapper.collapsed .sidebar-favorites .sidebar-nav-link {
+#sidebar-wrapper.collapsed .sidebar-pinned-list .sidebar-nav-link {
   justify-content: center;
   padding-left: 0 !important;
+  padding-right: 0 !important;
 }
 
-#sidebar-wrapper.collapsed .sidebar-favorites .sidebar-icon {
-  margin-right: 0;
-  margin-left: 0;
-}
-
-#sidebar-wrapper.collapsed .sidebar-favorites .sidebar-nav-item:not(:hover):not(:focus-within) .sidebar-favorite-toggle {
-  opacity: 0;
-  pointer-events: none;
-}
-
-#sidebar-wrapper.collapsed .sidebar-favorites .sidebar-nav-item:hover .sidebar-favorite-toggle,
-#sidebar-wrapper.collapsed .sidebar-favorites .sidebar-nav-item:focus-within .sidebar-favorite-toggle {
-  opacity: 1;
+#sidebar-wrapper.collapsed .sidebar-pinned-list .sidebar-favorite-toggle {
+  display: none !important;
 }
 </style>

@@ -58,9 +58,8 @@
         }
     },
     "favorites": {
-        "title": "Favoris",
-        "add": "Ajouter {name} aux favoris",
-        "remove": "Retirer {name} des favoris",
+        "add": "Épingler {name}",
+        "remove": "Désépingler {name}",
         "saveFailedTitle": "Favori non enregistré",
         "saveFailedMessage": "Impossible d'enregistrer ce favori. Veuillez réessayer."
     },

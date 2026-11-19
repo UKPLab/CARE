@@ -21,6 +21,7 @@
         :is-favorite="isFavorite(element)"
         :favorite-disabled="favoriteDisabled"
         @toggle-favorite="$emit('toggle-favorite', $event)"
+        @navigate="$emit('navigate')"
       />
     </div>
   </div>
@@ -39,7 +40,6 @@
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
 import SidebarNavItem from "./SidebarNavItem.vue";
-import { navGroupLabel } from "./helpers/navLabels.js";
 
 export default {
   name: "SidebarPreview",
@@ -70,10 +70,11 @@ export default {
       default: false,
     },
   },
-  emits: ["toggle-favorite"],
+  emits: ["toggle-favorite", "navigate"],
   computed: {
     groupLabel() {
-      return navGroupLabel(this.$t, this.$te, this.subgroup);
+      const key = `sidebar.nav.groups.${this.subgroup.name.toLowerCase()}`;
+      return this.$te(key) ? this.$t(key) : this.subgroup.name;
     },
   },
   methods: {

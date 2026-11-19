@@ -58,9 +58,8 @@
         }
     },
     "favorites": {
-        "title": "Favorites",
-        "add": "Add {name} to favorites",
-        "remove": "Remove {name} from favorites",
+        "add": "Pin {name}",
+        "remove": "Unpin {name}",
         "saveFailedTitle": "Favorite not saved",
         "saveFailedMessage": "Could not save this favorite. Please try again."
     },

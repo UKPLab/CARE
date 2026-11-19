@@ -5,7 +5,7 @@
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
         <div 
           id="sidebarContainer"
-          class="col border mh-100 col-sm-auto g-0"
+          class="col border h-100 mh-100 col-sm-auto g-0 d-flex flex-column"
         >
           <Sidebar :active-element="activeNavigationElement" />
         </div>
@@ -38,10 +38,10 @@ import Sidebar from "./dashboard/navigation/Sidebar.vue";
 import { defineAsyncComponent } from "vue";
 import Loading from "@/basic/Loading.vue";
 import NotFoundPage from "@/auth/NotFound.vue";
-import { resolveNavigationElement } from "./dashboard/navigation/helpers/navElement.js";
 
 
 const dashboardModules = import.meta.glob("./dashboard/*.vue");
+const DEFAULT_DASHBOARD_SETTING = "dashboard.navigation.component.default";
 
 export default {
   name: "DashboardRoute",
@@ -68,7 +68,27 @@ export default {
         return null;
       }
 
-      return resolveNavigationElement(this.navElements, this.catchAll, this.settings);
+      if (!Array.isArray(this.navElements)) {
+        return null;
+      }
+
+      if (typeof this.catchAll === "string" && this.catchAll.trim()) {
+        const explicitElement = this.navElements.find(
+          element => element && typeof element.path === "string" && element.path.toLowerCase() === this.catchAll.toLowerCase()
+        );
+        if (explicitElement) {
+          return explicitElement;
+        }
+      }
+
+      const defaultName = this.settings?.[DEFAULT_DASHBOARD_SETTING];
+      if (typeof defaultName !== "string" || !defaultName.trim()) {
+        return null;
+      }
+
+      return this.navElements.find(
+        element => element && typeof element.name === "string" && element.name.toLowerCase() === defaultName.trim().toLowerCase()
+      ) || null;
     },
     activeNavigationElement() {
       const element = this.currentNavigationElement;

@@ -58,9 +58,8 @@
         }
     },
     "favorites": {
-        "title": "Favoriten",
-        "add": "{name} zu den Favoriten hinzufügen",
-        "remove": "{name} aus den Favoriten entfernen",
+        "add": "{name} anpinnen",
+        "remove": "{name} lösen",
         "saveFailedTitle": "Favorit nicht gespeichert",
         "saveFailedMessage": "Der Favorit konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
     },
