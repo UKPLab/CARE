@@ -89,14 +89,19 @@
           >
             <BasicButton
               id="problemReportButton"
-              class="btn btn-outline-secondary btn-sm problem-report-button"
+              class="btn problem-report-button"
               icon="bug"
               text=""
               :title="$t('problemReport.button')"
               :aria-label="$t('problemReport.button')"
               aria-haspopup="dialog"
               @click="$refs.problemReportModal.open()"
-            />
+            >
+              <LoadIcon
+                :size="18"
+                icon-name="bug"
+              />
+            </BasicButton>
           </li>
           <li class="nav-item dropdown">
             <div
@@ -405,14 +410,32 @@ export default {
   position: absolute;
 }
 
-.problem-report-button {
+/* Quiet circular icon button, sized to match the avatar next to it. The id
+   selector outranks Bootstrap's .btn radius, border and padding. */
+#problemReportButton {
   width: 35px;
   height: 35px;
-  border-radius: 50%;
+  padding: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
+  border: none;
+  border-radius: 50%;
+  color: var(--bs-secondary-color);
+  background: transparent;
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+#problemReportButton:hover,
+#problemReportButton:active {
+  color: var(--bs-emphasis-color);
+  background: var(--bs-secondary-bg);
+}
+
+#problemReportButton:focus-visible {
+  outline: 2px solid var(--care-primary);
+  outline-offset: 2px;
+  box-shadow: none;
 }
 
 .display-username {
