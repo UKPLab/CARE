@@ -245,11 +245,14 @@ async function uploadSubmission(data, options) {
     let assignment = null;
     let validationConfigurationId = data.validationConfigurationId ?? null;
     let projectId = data.projectId ?? null;
-    // Same rule as documents and assignments: an own or public project.
-    const {userCanUseProject} = require('./project');
-    if (projectId !== null && !(await userCanUseProject(models, userId, projectId))) {
-        throw new TranslatableError('errors.rest.invalidProjectId');
-    }
+    // A projectId the caller sent: same rule as documents and assignments, an own or public project.
+    // Checked after the assignment, so an unknown assignment is still 404.
+    const checkGivenProject = async () => {
+        const {userCanUseProject} = require('./project');
+        if (projectId !== null && !(await userCanUseProject(models, userId, projectId))) {
+            throw new TranslatableError('errors.rest.invalidProjectId');
+        }
+    };
     let previousSubmissionId = null;
     if (assignmentId) {
         assignment = await models['assignment'].getById(assignmentId, {transaction});
@@ -260,6 +263,7 @@ async function uploadSubmission(data, options) {
             throw new TranslatableError('errors.rest.assignmentNoAccess');
         }
         models['assignment'].assertSubmissionChangesAllowed(assignment, 'errors.rest.assignmentClosed');
+        await checkGivenProject();
         validationConfigurationId = assignment.validationConfigurationId ?? validationConfigurationId;
         projectId = projectId ?? assignment.projectId ?? null;
 
@@ -284,6 +288,7 @@ async function uploadSubmission(data, options) {
             }
         }
     } else {
+        await checkGivenProject();
         const parent = await models['submission'].getParentSubmission(forUserId, projectId, true, {transaction});
         previousSubmissionId = parent ? parent.id : null;
     }
