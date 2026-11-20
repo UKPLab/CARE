@@ -56,7 +56,9 @@ in ``error``, and ``params`` when the sentence has placeholders::
 
 Scripts should compare ``message``, which stays stable; ``error`` is for people.
 Broken JSON in a body is ``400`` ``errors.rest.invalidJson``. A body over the
-JSON size limit is ``413`` ``errors.rest.bodyTooLarge``.
+JSON size limit is ``413`` ``errors.rest.bodyTooLarge``. A path or method that
+matches no REST route is ``404`` ``errors.rest.routeNotFound``, so a script can
+tell a wrong URL from a missing item (which has its own ``…NotFound`` key).
 
 Transactions and retries
 ------------------------
@@ -75,7 +77,7 @@ accept an optional ``Idempotency-Key`` header (1 to 255 visible ASCII
 characters, for example a random UUID):
 
 * the first request runs normally, and a successful answer is kept for 24 hours;
-* a repeat with the same key, route, and JSON body returns that answer with the
+* a repeat with the same key, route, and body returns that answer with the
   header ``Idempotent-Replayed: true`` and does nothing again;
 * the same key for another route, another body, or from another token of the
   same user is ``422``
@@ -83,7 +85,12 @@ characters, for example a random UUID):
   running is ``409`` ``errors.rest.idempotencyKeyInProgress``;
 * a failed first request keeps nothing, so it can be retried with the same key.
 
-Upload bodies are compared by route only. Keys are per user and live in the
+For uploads the body means the form fields plus each file's field, name, and
+content (its md5), checked after the upload is read: the same key with another
+file is ``422``, so a corrected file needs a new key. A key on a multipart request
+to a route that takes no upload is ``415`` ``errors.rest.multipartNotAccepted``, or
+the route's own ``400`` when it checks the body first; either way nothing runs
+(send JSON there). Keys are per user and live in the
 ``api_idempotency_key`` table (``middleware/restIdempotency.js``).
 
 Open dashboards
