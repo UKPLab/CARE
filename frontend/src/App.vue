@@ -1,34 +1,10 @@
 <template>
-  <div
-      v-if="disconnected"
-      class="modal-backdrop fade show"
-      style="opacity: 0.75"
-  >
-    <Loader
-        text-class="text-light"
-        class="text disconnect_error"
-        :loading="true"
-        :size="5"
-        :text="$t('errors.connectionError')"
-    />
-  </div>
+  <ConnectionStatus :disconnected="disconnected" />
   <div v-if="requireAuth">
     <TopBar v-if="!hideTopbar && appLoaded"/>
-    <div
-        v-if="!appLoaded"
-        class="pageLoader"
-    >
-      <Loader
-          :loading="!appLoaded"
-          :text="appLoadText"
-      />
-    </div>
+    <ApplicationLoading v-if="!appLoaded" :text="appLoadText" />
     <div v-else>
-      <ConsentModal ref="consentModal"/>
-      <TwoFactorSettingsModal
-          ref="twoFactorSettingsModal"
-          :enforced="true"
-      />
+      <PostLoginPrompts />
       <router-view class="top-padding"/>
     </div>
   </div>
@@ -39,15 +15,16 @@
 </template>
 
 <script>
+import PostLoginPrompts from './auth/PostLoginPrompts.vue';
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
 import { applyTheme, getContrastColor, resolveTheme, shadeColor } from "@/assets/utils";
-import Loader from "@/basic/Loading.vue";
+import ConnectionStatus from "@/basic/ConnectionStatus.vue";
+import ApplicationLoading from "@/basic/ApplicationLoading.vue";
 import {createTable} from "@/store/utils";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
-import ConsentModal from "@/auth/ConsentModal.vue";
-import TwoFactorSettingsModal from "@/auth/TwoFactorSettingsModal.vue";
+
 import BehaviorLogger from "@/assets/behaviorLogger";
 import {computed} from "vue";
 import { i18n } from "@/main.js";
@@ -67,10 +44,11 @@ import {
  */
 export default {
   name: "App",
-  components: {TopBar, Toast, Loader, ConsentModal, TwoFactorSettingsModal},
+  components: {TopBar, Toast, ConnectionStatus, ApplicationLoading, PostLoginPrompts},
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),
+      setStatsContext: this.setStatsContext,
     }
   },
   data() {
@@ -83,7 +61,8 @@ export default {
       },
       disconnected: false,
       behaviorLogger: null,
-      postLoginModalFlowToken: 0,
+      statsContext: {},
+
     }
   },
   sockets: {
@@ -133,19 +112,14 @@ export default {
   },
   computed: {
     hideTopbar() {
-      return (
-          this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar
-      );
+      return this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar;
     },
     appLoaded() {
       return this.appLoadPercent === 100;
     },
     appLoadPercent() {
-      return (
-          (Object.values(this.loaded).filter((v) => v).length /
-              Object.values(this.loaded).length) *
-          100
-      );
+      const stages = Object.values(this.loaded);
+      return stages.filter(Boolean).length / stages.length * 100;
     },
     appLoadStep() {
       return Object.keys(this.loaded).find((k) => !this.loaded[k]);
@@ -169,42 +143,9 @@ export default {
         return false;
       }
     },
-    hasTwoFactorConfigured() {
-      const user = this.$store.getters["auth/getUser"];
-      const methods = Array.isArray(user?.twoFactorMethods) ? user.twoFactorMethods : [];
-      return methods.length > 0;
-    },
-    loginMethod() {
-      const user = this.$store.getters["auth/getUser"];
-      if (!user) return null;
-      if (user.loginMethod) return user.loginMethod;
-      if (user.orcidId) return "orcid";
-      if (user.ldapUsername) return "ldap";
-      if (user.samlNameId) return "saml";
-      return "local";
-    },
-    isTwoFactorRequired() {
-      if (!this.loginMethod) return false;
-      return this.$store.getters["settings/getValue"](`system.auth.${this.loginMethod}.2fa.required`) === "true";
-    },
-    isTermsConsented() {
-      return !!this.$store.getters["auth/getUser"]?.acceptTerms;
-    },
-    shouldShowConsentModal() {
-      return this.requireAuth && this.appLoaded && !this.isTermsConsented;
-    },
-    shouldForceTwoFactorSetup() {
-      return this.requireAuth &&
-          this.appLoaded &&
-          this.isTermsConsented &&
-          this.isTwoFactorRequired &&
-          !this.hasTwoFactorConfigured;
-    },
+
     requireAuth() {
-      return (
-          this.$route.meta.requireAuth !== undefined &&
-          this.$route.meta.requireAuth
-      );
+      return this.$route.meta.requireAuth !== undefined && this.$route.meta.requireAuth;
     },
     mouseDebounceTime() {
       return parseInt(this.$store.getters["settings/getValue"]('statistics.tracking.mouseDebounceTime'), 10);
@@ -250,17 +191,15 @@ export default {
       }
       this.connect();
     },
-    shouldForceTwoFactorSetup() {
-      this.syncPostLoginModalFlow();
-    },
-    shouldShowConsentModal() {
-      this.syncPostLoginModalFlow();
-    },
-    isTermsConsented() {
-      this.syncPostLoginModalFlow();
-    },
-    appLoaded() {
-      this.syncPostLoginModalFlow();
+
+    // Consent can change at runtime (consent modal, preferences modal)
+    acceptStats(accepted) {
+      if (accepted && this.loaded.settings) {
+        this.initializeBehaviorLogger();
+      } else if (this.behaviorLogger) {
+        this.behaviorLogger.destroy();
+        this.behaviorLogger = null;
+      }
     },
     // Initialize logger after settings are loaded because we access the settings table
     'loaded.settings': {
@@ -324,9 +263,21 @@ export default {
     },
     initializeBehaviorLogger() {
       if (this.acceptStats && !this.behaviorLogger) {
-        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime);
+        this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime, {
+          getContext: () => this.statsContext,
+        });
         this.behaviorLogger.init();
+        // The $route watcher ran before the logger existed, so log the page the logger starts on
+        this.behaviorLogger.reportRouteChange(null, this.$route);
       }
+    },
+    /**
+     * Adds or changes keys of the study context that the behavior logger adds to its events.
+     * Set a key to null to remove it.
+     * @param {Object} partial The context keys to set, e.g. {studySessionId: 7}.
+     */
+    setStatsContext(partial) {
+      this.statsContext = {...this.statsContext, ...partial};
     },
     syncLocaleForRoute(route) {
       if (route.meta.requireAuth) {
@@ -345,40 +296,7 @@ export default {
         applyLocale(i18n, getAuthPageLocale());
       }
     },
-    syncPostLoginModalFlow() {
-      if (!this.requireAuth || !this.appLoaded) {
-        return;
-      }
 
-      this.$nextTick(() => {
-        if (this.shouldShowConsentModal) {
-          if (this.$refs.twoFactorSettingsModal?.isVisible()) {
-            this.$refs.twoFactorSettingsModal.close();
-          }
-          if (this.$refs.consentModal) {
-            this.$refs.consentModal.open();
-          }
-          return;
-        }
-
-        if (this.shouldForceTwoFactorSetup) {
-          if (this.$refs.consentModal?.isVisible()) {
-            this.$refs.consentModal.close();
-          }
-          if (this.$refs.twoFactorSettingsModal) {
-            this.$refs.twoFactorSettingsModal.open();
-          }
-          return;
-        }
-
-        if (this.$refs.consentModal?.isVisible()) {
-          this.$refs.consentModal.close();
-        }
-        if (this.$refs.twoFactorSettingsModal?.isVisible()) {
-          this.$refs.twoFactorSettingsModal.close();
-        }
-      });
-    },
   },
 };
 </script>
@@ -393,13 +311,6 @@ html, body {
   padding-top: 52.5px;
 }
 
-.pageLoader {
-  position: absolute;
-  top: 25%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
 .overlay {
   position: fixed;
   width: 100%;
@@ -412,11 +323,4 @@ html, body {
   background-color: #de1818;
 }
 
-.disconnect_error {
-  transform: translate(-50%, -50%);
-  top: 50%;
-  left: 50%;
-  position: absolute;
-  margin: 0;
-}
 </style>

@@ -51,6 +51,21 @@ html[data-bs-theme="dark"] {
   --care-nlp-idle: #9aa3b0;
 }
 
+/* CARE's primary colour: Bootstrap blue in light mode, the accent in dark mode.
+   Use it for custom borders and focus glows instead of a hard-coded blue. */
+:root {
+  --care-primary: var(--bs-primary);
+  --care-on-primary: #fff;
+}
+
+html[data-bs-theme="dark"] {
+  --care-primary: var(--care-accent);
+  --care-on-primary: var(--care-on-accent);
+  /* Bootstrap's link colour drives nav tabs, pagination and btn-link */
+  --bs-link-color: var(--care-accent);
+  --bs-link-hover-color: var(--care-accent-hover);
+}
+
 /* Tell the browser which theme is showing. Bootstrap declares
    color-scheme: light dark, which lets the browser pick scrollbar and native
    control colours from the operating system rather than from CARE. The html
@@ -93,6 +108,12 @@ html[data-bs-theme="dark"] {
   color: var(--bs-body-color) !important;
 }
 
+/* Except on backgrounds Bootstrap keeps light in dark mode (badges), where
+   light text would be unreadable. */
+[data-bs-theme="dark"] :is(.bg-light, .bg-white, .bg-warning).text-dark {
+  color: #212529 !important;
+}
+
 /* Disabled controls lose more contrast against dark than against white. */
 [data-bs-theme="dark"] .btn:disabled,
 [data-bs-theme="dark"] .nav-link.disabled {
@@ -116,11 +137,47 @@ html[data-bs-theme="dark"] {
   --bs-btn-disabled-color: var(--care-on-accent);
 }
 
+[data-bs-theme="dark"] .btn-outline-primary {
+  --bs-btn-color: var(--care-accent);
+  --bs-btn-border-color: var(--care-accent);
+  --bs-btn-hover-bg: var(--care-accent);
+  --bs-btn-hover-border-color: var(--care-accent);
+  --bs-btn-hover-color: var(--care-on-accent);
+  --bs-btn-active-bg: var(--care-accent-active);
+  --bs-btn-active-border-color: var(--care-accent-active);
+  --bs-btn-active-color: var(--care-on-accent);
+  --bs-btn-disabled-color: var(--care-accent);
+  --bs-btn-disabled-border-color: var(--care-accent);
+}
+
 
 [data-bs-theme="dark"] .page-item.active .page-link {
   background-color: var(--care-accent);
   border-color: var(--care-accent);
   color: var(--care-on-accent);
+}
+
+[data-bs-theme="dark"] .text-primary {
+  color: var(--care-accent) !important;
+}
+
+[data-bs-theme="dark"] :is(.bg-primary, .text-bg-primary) {
+  background-color: var(--care-accent) !important;
+  color: var(--care-on-accent) !important;
+}
+
+[data-bs-theme="dark"] .pagination {
+  --bs-pagination-color: var(--care-accent);
+  --bs-pagination-hover-color: var(--care-accent);
+  --bs-pagination-focus-color: var(--care-accent);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-accent) 25%, transparent);
+}
+
+/* In a button group each button overlaps the previous one by 1px, so a grey
+   neighbour hides the right edge of a coloured outline button. Keep the
+   coloured border on top. */
+.btn-group > :is(.btn-outline-danger, .btn-outline-warning) {
+  z-index: 1;
 }
 
 [data-bs-theme="dark"] .form-check-input:checked {
@@ -235,4 +292,18 @@ html[data-bs-theme="dark"] {
 [data-bs-theme="dark"] .dropdown-menu {
   --bs-dropdown-link-active-bg: var(--care-accent);
   --bs-dropdown-link-active-color: var(--care-on-accent);
+}
+
+/* --- Keyboard focus ring ---
+   Plain .btn (no colour variant) and custom focusable elements get no visible
+   focus indicator from Bootstrap; add the care-focus-ring class to opt in.
+   The html prefix outranks Bootstrap's .btn:focus-visible { outline: 0 },
+   which loads after this file. */
+html .care-focus-ring:focus-visible {
+  outline: 2px solid var(--bs-primary);
+  outline-offset: -2px;
+}
+
+[data-bs-theme="dark"] .care-focus-ring:focus-visible {
+  outline-color: var(--care-accent);
 }

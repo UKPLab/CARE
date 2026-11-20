@@ -11,11 +11,13 @@
       <BasicEditor :model-value="terms" :read-only="true" />
     </template>
     <template #footer>
-      <BasicButton
-        class="btn btn-secondary"
-        :title="$t('common.close')"
-        @click="cancel"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :title="$t('common.close')"
+          @click="cancel"
+        />
+      </div>
     </template>
   </Modal>
 </template>

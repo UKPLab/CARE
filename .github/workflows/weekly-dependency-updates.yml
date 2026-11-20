@@ -11,6 +11,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  actions: write # start CI on the bot PR (see "Start CI" steps)
 
 env:
   PACKAGE_DIRS: |
@@ -56,6 +57,7 @@ jobs:
         run: make audit
 
       - name: Create minor/patch Pull Request
+        id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
           base: dev
@@ -75,6 +77,14 @@ jobs:
             findings (those that need a major bump) do not block this PR.
             Please review the diff and let CI / `make audit` finish before merging.
           labels: dependencies
+
+      # PRs opened with GITHUB_TOKEN do not trigger the CI's pull_request run.
+      # workflow_dispatch is allowed, and its checks show on the PR's head commit.
+      - name: Start CI on the PR branch
+        if: steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run main.yml --repo "${{ github.repository }}" --ref chore-weekly-dependency-updates-minor
 
   # Major only (quarterly). Reminder PR with bumps applied for testing —
   # do not merge without manual verification.
@@ -128,6 +138,7 @@ jobs:
           done <<< "${PACKAGE_DIRS}"
 
       - name: Create major-update reminder Pull Request
+        id: cpr
         uses: peter-evans/create-pull-request@v7
         with:
           base: dev
@@ -154,3 +165,11 @@ jobs:
 
             Minor/patch updates are handled in a separate weekly PR.
           labels: dependencies
+
+      # PRs opened with GITHUB_TOKEN do not trigger the CI's pull_request run.
+      # workflow_dispatch is allowed, and its checks show on the PR's head commit.
+      - name: Start CI on the PR branch
+        if: steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run main.yml --repo "${{ github.repository }}" --ref chore-quarterly-dependency-updates-major

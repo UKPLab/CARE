@@ -10,67 +10,13 @@
         role="dialog"
         tabindex="-1"
     >
-      <div
-          :class="sizeClass"
-          class="modal-dialog"
-          role="document"
-      >
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">
-              <slot name="title"/>
-            </h5>
-            <button
-                v-if="!removeClose"
-                :aria-label="$t('modals.closeModal')"
-                class="btn-close"
-                type="button"
-                @click="handleCloseClick"
-            />
-          </div>
-          <div class="modal-body" :class="{ 'modal-body-scroll': scrollableBody }">
-            <div
-                v-if="waiting"
-                class="justify-content-center flex-grow-1 d-flex"
-                role="status"
-            >
-              <div class="spinner-border m-5">
-                <span class="visually-hidden">{{ $t('common.loading') }}</span>
-              </div>
-            </div>
-            <div
-                v-else-if="progress"
-                class="justify-content-center flex-grow-1 d-flex"
-                role="status"
-            >
-              <div class="progress" style="width:100%">
-                <div
-                    class="progress-bar"
-                    role="progressbar"
-                    :style="'width:' + progressPercent + '%'"
-                    :aria-valuenow="progressPercent"
-                    aria-valuemin="0"
-                    aria-valuemax="100"
-                >
-                  {{ progressPercent }}%
-                </div>
-              </div>
-            </div>
-            <div
-                v-show="!waiting && !progress"
-                :class="{ 'modal-body-shell': scrollableBody }"
-            >
-              <slot name="body"/>
-            </div>
-          </div>
-          <div
-              v-show="!waiting && !progress"
-              class="modal-footer"
-          >
-            <slot name="footer"/>
-          </div>
-        </div>
-      </div>
+      <ModalContent
+        :size-class="sizeClass" :remove-close="removeClose" :scrollable-body="scrollableBody"
+        :waiting="waiting" :progress="progress" :progress-percent="progressPercent" @close="handleCloseClick">
+        <template #title><slot name="title" /></template>
+        <template #body><slot name="body" /></template>
+        <template #footer><slot name="footer" /></template>
+      </ModalContent>
     </div>
   </teleport>
 </template>
@@ -95,16 +41,28 @@
  * @author: Dennis Zyska, Nils Dycke
  *
  */
+import ModalContent from './ModalContent.vue';
 import {Modal} from 'bootstrap';
 import {v4 as uuid} from 'uuid';
 
 export default {
   name: 'BasicModal',
+  components: {ModalContent},
   inject: {
+    documentId: {type: Number, required: false, default: null},
     acceptStats: {
       default: () => false
     },
     parentModal: {
+      default: () => null
+    },
+    studySessionId: {
+      default: () => null
+    },
+    currentStudyStep: {
+      default: () => null
+    },
+    studyStepId: {
       default: () => null
     }
   },
@@ -116,39 +74,21 @@ export default {
   props: {
     size: {
       type: String,
-      required: false,
       default: 'md',
       validator: (value) => ['sm', 'md', 'lg', 'xl'].includes(value)
     },
-    autoOpen: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    disableKeyboard: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    removeClose: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
+    autoOpen: {type: Boolean, default: false},
+    disableKeyboard: {type: Boolean, default: false},
+    removeClose: {type: Boolean, default: false},
     props: {
       type: Object,
-      required: false,
       default: () => ({}),
     },
     name: {
       type: String,
       required: true
     },
-    scrollableBody: {
-      type: Boolean,
-      required: false,
-      default: false,
-    }
+    scrollableBody: {type: Boolean, default: false}
   },
   emits: ['show', 'hide', 'close-requested'],
   data() {
@@ -162,9 +102,19 @@ export default {
       closeRequestHandled: false,
       hideWaiting: false,
       isShown: false,
+      pendingTransition: null,
     };
   },
   computed: {
+    // Study IDs for the stats events; empty outside a study
+    studyContext() {
+      return {
+        ...(this.documentId ? {documentId: this.documentId} : {}),
+        ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+        ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+      };
+    },
     sizeClass() {
       if (this.size === 'md') {
         return ''; // Default size, no additional class needed
@@ -180,6 +130,8 @@ export default {
   },
   mounted() {
     this.modal = new Modal(this.$refs.Modal);
+    this.$refs.Modal.addEventListener('show.bs.modal', this.transitionStartEvent);
+    this.$refs.Modal.addEventListener('hide.bs.modal', this.transitionStartEvent);
     this.$refs.Modal.addEventListener('hidden.bs.modal', this.hideEvent);
     this.$refs.Modal.addEventListener('shown.bs.modal', this.showEvent);
 
@@ -188,17 +140,18 @@ export default {
     }
   },
   beforeUnmount() {
+    // A modal removed while open never gets Bootstrap's hidden event, so log its hide here
+    if (this.isShown) {
+      this.logHide();
+    }
     if (this.$refs.Modal) {
+      this.$refs.Modal.removeEventListener('show.bs.modal', this.transitionStartEvent);
+      this.$refs.Modal.removeEventListener('hide.bs.modal', this.transitionStartEvent);
       this.$refs.Modal.removeEventListener('hidden.bs.modal', this.hideEvent);
       this.$refs.Modal.removeEventListener('shown.bs.modal', this.showEvent);
     }
     if (this.modal) {
-      try {
-        this.modal.dispose();
-      } catch (e) {
-        // Ignore errors during dispose - the modal may already be in an invalid state
-        console.error('[BasicModal] Error during modal dispose:', e.message);
-      }
+      this.disposeModal();
     }
     this.resumeParentModal();
   },
@@ -224,23 +177,82 @@ export default {
     stopProgress() {
       this.progress = false;
     },
+    /**
+     * Remembers which Bootstrap transition is running, as Bootstrap only reports its end through events.
+     * Also covers transitions Bootstrap starts on its own, e.g. on the Escape key.
+     * @param {Event} event The show.bs.modal or hide.bs.modal event
+     */
+    transitionStartEvent(event) {
+      this.pendingTransition = event.type.split('.')[0];
+    },
+    /**
+     * Disposes the Bootstrap modal of the unmounting component.
+     *
+     * Bootstrap's queued transition callbacks read the fields dispose() clears, and only its hide path removes
+     * the backdrop and the scroll lock from the body. So a modal in use has to reach hidden before it is disposed.
+     * By then the component is gone, so the callbacks below only use captured values.
+     */
+    disposeModal() {
+      const modal = this.modal;
+      const element = this.$refs.Modal;
+      const dispose = () => {
+        // A static backdrop transition has up to two callbacks left on the dialog, finish them now.
+        const dialog = element.querySelector('.modal-dialog');
+        dialog.dispatchEvent(new Event('transitionend'));
+        dialog.dispatchEvent(new Event('transitionend'));
+        modal.dispose();
+        // Bootstrap appends the element to the body again if it finishes opening after Vue removed it.
+        element.remove();
+      };
+
+      if (!this.isShown && !this.pendingTransition) {
+        dispose();
+        return;
+      }
+
+      // Without the fade class, the steps still to come run at once and the removed modal is never painted again.
+      element.classList.remove('fade');
+      if (this.pendingTransition === 'show') {
+        // Only listen for hidden from here on, the hidden event of an earlier close can arrive during this opening.
+        element.addEventListener('shown.bs.modal', () => {
+          element.addEventListener('hidden.bs.modal', dispose, {once: true});
+          modal.hide();
+        }, {once: true});
+        return;
+      }
+      element.addEventListener('hidden.bs.modal', dispose, {once: true});
+      if (!this.pendingTransition) {
+        modal.hide();
+      }
+    },
     hideEvent() {
       this.isShown = false;
+      // Bootstrap allows reopening while the backdrop of a close fades out, that opening is still running.
+      if (this.pendingTransition === 'hide') {
+        this.pendingTransition = null;
+      }
       this.$emit('hide');
+      this.logHide();
+    },
+    /**
+     * Logs that the modal was hidden, if the user accepted statistics.
+     */
+    logHide() {
       if (this.acceptStats) {
         this.$socket.emit('stats', {
           action: 'hideModal',
-          data: {name: this.name, props: this.props}
+          data: {name: this.name, props: this.props, ...this.studyContext}
         });
       }
     },
     showEvent() {
       this.isShown = true;
+      this.pendingTransition = null;
       this.$emit('show');
       if (this.acceptStats) {
         this.$socket.emit('stats', {
           action: 'showModal',
-          data: {name: this.name, props: this.props}
+          data: {name: this.name, props: this.props, ...this.studyContext}
         });
       }
       if (this.hideWaiting) {
@@ -293,27 +305,34 @@ export default {
         this.parentModal.hide();
       }
     },
-    suspendParentModal() {
-      if (!this.parentModal || this.parentModal.suspendedByChild) return;
-      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
+    suspendByChild() {
+      if (this.suspendedByChild) return;
+      const el = this.$refs && this.$refs.Modal;
       if (el) {
         el.classList.add('nested-suspended');
       }
-      this.parentModal.suspendedByChild = true;
+      this.suspendedByChild = true;
     },
-    resumeParentModal() {
-      if (!this.parentModal || !this.parentModal.suspendedByChild) return;
-      const el = this.parentModal.$refs && this.parentModal.$refs.Modal;
+    resumeFromChild() {
+      if (!this.suspendedByChild) return;
+      const el = this.$refs && this.$refs.Modal;
       if (el) {
         el.classList.remove('nested-suspended');
       }
-      this.parentModal.suspendedByChild = false;
+      this.suspendedByChild = false;
+    },
+    suspendParentModal() {
+      this.parentModal?.suspendByChild();
+    },
+    resumeParentModal() {
+      this.parentModal?.resumeFromChild();
     }
   }
 };
 </script>
 
 <style scoped>
+
 .shake {
   animation: shake-animation 0.5s ease-in-out;
 }
@@ -323,32 +342,4 @@ export default {
   pointer-events: none;
 }
 
-.modal-content {
-  max-height: calc(100vh - 3.5rem);
-  display: flex;
-  flex-direction: column;
-}
-
-.modal-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-/* Body is a non-scrolling flex column so a fixed header (e.g. a stepper)
-   stays put while only its content scrolls. Lives here because the modal is
-   teleported. */
-.modal-body.modal-body-scroll {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding-top: 0;
-}
-
-.modal-body-shell {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-}
 </style>

@@ -1,50 +1,17 @@
 <template>
-  <div
-    id="adder"
-    ref="adder"
-    :style="{visibility: isVisible ? 'visible':'hidden'}"
-    :class="{ 'is-extended': isExtended }"
-  > 
-    <div
-      v-if="isExtended" 
-      class="menu-search-bar">
-      <input
-        v-model="searchTerm"
-        type="text"
-        :placeholder="$t('editor.annotator.searchTags')"
-        class="form-control"
-        @mouseup.stop
-      />
-    </div> 
-    <div 
-      ref="adderWrapper"
-      class="scrollable-menu-wrapper"
-      :class="{ 'is-extended': isExtended }"
-    >
-      <div
-        class="btn-group-vertical" 
-        @click.stop
-      >
-        <BasicButton
-          v-for="t in filteredTags"
-          :key="t.name"
-          :class="`btn-${t.colorCode} text-truncate`"
-          :title="t.description"
-          :text="t.name"
-          data-placement="top"
-          data-toggle="tooltip"
-          @click="annotate(t)"
-        />
-      </div>
-    </div>
-    <BasicButton
-      v-if="shouldShowExtender"
-      class="expand-btn"
-      icon="three-dots"
-      :title="$t('editor.annotator.expandAdder')"
-      @click="isExtended=true"
-    />
-  </div>
+  <PDFSelectionMenu
+      ref="menu"
+      :visible="isVisible"
+      :read-only="readOnly"
+      :has-ai-chat="hasAiChat"
+      :document-id="documentId"
+      :study-session-id="studySessionId"
+      :study-step-id="studyStepId"
+      :tag-set-id="tagSetId"
+      :tags="assignableTags"
+      @ask-ai="askAi"
+      @select="annotate"
+  />
 </template>
 
 <script>
@@ -55,14 +22,13 @@
  *
  * @author Dennis Zyska, Nils Dycke, Jannik Holmer
  */
-import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
-import {TextQuoteAnchor} from '@/assets/anchoring/types';
+import {getPDFTextLayerForRange, describePDFRange} from "@/assets/pdfViewer/anchor.js";
 import { resolveApiMessage } from "@/assets/utils";
-import BasicButton from "@/basic/Button.vue";
+import PDFSelectionMenu from "./PDFSelectionMenu.vue";
 
 export default {
   name: "PDFAdder",
-  components: { BasicButton },
+  components: { PDFSelectionMenu },
   inject: {
     documentId: {
       type: Number,
@@ -78,6 +44,11 @@ export default {
       required: false,
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null,
+    },
     pdf: {
       type: Object,
       required: true,
@@ -86,78 +57,27 @@ export default {
       default: () => false
     },
   },
+  props: {
+    readOnly: {type: Boolean, required: false, default: false},
+  },
   data() {
     return {
-      fadeOutBox: [],
       isVisible: false,
       selectedRanges: [],
       previousRanges: [],
       pendingCallback: null,
-      isExtended: false,
-      searchTerm: '',
-      usageHistory: [],
       dragThreshold: 5,
       isDoubleClick: false,
       startX: 0, 
       startY: 0,
-      isOverflowing: false,
     }
   },
   computed: {
-    recencySortingOn() {
-      return this.$store.getters["settings/getValue"]("tags.recencySortingIsOn") === "true";
-    },
     defaultTagSet() {
       return parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
     },
     assignableTags() {
         return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.tagSetId && !e.deleted);
-    },
-    userId() {
-      return this.$store.getters['auth/getUserId'];
-    },
-    savedUsageHistory() {
-      const key = "UH" + this.tagSetId; 
-      const data = this.$store.getters['table/user_environment/getAll'].filter(
-        e => e.userId === this.userId &&
-          e.documentId === this.documentId &&
-          e.studySessionId === this.studySessionId &&
-          e.studyStepId === this.studyStepId &&
-          e.key === key
-      );
-      return data[0] || null;
-    },
-    filteredTags() {
-      let tagList;
-      if(!this.searchTerm.trim()) {
-        tagList = this.assignableTags;
-      }else {
-        const term = this.searchTerm.trim().toLowerCase();
-        tagList = this.assignableTags.filter(tag =>
-          tag.name.toLowerCase().includes(term)
-        );
-      }
-      
-      // sort tags by recency 
-      if (this.recencySortingOn) {
-          tagList.sort((a,b) => {
-          const idxA = this.usageHistory.indexOf(a.name);
-          const idxB = this.usageHistory.indexOf(b.name);
-
-          if (idxA === -1 && idxB === -1){
-            return 0;
-          }
-          if (idxA === -1) {
-            return 1;
-          }
-          if (idxB === -1) {
-            return -1;
-          }
-          return idxA - idxB;
-        });
-      }
-      
-      return tagList;
     },
     studySession() {
       return this.$store.getters["table/study_session/get"](this.studySessionId);
@@ -175,16 +95,24 @@ export default {
         return this.defaultTagSet;
       }
     },
-    shouldShowExtender() {
-      return !this.isExtended && this.isOverflowing;
-    },
+
     anonymize() {
       if (!this.study) {
         return false;
       }
       return this.study.anonymize;
+    },
+    hasAiChat() {
+      const services = this.currentStudyStep?.configuration?.services || [];
+      return services.some((service) => service.type === "aiChat");
     }
 
+  },
+  watch: {
+    readOnly(readOnly) {
+      this._onClearSelection();
+      if (!readOnly) this.$nextTick(this.checkOverflow);
+    },
   },
   created() {
     document.body.addEventListener('mouseup', this.checkSelection);
@@ -192,62 +120,22 @@ export default {
     document.body.addEventListener('mousedown', this.positionTracker);
   },
   mounted() {
-    // if available, load usage history of Tagset
-    if (this.savedUsageHistory) {
-      const data = JSON.parse(this.savedUsageHistory.value);
-      this.usageHistory = data;
-    }
-
     // check if the tagsets will make the adder overflow 
     this.checkOverflow();
     document.body.addEventListener('resize', this.checkOverflow);
   },
   beforeUnmount() {
+    clearTimeout(this.pendingCallback);
     document.body.removeEventListener('mouseup', this.checkSelection);
     document.body.removeEventListener('dblclick', this.doubleClickHandler);
     document.body.removeEventListener('mousedown', this.positionTracker);
     document.body.removeEventListener('resize', this.checkOverflow);
-    
-    if (this.recencySortingOn) {
-      this.saveUsageHistory();
-    }
   },
   methods: {
-    saveUsageHistory() {
-      const key = "UH" + this.tagSetId;
-      const payload = JSON.stringify(this.usageHistory);
-      // save the usage history 
-      if (!this.savedUsageHistory){
-        this.$socket.emit("appDataUpdate", {
-          table: "user_environment",
-          data: {
-            userId: this.userId,
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            key: key,
-            value: payload
-          }
-        });
-      } else {
-        this.$socket.emit("appDataUpdate", {
-          table: "user_environment",
-          data: {
-            id: this.savedUsageHistory.id,
-            value: payload
-          }
-        });
-      }
-    },
-    checkOverflow() {
-      const el = this.$refs.adderWrapper;
-      this.isOverflowing = el.scrollHeight > el.clientHeight;
-    },
-    handleAdderScrolling(event) {
-      const adderContent = this.$refs.adderWrapper;
-      const scrollAmount = event.deltaY;
-      adderContent.scrollLeft += scrollAmount;
-    },
+    checkOverflow() { this.$refs.menu?.checkOverflow(); },
+    show(x, y) { this.$refs.menu?.show(x, y); this.isVisible = true; },
+    getTextLayerForRange(range) { return getPDFTextLayerForRange(range, this.$el.closest(".has-transparent-text-layer")); },
+    describe(root, range) { return describePDFRange(this.pdf, root, range, this.$el.closest(".has-transparent-text-layer")); },
     doubleClickHandler() {
       this.isDoubleClick = true;
     },
@@ -262,17 +150,18 @@ export default {
     checkSelection(event) {
       // stop any default behavior like the Edge built-in mini-menu 
       // which can visually block our Annotations Adder
-      this.stopDefaultOnSelection(event);
-      
+      if (!this.readOnly) this.stopDefaultOnSelection(event);
+
       // cancel pending callbacks
       if (this.pendingCallback) {
         clearTimeout(this.pendingCallback);
         this.pendingCallback = null;
       }
 
+      const context = this.studyContext();
       // delay for having the right data
       this.pendingCallback = setTimeout(() => {        
-        this._onSelection(event);
+        this._onSelection(event, context);
       }, 10);
     },
     stopDefaultOnSelection(event) {
@@ -280,6 +169,7 @@ export default {
       // and if something has been selected 
       const isLeftClick = event.button === 0;
       const selection = document.getSelection();
+      if (!this.$el.closest(".has-transparent-text-layer")?.contains(selection?.anchorNode)) return;
 
       //if not a doubleClick, check if the distance the selection was dragged
       let distanceMoved = 0;
@@ -295,21 +185,6 @@ export default {
       }
     },
     async annotate(tag) {
-
-      if (this.recencySortingOn) {
-        // track tag usage history, if tag is in the list, remove it 
-        // then add it to the front, keep the list no longer than 20 
-        const currentIdx = this.usageHistory.indexOf(tag.name)
-        if (currentIdx > -1){
-          this.usageHistory.splice(currentIdx, 1);
-        }
-        this.usageHistory.unshift(tag.name);
-        if (this.usageHistory.length > 20) {
-          this.usageHistory.pop()
-        }
-      }
-      
-
       const ranges = this.selectedRanges;
       this.selectedRanges = [];
 
@@ -342,18 +217,30 @@ export default {
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
     },
-    async _onSelection(event) {
-      if (this.assignableTags.length === 0) {
-        this.eventBus.emit('toast', {
-          title: this.$t('errors.tags.emptyTagset.title'),
-          message: this.$t('errors.tags.emptyTagset.message'),
-          variant: "danger"
-        });
-
-        this._onClearSelection();
-        return;
-      }
-
+    /**
+     * Emits the current selection to this study step's AI chat.
+     *
+     * @returns {Promise<void>}
+     */
+    async askAi() {
+      const text = this.selectedRanges.map((range) => range.toString()).join(" ").trim();
+      if (!text) return;
+      const quote = {
+        text,
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+      };
+      this.eventBus.emit("aiChatQuote", quote);
+      this.eventBus.emit("toast", {
+        title: this.$t("ai.chat.quotedTitle"),
+        message: this.$t("ai.chat.quotedMessage"),
+        variant: "success",
+      });
+      this._onClearSelection();
+      document.getSelection()?.removeAllRanges();
+    },
+    async _onSelection(event, context = this.studyContext()) {
       // get selection
       const selection = /** @type {Selection} */ (document.getSelection());
       if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
@@ -377,8 +264,19 @@ export default {
         return;
       }
 
+      if (!this.readOnly && this.assignableTags.length === 0) {
+        this.eventBus.emit('toast', {
+          title: this.$t('errors.tags.emptyTagset.title'),
+          message: this.$t('errors.tags.emptyTagset.message'),
+          variant: "danger"
+        });
+
+        this._onClearSelection();
+        return;
+      }
+
       this.selectedRanges = [range];
-      if (!this.isVisible || !this.areRangesEqual(this.selectedRanges[0], this.previousRanges[0])) {
+      if (!this.readOnly && (!this.isVisible || !this.areRangesEqual(this.selectedRanges[0], this.previousRanges[0]))) {
         this.show(event.clientX, event.clientY);
       }
       this.previousRanges = [range];
@@ -386,15 +284,20 @@ export default {
         this.$socket.emit("stats", {
           action: "onTextSelect",
           data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
+            ...context,
             eventClientX: event.clientX, eventClientY: event.clientY,
             text: range.toString(),
           }
         });
       }
 
+    },
+    /** Captures the study context before the selection delay. */
+    studyContext() {
+      return {
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      };
     },
     areRangesEqual(range1, range2) {
       return (
@@ -406,201 +309,8 @@ export default {
     },
     _onClearSelection() {
       this.isVisible = false;
-      this.isExtended = false;
       this.selectedRanges = [];
-    },
-    show(x, y) {
-      //reset the extended status of the adder and the searchTerm
-      this.isExtended = false;
-      this.searchTerm = '';
-      this.$refs.adderWrapper.scrollTop =0;
-      // get size of the box
-      const adder = this.$refs.adder;
-      const pdfContainerRect = /** @type {Element} */ (document.getElementById("pdfContainer-" + this.documentId)).getBoundingClientRect();
-      console.log("pdfContainerRect", document.getElementById("pdfContainer-" + this.documentId));
-      const pdfToolbarRect = /** @type {Element} */ (document.getElementById("pdfToolbar-" + this.documentId)).getBoundingClientRect();
-      console.log("pdfToolbarRect", (document.getElementById("pdfToolbar-" + this.documentId)));
-      const width = adder.getBoundingClientRect().width;
-      const height = adder.getBoundingClientRect().height;
-      const bottom = pdfToolbarRect.bottom;
-      // calculate position of adder
-      // slight offset from event positions up and to the right 
-      y = y - height;
-
-
-      const relativeX = x - pdfContainerRect.left;
-      // check if adder will overlap to the right
-      if (relativeX + width > pdfContainerRect.width) {
-        x = pdfContainerRect.width - width;
-      }
-      //restrict the adder from being generated too far up
-      // or too far left after repositioning because of overlap 
-      y = Math.max(bottom, y);
-      x = Math.max(0, x);
-      
-      // get max z index
-      const maxZIndex = Math.max(
-          ...Array.from(document.querySelectorAll('body *'), el =>
-              parseFloat(window.getComputedStyle(el).zIndex),
-          ).filter(zIndex => !Number.isNaN(zIndex)),
-          0,
-      );
-
-      // move to position
-      Object.assign(this.$refs.adder.style, {
-        left: x.toString() + 'px',
-        top: y.toString() + 'px',
-        zIndex: maxZIndex + 1,
-      });
-
-      // generate fadeOut Box where the adder is faded out when the mouse is outside of the box
-      // parameter: min_x, min_y, max_x, max_y
-      const additional_size_of_box = 50;
-      this.fadeOutBox = [
-        x - additional_size_of_box,
-        y - additional_size_of_box,
-        x + width + additional_size_of_box,
-        y + height + additional_size_of_box + 40
-      ]
-
-      //document.body.addEventListener('mousemove', this.fadeOut);
-
-      this.isVisible = true;
-    },
-    fadeOut(event) {
-      if (event.clientX < this.fadeOutBox[0] || event.clientX > this.fadeOutBox[2]
-          || event.clientY < this.fadeOutBox[1] || event.clientY > this.fadeOutBox[3]) {
-        document.body.removeEventListener('mousemove', this.fadeOut);
-        this.isVisible = false;
-      }
-    },
-    getNodeTextLayer(node) {
-      const el = 'closest' in node ? node : node.parentElement;
-      return el?.closest('.textLayer') ?? null;
-    },
-    getTextLayerForRange(range) {
-      if ("classList" in range.endContainer && range.endContainer.classList.contains("canvasWrapper")) {
-        throw new Error('I\'m afraid we are not on the same page');
-      }
-      // "Shrink" the range so that the start and endpoints are at offsets within
-      // text nodes rather than any containing nodes.
-      try {
-        range = TextRange.fromRange(range).toRange();
-      } catch (_error) {
-        throw new Error('Selection does not contain text', { cause: _error });
-      }
-
-      const startTextLayer = this.getNodeTextLayer(range.startContainer);
-      const endTextLayer = this.getNodeTextLayer(range.endContainer);
-
-      if (!startTextLayer || !endTextLayer) {
-        throw new Error('Selection is outside page text');
-      }
-
-      if (startTextLayer !== endTextLayer) {
-        throw new Error('Selecting across page breaks is not supported');
-      }
-      const pageStart = parseInt(startTextLayer.id.match("[0-9]+")[0]);
-
-      return [range, startTextLayer, pageStart];
-
-
-    },
-    /**
-     * Convert a DOM Range object into a set of selectors.
-     *
-     * Converts a DOM `Range` object into a `[position, quote]` tuple of selectors
-     * which can be saved with an annotation and later passed to `anchor` to
-     * convert the selectors back to a `Range`.
-     *
-     * @param {HTMLElement} root - The root element
-     * @param {Range} range
-     * @return {Promise<Selector[]>}
-     */ async describe(root, range) {
-
-      const [textRange, textLayer, page] = this.getTextLayerForRange(range);
-
-      const startPos = TextPosition.fromPoint(
-          textRange.startContainer,
-          textRange.startOffset
-      ).relativeTo(textLayer);
-
-      const endPos = TextPosition.fromPoint(
-          textRange.endContainer,
-          textRange.endOffset
-      ).relativeTo(textLayer);
-
-      const pageOffset = await this.getPageOffset(page - 1);
-
-      /** @type {TextPositionSelector} */
-      const position = {
-        type: 'TextPositionSelector',
-        start: pageOffset + startPos.offset,
-        end: pageOffset + endPos.offset,
-      };
-
-      const quote = TextQuoteAnchor.fromRange(root, textRange).toSelector();
-      const pageSelector = {
-        type: 'PagePositionSelector',
-        number: page,
-      }
-
-      return [position, quote, pageSelector];
-    },
-    async getPageOffset(pageIndex) {
-      let offset = 0;
-      for (let i = 0; i < pageIndex; i++) {
-        const text = await this.pdf.getPageTextContent(i);
-        offset += text.length;
-      }
-      return offset;
     },
   }
 }
 </script>
-
-<style scoped>
-#adder {
-  border-radius: 5px;
-  box-shadow: 2px 3px #CCCCCC;
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 2px;
-  background-color: white;
-  white-space: nowrap;
-  width: fit-content;
-  max-width: 150px;
-}
-#adder.is-extended {
-  max-width: 250px;
-}
-.btn-group-vertical {
-  width: 100%;
-  max-width: inherit;
-}
-.btn {
-  text-align: center;
-  max-width: inherit;
-}
-.scrollable-menu-wrapper {
-  max-height: 150px;
-  overflow-x: hidden;
-  overflow-y: auto;
-  max-width: inherit;
-  border-radius: 5px;
-}
-.scrollable-menu-wrapper.is-extended {
-  max-height: 250px;
-  max-width: inherit;
-}
-.expand-btn {
-  width: 100%;
-  background-color: var(--bs-secondary-bg, lightgrey);
-  border-radius: 5px;
-  padding: 5px;
-}
-.menu-search-bar {
-  width: 100%;
-}
-</style>

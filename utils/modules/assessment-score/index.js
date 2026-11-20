@@ -302,9 +302,198 @@ function pickScoresFromGradeRows(rows) {
     return Object.keys(hookScores).length ? hookScores : savedScores;
 }
 
+/**
+ * State of a criterion in the assessment form before anything was entered.
+ *
+ * @returns {{assessment: string, editedAssessment: string, currentScore: number, isEditing: boolean, isSaved: boolean}}
+ */
+function defaultCriterionState() {
+    return {
+        assessment: "",
+        editedAssessment: "",
+        currentScore: 0,
+        isEditing: false,
+        isSaved: false,
+    };
+}
+
+/**
+ * Calls fn with the name of every named criterion of the configuration, in rubric order.
+ *
+ * @param {Object} config - Assessment configuration (with rubrics & criteria)
+ * @param {function(string): void} fn
+ */
+function forEachCriterionName(config, fn) {
+    (config?.rubrics || []).forEach((rubric) => {
+        (rubric.criteria || []).forEach((criterion) => {
+            if (criterion && criterion.name) fn(criterion.name);
+        });
+    });
+}
+
+/**
+ * Adds an empty state for each configured criterion without one.
+ *
+ * @param {Object} config - Assessment configuration
+ * @param {Object} assessmentState - { [criterionName]: criterion state }
+ * @returns {Object} A new assessment state
+ */
+function withDefaultCriterionStates(config, assessmentState = {}) {
+    const state = {...assessmentState};
+    forEachCriterionName(config, (name) => {
+        if (!state[name]) state[name] = defaultCriterionState();
+    });
+    return state;
+}
+
+/**
+ * Names of the configured criteria that are not saved yet.
+ *
+ * @param {Object} config - Assessment configuration
+ * @param {Object} assessmentState - { [criterionName]: criterion state }
+ * @returns {string[]}
+ */
+function unsavedCriterionNames(config, assessmentState = {}) {
+    const names = [];
+    forEachCriterionName(config, (name) => {
+        const state = assessmentState[name];
+        if (!state || state.isSaved !== true) names.push(name);
+    });
+    return names;
+}
+
+/**
+ * Parses a stored assessment_result value into { [criterionName]: criterion state }; unreadable values give {}.
+ *
+ * @param {*} raw - Stored value, a JSON string or an object
+ * @returns {Object}
+ */
+function parseSavedAssessment(raw) {
+    if (typeof raw === "string" && raw) {
+        try {
+            return JSON.parse(raw);
+        } catch (e) {
+            console.error("Failed to parse saved assessment_result JSON", e);
+            return {};
+        }
+    }
+    return raw && typeof raw === "object" ? raw : {};
+}
+
+/**
+ * Converts the result of an AI assessment (NLP skill or AI hook) into criterion states.
+ * Accepts a list or `{ assessment: [...] }`, also as JSON, with items in form state
+ * (`{ name, assessment, currentScore }`) or as `{ criterion, justification, score }`.
+ *
+ * @param {*} value - Stored AI result
+ * @returns {Array<Object>|null} Criterion states with their `name`, null if the value has no list
+ */
+function normalizeAiAssessment(value) {
+    if (!value) return null;
+
+    let list = null;
+    if (typeof value === "string") {
+        try {
+            const parsed = JSON.parse(value);
+            if (Array.isArray(parsed)) {
+                list = parsed;
+            } else if (parsed && Array.isArray(parsed.assessment)) {
+                list = parsed.assessment;
+            }
+        } catch (e) {
+            console.error("Failed to parse AI assessment JSON", e);
+            return null;
+        }
+    } else if (Array.isArray(value)) {
+        list = value;
+    } else if (typeof value === "object" && Array.isArray(value.assessment)) {
+        list = value.assessment;
+    }
+    if (!list) return null;
+
+    return list
+        .map((item) => {
+            if (!item) return null;
+            if ((item.assessment !== undefined || item.currentScore !== undefined) && (item.name || item.criterion)) {
+                return {name: item.name || item.criterion, ...item};
+            }
+            const name = item.criterion || item.name;
+            if (!name) return null;
+            return {
+                name,
+                assessment: item.justification || "",
+                editedAssessment: "",
+                currentScore: typeof item.score === "number" ? item.score : 0,
+            };
+        })
+        .filter(Boolean);
+}
+
+/**
+ * Fills the criterion states of the configured criteria from a saved assessment and an AI assessment.
+ * Saved answers win; answers taken over from an earlier step and AI answers are shown, but not saved yet.
+ *
+ * @param {Object} config - Assessment configuration
+ * @param {Object} assessmentState - Current { [criterionName]: criterion state }
+ * @param {Object} sources
+ * @param {Object} sources.saved - Saved { [criterionName]: criterion state } (see parseSavedAssessment)
+ * @param {boolean} sources.fromPreviousStep - The saved answers are those of an earlier step
+ * @param {Array<Object>|null} sources.ai - AI criterion states (see normalizeAiAssessment)
+ * @returns {Object} A new assessment state
+ */
+function mergeAssessmentSources(config, assessmentState, {saved = {}, fromPreviousStep = false, ai = null} = {}) {
+    const aiByName = {};
+    (ai || []).forEach((item) => {
+        if (item && item.name) aiByName[item.name] = item;
+    });
+
+    const state = {...assessmentState};
+    forEachCriterionName(config, (name) => {
+        if (saved[name]) {
+            state[name] = {
+                ...defaultCriterionState(),
+                ...saved[name],
+                isSaved: fromPreviousStep ? false : saved[name].isSaved === true,
+            };
+        } else if (aiByName[name]) {
+            state[name] = {...defaultCriterionState(), ...aiByName[name], isSaved: false};
+        } else {
+            state[name] = state[name] || defaultCriterionState();
+        }
+    });
+    return state;
+}
+
+/**
+ * The part of each criterion state that is stored as assessment_result.
+ *
+ * @param {Object} assessmentState - { [criterionName]: criterion state }
+ * @returns {Object} { [criterionName]: { assessment, editedAssessment, currentScore, isSaved } }
+ */
+function persistedAssessment(assessmentState = {}) {
+    const data = {};
+    Object.entries(assessmentState).forEach(([name, state]) => {
+        if (!state) return;
+        data[name] = {
+            assessment: state.assessment,
+            editedAssessment: state.editedAssessment || "",
+            currentScore: state.currentScore,
+            isSaved: state.isSaved === true,
+        };
+    });
+    return data;
+}
+
 module.exports = {
     calculateAssessmentScore,
     buildScoresFromState,
     scoresFromStoredValue,
     pickScoresFromGradeRows,
+    defaultCriterionState,
+    withDefaultCriterionStates,
+    unsavedCriterionNames,
+    parseSavedAssessment,
+    normalizeAiAssessment,
+    mergeAssessmentSources,
+    persistedAssessment,
 };

@@ -31,16 +31,13 @@
       </template>
     </Card>
 
-    <Card :title="$t('ai.log.requestsTitle')">
-      <template #body>
-        <BasicTable
-          :columns="columns"
-          :data="rows"
-          :options="tableOptions"
-          :max-table-height="'60vh'"
-        />
-      </template>
-    </Card>
+    <DashboardListPage
+      :title="$t('ai.log.requestsTitle')"
+      :columns="columns"
+      :data="rows"
+      :table-options="tableOptions"
+      :max-table-height="'60vh'"
+    />
   </div>
 </template>
 
@@ -52,26 +49,19 @@
  */
 
 import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
 
 export default {
   name: "DashboardAILog",
   subscribeTable: ["ai_log", "ai_model"],
   components: {
     Card,
-    BasicTable,
+    DashboardListPage,
   },
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {
@@ -157,10 +147,10 @@ export default {
 
 <style scoped>
 .metric-card {
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--bs-border-color);
   border-radius: 0.5rem;
   padding: 0.9rem 1rem;
-  background: #fff;
+  background: var(--bs-body-bg);
   min-height: 86px;
   display: flex;
   flex-direction: column;
@@ -169,14 +159,14 @@ export default {
 
 .metric-label {
   font-size: 0.8rem;
-  color: #6c757d;
+  color: var(--bs-secondary-color);
   margin-bottom: 0.3rem;
 }
 
 .metric-value {
   font-size: 1.35rem;
   font-weight: 600;
-  color: #212529;
+  color: var(--bs-body-color);
   line-height: 1.2;
 }
 </style>

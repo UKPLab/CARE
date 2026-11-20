@@ -11,16 +11,18 @@
       <BasicDetails v-if="trigger" :items="detailRows">
         <pre
           v-if="configurationJson"
-          class="bg-light border rounded p-2 small text-break mb-0"
+          class="bg-body-tertiary border rounded p-2 small text-break mb-0"
         >{{ configurationJson }}</pre>
       </BasicDetails>
     </template>
     <template #footer>
-      <BasicButton
-        :title="$t('triggers.common.close')"
-        class="btn btn-secondary"
-        @click="$refs.modal.close()"
-      />
+      <div class="btn-group">
+        <BasicButton
+          :title="$t('triggers.common.close')"
+          class="btn btn-secondary"
+          @click="$refs.modal.close()"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

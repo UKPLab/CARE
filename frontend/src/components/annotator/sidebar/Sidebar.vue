@@ -1,57 +1,28 @@
 <template>
   <!-- Edits Section: Only visible when there are edits and no annotations -->
-  <div v-if="showEdits" class="edits-section">
-    <div v-for="(dateGroups, dateCategory) in edits" :key="dateCategory">
-      <h4 class="group-header">{{ dateCategory }}</h4>
-
-      <div v-for="(group, exactDate) in dateGroups" :key="exactDate">
-        <h5 class="date-header">{{ exactDate }}</h5>
-
-        <ul class="list-group">
-          <li v-for="edit in group" :key="edit.id" class="list-group-item">
-            <SideCard>
-              <template #header>
-                {{ edit.timeLabel }} - {{ $t('annotator.createdByUser', { userId: edit.userId }) }}
-              </template>
-              <template #body>
-                <p>{{ edit.text }}</p>
-              </template>
-              <template #footer>
-                <BasicButton
-                  class="btn btn-primary btn-sm"
-                  :text="$t('common.show')"
-                  @click="handleEditClick(edit)"
-                />
-              </template>
-            </SideCard>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </div>
+  <SidebarEditHistory v-if="showEdits" :edits="edits" @show-edit="$emit('add-edit', $event)"/>
   <!-- Annotations Section: Always visible unless edits exist -->
-  <ul v-if="showAnnotations" id="anno-list" class="list-group">
-    <li v-if="componentReadOnly" class="readonly-notice">
-      <div class="card border-secondary mb-2">
-        <div class="card-body text-center py-2">
-          <LoadIcon
-            icon-name="lock-fill"
-            :size="20"
-            color="var(--bs-secondary-color)"
-            class="mb-1"
-          />
-          <h6 class="card-title mb-0">{{ $t('annotator.readOnlyMode') }}</h6>
-          <p class="card-text text-muted small mb-0">{{ $t('annotator.annotationsViewOnly') }}</p>
-        </div>
-      </div>
-    </li>
+  <!-- ARIA feed: Page Down / Page Up move between annotation cards -->
+  <ul
+    v-if="showAnnotations"
+    id="anno-list"
+    class="list-group"
+    role="feed"
+    :aria-label="$t('annotator.annotations')"
+    @keydown.page-down.exact="moveToCard($event, 1)"
+    @keydown.page-up.exact="moveToCard($event, -1)"
+  >
+    <ReadOnlyNotice v-if="componentReadOnly"/>
     <li
-      v-for="comment in documentComments"
+      v-for="(comment, index) in documentComments"
       :id="'comment-' + comment.id"
       :key="'documentComment-' + comment.id"
       class="list-group-i"
-      @mouseleave="unhover(comment.annotationId)"
-      @mouseover="hover(comment.annotationId)"
+      role="article"
+      :aria-posinset="index + 1"
+      :aria-setsize="documentComments.length"
+      @mouseleave="setHighlightFocus(comment.annotationId, false)"
+      @mouseover="setHighlightFocus(comment.annotationId, true)"
     >
       <AnnoCard
         :id="comment.id"
@@ -62,7 +33,7 @@
       />
     </li>
 
-    <li v-if="!componentReadOnly" id="addPageNote">
+    <li v-if="!componentReadOnly" id="addPageNote" role="none">
       <BasicButton
         class="btn btn-light"
         icon="plus-lg"
@@ -74,9 +45,9 @@
 </template>
 
 <script>
-import SideCard from "./card/Card.vue";
+import SidebarEditHistory from "./SidebarEditHistory.vue";
 import AnnoCard from "./card/AnnoCard.vue";
-import LoadIcon from "@/basic/Icon.vue";
+import ReadOnlyNotice from "./ReadOnlyNotice.vue";
 import { resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
@@ -89,8 +60,16 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "AnnotationSidebar",
   subscribeTable: ["comment", "annotation"],
-  components: {SideCard, AnnoCard, LoadIcon, BasicButton},
+  components: {SidebarEditHistory, ReadOnlyNotice, AnnoCard, BasicButton},
   inject: {
+    // Whether the study step this sidebar belongs to is on screen; outside a study always true
+    isStepShown: {
+      default: true,
+    },
+    // Shows the sidebar tab that holds an element (basic/Sidebar.vue)
+    showSidebarTabOf: {
+      default: () => () => false,
+    },
     documentId: {
       type: Number,
       required: true,
@@ -125,11 +104,6 @@ export default {
     },
   },
   props: {
-    show: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
     edits: {
       type: Array,
       required: false,
@@ -137,17 +111,6 @@ export default {
     },
   },
   emits: ['copy', 'add-edit', 'new-anno-card', 'scroll-to-comment'],
-  data() {
-    return {
-      width: 400,
-      minWidth: 400,
-      maxWidth: 50,
-      isFixed: false,
-      isDragging: false,
-      sidebarContainerDom: undefined,
-      originalWidth: undefined
-    };
-  },
   computed: {
     componentReadOnly() {
       if(!this.readOnly) {
@@ -237,51 +200,37 @@ export default {
           }
         });
     },
-    sidebarContainerStyle() {
-      return {
-        width: this.show || this.isFixed ? `${this.width}px` : 0
-      }
-    },
-    sidebarContainerClassList() {
-      return [
-        this.show ? 'is-active' : 'is-hidden',
-        this.isDragging ? 'is-dragging' : '',
-        this.isFixed ? 'is-fixed' : ''
-      ]
-    },
-    sidebarClassList() {
-      return [this.show || this.isFixed ? 'is-active' : 'collapsing']
-    },
-    hasDrafts() {
-      return this.$store.getters["table/comment/getFiltered"](e => e.draft).length > 0
-        || this.$store.getters["table/annotation/getFiltered"](e => e.draft).length > 0;
-    },
     anonymized() {
       if (!this.study) return false;
       return this.study.anonymize;
     }
   },
-  watch: {
-    hasDrafts(newVal) {
-      // If opened from navigation
-      if (this.show) return;
-      // If sidebar is fixed
-      if (newVal) {
-        this.isFixed = true;
-        this.width = this.minWidth;
-        this.isHovering = true;
-        this.registerSidebarBlurEvent();
-      }
-    },
-  },
   mounted() {
-    this.originalWidth = this.width;
-    this.eventBus.on('sidebarScroll', (annotationId) => {
-      const comment = this.$store.getters["table/comment/getByKey"]("annotationId", annotationId)
-        .find(comm => comm.parentCommentId === null);
-      // in case the comment might not be loaded yet
-      if (!comment) {
+    this.eventBus.on('sidebarScroll', this.onSidebarScroll);
+  },
+  beforeUnmount() {
+    this.eventBus.off('sidebarScroll', this.onSidebarScroll);
+  },
+  methods: {
+    /**
+     * Scrolls to the comment of a clicked annotation and logs it. Several sidebars can be mounted at once (hidden study
+     * steps, look-back tabs), so only one that lists the annotation and belongs to a step on screen handles it.
+     * @param {number} annotationId - the clicked annotation
+     */
+    async onSidebarScroll(annotationId) {
+      // in case the comment might not be loaded yet, or belongs to another document or step
+      const comment = this.documentComments.find(comm => comm.annotationId === annotationId);
+      if (!comment || !this.isStepShown) {
         return;
+      }
+      const context = {
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      };
+      // The card may be in a tab that is not open, e.g. an earlier step's tab next to the current one: open it first,
+      // so the scroll goes to a card on screen
+      if (this.showSidebarTabOf(this.$refs["annocard" + comment.id]?.[0]?.$el)) {
+        await this.$nextTick();
       }
 
       this.sidebarScrollTo(comment.id);
@@ -289,51 +238,49 @@ export default {
         this.$socket.emit("stats", {
           action: "sidebarScroll",
           data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
+            ...context,
             annotationId: annotationId
           }
         });
       }
-    })
-  },
-  methods: {
-    handleEditClick(edit) {
-      this.$emit("add-edit", edit.text);
+    },
+    /**
+     * Moves focus to the next or previous annotation card header (ARIA feed pattern).
+     * Ignored while typing, so Page Up/Down still scroll text fields and dropdowns.
+     * @param {KeyboardEvent} event - the Page Up / Page Down keydown on the feed
+     * @param {number} direction - 1 for the next card, -1 for the previous card
+     * @returns {void}
+     */
+    moveToCard(event, direction) {
+      if (event.target.closest('textarea, input, select, [contenteditable="true"]')) return;
+      const cards = [...event.currentTarget.querySelectorAll(':scope > li[role="article"]')];
+      const index = cards.indexOf(event.target.closest('li[role="article"]'));
+      const next = index === -1 ? cards[direction > 0 ? 0 : cards.length - 1] : cards[index + direction];
+      // The chevron is hidden while a card is being edited, so fall back to its first control
+      const header = next && (next.querySelector('.card-focusable') || next.querySelector('textarea, button'));
+      if (!header) return;
+      event.preventDefault();
+      header.focus();
     },
     changeSideBarView() {
       this.$emit("new-anno-card");
     },
-    hover(annotationId) {
-      if (annotationId) {
-        const annotation = this.$store.getters['table/annotation/get'](annotationId);
-        if (annotation && "anchors" in annotation && annotation.anchors != null) {
-          annotation.anchors
-            .filter(anchor => "highlights" in anchor)
-            .forEach(anchor => anchor.highlights.map((highlight) => {
-              if ("svgHighlight" in highlight) {
-                highlight.svgHighlight.classList.add("is-focused");
-              }
-              highlight.classList.add("highlight-focus");
-            }))
-        }
-      }
-    },
-    unhover(annotationId) {
-      if (annotationId) {
-        const annotation = this.$store.getters['table/annotation/get'](annotationId);
-        if (annotation && "anchors" in annotation && annotation.anchors != null) {
-          annotation.anchors
-            .filter(anchor => "highlights" in anchor)
-            .forEach(anchor => anchor.highlights.map((highlight) => {
-              if ("svgHighlight" in highlight) {
-                highlight.svgHighlight.classList.remove("is-focused");
-              }
-              highlight.classList.remove("highlight-focus");
-            }))
-        }
-      }
+    /**
+     * Marks the highlights of a hovered card's annotation in the document.
+     * @param {number|null} annotationId - annotation of the card, null for document notes
+     * @param {boolean} focused - whether the card is hovered
+     */
+    setHighlightFocus(annotationId, focused) {
+      const annotation = annotationId && this.$store.getters['table/annotation/get'](annotationId);
+      if (!annotation || !("anchors" in annotation) || annotation.anchors == null) return;
+      annotation.anchors
+        .filter(anchor => "highlights" in anchor)
+        .forEach(anchor => anchor.highlights.forEach((highlight) => {
+          if ("svgHighlight" in highlight) {
+            highlight.svgHighlight.classList.toggle("is-focused", focused);
+          }
+          highlight.classList.toggle("highlight-focus", focused);
+        }));
     },
     async sidebarScrollTo(commentId) {
       this.$emit("scroll-to-comment", document.getElementById('comment-' + commentId).offsetTop - 52.5);
@@ -390,52 +337,4 @@ export default {
   color: var(--bs-secondary-color, #575757);
 }
 
-.readonly-notice {
-  padding: 4px;
-  list-style: none;
-}
-
-.readonly-notice .card {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-radius: 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.readonly-notice .card-body {
-  padding: 8px 12px;
-}
-
-.readonly-notice .card-title {
-  color: var(--bs-body-color, #495057);
-  font-weight: 600;
-  font-size: 0.875rem;
-}
-
-.readonly-notice .card-text {
-  font-size: 0.75rem;
-}
-
-.edits-section {
-  padding: 10px;
-  border-bottom: 1px solid var(--bs-border-color, #ddd);
-  margin-bottom: 10px;
-}
-
-.section-header {
-  font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 8px;
-}
-
-#edit-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.list-group-item {
-  border: none;
-  background-color: transparent;
-  margin-top: 8px;
-}
 </style>

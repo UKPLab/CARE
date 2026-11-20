@@ -23,7 +23,9 @@
           <template #body>
             <StudySessionTable 
               :study-id="s.id"
+              :study="s"
               :current-user-only="true"
+              :show-copy="false"
             />
           </template>
           <template #footer>
@@ -56,8 +58,10 @@
           <template #body>
             <StudySessionTable 
               :study-id="s.id"
+              :study="s"
               :current-user-only="true"
               :show-closed="true"
+              :show-copy="false"
             />
           </template>
         </Card>

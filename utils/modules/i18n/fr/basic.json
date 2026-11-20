@@ -1,0 +1,110 @@
+{
+    "form": {
+        "placeholders": {
+            "documentBracket": "<Document>",
+            "documentTemplateSuffix": "(modèle de document)"
+        },
+        "advancedSettings": "Paramètres avancés"
+    },
+    "configuration": {
+        "title": "Configuration",
+        "filesTitle": "Fichiers de configuration",
+        "uploadButton": "Importer une configuration",
+        "uploadTooltip": "Importer un nouveau fichier de configuration",
+        "types": {
+            "assessment": "Évaluation",
+            "validation": "Validation"
+        },
+        "fields": {
+            "name": {
+                "label": "Nom",
+                "placeholder": "Nom de la configuration"
+            },
+            "description": {
+                "label": "Description",
+                "placeholder": "Description facultative"
+            },
+            "userId": {
+                "label": "ID utilisateur"
+            },
+            "hideInFrontend": {
+                "label": "Masquer dans l'interface"
+            },
+            "type": {
+                "label": "Type"
+            },
+            "content": {
+                "label": "Configuration (JSON)"
+            }
+        },
+        "viewer": {
+            "title": "Configuration : {name}"
+        },
+        "editor": {
+            "title": "Modifier la configuration : {name}",
+            "placeholder": "Modifiez le contenu JSON ici..."
+        },
+        "delete": {
+            "title": "Supprimer la configuration",
+            "message": "Voulez-vous vraiment supprimer « {name} » ?"
+        },
+        "tooltips": {
+            "view": "Afficher la configuration",
+            "edit": "Modifier la configuration",
+            "export": "Exporter la configuration",
+            "delete": "Supprimer la configuration"
+        },
+        "steps": {
+            "general": "Paramètres généraux",
+            "services": "Services",
+            "placeholders": "Variables"
+        },
+        "editButton": "Modifier la configuration",
+        "saveButton": "Enregistrer la configuration",
+        "toasts": {
+            "updatedTitle": "Configuration mise à jour",
+            "updatedMessage": "Les données de configuration ont été mises à jour.",
+            "loadErrorTitle": "Erreur de configuration",
+            "loadErrorMessage": "Impossible de charger le contenu de la configuration : {error}",
+            "editorNotInit": "Éditeur non initialisé",
+            "noContent": "Aucun contenu de configuration à enregistrer",
+            "contentUnavailable": "Aucun contenu de configuration disponible",
+            "invalidJsonTitle": "JSON invalide",
+            "invalidJsonMessage": "Veuillez vérifier la syntaxe JSON : {error}",
+            "updateErrorTitle": "Erreur lors de la mise à jour de la configuration",
+            "deleteFailedTitle": "Échec de la suppression de la configuration"
+        },
+        "stepTitles": {
+            "general": "Configuration générale",
+            "services": "Configuration des services",
+            "placeholders": "Configuration des variables"
+        }
+    },
+    "export": {
+        "successTitle": "Export réussi",
+        "successMessage": "{id} exporté"
+    },
+    "graph": {
+        "inspectNode": "Inspecter l'étape",
+        "copyNode": "Copier l'étape",
+        "addNodeBefore": "Ajouter une étape avant",
+        "addNodeAfter": "Ajouter une étape après",
+        "removeNode": "Retirer l'étape",
+        "editNode": "Modifier l'étape",
+        "pasteCopiedNode": "Coller l'étape copiée",
+        "pasteBeforeSelectedNode": "Coller avant l'étape sélectionnée",
+        "pasteAfterSelectedNode": "Coller après l'étape sélectionnée",
+        "readOnly": "Vous ne pouvez pas modifier ce processus",
+        "confirmRemove": {
+            "title": "Retirer l'étape",
+            "message": "Voulez-vous vraiment retirer l'étape sélectionnée ?",
+            "warning": "Toutes les étapes suivantes seront également retirées !"
+        }
+    },
+    "workflowStepEditor": {
+        "title": "Étape du processus",
+        "errors": {
+            "addNextNode": "Erreur lors de l'ajout de l'étape suivante : {error}"
+        }
+    }
+}

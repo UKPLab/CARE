@@ -259,6 +259,7 @@
         "sendEmailNotificationToReviewer": "Send email notification to reviewer",
         "targetWorkflowSelection": "Target Workflow Selection",
         "selectTargetWorkflow": "Select Target Workflow:",
+        "assignmentOption": "{name} (#{id})",
         "workflowStepMapping": "Workflow Step Mapping",
         "mapWorkflowStepToTarget": "Map each source workflow step (from template) to a target workflow step:",
         "sourceStepTargetStep": "Source Step {index} ({stepType}) → Target Step:",
@@ -313,7 +314,6 @@
         "aboutToDelete": "You are about to permanently delete {count} study:",
         "studyListItem": "{name} ({workflow}) - Owner: {owner}",
         "notifyOpenSessionsAlert": "Email notifications will be sent to participants with open sessions.",
-        "notifyActiveSessionsAlert": "Email notifications will be sent to participants with active sessions.",
         "nothingToClose": "Nothing to close",
         "nothingToOpen": "Nothing to open",
         "nothingToDelete": "Nothing to delete",
@@ -346,7 +346,15 @@
         "groupId": "Group ID",
         "na": "N/A",
         "typePdf": "PDF",
-        "typeHtml": "HTML"
+        "typeHtml": "HTML",
+        "matchingFilter": "Matching the current filter: {parts}.",
+        "allOpenStudies": "all open studies",
+        "allClosedStudies": "all closed studies",
+        "allStudies": "all studies",
+        "workflowNamed": "workflow \"{name}\"",
+        "allWorkflowsInFilter": "all workflows",
+        "searchQuoted": "search \"{search}\"",
+        "unselectedCount": "{count} studies you unselected"
     },
     "users": {
         "userWithQuotes": "\"user\"",
@@ -369,6 +377,17 @@
         "userCannotBeAdded": "User with external Id {extId} cannot be added: {message}",
         "uploadToMoodle": "Upload to Moodle",
         "downloadResultCsv": "Download Result CSV",
+        "moodleCredentialsTitle": "Send login credentials to Moodle",
+        "moodleCredentialsIntro": "CARE generated usernames and initial passwords for the imported users. Select the Moodle assignment where these credentials should be posted as feedback, or download them as a CSV file.",
+        "roleReplacementWarning": "The existing CARE roles of these users will be replaced by the basic User role and the mapped roles selected in the previous step.",
+        "roleMappingWarning": "Re-importing an existing user replaces their current CARE roles. Each user will receive the basic User role plus the CARE roles mapped below. Selecting “No extra CARE role” does not preserve previous roles.",
+        "roleMappingSourceRole": "{source} Role",
+        "roleMappingUsers": "Users",
+        "roleMappingCareRole": "CARE Role",
+        "roleMappingSelect": "Select mapping",
+        "roleMappingNoExtraRole": "No extra CARE role",
+        "roleMappingStep": "Role Mapping",
+        "roleMappingNoRoles": "No roles were found. Imported users will receive CARE's basic user role.",
         "moodle": "Moodle",
         "preview": "Preview",
         "result": "Result",
@@ -557,7 +576,7 @@
             }
         }
     },
-  "sessionOverview": {
+    "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",
         "filterWorkflowType": "Filter Workflow type:",
@@ -569,7 +588,5 @@
             "numberOfSteps": "Number of Steps"
         }
     },
-    "ai": {
-        "loadModels": "Load Models"
-    }
+    "ai": {}
 }

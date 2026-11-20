@@ -1,0 +1,323 @@
+{
+    "placeholders": {
+        "warning": "Avertissement :",
+        "invalidPlaceholdersMessage": "Les variables suivantes ne sont pas valides pour les modèles de type {templateType} :",
+        "invalidPlaceholdersIgnored": "Ces variables seront ignorées lors de l'utilisation du modèle.",
+        "failedToLoad": "Impossible de charger les variables",
+        "duplicateBracketIds": "Le même numéro [N] est utilisé plusieurs fois (par exemple, deux variables ~link[2]~) :",
+        "duplicateBracketIdsHelp": "Chaque numéro [N] dans ~key[N]~ doit être unique. Les anciennes variables ~key~ sans [N] ne sont pas vérifiées ici et peuvent encore se répéter dans les anciens modèles d'e-mail. L'enregistrement est bloqué tant que ces doublons n'ont pas été supprimés.",
+        "options": {
+            "notice": "Remarque :",
+            "notIncluded": "La variable a été ajoutée, mais ces options n'ont pas été incluses :",
+            "notIncludedHelp": "Corrigez la ligne d'option et insérez une autre variable si vous voulez cette option dans le modèle.",
+            "selectOption": "Sélectionner une option...",
+            "from": "De",
+            "to": "À",
+            "add": "Ajouter une option",
+            "labels": {
+                "wordRange": "Plage de mots",
+                "pageRange": "Plage de pages"
+            },
+            "warnings": {
+                "valueWithoutOption": "Une valeur a été saisie sans option sélectionnée ; elle n'a donc pas été incluse.",
+                "unknownOption": "Option inconnue pour {placeholder} ; elle n'a donc pas été incluse.",
+                "noValue": "{option} n'a pas été incluse (aucune valeur saisie).",
+                "invalidValue": "{option} n'a pas été incluse (valeur invalide).",
+                "alreadySet": "{option} était déjà définie ; la ligne suivante n'a donc pas été incluse."
+            },
+            "errors": {
+                "duplicate": "{token} (option « {name} » en double)",
+                "unknown": "{token} (option « {name} » inconnue)",
+                "invalid": "{token} ({option} invalide)"
+            }
+        },
+        "labels": {
+            "emailGeneral": {
+                "username": "Nom d'utilisateur du destinataire",
+                "firstName": "Prénom du destinataire",
+                "lastName": "Nom du destinataire",
+                "link": "Lien",
+                "otp": "Code à usage unique",
+                "tokenExpiry": "Expiration du lien"
+            },
+            "emailStudySession": {
+                "username": "Nom d'utilisateur du destinataire",
+                "link": "Lien vers l'évaluation"
+            },
+            "emailAssignment": {
+                "username": "Nom d'utilisateur du destinataire",
+                "assignmentType": "Type d'attribution",
+                "assignmentName": "Nom de l'attribution",
+                "link": "Lien de l'attribution"
+            },
+            "emailStudyClose": {
+                "username": "Nom d'utilisateur du destinataire",
+                "studyName": "Nom de l'étude"
+            },
+            "emailSubmissionUpload": {
+                "username": "Nom d'utilisateur du destinataire",
+                "assignmentName": "Nom du devoir",
+                "eventType": "Événement d'importation",
+                "assignmentId": "ID du devoir",
+                "submissionId": "ID du travail",
+                "timestamp": "Horodatage de l'importation"
+            },
+            "prompt": {
+                "pdfText": "Texte du PDF",
+                "editorText": "Texte de l'éditeur",
+                "assessmentResult": "Résultat de l'évaluation",
+                "inlineComments": "Commentaires dans le texte",
+                "nlpAssessmentSuggestion": "Suggestion d'évaluation NLP",
+                "previousAssessmentResult": "Résultat de l'évaluation précédente",
+                "assessmentConfiguration": "Configuration de l'évaluation",
+                "submissionFiles": "Fichier du travail",
+                "studyContext": "Contexte de l'étude"
+            }
+        },
+        "descriptions": {
+            "emailGeneral": {
+                "username": "Nom d'utilisateur du destinataire de l'e-mail.",
+                "firstName": "Prénom du destinataire de l'e-mail.",
+                "lastName": "Nom du destinataire de l'e-mail.",
+                "link": "Lien d'action dans l'e-mail (par ex. URL de réinitialisation ou de vérification).",
+                "otp": "Code de vérification à usage unique pour l'authentification à deux facteurs par e-mail.",
+                "tokenExpiry": "Délai d'expiration en heures ou en minutes, selon le contexte de l'e-mail."
+            },
+            "emailStudySession": {
+                "username": "Propriétaire du travail qui reçoit cet e-mail de session.",
+                "link": "Lien pour ouvrir l'évaluation en lecture seule."
+            },
+            "emailAssignment": {
+                "username": "Nom d'utilisateur de l'évaluateur attribué.",
+                "assignmentType": "Indique si l'attribution porte sur un document ou un travail.",
+                "assignmentName": "Nom de l'attribution ou de l'étude.",
+                "link": "Lien pour démarrer la session d'évaluation attribuée."
+            },
+            "emailStudyClose": {
+                "username": "Nom d'utilisateur du propriétaire d'une session encore ouverte lors de la clôture de l'étude.",
+                "studyName": "Nom de l'étude clôturée."
+            },
+            "emailSubmissionUpload": {
+                "username": "Nom d'utilisateur du destinataire (propriétaire du devoir ou auteur du travail).",
+                "assignmentName": "Nom du devoir.",
+                "eventType": "En minuscules : \"uploaded\" ou \"reuploaded\".",
+                "assignmentId": "Identifiant interne du devoir.",
+                "submissionId": "Identifiant interne du travail.",
+                "timestamp": "Date et heure de l'importation du travail."
+            },
+            "prompt": {
+                "pdfText": "Texte du PDF dans le contexte actuel.",
+                "editorText": "Texte du document de l'éditeur dans le contexte actuel.",
+                "assessmentResult": "Grille enregistrée depuis la barre latérale d'évaluation pour ce document et cette étape.",
+                "inlineComments": "Commentaires et annotations structurés pour ce document et cette étape.",
+                "nlpAssessmentSuggestion": "Brouillon d'évaluation produit par le modèle pour cette étape, s'il existe.",
+                "previousAssessmentResult": "Grille enregistrée à l'étape précédente lorsque le report est configuré.",
+                "assessmentConfiguration": "Configuration de la grille d'évaluation utilisée à cette étape.",
+                "submissionFiles": "Texte des fichiers du travail, associés par emplacement dans l'étape de fonction IA.",
+                "studyContext": "Métadonnées de base de l'étude, de l'étape et du document actuels."
+            }
+        },
+        "help": {
+            "emailGeneral": {
+                "username": "Nom d'utilisateur de la personne qui reçoit l'e-mail. Pour les e-mails de réinitialisation du mot de passe, de vérification ou d'inscription, il s'agit de l'utilisateur dont le compte est concerné.",
+                "firstName": "Prénom de la personne qui reçoit l'e-mail.",
+                "lastName": "Nom de la personne qui reçoit l'e-mail.",
+                "link": "URL incluse dans l'e-mail (par ex. réinitialisation du mot de passe, vérification ou inscription).",
+                "otp": "Code de vérification à usage unique pour l'authentification à deux facteurs par e-mail.",
+                "tokenExpiry": "Délai d'expiration en heures ou en minutes, selon le contexte de l'e-mail."
+            },
+            "emailStudySession": {
+                "username": "Personne qui reçoit cet e-mail. Pour les notifications de début et de fin de session, il s'agit toujours du propriétaire du travail.",
+                "link": "URL pour ouvrir l'évaluation (lecture seule). Utilisée pour le début et la fin de session."
+            },
+            "emailAssignment": {
+                "username": "Nom d'utilisateur de l'évaluateur à qui la tâche est attribuée.",
+                "assignmentType": "Mode d'attribution : \"document\" (évaluation par document) ou \"submission\" (évaluation par travail).",
+                "assignmentName": "Nom de l'attribution ou de l'étude à laquelle l'évaluateur est affecté.",
+                "link": "URL permettant à l'évaluateur d'ouvrir et de démarrer sa session d'évaluation. Ce lien est nécessaire pour commencer la tâche attribuée."
+            },
+            "emailStudyClose": {
+                "username": "Nom d'utilisateur du propriétaire d'une session encore ouverte au moment de la clôture de l'étude.",
+                "studyName": "Nom de l'étude clôturée."
+            },
+            "emailSubmissionUpload": {
+                "username": "Personne qui reçoit cet e-mail (propriétaire du devoir ou auteur du travail).",
+                "assignmentName": "Titre du devoir.",
+                "eventType": "Texte en minuscules : \"uploaded\" ou \"reuploaded\".",
+                "assignmentId": "ID interne du devoir.",
+                "submissionId": "ID interne du travail.",
+                "timestamp": "Date et heure de l'importation du travail."
+            },
+            "prompt": {
+                "pdfText": "Texte du PDF dans le contexte actuel.",
+                "editorText": "Dernier texte brut du document HTML/modal de l'étude. Pendant le chargement de l'étape, les appelants doivent transmettre explicitement context.editorText si la résolution a lieu dans la même passe que l'insertIntoEditor NLP.",
+                "assessmentResult": "Grille enregistrée depuis la barre latérale d'évaluation pour ce document et cette étape.",
+                "inlineComments": "Commentaires et annotations structurés pour ce document et cette étape.",
+                "nlpAssessmentSuggestion": "Brouillon d'évaluation NLP pour cette étape de l'étude (issu du document_data NLP de l'étape, et non de l'assessment_result enregistré). Vide si le NLP n'a pas été exécuté.",
+                "previousAssessmentResult": "Grille enregistrée à l'étape précédente lorsque le report est configuré.",
+                "assessmentConfiguration": "Configuration de la grille d'évaluation utilisée à cette étape.",
+                "submissionFiles": "Chaque ajout insère ~submissionFiles[N]~ avec le prochain N disponible (le plus élevé existant + 1). Les trous sont conservés après suppression. Associez chaque index à un fichier de travail précis dans la configuration de l'étape de fonction IA.",
+                "studyContext": "Métadonnées de base de l'étude, de l'étape et du document actuels."
+            }
+        }
+    },
+    "types": {
+        "emailGeneral": "E-mail - Général",
+        "emailStudySession": "E-mail - Session d'étude",
+        "emailAssignment": "E-mail - Attribution d'évaluation",
+        "documentGeneral": "Document - Général",
+        "documentStudy": "Document - Étude",
+        "emailStudyClose": "E-mail - Clôture d'étude",
+        "emailSubmissionUpload": "E-mail - Importation de travail",
+        "prompt": "Prompt"
+    },
+    "editor": {
+        "newLanguage": "Nouvelle langue",
+        "createEmpty": "Créer vide",
+        "copyContent": "Copier le contenu",
+        "language": "Langue",
+        "newLanguageMessage": "Une nouvelle langue est ajoutée à ce modèle. Copier le contenu actuel dans cette langue ?<br><br><strong>Quitter la langue actuelle enregistrera son contenu.</strong>",
+        "viewMode": {
+            "title": "Mode d'affichage",
+            "edit": "Modifier",
+            "preview": "Aperçu",
+            "previewHelp": "Valeurs d'exemple uniquement, pas de données réelles. La mise en page correspond à l'éditeur, où les variables apparaissent en texte brut dans le HTML."
+        },
+        "leave": {
+            "missingPlaceholdersConfirm": "Il manque des variables obligatoires dans ce modèle ; vos modifications ne seront donc pas enregistrées."
+        },
+        "toasts": {
+            "templateSaveFailed": "Échec de l'enregistrement du modèle",
+            "templateDiscardFailed": "Impossible d'annuler les modifications du modèle",
+            "failedToLoadTemplate": "Impossible de charger le modèle",
+            "failedToAddLanguage": "Impossible d'ajouter la langue",
+            "noCursorPosition": {
+                "title": "Aucune position de curseur",
+                "message": "Veuillez cliquer dans l'éditeur pour placer le curseur avant d'insérer une variable."
+            },
+            "previousEditFailed": "La modification précédente a échoué ; veuillez réessayer",
+            "templateError": "Erreur de modèle"
+        }
+    },
+    "dashboard": {
+        "title": "Modèles",
+        "browsePublicTemplates": "Parcourir les modèles publics",
+        "publicTemplates": "Modèles publics",
+        "addNewTemplate": "Ajouter un nouveau modèle",
+        "addTemplate": "Ajouter un modèle",
+        "chooseType": "Choisir le type",
+        "actions": {
+            "editTemplate": "Modifier le modèle",
+            "editContent": "Modifier le contenu",
+            "viewContentReadOnly": "Afficher le contenu (lecture seule)",
+            "publishTemplate": "Publier le modèle",
+            "publishedCannotBeUnpublished": "Publié (ne peut pas être dépublié)",
+            "sourceUpdated": "Source mise à jour",
+            "deleteTemplate": "Supprimer le modèle",
+            "exportTemplate": "Exporter le modèle"
+        },
+        "status": {
+            "published": "Publié",
+            "draft": "Brouillon",
+            "updateAvailable": "Mise à jour disponible",
+            "sourceUnavailable": "Source indisponible"
+        },
+        "toasts": {
+            "templateDetached": {
+                "title": "Modèle détaché",
+                "message": "Vous pouvez maintenant modifier ce modèle"
+            },
+            "detachFailed": "Échec du détachement",
+            "templateDeleteFailed": "Échec de la suppression du modèle"
+        },
+        "confirmDelete": {
+            "title": "Supprimer le modèle",
+            "message": "Voulez-vous vraiment supprimer « {name} » ?"
+        }
+    },
+    "publicTemplates": {
+        "title": "Modèles publics",
+        "description": "Parcourez les modèles publiés par d'autres utilisateurs. Copiez un modèle pour l'ajouter à votre liste.",
+        "alreadyCopied": "Déjà copié",
+        "viewContentReadOnly": "Afficher le contenu (lecture seule)",
+        "copyToMyTemplates": "Copier dans mes modèles",
+        "success": {
+            "title": "Modèle copié",
+            "message": "Modèle copié dans votre liste"
+        },
+        "errors": {
+            "copyFailed": "Échec de la copie"
+        }
+    },
+    "publishModal": {
+        "title": "Publier le modèle",
+        "success": {
+            "published": "Modèle publié !",
+            "visibility": "Le modèle est désormais {visibility}.",
+            "title": "Modèle publié"
+        },
+        "emailTemplateVisibilityInfo": "Une fois publié, un modèle d'e-mail est uniquement {visibility}.",
+        "confirmQuestion": "Voulez-vous vraiment publier ce modèle ?",
+        "cannotBeUndone": "Cette action est irréversible !",
+        "confirmPublish": "Oui, publier !",
+        "visibility": {
+            "administrators": "visible par les autres administrateurs",
+            "allUsers": "visible par tous les utilisateurs"
+        },
+        "errors": {
+            "notPublished": "Modèle non publié"
+        }
+    },
+    "detachModal": {
+        "title": "Modifier la copie",
+        "description": "Modifier ce modèle le détachera de sa source. Vous ne recevrez plus les mises à jour du modèle d'origine. Continuer ?"
+    },
+    "modal": {
+        "title": "Modèle",
+        "errors": {
+            "typeRequired": {
+                "title": "Type obligatoire",
+                "message": "Veuillez choisir un type de modèle"
+            },
+            "operationFailed": "L'opération sur le modèle a échoué"
+        },
+        "success": {
+            "updated": "Modèle mis à jour",
+            "created": "Modèle créé"
+        }
+    },
+    "updateModal": {
+        "title": "Le modèle source a été mis à jour",
+        "description": "Remplacez votre copie par le contenu le plus récent, ou créez une nouvelle copie et détachez la copie actuelle.",
+        "makeNewCopyWarning": "Créer une nouvelle copie : votre copie actuelle sera détachée et ne recevra plus de mises à jour.",
+        "makeNewCopy": "Créer une nouvelle copie",
+        "success": {
+            "updatedTitle": "Modèle mis à jour",
+            "updatedMessage": "Le contenu a été mis à jour depuis le modèle source",
+            "copiedTitle": "Modèle copié",
+            "copiedMessage": "Une nouvelle copie a été créée. Votre copie précédente a été détachée."
+        },
+        "errors": {
+            "updateFailed": "Échec de la mise à jour",
+            "copyFailed": "Échec de la copie"
+        }
+    },
+    "fields": {
+        "type": {
+            "options": {
+                "chooseType": "Choisir le type",
+                "emailGeneral": "E-mail - Général",
+                "emailStudySession": "E-mail - Session d'étude",
+                "emailAssignment": "E-mail - Attribution d'évaluation",
+                "emailStudyClose": "E-mail - Clôture d'étude",
+                "emailSubmissionUpload": "E-mail - Importation de travail",
+                "documentGeneral": "Document - Général",
+                "documentStudy": "Document - Étude",
+                "prompt": "Prompt"
+            }
+        },
+        "defaultLanguage": {
+            "label": "Langue par défaut"
+        }
+    }
+}

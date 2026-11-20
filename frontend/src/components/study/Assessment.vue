@@ -1,18 +1,11 @@
 <template>
   <div>
     <div ref="assessmentSection" class="assessment-section">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <div class="d-flex align-items-center gap-2">
-          <h4 class="mb-0">{{ $t('assessment.title') }}</h4>
-          <span
-              v-if="configuration && configuration.rubrics && configuration.rubrics.length"
-              class="badge"
-          >
-            {{ $t('assessment.totalPoints', { points: totalPoints, maxPoints: totalMaxPoints }) }}
-          </span>
-          <span v-if="computedReadOnly" class="badge bg-secondary">{{ $t('common.readOnly') }}</span>
-        </div>
-      </div>
+      <AssessmentScoreSummary
+          :scores="configuration?.rubrics?.length ? assessmentScores : null"
+          :complete="computedReadOnly || areAllCriteriaSaved"
+          :read-only="computedReadOnly"
+      />
 
       <div class="assessment-content-container">
         <div v-if="error" class="alert alert-danger">
@@ -21,32 +14,15 @@
         </div>
 
         <div v-else-if="configuration && configuration.rubrics" class="assessment-results">
-          <div
+          <AssessmentRubricList
               v-if="configuration.rubrics.length > 0"
-              class="criteria-groups-section"
-          >
-            <div
-                v-for="(rubric, groupIndex) in configuration.rubrics"
-                :key="rubric.name || groupIndex"
-                class="criteria-group-card card mb-2"
-            >
-              <AssessmentRubric
-                  :rubric="rubric"
-                  :group-index="groupIndex"
-                  :is-expanded="!!expandedGroups[groupIndex]"
-                  :ref="el => { if (el) rubricRefs[groupIndex] = el; }"
-                  :assessment-state="assessmentState"
-                  :read-only="computedReadOnly"
-                  :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
-                  @toggle-group="toggleGroup"
-                  @update-criterion-state="onCriterionStateUpdate"
-                  @open-info-panel="onChildOpenInfoPanel"
-                  @close-info-panel="closeInfoPanel"
-                  @toggle-info-panel-pin="onChildToggleInfoPanelPin"
-                  @focus-next-rubric="onFocusNextRubric"
-              />
-            </div>
-          </div>
+              :rubrics="configuration.rubrics"
+              :assessment-state="assessmentState"
+              :read-only="computedReadOnly"
+              :rubric-scores="assessmentScores && assessmentScores.rubrics ? assessmentScores.rubrics : {}"
+              @update-criterion-state="onCriterionStateUpdate"
+              @advance-past-end="$emit('assessment-advance-past-end', $event)"
+          />
         </div>
 
         <div v-else class="text-center py-4">
@@ -55,16 +31,6 @@
       </div>
     </div>
 
-    <!-- Shared FloatingInfoPanel -->
-    <FloatingInfoPanel
-        ref="infoPanel"
-        :show="showInfoPanel"
-        :selected-item="selectedCriterion"
-        :reference-element="selectedElement"
-        :is-pinned="isPinned"
-        position="left"
-        @close-requested="onInfoPanelCloseRequested"
-    />
   </div>
 </template>
 
@@ -75,20 +41,28 @@
  *
  * @author Akash Gundapuneni, Dennis Zyska
  */
-import FloatingInfoPanel from "@/components/common/FloatingInfoPanel.vue";
-import AssessmentRubric from "@/components/study/assessment/AssessmentRubric.vue";
-import { buildScoresFromState, calculateAssessmentScore } from "assessment-score";
+import AssessmentRubricList from "@/components/study/assessment/AssessmentRubricList.vue";
+import AssessmentScoreSummary from "@/components/study/assessment/AssessmentScoreSummary.vue";
+import {
+  buildScoresFromState,
+  calculateAssessmentScore,
+  defaultCriterionState,
+  mergeAssessmentSources,
+  normalizeAiAssessment,
+  parseSavedAssessment,
+  persistedAssessment,
+  unsavedCriterionNames,
+  withDefaultCriterionStates,
+} from "assessment-score";
 import {
   ASSESSMENT_RESULT_KEY,
+  findAssessmentService,
   getAssessmentResultKeyCandidates,
 } from "@/assets/serviceDocumentDataKeys.js";
 
 export default {
   name: "AssessmentSidebar",
-  components: {
-    AssessmentRubric,
-    FloatingInfoPanel,
-  },
+  components: {AssessmentRubricList, AssessmentScoreSummary},
   subscribeTable: [
     {
       table: "configuration",
@@ -100,33 +74,11 @@ export default {
     "ai_hook",
   ],
   inject: {
-    documentId: {
-      type: Number,
-      required: true,
-    },
-    orderedStudySteps: {
-      type: Array,
-      required: true,
-    },
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    readOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    studyData: {
-      type: Array,
-      required: true,
-    },
-    study: {
-      type: Object,
-      required: false,
-      default: null 
-    },
+    documentId: {default: null},
+    orderedStudySteps: {default: () => []},
+    studySessionId: {default: null},
+    readOnly: {default: false},
+    studyData: {default: () => ({})},
   },
   props: {
     config: {
@@ -144,13 +96,7 @@ export default {
   data() {
     return {
       error: null,
-      expandedGroups: {},
-      rubricRefs: {},
       assessmentState: {},
-      showInfoPanel: false,
-      selectedCriterion: null,
-      selectedElement: null,
-      isPinned: false,
       isSavingAssessment: false,
       lastSavedAssessmentJson: null,
       isLoaded: false
@@ -174,13 +120,9 @@ export default {
       return this.studyData[this.studyStepId]?.data;
     },
     assessmentResultFromDocumentData() {
-      const raw = this.documentData[this.assessmentDataKey];
+      const raw = this.documentData[ASSESSMENT_RESULT_KEY];
       if (!raw) return null;
-
-      if (typeof raw === "string") {
-        return raw;
-      }
-
+      if (typeof raw === "string") return raw;
       try {
         return JSON.stringify(raw);
       } catch (e) {
@@ -191,38 +133,14 @@ export default {
     currentStudyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId) || null;
     },
-    nlpService() {
-      const cfg = this.config || this.studyStep?.configuration;
-      if (!cfg || !Array.isArray(cfg.services) || !cfg.services.length) return null;
-
-      const svc =
-          cfg.services.find(
-              (s) =>
-                 ((s.skill || s.hookId) && (
-                s.name === "nlpAssessment" &&
-                s.type === "nlpRequest"
-            )) 
-          ) || cfg.services[0];
-
-      return svc || null;
-    },
-    preprocessedAssessmentKeyCandidates() {
-      const svc = this.nlpService;
-      return getAssessmentResultKeyCandidates(svc);
-    },
+    // Result of the step's AI assessment (NLP skill or AI hook), if loaded
     preprocessedAssessmentRaw() {
-      if (!this.preprocessedAssessmentKeyCandidates.length || !this.documentId) {
+      const keys = getAssessmentResultKeyCandidates(findAssessmentService(this.config || this.currentStudyStep?.configuration));
+      if (!keys.length || !this.documentId) {
         return null;
       }
-      const items = Object.keys(this.documentData || {}).filter(item =>
-          this.preprocessedAssessmentKeyCandidates.includes(item)
-      );
-
-      if (!items || !items.length) return null;
-      return this.documentData[items[0]];
-    },
-    studyStep() {
-      return this.$store.getters["table/study_step/get"](this.studyStepId) || null;
+      const key = Object.keys(this.documentData || {}).find(item => keys.includes(item));
+      return key ? this.documentData[key] : null;
     },
     previousAssessmentData() {
       if(this.currentStudyStep?.configuration?.previousAssessmentData){
@@ -231,28 +149,22 @@ export default {
       }
       return null;
     },
-    assessmentDataKey() {
-      return ASSESSMENT_RESULT_KEY;
+    unsavedCriterionNames() {
+      return unsavedCriterionNames(this.configuration, this.assessmentState);
     },
     areAllCriteriaSaved() {
-      if (!this.configuration || !this.configuration.rubrics) return false;
-      for (const rubric of this.configuration.rubrics) {
-        if (!rubric.criteria) continue;
-        for (const c of rubric.criteria) {
-          const st = this.assessmentState[c.name];
-          if (!st || st.isSaved !== true) return false;
-        }
-      }
-      return true;
+      return this.unsavedCriterionNames.length === 0 && !!(this.configuration && this.configuration.rubrics);
     },
+    assessmentReadyPayload() {
+      const ready = this.isAssessmentComplete;
+      return {
+        ready,
+        missing: ready ? [] : this.unsavedCriterionNames,
+      };
+    },
+    // Loaded, and with forced assessment every criterion saved
     isAssessmentComplete() {
-      if (!this.isLoaded) {
-        return false;
-      }
-      if (!this.forcedAssessmentEnabled) {
-        return true;
-      }
-      return this.areAllCriteriaSaved;
+      return this.isLoaded && (!this.forcedAssessmentEnabled || this.areAllCriteriaSaved);
     },
     forcedAssessmentEnabled() {
       return this.currentStudyStep?.configuration?.settings?.forcedAssessment;
@@ -268,13 +180,6 @@ export default {
 
       return result;
     },
-    totalPoints() {
-      // achieved points = what the student actually got (clamped & per-rubric logic)
-      return this.assessmentScores ? this.assessmentScores.achieved_points : 0;
-    },
-    totalMaxPoints() {
-      return this.assessmentScores ? this.assessmentScores.total_max_points : 0;
-    },
   },
   watch: {
     configuration: {
@@ -285,9 +190,9 @@ export default {
       },
       immediate: true,
     },
-    isAssessmentComplete: {
-      handler(v) {
-        this.$emit("assessment-ready-changed", v);
+    assessmentReadyPayload: {
+      handler(payload) {
+        this.$emit("assessment-ready-changed", payload);
       },
       immediate: true,
     },
@@ -308,95 +213,21 @@ export default {
     },
   },
   mounted() {
-    document.addEventListener("mousedown", this.handleClickOutsideInfoPanel);
     this.initialize();
   },
-  beforeUnmount() {
-    document.removeEventListener("mousedown", this.handleClickOutsideInfoPanel);
-  },
   methods: {
-    defaultCriterionState() {
-      return {
-        assessment: "",
-        editedAssessment: "",
-        currentScore: 0,
-        isEditing: false,
-        isSaved: false,
-      };
-    },
     initialize() {
-      this.initializeAssessmentStateFromConfiguration();
+      if (this.configuration && this.configuration.rubrics) {
+        this.assessmentState = withDefaultCriterionStates(this.configuration, this.assessmentState);
+      }
       this.$nextTick(() => {
         this.loadSavedAssessmentData();
       });
     },
-    initializeAssessmentStateFromConfiguration() {
-      if (!this.configuration || !this.configuration.rubrics) return;
-      const state = {...this.assessmentState};
-      this.configuration.rubrics.forEach((rubric) => {
-        (rubric.criteria || []).forEach((c) => {
-          if (!c || !c.name) return;
-          if (!state[c.name]) {
-            state[c.name] = this.defaultCriterionState();
-          }
-        });
-      });
-      this.assessmentState = state;
-    },
-    toggleGroup(groupIndex) {
-      Object.keys(this.expandedGroups).forEach((key) => {
-        if (parseInt(key, 10) !== groupIndex) {
-          this.expandedGroups[key] = false;
-        }
-      });
-      this.expandedGroups[groupIndex] = !this.expandedGroups[groupIndex];
-    },
-    openInfoPanel(target) {
-      if (!target) return;
-      this.selectedCriterion = target;
-      this.selectedElement = "#sidepane";
-      this.showInfoPanel = true;
-    },
-    closeInfoPanel() {
-      if (this.isPinned) return;
-      this.showInfoPanel = false;
-      this.selectedCriterion = null;
-      this.selectedElement = null;
-    },
-    toggleInfoPanelPin(target) {
-      if (this.isPinned) {
-        this.isPinned = false;
-        this.closeInfoPanel();
-      } else {
-        this.isPinned = true;
-        this.openInfoPanel(target);
-      }
-    },
-    onInfoPanelCloseRequested() {
-      this.closeInfoPanel();
-    },
-    handleClickOutsideInfoPanel(event) {
-      if (!this.showInfoPanel) return;
-
-      const infoPanel = this.$refs.infoPanel?.$el;
-      if (infoPanel && infoPanel.contains(event.target)) return;
-
-      const infoIcon = event.target.closest(".info-icon");
-      if (infoIcon) return;
-
-      this.isPinned = false;
-      this.closeInfoPanel();
-    },
-    onChildOpenInfoPanel(payload) {
-      this.openInfoPanel(payload.criterion || payload.group);
-    },
-    onChildToggleInfoPanelPin(payload) {
-      this.toggleInfoPanelPin(payload.criterion || payload.group);
-    },
     async onCriterionStateUpdate({name, state}) {
       if (!name) return;
 
-      const prev = this.assessmentState[name] || this.defaultCriterionState();
+      const prev = this.assessmentState[name] || defaultCriterionState();
 
       this.assessmentState = {
         ...this.assessmentState,
@@ -411,159 +242,33 @@ export default {
         console.error("Error while auto-saving assessment", e);
       }
     },
+    /**
+     * Shows the saved assessment of this step (or, if there is none, the one of the configured earlier step) and
+     * the AI assessment for criteria without a saved answer, and reports the result as study data.
+     */
     loadSavedAssessmentData() {
-      // 1. Manual data from document_data[assessment_result] or previous_assessment_result as fallback
-      let raw = this.documentData[this.assessmentDataKey];
-      let isLoadedFromPrevious = false;
-      if (!raw && this.previousAssessmentData) {
-        raw = this.previousAssessmentData[this.assessmentDataKey]
-        isLoadedFromPrevious = true; // Mark that data came from previous assessment
+      let raw = this.documentData[ASSESSMENT_RESULT_KEY];
+      const fromPreviousStep = !raw && !!this.previousAssessmentData;
+      if (fromPreviousStep) {
+        raw = this.previousAssessmentData[ASSESSMENT_RESULT_KEY];
       }
-
-      let manualData = {};
-
-      if (raw) {
-        if (typeof raw === "string") {
-          try {
-            manualData = JSON.parse(raw);
-          } catch (e) {
-            console.error("Failed to parse saved assessment_result JSON", e);
-            manualData = {};
-          }
-        } else if (typeof raw === "object") {
-          manualData = raw;
-        }
-      }
-
-      // 2. AI data from preprocessedAssessmentRaw
-      const preprocessedRaw = this.preprocessedAssessmentRaw;
-      const preprocessedArr = this.normalizeAssessmentArray(preprocessedRaw);
-      const preprocessedByName = {};
-
-      if (preprocessedArr && preprocessedArr.length) {
-        preprocessedArr.forEach((item) => {
-          if (item && item.name) {
-            preprocessedByName[item.name] = item;
-          }
-        });
-      }
-
-      // 3. Merge into assessmentState
-      const state = {...this.assessmentState};
+      const saved = parseSavedAssessment(raw);
+      const ai = normalizeAiAssessment(this.preprocessedAssessmentRaw);
 
       if (!this.configuration || !this.configuration.rubrics) {
-        this.assessmentState = state;
+        this.assessmentState = {...this.assessmentState};
         return;
       }
-
-      this.configuration.rubrics.forEach((rubric) => {
-        (rubric.criteria || []).forEach((c) => {
-          if (!c || !c.name) return;
-          const name = c.name;
-          const existing = state[name] || this.defaultCriterionState();
-
-          if (manualData[name]) {
-            // User-saved data wins
-            // If loaded from previous_assessment_result, mark as not saved
-            state[name] = {
-              ...this.defaultCriterionState(),
-              ...manualData[name],
-              isSaved: isLoadedFromPrevious ? false : (manualData[name].isSaved === true),
-            };
-          } else if (preprocessedByName[name]) {
-            // AI-preprocessed data: show it but mark as NOT saved
-            state[name] = {
-              ...this.defaultCriterionState(),
-              ...preprocessedByName[name],
-              isSaved: false,
-            };
-          } else {
-            // No manual & no AI → keep default/empty
-            state[name] = existing;
-          }
-        });
-      });
-
-      this.assessmentState = state;
-      this.$emit("update:data", this.buildAssessmentPersistedData());
+      this.assessmentState = mergeAssessmentSources(this.configuration, this.assessmentState, {saved, fromPreviousStep, ai});
+      this.$emit("update:data", persistedAssessment(this.assessmentState));
       this.isLoaded = true;
     },
-    buildAssessmentPersistedData() {
-      const data = {};
-
-      Object.entries(this.assessmentState).forEach(([name, st]) => {
-        if (!st) return;
-
-        data[name] = {
-          assessment: st.assessment,
-          editedAssessment: st.editedAssessment || "",
-          currentScore: st.currentScore,
-          isSaved: st.isSaved === true,
-        };
-      });
-
-      return data;
-    },
-    normalizeAssessmentArray(v) {
-      if (!v) return null;
-
-      let arr = null;
-
-      // If backend stored JSON as string
-      if (typeof v === "string") {
-        try {
-          const parsed = JSON.parse(v);
-          if (Array.isArray(parsed)) {
-            arr = parsed;
-          } else if (parsed && Array.isArray(parsed.assessment)) {
-            // sometimes wrapped like { assessment: [...] }
-            arr = parsed.assessment;
-          }
-        } catch (e) {
-          console.error("Failed to parse AI assessment JSON", e);
-          return null;
-        }
-      } else if (Array.isArray(v)) {
-        arr = v;
-      } else if (typeof v === "object" && Array.isArray(v.assessment)) {
-        arr = v.assessment;
-      }
-
-      if (!arr) return null;
-
-      return arr
-          .map((item) => {
-            if (!item) return null;
-
-            if (
-                (item.assessment !== undefined || item.currentScore !== undefined) &&
-                (item.name || item.criterion)
-            ) {
-              return {
-                name: item.name || item.criterion,
-                ...item,
-              };
-            }
-
-            const criterionName = item.criterion || item.name;
-            if (!criterionName) return null;
-
-            return {
-              name: criterionName,
-              assessment: item.justification || "",
-              editedAssessment: "",
-              currentScore:
-                  typeof item.score === "number" ? item.score : 0,
-            };
-          })
-          .filter(Boolean);
-    },
     async saveAssessmentData() {
-      if (!this.documentId || !this.assessmentDataKey) {
+      if (!this.documentId) {
         return Promise.resolve();
       }
 
-      const value = this.buildAssessmentPersistedData();
+      const value = persistedAssessment(this.assessmentState);
 
       let jsonSnapshot = null;
       try {
@@ -582,11 +287,16 @@ export default {
               documentId: this.documentId,
               studySessionId: this.studySessionId,
               studyStepId: this.studyStepId,
-              key: this.assessmentDataKey,
+              key: ASSESSMENT_RESULT_KEY,
               value,
             },
             (response) => {
               if (response && response.success) {
+                // Keep the loaded document data up to date, so an Assessment that is created again shows these answers
+                const documentData = this.studyData[this.studyStepId]?.data;
+                if (documentData) {
+                  documentData[ASSESSMENT_RESULT_KEY] = value;
+                }
                 resolve(response);
               } else {
                 reject(response);
@@ -602,23 +312,6 @@ export default {
         });
       });
     },
-    onFocusNextRubric(currentGroupIndex) {
-      if (!this.configuration || !this.configuration.rubrics) return;
-
-      const nextIndex = currentGroupIndex + 1;
-      const total = this.configuration.rubrics.length;
-
-      if (nextIndex < total) {
-        // close all & open next rubric
-        const newExpanded = {};
-        newExpanded[nextIndex] = true;
-        this.expandedGroups = newExpanded;
-        this.$nextTick(() => this.rubricRefs[nextIndex]?.focusFirstCriterion());
-      } else {
-        this.expandedGroups = {};
-        this.$emit("assessment-advance-past-end", () => this.rubricRefs[currentGroupIndex]?.focusHeader());
-      }
-    },
   },
 };
 </script>
@@ -627,99 +320,10 @@ export default {
 /* Layout */
 .assessment-section {
   padding: 1rem;
-  height: calc(100vh - 70px);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
 }
 
 .assessment-content-container {
-  flex: 1;
-  overflow-y: auto;
   padding-right: 5px;
 }
 
-/* Criteria Groups */
-.criteria-group-card {
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 8px;
-}
-
-/* Badges */
-.badge {
-  background-color: #6c757d !important;
-  color: white;
-  font-weight: 500;
-  font-size: 0.75rem;
-  padding: 4px 8px;
-}
-
-.badge.bg-success {
-  background-color: #28a745 !important;
-  color: white !important;
-}
-
-.badge.bg-secondary {
-  background-color: #6c757d !important;
-  color: white !important;
-}
-
-.assessment-text strong {
-  color: var(--bs-body-color, #333);
-  font-weight: 600;
-}
-
-.assessment-text p {
-  color: var(--bs-secondary-color, #666);
-  margin-top: 4px;
-}
-
-/* Buttons */
-.assessment-actions .btn {
-  font-size: 0.875rem;
-  padding: 6px 12px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-}
-
-.assessment-actions .btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.assessment-actions .d-flex {
-  gap: 8px;
-}
-
-.assessment-actions .btn-success {
-  background-color: #28a745;
-  border-color: #28a745;
-  color: white;
-}
-
-.assessment-actions .btn-success:hover {
-  background-color: #218838;
-  border-color: #1e7e34;
-}
-
-.assessment-actions .btn-outline-primary {
-  color: #007bff;
-  border-color: #007bff;
-}
-
-.assessment-actions .btn-outline-primary:hover {
-  background-color: #007bff;
-  color: white;
-}
-
-.assessment-actions .btn-secondary {
-  background-color: #6c757d;
-  border-color: #6c757d;
-  color: white;
-}
-
-.assessment-actions .btn-secondary:hover {
-  background-color: #5a6268;
-  border-color: #545b62;
-}
 </style>

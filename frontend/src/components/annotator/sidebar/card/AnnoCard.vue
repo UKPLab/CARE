@@ -5,122 +5,80 @@
       :collapsed="collapsed"
   >
     <template #header>
-      <div 
-        class="row" 
-        :class="{ 'header-hoverable': collapsed && !editedByMyself }"
-        :style="{ cursor: collapsed ? 'pointer' : 'default' }" 
-        @click="handleHeaderClick"
+      <AnnoCardHeader
+          v-model:collapsed="collapsed"
+          :comment-id="commentId"
+          :creator-name="comment.creator_name"
+          :updated-at="(annotation || comment).updatedAt"
+          :editing="editedByMyself"
       >
-        <div class="col" style="display: flex; align-items: center;">
-          <div 
-            v-if="!editedByMyself"
-            :title="collapsed ? $t('annotator.card.markedCheckedClickToUncheck') : $t('annotator.card.clickToMarkChecked')"
-            style="display: inline-flex; margin-right: 8px;"
-            @click.stop="handleCheckIconClick"
-          >
-            <LoadIcon
-              :icon-name="collapsed ? 'chevron-right' : 'chevron-down'"
-              :size="18"
-              :style="{ cursor: 'pointer' }"
-              class="check-icon"
-            />
-          </div>
-          {{ comment.creator_name }}
-          <Collaboration
+        <Collaboration
             ref="collab"
             :target-id="commentId"
             :document-id="documentId"
             target-type="comment"
             @collab-status="toEditMode"
-          />
-        </div>
-        <div class="col text-end">
-          <span v-if="annotation">
-            {{ formatLocalizedDate(annotation.updatedAt) }}
-          </span>
-          <span v-else>
-            {{ formatLocalizedDate(comment.updatedAt) }}
-          </span>
-        </div>
-      </div>
+        />
+      </AnnoCardHeader>
     </template>
       <template #body>
-        <div v-if="editingTag && annotationId" class="d-flex align-items-center">
-          <select
-            v-model="selectedTagId"
-            class="form-select form-select-md"
-            :style="{
-              display: 'inline-block',
-              borderLeft: '4px solid #' + color,
-              height: '38px',
-              fontSize: 'small',
-              fontStyle: 'italic'
-            }"
-            @change="saveTagChange"
-          >
-            <option  v-for="tag in tagSetTags" :key="tag.id" :value="tag.id">
-              {{ tag.name }}
-            </option>
-          </select>
-          <SidebarButton
-                  :loading="false"
-                  :props="$props"
-                  icon="x-square"
-                  :title="$t('common.cancel')"
-                  @click="editingTag = false"
-          />
-        </div>
-        <div
-            v-else-if="annotationId && !editingTag"
-            :style="'border-color:#' + color"
-            :title="tagName"
-            class="blockquote card-text annoBlockquote"
-            data-placement="top"
-            data-toogle="tooltip"
-            @click="scrollTo(annotationId)"
-        >
-          <b>{{ tagName }}:</b> {{ truncatedText(annotation.text) }}
-        </div>
+        <AnnotationTag
+            ref="annotationTag"
+            :annotation-id="annotationId"
+            :comment-id="commentId"
+            :editing-tag="editingTag"
+            :selected-tag-id="selectedTagId"
+            @update:editing-tag="editingTag = $event"
+            @update:selected-tag-id="selectedTagId = $event"
+        />
         <Comment
             ref="main_comment"
             :comment-id="commentId"
             :edit="editedByMyself"
             :level="0"
             @save-card="save()"
+            @cancel-card="cancel"
         />
       </template>
 
       <template #footer>
-        <div class="ms-auto">
-          <div
-              v-if="editedByMyself"
-              class="row"
-          >
-            <div class="col text-end">
-              <SidebarButton
-                  :loading="false"
-                  :props="$props"
-                  icon="floppy"
-                  :title="$t('common.save')"
-                  @click="save"
-              />
-              <SidebarButton
-                  :loading="false"
-                  :props="$props"
-                  icon="x-square"
-                  :title="$t('common.cancel')"
-                  @click="cancel"
-              />
-            </div>
-          </div>
-          <div
-              v-else
-              class="row"
-          >
-            <div class="col">
+        <CommentActions
+            ref="actions"
+            :comment="comment"
+            :editing="editedByMyself"
+            :save-title="$t('common.save')"
+            :stats-props="$props"
+            @save="save"
+            @cancel="cancel"
+            @edit="edit"
+            @delete="moveFocusToNextCard(); remove()"
+            @replied="$refs.replies.expandForNewReply()"
+        >
+          <template #before-vote>
+            <AnnotationSummarize
+                :annotation-id="annotationId"
+                :comment-id="commentId"
+                @summarized="showReplies = true"
+            />
+          </template>
+          <template #before-delete>
+            <SidebarButton
+                v-if="comment.userId === userId && !readOnly && annotationId"
+                :loading="false"
+                :props="$props"
+                icon="tag"
+                :title="$t('tags.editMainTag')"
+                @click="$refs.annotationTag.toggleEditTag()"
+            />
+          </template>
+          <template #end>
+            <!-- Last in the footer, so keyboard users reach it after the actions and can skip the thread -->
+            <div class="col-auto text-end">
               <BasicButton
                   v-if="numberReplies > 0"
+                  ref="repliesToggle"
                   class="btn btn-light btn-sm"
+                  :aria-expanded="showReplies ? 'true' : 'false'"
                   data-placement="top"
                   data-toggle="tooltip"
                   :title="$t('common.reply')"
@@ -130,92 +88,27 @@
                   @click="showReplies = !showReplies; maxComments = defaultNumComments"
               />
             </div>
-            <div
-                class="col text-end"
-            >
-              <SidebarButton
-                  v-if="settingResponse && !readOnly"
-                  :loading="false"
-                  :props="$props"
-                  icon="reply"
-                  :title="$t('common.reply')"
-                  @click="$refs.main_comment.reply();maxComments = numChildComments+1; showReplies = true"
-              />
-              <NLPService
-                  v-if="summarizationAvailable && comment.userId === userId && !readOnly"
-                  :data="summarizationRequestData"
-                  :skill="summarizationSkillName"
-                  icon-name="file-text"
-                  :title="$t('common.summarize')"
-                  type="button"
-                  @response="summarizeResponse"
-              />
-              <VoteButtons :comment="comment"/>
-              <SidebarButton
-                  v-if="comment.userId === userId && !readOnly"
-                  :loading="false"
-                  :props="$props"
-                  icon="pencil-square"
-                  :title="$t('common.edit')"
-                  @click="edit"
-              />
-              <SidebarButton
-                v-if="comment.userId === userId && !readOnly && annotationId"
-                :loading="false"
-                :props="$props"
-                icon="tag"
-                :title="$t('tags.editMainTag')"
-                @click="toggleEditTag"
-            />
-              <SidebarButton
-                  v-if="comment.userId === userId && !readOnly"
-                  :loading="false"
-                  :props="$props"
-                  icon="trash3"
-                  :title="$t('common.delete')"
-                  @click="remove"
-              />
-            </div>
-          </div>
-        </div>
+          </template>
+        </CommentActions>
       </template>
 
       <template #thread>
-        <div
-            v-if="showReplies"
+        <AnnotationReplies
+            ref="replies"
             class="d-grid gap-1 my-2"
+            :comment-id="commentId"
+            :show-replies="showReplies"
+            :max-comments="maxComments"
+            @update:show-replies="showReplies = $event"
+            @update:max-comments="maxComments = $event"
         >
-          <span
-              v-for="c in displayedComments"
-              :key="c.id"
-          >
+          <template #default="{reply}">
             <Comment
-                :comment-id="c.id"
+                :comment-id="reply.id"
                 :level="1"
             />
-          </span>
-          <div class="btn-group">
-            <BasicButton
-            v-if="showExtenderButton"
-            class="btn btn-light btn-sm"
-            :text="$t('common.showMore')"
-            @click="maxComments+=5"
-            />
-            <BasicButton
-            v-if="!showExtenderButton && numChildComments > defaultNumComments"
-            class="btn btn-light btn-sm"
-            :text="$t('common.showLess')"
-            @click="maxComments=defaultNumComments"
-            />
-            <BasicButton
-            v-if="maxComments > defaultNumComments"
-            class="btn btn-light btn-sm"
-            :text="$t('common.hideReplies')"
-            @click="maxComments=defaultNumComments; showReplies = !showReplies"
-            />
-          </div>
-            
-        </div>
+          </template>
+        </AnnotationReplies>
       </template>
     </SideCard>
   </template>
@@ -225,11 +118,13 @@ import SideCard from "./Card.vue";
 import Comment from "./Comment.vue";
 import Collaboration from "@/components/annotator/sidebar/card/Collaboration.vue"
 import SidebarButton from "./Button.vue"
-import NLPService from "@/basic/service/NLPService.vue";
-import VoteButtons from "@/components/annotator/sidebar/card/VoteButtons.vue";
-import LoadIcon from "@/basic/Icon.vue";
-import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import { focusNextAnnotationCard, resolveApiMessage } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
+import AnnoCardHeader from "./AnnoCardHeader.vue";
+import AnnotationTag from "./AnnotationTag.vue";
+import AnnotationSummarize from "./AnnotationSummarize.vue";
+import AnnotationReplies from "./AnnotationReplies.vue";
+import CommentActions from "./CommentActions.vue";
 
 /** Annotation elements
  *
@@ -241,32 +136,13 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "AnnoCard",
   subscribeTable: ['tag', 'tag_set', 'comment_state'],
-  components: {VoteButtons, NLPService, Collaboration, SideCard, Comment, SidebarButton, LoadIcon, BasicButton},
+  components: {
+    Collaboration, SideCard, Comment, SidebarButton, BasicButton, AnnoCardHeader, AnnotationTag,
+    AnnotationSummarize, AnnotationReplies, CommentActions,
+  },
   inject: {
-    documentId: {
-      type: Number,
-      required: true,
-    },
-    acceptStats: {
-      type: Boolean,
-      required: false,
-      default: () => false
-    },
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    readOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    }
+    documentId: {default: null},
+    readOnly: {default: false},
   },
   props: {
     'commentId': {
@@ -280,7 +156,7 @@ export default {
       shake: false,
       showReplies: false,
       edit_mode: false,
-      editingTag: false, 
+      editingTag: false,
       selectedTagId: null,
       collapsed: false,
       maxComments: 3,
@@ -290,35 +166,8 @@ export default {
     defaultNumComments() {
       return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelZero"));
     },
-    studySession() {
-      return this.$store.getters["table/study_session/get"](this.studySessionId);
-    },
-    study() {
-      if (!this.studySession) {
-        return null;
-      }
-      return this.$store.getters["table/study/get"](this.studySession.studyId);
-    },
-    commentState() {
-      return this.$store.getters['table/comment_state/getFiltered'](
-        a => a.commentId === this.commentId && a.userId === this.userId
-      )[0] || null;
-    },
     userId() {
       return this.$store.getters["auth/getUserId"];
-    },
-    tagSetTags() {
-      if ( this.study && this.study.tagSetId) {
-        return this.$store.getters["table/tag/getFiltered"](e => e.tagSetId === this.study.tagSetId && !e.deleted);
-      }
-      else{
-        const defaultTag = parseInt(this.$store.getters["settings/getValue"]("tags.tagSet.default"));
-        const currentlySelectedTagId = this.annotation ? this.annotation.tagId : null; //this is important because the current tag on the Id could be added by another user
-        return this.$store.getters['table/tag/getFiltered'](t => t.tagSetId === defaultTag || t.id === currentlySelectedTagId) || [];
-      }
-    },
-    settingResponse() {
-      return this.$store.getters["settings/getValue"]('annotator.collab.response') === "true";
     },
     annotation() {
       return this.$store.getters['table/annotation/get'](this.annotationId);
@@ -335,121 +184,30 @@ export default {
     numberReplies() {
       return this.$store.getters["table/comment/countByKey"]("parentCommentId", this.commentId, true);
     },
-    childComments() {
-      return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId).sort(
-          function (a, b) {
-            let keyA = new Date(a.createdAt), keyB = new Date(b.createdAt);
-            if (keyA < keyB) return -1;
-            if (keyA > keyB) return 1;
-            return 0;
-          }
-      );
-    },
-    numChildComments() {
-      if (this.childComments){
-        return this.childComments.length;
-      }
-      return 0;
-    },
-    displayedComments() {
-      return this.childComments.slice(0, this.maxComments);
-    },
-    showExtenderButton() {
-      return this.numChildComments > this.maxComments;
-    },
     comment() {
       return this.$store.getters['table/comment/get'](this.commentId);
     },
-    color() {
-      if (this.annotationId)
-        return this.getColor(this.annotation.tagId);
-      return null;
-    },
-    tagName() {
-      if (this.annotationId) {
-        const tag = this.$store.getters['table/tag/get'](this.annotation.tagId);
-        if (tag)
-          return tag.name;
-      }
-      return null;
-    },
-    summarizationMinLength() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.minLength'));
-    },
-    summarizationMaxLength() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.maxLength'));
-    },
-    summarizationRequestData() {
-      return {
-        text: this.annotation.text,
-        params: {
-          min_length: this.summarizationMinLength,
-          max_length: this.summarizationMaxLength
-        }
-      }
-    },
-    summarizationMinAnnoLength() {
-      return parseInt(this.$store.getters["settings/getValue"]('annotator.nlp.summarization.annoLength'));
-    },
-    summarizationActivated() {
-      return this.$store.getters["settings/getValue"]('annotator.nlp.summarization.activated') === "true";
-    },
-    summarizationSkillName() {
-      return this.$store.getters["settings/getValue"]('annotator.nlp.summarization.skillName');
-    },
-    nlpEnabled() {
-      return this.$store.getters["settings/getValue"]("service.nlp.enabled") === "true";
-    },
-    summarizationAvailable() {
-      if (!this.nlpEnabled)
-        return false;
-      if (this.annotation)
-        return this.annotation.text !== null && this.annotation.text.length >= this.summarizationMinAnnoLength
-            && this.summarizationActivated;
-      return null;
-    },
   },
   watch: {
-    commentState: {
-    immediate: true,
-    handler(newVal) {
-      if (newVal) {
-        this.collapsed = newVal.state === 1 ? true : false;
+    editedByMyself(newVal) {
+      if (newVal) return;
+      // Runs before the editor closes: if the keyboard was in this card, land on the Edit button again
+      if (this.$el && this.$el.contains && this.$el.contains(document.activeElement)) {
+        this.$nextTick(() => this.$refs.actions?.focusEdit());
       }
-    }
-  },
-    collapsed(newValue) {
-      if(!this.commentState){
-        this.$socket.emit("appDataUpdate", {
-          table: "comment_state",
-          data: {
-            userId: this.userId,
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
-            commentId: this.commentId,
-            state: newValue? 1 : 0,
-          }
-        });
-      } else {
-        this.$socket.emit("appDataUpdate", {
-          table: "comment_state",
-          data: {
-            id: this.commentState.id,
-            state: newValue? 1 : 0,
-          }
-        });
-      }    
-      if(this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "commentToggleCollapse",
-          data: {
-            commentId: this.commentId,
-            state: newValue,
-          }
+    },
+    showReplies(newVal) {
+      if (newVal) return;
+      // Runs before the thread is removed: if the keyboard was in it, move focus to the toggle
+      const thread = this.$refs.replies && this.$refs.replies.$el;
+      const hadFocus = thread && thread.contains && thread.contains(document.activeElement);
+      if (hadFocus) {
+        this.$nextTick(() => {
+          const toggle = this.$refs.repliesToggle && this.$refs.repliesToggle.$el;
+          if (toggle) toggle.focus();
         });
       }
-    }
+    },
   },
   mounted() {
     if (this.comment.draft) {
@@ -460,67 +218,13 @@ export default {
     }
   },
   methods: {
-    formatLocalizedDate,
-    getColor(tagId) {
-      if (tagId) {
-        const tag = this.$store.getters['table/tag/get'](tagId);
-        if (tag) {
-          switch (tag.colorCode) {
-            case "success":
-              return "009933";
-            case "danger":
-              return "e05f5f";
-            case "info":
-              return "5fe0df";
-            case "dark":
-              return "c8c8c8";
-            case "warning":
-              return "eed042";
-            case "secondary":
-              return "4290ee";
-            default:
-              return "4c86f7";
-          }
-        } else {
-          return "efea7b";
-        }
-      }
-    },
     shakeIt() {
       this.shake = true;
       setTimeout(() => this.shake = false, 1500);
     },
-    truncatedText(text) {
-      const thresh = 150;
-      const len = text.length;
-
-      if (len > thresh) {
-        const overflow = len - thresh - " ... ".length;
-        const center = Math.floor(len / 2);
-        const cutoff_l = center - Math.floor(overflow / 2);
-        const cutoff_r = center + Math.floor(overflow / 2) + overflow % 2;
-
-        return text.slice(0, cutoff_l) + " ... " + text.slice(cutoff_r);
-      } else {
-        return text;
-      }
-    },
+    // The annotation of the card is not in the store yet
     loading() {
-      if (this.annotationId && !this.annotation) {
-        return true;
-      }
-      return false;
-    },
-    scrollTo(annotationId) {
-      this.eventBus.emit('pdfScroll', annotationId);
-    },
-    handleHeaderClick() {
-      if (this.collapsed && !this.editedByMyself) {
-        this.collapsed = false;
-      }
-    },
-    handleCheckIconClick() {
-      this.collapsed = !this.collapsed;
+      return !!this.annotationId && !this.annotation;
     },
     save() {
       if (this.annotationId && this.annotation) {
@@ -541,130 +245,63 @@ export default {
       this.$refs.main_comment?.save();
       this.$refs.collab?.removeCollab();
     },
+    /** Discards the edit: a draft is deleted, otherwise the stored annotation or comment is fetched again. */
     cancel() {
-      if (this.annotationId) {
-
-        if (this.annotation.draft) {
-          this.remove();
-        } else {
-          this.$socket.emit('annotationGet', {
-            "annotationId": this.annotation.id,
-            "documentId": this.documentId
-          }, (result) => {
-            if (!result.success) {
-              this.eventBus.emit("toast", {
-                title: this.$t('errors.annotator.annotationNotRetrieved'),
-                message: resolveApiMessage(result),
-                variant: "danger",
-              });
-
-            }
-          });
-        }
+      if (!this.annotationId) {
+        // The card's own comment knows how to discard its edit
+        this.$refs.main_comment?.cancel();
+      } else if (this.annotation.draft) {
+        this.remove();
       } else {
-        if (this.comment.draft) {
-          this.remove();
-        } else {
-          this.$socket.emit('commentGet', {
-            "commentId": this.comment.id,
-          }, (res) => {
-            if (!res.success) {
-              this.eventBus.emit("toast", {
-                title: this.$t('errors.annotator.commentsNotRetrieved'),
-                message: resolveApiMessage(res),
-                variant: "danger",
-              });
-            }
-          });
-        }
+        this.$socket.emit('annotationGet', {
+          "annotationId": this.annotation.id,
+          "documentId": this.documentId
+        }, (result) => {
+          if (!result.success) {
+            this.eventBus.emit("toast", {
+              title: this.$t('errors.annotator.annotationNotRetrieved'),
+              message: resolveApiMessage(result),
+              variant: "danger",
+            });
+          }
+        });
       }
       this.$refs.collab.removeCollab();
       this.edit_mode = null;
     },
-    toggleEditTag() {
-      this.editingTag = !this.editingTag;
-      if (this.editingTag) {
-        this.selectedTagId = this.annotation.tagId;
-      } else {
-        this.selectedTagId = null;
-      }
-      this.$nextTick(() => {
-        // Focus the select for better UX
-        const select = this.$el.querySelector('select[autofocus]');
-        if (select) select.focus();
-      });
-    },
-    saveTagChange() {
-      if (this.selectedTagId !== this.annotation.tagId) {
-        this.$socket.emit('annotationUpdate', {
-          annotationId: this.annotation.id,
-          tagId: this.selectedTagId,
-        }, (res) => {
-          if (!res.success) {
-            this.eventBus.emit("toast", {
-              title: this.$t('errors.tags.tagUpdateFailed'),
-              message: resolveApiMessage(res),
-              variant: "danger",
-            });
-          }
-        });
-      }
-      this.editingTag = false;
-    },
     remove() {
-      if (this.annotationId) {
-        this.$socket.emit('annotationUpdate', {
-          "annotationId": this.annotation.id,
-          "tagId": this.annotation.tagId,
-          "deleted": true
-        }, (res) => {
-          if (!res.success) {
-            this.eventBus.emit("toast", {
-              title: this.$t('errors.annotator.annotationUpdateFailed'),
-              message: resolveApiMessage(res),
-              variant: "danger",
-            });
-          }
-        });
-      } else {
-        this.$socket.emit('commentUpdate', {
-          "commentId": this.comment.id,
-          "deleted": true
-        }, (res) => {
-          if (!res.success) {
-            this.eventBus.emit("toast", {
-              title: this.$t('errors.annotator.commentNotUpdated'),
-              message: resolveApiMessage(res),
-              variant: "danger",
-            });
-          }
-        });
+      if (!this.annotationId) {
+        this.$refs.main_comment?.remove();
+        return;
       }
-    },
-    edit() {
-      this.$refs.collab.startCollab();
-    },
-    toEditMode(status) {
-      this.edit_mode = status;
-    },
-    summarizeResponse(data) {
-      this.$socket.emit('commentUpdate', {
-        "documentId": this.documentId,
-        "parentCommentId": this.commentId,
-        "studySessionId": this.studySessionId,
-        "studyStepId": this.studyStepId,
-        "text": "Summarization: " + data[0]['summary_text'],
-        "userId": "Bot"
+      this.$socket.emit('annotationUpdate', {
+        "annotationId": this.annotation.id,
+        "tagId": this.annotation.tagId,
+        "deleted": true
       }, (res) => {
         if (!res.success) {
           this.eventBus.emit("toast", {
-            title: this.$t('errors.annotator.commentNotUpdated'),
+            title: this.$t('errors.annotator.annotationUpdateFailed'),
             message: resolveApiMessage(res),
             variant: "danger",
           });
         }
       });
-      this.showReplies = true;
+    },
+    edit() {
+      this.$refs.collab.startCollab();
+    },
+    /**
+     * Before the card is deleted, moves keyboard focus to the next annotation card.
+     * @returns {void}
+     */
+    moveFocusToNextCard() {
+      if (this.$el && this.$el.contains && this.$el.contains(document.activeElement)) {
+        focusNextAnnotationCard(this.$el);
+      }
+    },
+    toEditMode(status) {
+      this.edit_mode = status;
     },
     putFocus() {
       this.shakeIt();
@@ -674,100 +311,6 @@ export default {
 </script>
 
 <style>
-.blockquote {
-  padding-left: 1em;
-  padding-right: 1em;
-  font-style: italic;
-  --tw-border-opacity: 1;
-  border-color: rgba(209, 213, 219, var(--tw-border-opacity));
-  border-sizing: border-box;
-  border-style: solid;
-  border-left-width: 4px;
-  font-size: small;
-  border-right-width: 0;
-  border-top-width: 0;
-  border-bottom-width: 0;
-  cursor: pointer;
-}
-
-
-.replies {
-  font-size: smaller;
-  color: var(--bs-secondary-color, #929292);
-}
-
-@keyframes flickerAnimation {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@-o-keyframes flickerAnimation {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@-moz-keyframes flickerAnimation {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@-webkit-keyframes flickerAnimation {
-  0% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-.fading {
-  -webkit-animation: flickerAnimation 2s infinite;
-  -moz-animation: flickerAnimation 2s infinite;
-  -o-animation: flickerAnimation 2s infinite;
-  animation: flickerAnimation 2s infinite;
-}
-
-.annoBlockquote:hover {
-  color: var(--bs-body-color, #000000);
-}
-
-.check-icon:hover {
-  color: var(--bs-primary, #007bff) !important;
-}
-
-.header-hoverable {
-  transition: background-color 0.2s ease;
-}
-
-.header-hoverable:hover {
-  background-color: var(--bs-secondary-bg, #e9ecef) !important;
-  border-radius: 4px;
-}
-
 .card-header {
   font-size: smaller;
   color: var(--bs-secondary-color, #929292);

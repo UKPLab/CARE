@@ -25,12 +25,8 @@
       v-if="importType === 'moodle'"
       class="moodle-publish-intro"
     >
-      <h3>Send login credentials to Moodle</h3>
-      <p>
-        CARE generated usernames and initial passwords for the imported users.
-        Select the Moodle assignment where these credentials should be posted as feedback,
-        or download them as a CSV file.
-      </p>
+      <h3>{{ $t('dashboard.users.moodleCredentialsTitle') }}</h3>
+      <p>{{ $t('dashboard.users.moodleCredentialsIntro') }}</p>
     </div>
     <MoodleOptions
       v-if="importType === 'moodle'"
@@ -83,8 +79,8 @@ export default {
       required: true,
     },
   },
-  methods: { resolveApiMessage },
   emits: ["update:moodleOptions", "upload-to-moodle", "download-csv"],
+  methods: { resolveApiMessage },
 };
 </script>
 
@@ -122,7 +118,7 @@ export default {
   margin-top: 1.25rem;
   margin-bottom: 0.75rem;
   padding-top: 1rem;
-  border-top: 1px solid #dee2e6;
+  border-top: 1px solid var(--bs-border-color);
   text-align: left;
 }
 
@@ -134,7 +130,7 @@ export default {
 
 .moodle-publish-intro p {
   margin-bottom: 0;
-  color: #555;
+  color: var(--bs-secondary-color);
   font-size: 0.925rem;
 }
 

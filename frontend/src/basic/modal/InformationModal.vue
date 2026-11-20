@@ -32,7 +32,7 @@
       </div>
     </template>
     <template #footer>
-      <div class="d-flex justify-content-end">
+      <div class="btn-group">
         <BasicButton class="btn btn-outline-secondary" :title="$t('common.close')" @click="close" />
       </div>
     </template>
@@ -107,7 +107,7 @@ export default {
 }
 
 .text-primary {
-  color: var(--bs-primary, #007bff) !important;
+  color: var(--care-primary) !important;
 }
 
 .text-secondary {
@@ -135,5 +135,3 @@ export default {
   color: var(--bs-body-color, #fff);
 }
 </style>
-
-

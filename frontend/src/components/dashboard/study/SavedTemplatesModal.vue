@@ -239,11 +239,11 @@ export default {
     },
     useTemplate(template) {
       this.close();
-      this.$refs.studyCoordinator.open(template.id, null, false, false, true);
+      this.$refs.studyCoordinator.open(template.id, false, false, true);
     },
     editTemplate(template) {
       this.close();
-      this.$refs.studyCoordinator.open(template.id, null, false, true, false);
+      this.$refs.studyCoordinator.open(template.id, false, true, false);
     },
     openImport() {
       this.$refs.importFormatModal.open("study", "study_step", {
@@ -256,7 +256,7 @@ export default {
     },
     createTemplate() {
       this.close();
-      this.$refs.studyCoordinator.open(0, null, false, true, false);
+      this.$refs.studyCoordinator.open(0, false, true, false);
     },
   },
 };

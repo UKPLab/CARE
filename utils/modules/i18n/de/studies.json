@@ -16,7 +16,6 @@
   "saveAsTemplate": "Als Vorlage speichern",
   "showInformation": "Informationen anzeigen",
   "finishStudy": "Studie beenden",
-  "finishStudyAgain": "Studie erneut beenden",
   "returnToDashboard": "Zum Dashboard zurückkehren",
   "backToDashboard": "Zurück zum Dashboard",
   "openSessionsBig": "Offene Sitzungen",
@@ -94,16 +93,19 @@
     "sessionFinishedMessage": "Ihre Sitzung wurde erfolgreich eingereicht.",
     "studySessionErrorTitle": "Fehler in der Studiensitzung",
     "cannotFinishSession": "Sitzung kann nicht beendet werden",
+    "cannotGoNext": "Nächster Schritt nicht möglich",
+    "assessmentIncomplete": "Die Studie kann nicht beendet werden, solange nicht jedes Assessment-Kriterium gespeichert ist. Noch offen: {criteria}.",
+    "assessmentIncompleteGeneric": "Die Studie kann nicht beendet werden, solange das Assessment in der Seitenleiste nicht abgeschlossen ist.",
+    "assessmentIncompleteNext": "Der nächste Schritt ist erst möglich, wenn jedes Assessment-Kriterium gespeichert ist. Noch offen: {criteria}.",
+    "assessmentIncompleteNextGeneric": "Der nächste Schritt ist erst möglich, wenn das Assessment in der Seitenleiste abgeschlossen ist.",
     "studyClosedAutoTerminated": "Die Studie wurde geschlossen. Sitzungen werden automatisch beendet, wenn eine Studie geschlossen wird."
   },
   "loading": {
     "title": "Lade Studienschritt",
-    "nlpError": "Fehler bei der Verarbeitung der NLP-Ergebnisse. Bitte versuchen Sie es erneut oder überspringen Sie die NLP-Unterstützung.",
     "serviceError": "Fehler bei der Verarbeitung der Dienstergebnisse. Bitte versuchen Sie es erneut oder überspringen Sie die Dienst-Unterstützung.",
     "generalError": "Beim Laden des Studienschritts ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
     "buttons": {
       "tryAgain": "Erneut versuchen",
-      "skip": "NLP-Unterstützung überspringen",
       "skipService": "Dienst-Unterstützung überspringen"
     },
     "messages": [
@@ -122,8 +124,6 @@
       "Fast geschafft..."
     ],
     "errorTitle": "Fehler beim Laden des Studienschritts",
-    "processingTitle": "NLP-Anfragen werden verarbeitet",
-    "failedTitle": "NLP-Anfragen fehlgeschlagen",
     "processingServiceTitle": "Dienstanfragen werden verarbeitet",
     "failedServiceTitle": "Dienstanfragen fehlgeschlagen",
     "readyTitle": "Studienschritt bereit"

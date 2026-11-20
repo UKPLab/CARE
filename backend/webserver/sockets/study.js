@@ -1,5 +1,6 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
+const {Op} = require("sequelize");
 const {getEmailContent} = require("../../utils/helper/email");
 
 /** Coordinator and createStudySteps use workflowStepId as `id`. */
@@ -29,6 +30,55 @@ class StudySocket extends Socket {
         if (!hasPermission) {
             throw new TranslatableError("errors.studies.noPermissionManageStudies");
         }
+    }
+
+    /**
+     * Studies a bulk action may touch.
+     *
+     * Two client shapes: explicit ids (rows ticked in the table) or a query-scoped selection
+     * ("select all matching" — the same filter / search the list used, minus rows unticked
+     * afterwards). Both are resolved against the viewer's row scope and then the write filter,
+     * so `canManageStudies` alone never decides which rows are written: an id the user may not
+     * list, or may list but not write (e.g. only joined via a session), is dropped.
+     *
+     * @param {Object} data
+     * @param {number[]} [data.studyIds] explicitly selected rows
+     * @param {Object} [data.selection] query-scoped selection
+     * @param {boolean} data.selection.allMatching must be true to use the query path
+     * @param {Array} [data.selection.filter] queryTable filter items
+     * @param {Object} [data.selection.query] { search, columnFilters, searchColumns }
+     * @param {number[]} [data.selection.excludeIds] rows unticked after select-all
+     * @returns {Promise<number[]>}
+     */
+    async resolveBulkStudyIds(data) {
+        const selection = data?.selection;
+        // New objects on purpose: a client `scope` is never forwarded (bulk uses the plain study
+        // ACL), and explicit picks come from top-level `studyIds`, not `selection.ids`.
+        const readableIds = (selection && selection.allMatching)
+            ? await this.resolveSelectionIds("study", {
+                allMatching: true,
+                filter: selection.filter,
+                query: selection.query,
+                excludeIds: selection.excludeIds,
+            })
+            : await this.resolveSelectionIds("study", {
+                ids: Array.isArray(data?.studyIds) ? data.studyIds : [],
+            });
+        if (readableIds.length === 0) {
+            return [];
+        }
+
+        // Read scope also includes studies the user only joined.
+        // Drop those: bulk writes only what the owner or an admin may change.
+        const {filter, accessAllowed} = await this.getWriteFilter(
+            this.userId, {id: {[Op.in]: readableIds}, deleted: false}, {}, "study", this.rolesUpdatedAt
+        );
+        if (!accessAllowed) {
+            return [];
+        }
+        const writableRows = await this.models["study"].getAll({where: filter, attributes: ["id"]}) || [];
+        const writable = new Set(writableRows.map((row) => row.id));
+        return readableIds.filter((id) => writable.has(id));
     }
 
     /**
@@ -239,8 +289,8 @@ class StudySocket extends Socket {
      *
      * @socketEvent studyCloseBulk
      * @param {object} data
-     * @param {number[]} data.studyIds IDs of the studies to close
-     * @param {number} [data.projectId] optional project scope for validation
+     * @param {number[]} [data.studyIds] IDs of the studies to close
+     * @param {object} [data.selection] query-scoped selection (see resolveBulkStudyIds)
      * @param {boolean} [data.notifySessions] if true, send emails to participants with open sessions
      * @param {string} [data.progressId] optional id for progressUpdate events
      * @returns {Promise<{ closedCount: number }>}
@@ -249,22 +299,23 @@ class StudySocket extends Socket {
         await this.hasManageStudiesPermission();
 
         const notifySessions = data.notifySessions === true;
+        const studyIds = await this.resolveBulkStudyIds(data);
 
-        const closedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+        const closedCount = await this.runBulkWithProgress(studyIds, data.progressId, async (id, transaction) => {
             await this.models["study"].updateById(
                 id,
                 { closed: true, userIdClosed: this.userId },
                 { transaction }
             );
+            if (!notifySessions) {
+                return;
+            }
             transaction.afterCommit(async () => {
-                this.broadcastTransactionChanges(transaction);
-                if (notifySessions) {
-                    try {
-                        const updated = await this.models["study"].getById(id);
-                        await this.sendStudyClosedEmails(updated);
-                    } catch (err) {
-                        this.logger.error(`Failed to send study closed emails for study ${id}:`, err);
-                    }
+                try {
+                    const updated = await this.models["study"].getById(id);
+                    await this.sendStudyClosedEmails(updated);
+                } catch (err) {
+                    this.logger.error(`Failed to send study closed emails for study ${id}:`, err);
                 }
             });
         });
@@ -277,20 +328,22 @@ class StudySocket extends Socket {
      *
      * @socketEvent studyOpenBulk
      * @param {object} data
-     * @param {number[]} data.studyIds IDs of the studies to reopen
+     * @param {number[]} [data.studyIds] IDs of the studies to reopen
+     * @param {object} [data.selection] query-scoped selection (see resolveBulkStudyIds)
      * @param {string} [data.progressId] optional id for progressUpdate events
      * @returns {Promise<{ openedCount: number }>}
      */
     async openBulk(data, options) {
         await this.hasManageStudiesPermission();
 
-        const openedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+        const studyIds = await this.resolveBulkStudyIds(data);
+
+        const openedCount = await this.runBulkWithProgress(studyIds, data.progressId, async (id, transaction) => {
             await this.models["study"].updateById(
                 id,
                 { closed: null, userIdClosed: null },
                 { transaction }
             );
-            transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
         });
 
         return { openedCount };
@@ -301,24 +354,25 @@ class StudySocket extends Socket {
      *
      * @socketEvent studyDeleteBulk
      * @param {object} data
-     * @param {number[]} data.studyIds IDs of the studies to delete
-     * @param {number} [data.projectId] optional project scope for validation
+     * @param {number[]} [data.studyIds] IDs of the studies to delete
+     * @param {object} [data.selection] query-scoped selection (see resolveBulkStudyIds)
      * @param {string} [data.progressId] optional id for progressUpdate events
      * @returns {Promise<{ deletedCount: number }>}
      */
     async deleteBulk(data, options) {
         await this.hasManageStudiesPermission();
 
-        const deletedCount = await this.runBulkWithProgress(data.studyIds, data.progressId, async (id, transaction) => {
+        const studyIds = await this.resolveBulkStudyIds(data);
+
+        const deletedCount = await this.runBulkWithProgress(studyIds, data.progressId, async (id, transaction) => {
             await this.models["study"].updateById(
                 id,
-                { deleted: true },
-                { transaction }
+                {deleted: true},
+                {transaction}
             );
-            transaction.afterCommit(() => this.broadcastTransactionChanges(transaction));
         });
 
-        return { deletedCount };
+        return {deletedCount};
     }
 
     async init() {

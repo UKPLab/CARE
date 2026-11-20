@@ -26,25 +26,27 @@ import BasicForm from "@/basic/Form.vue";
  * Supports three modes: role-based (each role gets N reviews), reviewer-based
  * (documents split manually between selected reviewers), and session-user-based
  * (each study session is assigned to its original user).
- * State is persisted via modalValue so navigating back restores the user's choices.
+ * State is persisted via modalValue so navigating back restores the user's choices; the
+ * emitted modalValue also carries the resulting numberOfReviews for the summary.
  * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "DistributionStep",
   components: { BasicForm },
+  inject: {
+    selectedReviewer: { type: Array, required: false, default: () => [] },
+    selectedAssignments: { type: Array, required: false, default: () => [] },
+    assignmentCount: { type: Number, required: false, default: 0 },
+    assignmentType: { type: String, required: false, default: 'document' },
+    roles: { type: Array, required: false, default: () => [] },
+  },
   props: {
     modalValue: {
       type: Object,
       default: () => ({}),
     },
   },
-  inject: {
-    selectedReviewer: { type: Array, required: false, default: () => [] },
-    selectedAssignments: { type: Array, required: false, default: () => [] },
-    assignmentType: { type: String, required: false, default: 'document' },
-    roles: { type: Array, required: false, default: () => [] },
-    reviewerSelectionModeFields: { type: Array, required: false, default: () => [] },
-  },
+  emits: ["update:modalValue", "update:isValid"],
   data() {
     return {
       reviewerSelectionMode: this.modalValue?.reviewerSelectionMode ? { ...this.modalValue.reviewerSelectionMode } : {},
@@ -53,6 +55,22 @@ export default {
     };
   },
   computed: {
+    reviewerSelectionModeFields() {
+      const options = [
+        { name: this.$t("dashboard.study.roleBasedSelection"), value: "role" },
+        { name: this.$t("dashboard.study.reviewerBasedSelection"), value: "reviewer" },
+      ];
+      if (this.assignmentType === 'study_session') {
+        options.push({ name: this.$t("dashboard.study.sessionUserBasedSelection"), value: "session_user" });
+      }
+      return [{
+        key: "mode",
+        label: this.$t("dashboard.study.reviewerSelectionMode"),
+        type: "select",
+        options,
+        required: true,
+      }];
+    },
     selectedReviewerRoles() {
       return [...new Set(this.selectedReviewer.flatMap(obj => obj.roles))];
     },
@@ -71,13 +89,9 @@ export default {
         };
       });
     },
-    reviewerNumberOfAssignments() {
-      return Object.values(this.reviewerSelection)
-          .map(value => parseInt(value, 0))
-          .reduce((a, b) => a + b, 0);
-    },
     remainingAssignments() {
-      return this.selectedAssignments.length - this.reviewerNumberOfAssignments;
+      const total = this.assignmentCount || this.selectedAssignments.length;
+      return total - this.sumOf(this.reviewerSelection);
     },
     reviewerSelectionFields() {
       return this.selectedReviewer.map(user => ({
@@ -94,31 +108,27 @@ export default {
         unit: this.$t("dashboard.study.reviews"),
       }));
     },
-    selectionValid() {
+    isValid() {
       if (this.reviewerSelectionMode.mode === 'reviewer') {
         return this.remainingAssignments === 0;
       } else if (this.reviewerSelectionMode.mode === 'role') {
-        return Object.values(this.roleSelection)
-            .map(value => parseInt(value, 0))
-            .reduce((a, b) => a + b, 0) > 0;
-      } else if (this.reviewerSelectionMode.mode === 'session_user') {
-        return true;
+        return this.sumOf(this.roleSelection) > 0;
       }
-      return false;
-    },
-    isValid() {
-      return this.selectionValid;
+      return this.reviewerSelectionMode.mode === 'session_user';
     },
     numberOfReviews() {
       if (this.reviewerSelectionMode.mode === 'role') {
-        return Object.values(this.roleSelection)
-            .map(value => parseInt(value, 0))
-            .reduce((a, b) => a + b, 0) * this.selectedAssignments.length;
-      } else {
-        return Object.values(this.reviewerSelection)
-            .map(value => parseInt(value, 0))
-            .reduce((a, b) => a + b, 0);
+        return this.sumOf(this.roleSelection) * (this.assignmentCount || this.selectedAssignments.length);
       }
+      return this.sumOf(this.reviewerSelection);
+    },
+    distribution() {
+      return {
+        reviewerSelectionMode: this.reviewerSelectionMode,
+        roleSelection: this.roleSelection,
+        reviewerSelection: this.reviewerSelection,
+        numberOfReviews: this.numberOfReviews,
+      };
     },
   },
   watch: {
@@ -129,37 +139,9 @@ export default {
       },
       deep: true,
     },
-    reviewerSelectionMode: {
+    distribution: {
       handler(val) {
-        this.$emit('update:reviewerSelectionMode', val);
-      },
-      deep: true,
-    },
-    roleSelection: {
-      handler(val) {
-        this.$emit('update:roleSelection', val);
-        this.$emit('update:selectionValid', this.selectionValid);
-        this.$emit('update:numberOfReviews', this.numberOfReviews);
-      },
-      deep: true,
-    },
-    reviewerSelection: {
-      handler(val) {
-        this.$emit('update:reviewerSelection', val);
-        this.$emit('update:selectionValid', this.selectionValid);
-        this.$emit('update:numberOfReviews', this.numberOfReviews);
-      },
-      deep: true,
-    },
-    selectionValid: {
-      handler(val) {
-        this.$emit('update:selectionValid', val);
-      },
-      deep: true,
-    },
-    numberOfReviews: {
-      handler(val) {
-        this.$emit('update:numberOfReviews', val);
+        this.$emit('update:modalValue', val);
       },
       deep: true,
     },
@@ -168,6 +150,10 @@ export default {
     },
   },
   methods: {
+    /** Total of the slider values in a role or reviewer selection. */
+    sumOf(selection) {
+      return Object.values(selection).map(value => parseInt(value, 0)).reduce((a, b) => a + b, 0);
+    },
     reset() {
       this.reviewerSelectionMode = {};
       this.roleSelection = {};

@@ -5,12 +5,18 @@ import eslintConfigPrettier from 'eslint-config-prettier'
 import vueI18n from '@intlify/eslint-plugin-vue-i18n'
 import footerButtonGroupRule from './eslint-rules/footer-button-group.js'
 import warnFileLineCountRule from './eslint-rules/warn-file-line-count.js'
+import preferBasicComponentsRule from './eslint-rules/prefer-basic-components.js'
+import dashboardListPageRule from './eslint-rules/dashboard-list-page.js'
+import dashboardRowButtonsRule from './eslint-rules/dashboard-row-buttons.js'
 
 const compat = new FlatCompat()
 const localPlugin = {
     rules: {
         'footer-button-group': footerButtonGroupRule,
         'warn-file-line-count': warnFileLineCountRule,
+        'prefer-basic-components': preferBasicComponentsRule,
+        'dashboard-list-page': dashboardListPageRule,
+        'dashboard-row-buttons': dashboardRowButtonsRule,
     },
 }
 
@@ -103,6 +109,7 @@ export default [
         files: ['**/*.vue'],
         rules: {
             'local/footer-button-group': 'error',
+            'local/prefer-basic-components': 'error',
             'vue/no-restricted-html-elements': [
                 'error',
                 {
@@ -120,6 +127,19 @@ export default [
         ],
         rules: {
             'vue/no-restricted-html-elements': 'off',
+            'local/prefer-basic-components': 'off',
+        },
+    },
+    {
+        files: ['src/components/dashboard/**/*.vue'],
+        rules: {
+            'local/dashboard-row-buttons': 'error',
+        },
+    },
+    {
+        files: ['src/components/dashboard/*.vue'],
+        rules: {
+            'local/dashboard-list-page': 'error',
         },
     },
     // Out of scope for i18n lint: setup wizard, Settings,

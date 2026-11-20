@@ -14,7 +14,7 @@
       class="alert alert-warning role-replacement-warning"
       role="alert"
     >
-      The existing CARE roles of these users will be replaced by the basic User role and the mapped roles selected in the previous step.
+      {{ $t('dashboard.users.roleReplacementWarning') }}
     </p>
   </div>
 </template>

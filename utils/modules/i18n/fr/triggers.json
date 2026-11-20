@@ -1,0 +1,144 @@
+{
+    "common": {
+        "name": "Nom",
+        "description": "Description",
+        "trigger": "Déclencheur",
+        "event": "Événement",
+        "action": "Action",
+        "project": "Projet",
+        "status": "Statut",
+        "enabled": "Activé",
+        "error": "Erreur",
+        "close": "Fermer",
+        "save": "Enregistrer",
+        "notAvailable": "N/D",
+        "yes": "Oui",
+        "no": "Non"
+    },
+    "dashboard": {
+        "title": "Déclencheurs",
+        "create": "Créer un déclencheur",
+        "createTitle": "Créer une nouvelle règle de déclenchement"
+    },
+    "actions": {
+        "view": "Afficher le déclencheur",
+        "edit": "Modifier le déclencheur",
+        "delete": "Supprimer le déclencheur",
+        "toggle": "Activer / désactiver le déclencheur",
+        "cancel": "Annuler",
+        "retry": "Réessayer",
+        "rerun": "Relancer",
+        "viewError": "Afficher le message d'erreur"
+    },
+    "status": {
+        "enabled": "Activé",
+        "disabled": "Désactivé",
+        "pending": "En attente",
+        "running": "En cours",
+        "completed": "Terminé",
+        "cancelled": "Annulé",
+        "failed": "Échoué"
+    },
+    "confirm": {
+        "deleteTitle": "Supprimer le déclencheur",
+        "delete": "Voulez-vous vraiment supprimer « {name} » ?",
+        "cancelTitle": "Annuler l'exécution",
+        "cancel": "Annuler cette exécution du déclencheur « {name} » ?",
+        "rerunTitle": "Relancer l'exécution",
+        "rerun": "Relancer le déclencheur terminé « {name} » ?"
+    },
+    "logs": {
+        "title": "Rapports des déclencheurs",
+        "attempts": "Tentatives",
+        "started": "Démarré",
+        "errorMessageTitle": "Message d'erreur",
+        "deletedTrigger": "<Déclencheur supprimé>",
+        "noErrorMessage": "Aucun message d'erreur enregistré."
+    },
+    "editor": {
+        "editTitle": "Modifier le déclencheur",
+        "createTitle": "Créer un déclencheur"
+    },
+    "steps": {
+        "info": "Informations du déclencheur",
+        "review": "Vérifier et confirmer"
+    },
+    "fields": {
+        "nameHelp": "Nom affiché pour cette règle dans le tableau de bord des déclencheurs.",
+        "descriptionHelp": "Courte remarque destinée aux administrateurs, indiquant quand et pourquoi ce déclencheur s'exécute.",
+        "scopeProject": "Limiter au projet",
+        "scopeProjectHelp": "Limite ce déclencheur au projet sélectionné. Les filtres d'événements et les options de devoir utilisent ce projet.",
+        "maxRetries": "Nombre max. de tentatives",
+        "maxRetriesHelp": "Nombre de fois qu'une exécution échouée peut être relancée depuis les rapports des déclencheurs avant de rester en échec.",
+        "parallelLimit": "Limite de parallélisme",
+        "parallelLimitHelp": "Nombre maximal d'exécutions simultanées de ce déclencheur.",
+        "timeout": "Délai d'expiration",
+        "timeoutSeconds": "Délai d'expiration (secondes)",
+        "timeoutHelp": "Durée maximale, en secondes, d'une exécution avant qu'elle soit considérée comme expirée.",
+        "whenEvent": "Quand (événement)",
+        "thenAction": "Alors (action)"
+    },
+    "view": {
+        "namedTitle": "Déclencheur : {name}",
+        "seconds": "{count} secondes"
+    },
+    "review": {
+        "note": "Veuillez vérifier les informations ci-dessus avant d'envoyer.",
+        "nlpSkill": "Compétence NLP",
+        "input": "Entrée : {parameter}",
+        "baseFile": "Fichier de base ({name})"
+    },
+    "metadata": {
+        "events": {
+            "assignment": {
+                "label": "Devoir",
+                "description": "Se déclenche lorsqu'un étudiant dépose un travail pour un devoir sélectionné.",
+                "fields": {
+                    "assignment": "Devoir"
+                }
+            }
+        },
+        "actions": {
+            "email": {
+                "label": "Envoyer un e-mail",
+                "description": "Envoie un e-mail à un destinataire déterminé à partir du contexte de l'événement.",
+                "fields": {
+                    "recipient": "Envoyer à",
+                    "template": "Modèle d'e-mail"
+                },
+                "options": {
+                    "uploader": "La personne ayant déposé le fichier",
+                    "admins": "Tous les administrateurs"
+                }
+            },
+            "aiPreprocessing": {
+                "label": "Prétraitement IA",
+                "description": "Exécute une compétence NLP sur le travail déposé, avec la compétence, le mappage des entrées et les options de fichier de base configurés. Les résultats sont stockés dans les données du document."
+            }
+        }
+    },
+    "messages": {
+        "updatedTitle": "Déclencheur mis à jour",
+        "createdTitle": "Déclencheur créé",
+        "updated": "Le déclencheur a été mis à jour.",
+        "created": "Le déclencheur a été créé.",
+        "cancelledTitle": "Annulé",
+        "cancelled": "L'exécution du déclencheur a été annulée.",
+        "retryQueuedTitle": "Nouvelle tentative en file d'attente",
+        "retryQueued": "L'exécution du déclencheur a été remise en attente.",
+        "rerunQueuedTitle": "Relance en file d'attente",
+        "rerunQueued": "Une nouvelle exécution du déclencheur a été mise en file d'attente."
+    },
+    "errors": {
+        "updateTitle": "Échec de la mise à jour du déclencheur",
+        "createTitle": "Échec de la création du déclencheur",
+        "update": "Le déclencheur n'a pas pu être mis à jour.",
+        "create": "Le déclencheur n'a pas pu être créé.",
+        "cancelTitle": "Échec de l'annulation",
+        "retryTitle": "Échec de la nouvelle tentative",
+        "rerunTitle": "Échec de la relance",
+        "details": "Impossible de charger les détails de l'exécution du déclencheur",
+        "action": "L'action du déclencheur a échoué",
+        "unknown": "Erreur inconnue"
+    }
+}

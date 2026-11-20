@@ -27,121 +27,31 @@
           </div>
 
           <div class="card-body mx-4 my-4">
-            <div
-                v-if="config['requestName']"
-                class="form-group row my-2"
-            >
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="firstName"
-              >{{ $t('auth.firstName') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="firstName"
-                    v-model="formData['firstName']"
-                    autofocus
-                    class="form-control"
-                    name="firstName"
-                    required
-                    type="text"
-                >
-                <div class="feedback-invalid">
-                  {{ $t('errors.validation.auth.provideFirstName') }}
-                </div>
-              </div>
-            </div>
-
-
-            <div
-                v-if="config['requestName']"
-                class="form-group row my-2"
-            >
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="lastName"
-              >{{ $t('auth.lastName') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="lastName"
-                    v-model="formData['lastName']"
-                    class="form-control"
-                    name="lastName"
-                    required
-                    type="text"
-                >
-                <div class="feedback-invalid">
-                  {{ $t('errors.validation.auth.provideLastName') }}
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="userName"
-              >{{ $t('auth.username') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="userName"
-                    v-model="formData['userName']"
-                    class="form-control"
-                    name="userName"
-                    pattern="^[a-zA-Z0-9]+$"
-                    required
-                    type="text"
-                    @blur="checkVal('userName')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUsername}">
-                  {{ $t('errors.validation.auth.usernameNoSpecialChars') }}
-                </div>
-              </div>
-            </div>
-
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="email"
-              >{{ $t('auth.email') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="email"
-                    v-model="formData['email']"
-                    class="form-control"
-                    name="email"
-                    required
-                    type="email"
-                    @blur="checkVal('email')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
-                  {{ $t('errors.validation.auth.provideEmail') }}
-                </div>
-              </div>
-            </div>
-
-
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="password"
-              >{{ $t('auth.password') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="password"
-                    v-model="formData['password']"
-                    class="form-control"
-                    name="password"
-                    pattern=".{8,}"
-                    required
-                    type="password"
-                    @blur="checkVal('password')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  {{ $t('errors.validation.auth.passwordRequirements') }}
-                </div>
-              </div>
-            </div>
-
-
+            <AuthInputField
+              v-if="config['requestName']"
+              v-model="formData.firstName" :label="$t('auth.firstName')"
+              :input='{"id":"firstName","name":"firstName","required":true,"type":"text","autofocus":true}'
+            >{{ $t('errors.validation.auth.provideFirstName') }}</AuthInputField>
+            <AuthInputField
+              v-if="config['requestName']"
+              v-model="formData.lastName" :label="$t('auth.lastName')"
+              :input='{"id":"lastName","name":"lastName","required":true,"type":"text"}'
+            >{{ $t('errors.validation.auth.provideLastName') }}</AuthInputField>
+            <AuthInputField
+              v-model="formData.userName" :label="$t('auth.username')"
+              :input='{"id":"userName","name":"userName","required":true,"type":"text","pattern":"^[a-zA-Z0-9]+$"}'
+              :invalid="validity.userName && !validUsername" @blur="checkVal('userName')"
+            >{{ $t('errors.validation.auth.usernameNoSpecialChars') }}</AuthInputField>
+            <AuthInputField
+              v-model="formData.email" :label="$t('auth.email')"
+              :input='{"id":"email","name":"email","required":true,"type":"email"}'
+              :invalid="validity.email && !validEmail" @blur="checkVal('email')"
+            >{{ $t('errors.validation.auth.provideEmail') }}</AuthInputField>
+            <AuthInputField
+              v-model="formData.password" password-hint :label="$t('auth.password')"
+              :input='{"id":"password","name":"password","required":true,"type":"password","pattern":".{8,}"}'
+              :invalid="validity.password && !validPassword" @blur="checkVal('password')"
+            >{{ $t('errors.validation.auth.passwordRequirements') }}</AuthInputField>
             <div class="form-group row my-2">
               <div class="col-md-6 offset-md-4">
                 <label>
@@ -160,8 +70,16 @@
                 </label>
               </div>
             </div>
+            <div v-if="combineResearchConsent" class="form-group row my-2">
+              <div class="col-md-6 offset-md-4">
+                <label>
+                  <input v-model="acceptResearch" name="acceptResearch" type="checkbox">
+                  {{ $t('auth.acceptResearch') }}
+                </label>
+              </div>
+            </div>
             <div
-                v-if="config['requestStats']"
+                v-if="config['requestStats'] && !combineResearchConsent"
                 class="form-group row my-2"
             >
               <div class="col-md-6 offset-md-4">
@@ -175,7 +93,7 @@
               </div>
             </div>
             <div
-                v-if="config['requestData']"
+                v-if="config['requestData'] && !combineResearchConsent"
                 class="form-group row my-2"
             >
               <div class="col-md-6 offset-md-4">
@@ -220,9 +138,11 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
+import AuthInputField from "./AuthInputField.vue";
+
 export default {
   name: "AuthRegister",
-  components: {TermsModal, LogoSvg, BasicButton},
+  components: {AuthInputField,TermsModal, LogoSvg, BasicButton},
   data() {
     return {
       formData: {
@@ -239,6 +159,19 @@ export default {
     }
   },
   computed: {
+    combineResearchConsent() {
+      return window.config["app.register.combineResearchConsent"] === "true"
+          && this.config.requestData && this.config.requestStats;
+    },
+    acceptResearch: {
+      get() {
+        return this.formData.acceptStats && this.formData.acceptDataSharing;
+      },
+      set(accepted) {
+        this.formData.acceptStats = accepted;
+        this.formData.acceptDataSharing = accepted;
+      },
+    },
     config() {
       return {
         requestName: JSON.parse(window.config["app.register.requestName"]),
@@ -281,10 +214,10 @@ export default {
       return;
     }
     // Sets initial values for acceptStats and acceptDataSharing
-    if (this.config.requestStats) {
+    if (this.config.requestStats && !this.combineResearchConsent) {
       this.formData.acceptStats = this.config.isTrackingAgreed;
     }
-    if (this.config.requestData) {
+    if (this.config.requestData && !this.combineResearchConsent) {
       this.formData.acceptDataSharing = this.config.isDataShared;
     }
   },
@@ -330,7 +263,6 @@ export default {
           });
         }
 
-
         this.toLogin();
       } catch (err) {
         this.eventBus.emit('toast', {
@@ -367,7 +299,6 @@ input:focus[type='password'] + .feedback-invalid {
 }
 
 input:focus[type='password']:not(.custom-invalid) + .feedback-invalid {
-  color: black;
+  color: var(--bs-body-color);
 }
-
 </style>

@@ -24,11 +24,13 @@
       </div>
     </template>
     <template #footer>
+      <div class="btn-group">
       <BasicButton
         class="btn btn-secondary"
         :title="$t('common.cancel')"
         @click="close()"
       />
+          </div>
     </template>
   </BasicModal>
 </template>

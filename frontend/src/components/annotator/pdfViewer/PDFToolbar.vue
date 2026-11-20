@@ -2,23 +2,20 @@
   <div 
     ref="toolbar"
     class="pdf-toolbar" 
-    :class="{ 'collapsed': !toolbarVisible, 'loading': isZooming }"
+    :class="{ 'collapsed': !toolbarVisible }"
   >  
     <template v-if="toolbarVisible">       
       <TopBarButton
         :title="$t('common.reset')"
         :text="$t('common.reset')"
-        :disabled="isZooming"
         @click="$emit('reset')"
       />      
       <TopBarButton
         icon="plus-lg"
-        :disabled="isZooming"
         @click="$emit('zoom-in')"
       />
       <TopBarButton
         icon="dash-lg"
-        :disabled="isZooming"
         @click="$emit('zoom-out')"
       />      
       <BasicForm
@@ -67,10 +64,6 @@ export default {
       required: true,
     },
     modelValue: {
-      type: Boolean,
-      default: false,
-    },
-    isZooming: {
       type: Boolean,
       default: false,
     },
@@ -152,7 +145,6 @@ export default {
   padding: 8px 16px;
   min-height: 48px;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   justify-content: flex-end;
 }
 
@@ -184,7 +176,6 @@ export default {
   justify-content: center;
   cursor: pointer;
   color: var(--bs-secondary-color, #6c757d);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   min-width: 32px;
   min-height: 32px;
 }
@@ -201,30 +192,5 @@ export default {
 
 .pdf-toolbar.collapsed .toolbar-toggle-btn:hover {
   color: var(--bs-body-color, #6c757d);
-}
-
-.pdf-toolbar.loading::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--bs-tertiary-bg, rgba(248, 249, 250, 0.7));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: all;
-  cursor: wait;
-}
-
-.pdf-toolbar.loading :deep(.btn) {
-  pointer-events: none;
-  opacity: 0.6;
-}
-
-.pdf-toolbar.loading :deep(.form-select) {
-  pointer-events: none;
-  opacity: 0.6;
 }
 </style>

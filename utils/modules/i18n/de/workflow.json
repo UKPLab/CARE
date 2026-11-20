@@ -12,7 +12,8 @@
   "stepTypes": {
     "annotator": "Annotator",
     "editor": "Editor",
-    "modal": "Modal"
+    "modal": "Modal",
+    "dialogue": "Dialog"
   },
   "dashboard": {
     "title": "Workflows",
@@ -85,7 +86,6 @@
     "copiedStep": "Kopierter Schritt",
     "copiedStepValue": "{name} ({type})",
     "unnamedStep": "Unbenannter Schritt",
-    "loadingWorkflow": "Workflow wird geladen...",
     "loadingWorkflowGraph": "Workflow-Graph wird geladen...",
     "savingChanges": "Änderungen werden gespeichert...",
     "stepTypes": {
@@ -94,7 +94,9 @@
       "modal": "Modal",
       "annotaterStep": "Annotater-Schritt",
       "editorStep": "Editor-Schritt",
-      "modalStep": "Modal-Schritt"
+      "modalStep": "Modal-Schritt",
+      "dialogueStep": "Dialogschritt",
+      "dialogue": "Dialog"
     },
     "errors": {
       "saveFailed": "Speichern fehlgeschlagen",

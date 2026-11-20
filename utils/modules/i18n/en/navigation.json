@@ -8,7 +8,8 @@
         "hideSidebar": "Hide sidebar",
         "showSidebar": "Show sidebar",
         "moreActions": "More actions",
-        "sidebarSection": "Sidebar section"
+        "sidebarSection": "Sidebar section",
+        "currentStepTab": "{title} (current step)"
     },
     "topbar": {
         "goBack": "Go back...",

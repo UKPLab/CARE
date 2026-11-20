@@ -235,11 +235,11 @@ form {
 
 .method-card:hover {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
-  border-color: var(--bs-primary, #0d6efd);
+  border-color: var(--care-primary);
 }
 
 .method-card.selected {
-  border-color: var(--bs-primary, #0d6efd);
+  border-color: var(--care-primary);
   background-color: var(--bs-primary-bg-subtle, #e7f1ff);
 }
 </style>

@@ -39,7 +39,6 @@
         "idRequiredNoPeriod": "Configuration ID is required",
         "contentRequiredNoPeriod": "Configuration content is required",
         "notFound": "Configuration not found.",
-        "accessDenied": "Access denied",
         "createForOtherUsersDenied": "You do not have permission to create configurations for other users."
     },
     "validation": {
@@ -195,6 +194,8 @@
         "studyRestartFailed": "Study restart failed",
         "templateSaveFailed": "Template Save Failed",
         "templateCreationFailed": "Template Creation Failed",
+        "formLoadFailed": "Could not load study form",
+        "formLoadTimeout": "Timed out loading form data",
         "sessionNotFinished": "Session Not Finished",
         "stepUpdateFailed": "Step Update Failed",
         "studyClosed": "This study is closed",
@@ -375,6 +376,7 @@
     },
     "element": {
         "invalidInput": "The input is invalid.",
+        "pastDate": "Choose a date and time that are not in the past.",
         "fieldRequired": "This field is required."
     },
     "collaboration": {
@@ -387,7 +389,6 @@
         "emptyValue": "Empty value found for {key} at index {index}",
         "duplicateId": "Duplicate id found: {extId} at index {index}",
         "duplicateEmail": "Duplicate email found: {email} at index {index}",
-        "rolesNotCommaSeparated": "Roles not comma-separated for id {id} at index {index}",
         "invalidEmailFormat": "Invalid email format for id {id} at index {index}: {email}",
         "parseError": "Error parsing file: {message}"
     },
@@ -401,6 +402,14 @@
     },
     "database": {
         "failedToUpdateData": "Failed to update data"
+    },
+    "queryTable": {
+        "columnRequired": "Column name is required",
+        "columnNotDistinct": "Column {column} is not available for distinct values",
+        "selectionTooLarge": "Too many rows selected (more than {limit}). Narrow the filter first.",
+        "idListTooLarge": "Too many ids selected. The limit is {limit}; the request was rejected.",
+        "scopeInvalid": "This selection is no longer valid. Go back and choose the workflow steps again.",
+        "inspectStudyRequired": "A study is required to load these sessions."
     },
     "backgroundTask": {
         "noDocumentSocketForClient": "No DocumentSocket found for client",
@@ -421,11 +430,47 @@
         "studySessionOwnerNotSelectedReviewer": "Study session owner (User ID: {reviewerId}) is not in the selected reviewers list. Please add them to the reviewer selection.",
         "invalidMode": "Invalid mode provided for assignment creation.",
         "firstStepNotSubmission": "First step selected does not map to a submission.",
+        "invalidWorkflowMapping": "Invalid workflow step mapping.",
         "latestSubmissionNotFound": "The latest version of the chosen submission could not be found.",
         "selectedNotResolved": "The selected assignment {assignmentId} could not be resolved.",
         "startAfterEnd": "Start time must be before end time."
     },
     "ai": {
+        "assistant": {
+            "stepNotInSession": "This step does not belong to this study session.",
+            "retryNotAllowed": "This AI response cannot be retried.",
+            "retryLatestOnly": "Only the latest AI response can be retried.",
+            "requestAborted": "The AI request was aborted.",
+            "userRequired": "A signed-in user is required.",
+            "requestIdRequired": "A request ID is required.",
+            "inputMissing": "Required AI input is missing: {key}.",
+            "inputInvalid": "Invalid AI input: {key}.",
+            "invalidId": "Missing or invalid ID: {name}."
+        },
+        "chat": {
+            "conversationNotFound": "AI conversation not found.",
+            "currentStepOnly": "AI chat is only available for the current study step.",
+            "notConfigured": "AI chat is not configured for this study step.",
+            "contextMissing": "AI chat context is missing for this study step.",
+            "contentRequired": "Please enter a message.",
+            "conversationTooLong": "This conversation has become too long. Please start a new conversation to continue.",
+            "quoteTooLarge": "The selected quote is too large. Please select a shorter passage."
+        },
+        "dialogue": {
+            "notFound": "AI dialogue not found.",
+            "planNotFound": "Dialogue plan configuration not found.",
+            "planEmpty": "The dialogue plan has no questions.",
+            "wrongStepType": "This study step is not a dialogue step.",
+            "currentStepOnly": "Dialogue is only available for the current study step.",
+            "decisionHookRequired": "Adaptive dialogue requires a decision hook.",
+            "anchorHookRequired": "Adaptive dialogue with anchored questions requires an anchor hook.",
+            "contextMissing": "Dialogue context is missing for this study step.",
+            "skipNotAllowed": "This dialogue does not allow skipping questions.",
+            "answerRequired": "Please enter an answer.",
+            "answerTooLong": "Your answer is too long. Please shorten it to at most {limit} characters.",
+            "complete": "This dialogue is already complete.",
+            "questionInactive": "This question is no longer active."
+        },
         "requestAlreadyPending": "You already have a pending AI request in this session.",
         "studyOwnerUnavailable": "The study owner could not be resolved.",
         "sessionAccessDenied": "You do not have access to this study session.",

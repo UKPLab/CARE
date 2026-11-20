@@ -32,9 +32,10 @@
       "label": "Bei Submission-Upload benachrichtigen:",
       "help": "Wenn aktiviert, wird eine E-Mail gesendet, wenn ein Studierender eine Submission hochlädt oder erneut hochlädt."
     },
-    "submissionWarning":{
+    "submissionWarning": {
       "label": "Warnung vor dem Hochladen:",
-      "help": "Wenn gefüllt, wird dem Nutzer diese Nachricht als Warnung vor dem Hochladen angezeigt. Falls leer, wird keine Warnung gezeigt"
+      "help": "Wenn gefüllt, wird dem Nutzer diese Nachricht als Warnung vor dem Hochladen angezeigt. Falls leer, wird keine Warnung gezeigt",
+      "placeholder": "z. B. Diese Aufgabe muss auf Deutsch eingereicht werden."
     }
   },
   "dashboard": {
@@ -111,10 +112,10 @@
       }
     },
     "submissions": {
-      "activeTitle": "Aktive Assignments",
-      "noActive": "Sie haben keine aktiven Assignments.",
-      "closedTitle": "Geschlossene Assignments",
-      "noClosed": "Sie haben keine geschlossenen Assignments.",
+      "activeTitle": "Meine Aufgaben",
+      "noActive": "Sie haben keine aktiven Aufgaben.",
+      "closedTitle": "Geschlossene Aufgaben",
+      "noClosed": "Sie haben keine geschlossenen Aufgaben.",
       "noDueDate": "kein Fälligkeitsdatum",
       "unlimited": "Unbegrenzt",
       "remainingLeft": "{count} Submission(s) übrig",
@@ -122,6 +123,7 @@
     },
     "modal": {
       "submitText": "Assignment speichern",
+      "previewSubmissionWarning": "Submission-Warnung anzeigen",
       "assignMode": {
         "roles": "Rollen",
         "users": "Benutzer"
@@ -182,7 +184,7 @@
     "submissionsTable": {
       "columns": {
         "name": "Submission-Name",
-        "studyUsageCount": "Verwendet in Studien"
+        "updatedAt": "Aktualisiert am"
       },
       "actions": {
         "replace": "Submission ersetzen",
@@ -255,6 +257,8 @@
       "selectField": "Feld auswählen",
       "matchAgainst": "Abgleichen mit",
       "primaryKeyHelp": "Diese Zuordnung steuert, wie CARE hochgeladene Zeilen den Submission-Besitzern im ausgewählten Assignment zuordnet.",
+      "targetFieldExtId": "extId",
+      "targetFieldEmail": "E-Mail",
       "metadataHeading": "Metadaten-Zuordnungen",
       "targetMetaKey": "Ziel-metaKey",
       "action": "Aktion",

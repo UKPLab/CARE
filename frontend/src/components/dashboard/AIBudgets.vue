@@ -1,19 +1,19 @@
 <template>
-  <BasicCard :title="$t('ai.budgets.title')">
-    <template #body>
+  <DashboardListPage
+    :title="$t('ai.budgets.title')"
+    :columns="tabColumns"
+    :data="tabRows(activeTab)"
+    :table-options="tableOptions"
+    :buttons="rowButtons"
+    @action="onAction"
+  >
+    <template #beforeTable>
       <NavTabs
         v-model="activeTab"
         :tabs="tabs"
       />
-      <BasicTable
-        :columns="tabColumns"
-        :data="tabRows(activeTab)"
-        :options="tableOptions"
-        :buttons="rowButtons"
-        @action="onAction"
-      />
     </template>
-  </BasicCard>
+  </DashboardListPage>
 
   <AIBudgetEditModal ref="editModal" />
   <ConfirmModal ref="confirmModal" />
@@ -29,12 +29,13 @@
  *
  * @author Mohammed Rawhani
  */
-import BasicCard from "@/basic/dashboard/card/Card.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import NavTabs from "@/components/dashboard/NavTabs.vue";
-import BasicTable from "@/basic/Table.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AIBudgetEditModal from "@/components/dashboard/ai/AIBudgetEditModal.vue";
 import { resolveApiMessage, formatLocalizedDateTime } from "@/assets/utils";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 
 export default {
@@ -43,7 +44,7 @@ export default {
     "ai_budget", "ai_model", "ai_hook", "study", "study_step",
     "ai_model_share", "ai_hook_share", "user",
   ],
-  components: { BasicCard, NavTabs, BasicTable, ConfirmModal, AIBudgetEditModal },
+  components: { DashboardListPage, NavTabs, ConfirmModal, AIBudgetEditModal },
   data() {
     return {
       activeTab: "models",
@@ -52,12 +53,7 @@ export default {
         { key: "hooks", types: ["hook", "hook_share"] },
         { key: "studies", types: ["study", "step_hook"] },
       ],
-      tableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {
@@ -165,24 +161,18 @@ export default {
     },
     rowButtons() {
       return [
-        {
-          icon: "pencil",
+        dashboardRowAction("edit", {
           title: this.$t("ai.actions.editLimit"),
           action: "edit",
-          options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
-        },
-        {
-          icon: "arrow-counterclockwise",
+        }),
+        dashboardRowButton("arrow-counterclockwise", {
           title: this.$t("ai.actions.resetSpendingWindow"),
           action: "reset",
-          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
-        },
-        {
-          icon: "trash",
+        }, "warning"),
+        dashboardRowAction("delete", {
           title: this.$t("ai.actions.removeCap"),
           action: "delete",
-          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
-        },
+        }),
       ];
     },
   },

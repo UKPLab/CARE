@@ -71,7 +71,9 @@
         "previousAssessmentResult": "Previous assessment result",
         "assessmentConfiguration": "Assessment configuration",
         "submissionFiles": "Submission file",
-        "studyContext": "Study context"
+        "studyContext": "Study context",
+        "dialogueDecision": "Dialogue decision input",
+        "dialogueAnchors": "Dialogue anchor candidates"
       }
     },
     "descriptions": {
@@ -114,7 +116,9 @@
         "previousAssessmentResult": "Saved rubric from the previous step when carry-over is configured.",
         "assessmentConfiguration": "Assessment rubric configuration used in this step.",
         "submissionFiles": "Text from submission files mapped per slot in the hook step.",
-        "studyContext": "Basic metadata from the current study, step, and document context."
+        "studyContext": "Basic metadata from the current study, step, and document context.",
+        "dialogueDecision": "The current Dialogue question and the latest answer, filled by CARE.",
+        "dialogueAnchors": "The anchored Dialogue questions with review excerpts from their source, filled by CARE."
       }
     },
     "help": {

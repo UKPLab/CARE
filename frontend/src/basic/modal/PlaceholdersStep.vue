@@ -1,100 +1,19 @@
 <template>
   <div class="placeholders-step">
-    <!-- Short Preview -->
-    <div v-if="shortPreview" class="short-preview mb-4">
-      <h6 class="section-title">{{ $t('modals.placeholders.documentPreview') }}</h6>
-      <!-- eslint-disable-next-line vue/no-v-html -->
-      <div class="preview-content" v-html="shortPreview"></div>
-    </div>
-
-    <!-- Placeholder Legend -->
-    <div v-if="placeholders.length" class="legend mb-4">
-      <h6 class="section-title">{{ $t('modals.placeholders.placeholderLegend') }}</h6>
-      <div class="legend-items">
-        <span
-          v-for="(placeholder, index) in placeholders"
-          :key="index"
-          class="legend-item"
-          :style="{ color: placeholderColors[index] }"
-        >
-          {{ placeholder.text }} ({{ placeholder.type }})
-        </span>
-      </div>
-    </div>
+    <DocumentPlaceholderPreview
+      :document-id="documentId" :study-step-id="studyStepId"
+      :study-session-id="studySessionId" @loaded="documentLoaded" />
 
     <!-- Placeholders Configuration -->
     <div v-if="placeholders.length" class="placeholders-config mb-4">
       <h6 class="section-title">{{ $t('modals.placeholders.configurePlaceholders') }}</h6>
 
-      <div v-for="(placeholder, index) in placeholders" :key="index" class="placeholder-item mb-3">
-        <div class="placeholder-header mb-2">
-          <span class="placeholder-badge" :style="{ backgroundColor: placeholderColors[index] }">
-            {{ placeholder.text }}
-          </span>
-          <span class="placeholder-type">{{ placeholder.type }}</span>
-        </div>
-
-        <!-- Comparison Type (requires 2 inputs) -->
-        <div v-if="placeholder.type === placeholderType.comparison" class="comparison-inputs">
-          <div class="input-group mb-2">
-            <label class="form-label">{{ $t('modals.placeholders.firstDataSource') }}</label>
-            <select
-              :value="formData[index]?.dataInput?.[0]?.value || ''"
-              class="form-control"
-              @change="updateComparisonInput(index, 0, $event.target.value)"
-            >
-              <option value="">{{ $t('modals.placeholders.selectFirstDataSource') }}</option>
-              <option
-                v-for="source in availableDataSources"
-                :key="`${source.stepId}-${source.value}-0`"
-                :value="source.value"
-                :data-step-id="source.stepId"
-              >
-                {{ source.name }}
-              </option>
-            </select>
-          </div>
-
-          <div class="input-group mb-2">
-            <label class="form-label">{{ $t('modals.placeholders.secondDataSource') }}</label>
-            <select
-              :value="formData[index]?.dataInput?.[1]?.value || ''"
-              class="form-control"
-              @change="updateComparisonInput(index, 1, $event.target.value)"
-            >
-              <option value="">{{ $t('modals.placeholders.selectSecondDataSource') }}</option>
-              <option
-                v-for="source in availableDataSources"
-                :key="`${source.stepId}-${source.value}-1`"
-                :value="source.value"
-                :data-step-id="source.stepId"
-              >
-                {{ source.name }}
-              </option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Single Input Types (text, chart) -->
-        <div v-else class="single-input">
-          <label class="form-label">{{ $t('modals.placeholders.dataSource') }}</label>
-          <select
-            :value="formData[index]?.dataInput?.value || ''"
-            class="form-control"
-            @change="updateSingleInput(index, $event.target.value)"
-          >
-            <option value="">{{ $t('modals.placeholders.selectDataSource') }}</option>
-            <option
-              v-for="source in availableDataSources"
-              :key="`${source.stepId}-${source.value}`"
-              :value="source.value"
-              :data-step-id="source.stepId"
-            >
-              {{ source.name }}
-            </option>
-          </select>
-        </div>
-      </div>
+      <PlaceholderInputCard
+        v-for="(placeholder,index) in placeholders" :key="index"
+        :placeholder="placeholder" :color="placeholderColors[index]" :value="formData[index]"
+        :available-data-sources="availableDataSources"
+        @comparison-change="(input,value) => updateComparisonInput(index,input,value)"
+        @single-change="updateSingleInput(index,$event)" />
     </div>
 
     <!-- No Placeholders Message -->
@@ -107,17 +26,17 @@
 </template>
 
 <script>
-import { resolveApiMessage } from "@/assets/utils";
-import Quill from "quill";
-
+import DocumentPlaceholderPreview from './DocumentPlaceholderPreview.vue';
+import PlaceholderInputCard from './PlaceholderInputCard.vue';
 /**
  * PlaceholdersStep Component
- * 
+ *
  * A component that handles placeholder configuration for documents,
  * including extraction, mapping to data sources, and validation.
  */
 export default {
   name: "PlaceholdersStep",
+  components:{DocumentPlaceholderPreview,PlaceholderInputCard},
   inject: {
     studyStepId: {
       type: Number,
@@ -149,14 +68,12 @@ export default {
     return {
       placeholders: [],
       placeholderColors: [],
-      shortPreview: "",
       formData: [],
       placeholderType: {
         comparison: "comparison",
         text: "text",
         chart: "chart",
       },
-      isInitialized: false,
       isUpdateMode: false,
     };
   },
@@ -201,11 +118,12 @@ export default {
   },
   mounted() {
     this.isUpdateMode = this.modelValue.placeholders !== undefined;
-    if (this.documentId && !this.isInitialized) {
-      this.fetchDocument();
-    }
+
   },
   methods: {
+    documentLoaded({placeholders,colors}){
+      this.placeholders=placeholders;this.placeholderColors=colors;this.initializePlaceholderFormData();
+    },
     updateComparisonInput(placeholderIndex, inputIndex, sourceValue) {
       if (!sourceValue) return;
 
@@ -248,50 +166,6 @@ export default {
       this.formData = updatedFormData;
     },
 
-    fetchDocument() {
-      if (!this.documentId || !this.studyStepId) return;
-
-      const requestData = {
-        documentId: this.documentId,
-        studyStepId: this.studyStepId,
-        studySessionId: this.studySessionId || null,
-      };
-
-      this.$socket.emit("documentGet", requestData, (response) => {
-        if (response.success) {
-          const { deltas } = response.data || {};
-          if (deltas?.ops) {
-            let quill = new Quill(document.createElement("div"));
-            quill.setContents(deltas.ops);
-            const docText = quill.getText();
-
-            // Extract placeholders and generate colors
-            this.placeholders = this.extractPlaceholders(docText);
-            this.generatePlaceholderColors();
-            this.generateShortPreview(docText);
-
-            // Initialize placeholder form data
-            this.initializePlaceholderFormData();
-            this.isInitialized = true;
-          } else {
-            console.error("Invalid document content:", response);
-            this.eventBus?.emit("toast", {
-              title: this.$t('modals.placeholders.documentError'),
-              message: this.$t('modals.placeholders.invalidDocumentContent'),
-              variant: "danger",
-            });
-          }
-        } else {
-          console.error("Failed to fetch document content:", response);
-          this.eventBus.emit("toast", {
-            title: this.$t('modals.placeholders.documentError'),
-            message: resolveApiMessage(response) || this.$t('modals.placeholders.failedToFetchDocument'),
-            variant: "danger",
-          });
-        }
-      });
-    },
-
     initializePlaceholderFormData() {
       for (let i = 0; i < this.placeholders.length; i++) {
         const placeholder = this.placeholders[i];
@@ -325,72 +199,10 @@ export default {
 
     findPlaceholderDataSource(input) {
       if (!input) return null;
-      
+
       return this.availableDataSources.find((source) =>
         source.stepId === input.stepId && source.value === input.dataSource
       ) || null;
-    },
-
-    extractPlaceholders(text) {
-      const textRegex = /~text~/g;
-      const chartRegex = /~chart~/g;
-      const comparisonRegex = /~comparison~/g;
-
-      let match;
-      const extracted = [];
-      let textCounter = 1;
-      let chartCounter = 1;
-      let comparisonCounter = 1;
-
-      // Extract text placeholders
-      while ((match = textRegex.exec(text)) !== null) {
-        extracted.push({
-          text: match[0],
-          number: textCounter++,
-          type: this.placeholderType.text,
-        });
-      }
-
-      // Extract chart placeholders
-      while ((match = chartRegex.exec(text)) !== null) {
-        extracted.push({
-          text: match[0],
-          number: chartCounter++,
-          type: this.placeholderType.chart,
-        });
-      }
-
-      // Extract comparison placeholders
-      while ((match = comparisonRegex.exec(text)) !== null) {
-        extracted.push({
-          text: match[0],
-          number: comparisonCounter++,
-          type: this.placeholderType.comparison,
-        });
-      }
-
-      // Sort by type and then by number
-      return extracted.sort((a, b) => {
-        if (a.type === b.type) {
-          return a.number - b.number;
-        }
-        // Order: text -> chart -> comparison
-        const typeOrder = { text: 0, chart: 1, comparison: 2 };
-        return typeOrder[a.type] - typeOrder[b.type];
-      });
-    },
-
-    generatePlaceholderColors() {
-      const colors = ["#ff5733", "#33c3ff", "#ff33f6", "#33ff57", "#ffc133", "#a833ff", "#ff338f"];
-      this.placeholderColors = this.placeholders.map((_, index) => colors[index % colors.length]);
-    },
-
-    generateShortPreview(text) {
-      this.shortPreview = text.replace(/~nlp~/g, (match, num) => {
-        const colorIndex = this.placeholders.findIndex((p) => p.number == num);
-        const color = this.placeholderColors[colorIndex] || "#000";
-        return `<span style="color: ${color}; font-weight: bold;">#${num}</span>`;
-      });
     },
 
     formatPlaceholder(type) {
@@ -467,8 +279,8 @@ export default {
       // For placeholders, we don't have selectedSkills, so we'll check modelValue
       if (!this.modelValue || !this.modelValue.services) return sources;
 
-      const services = Array.isArray(this.modelValue.services) 
-        ? this.modelValue.services 
+      const services = Array.isArray(this.modelValue.services)
+        ? this.modelValue.services
         : Object.values(this.modelValue.services);
 
       services.forEach((service) => {
@@ -477,7 +289,7 @@ export default {
         // Get skills from store
         const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
         const nlpSkills = skills && typeof skills === "object" ? Object.values(skills) : [];
-        
+
         const skill = nlpSkills.find((s) => s.name === service.skill);
         if (!skill || !skill.config || !skill.config.output || !skill.config.output.data) return;
 
@@ -510,106 +322,11 @@ export default {
   border-bottom: 1px solid var(--bs-border-color, #dee2e6);
 }
 
-.short-preview {
-  background: var(--bs-tertiary-bg, #f8f9fa);
-  border: 1px solid var(--bs-border-color, #ddd);
-  border-radius: 0.5rem;
-  padding: 1rem;
-}
-
-.preview-content {
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.legend {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.legend-items {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.legend-item {
-  font-weight: bold;
-  font-size: 12px;
-  padding: 0.25rem 0.5rem;
-  background-color: rgba(255, 255, 255, 0.8);
-  border-radius: 0.25rem;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
 .placeholders-config {
   background-color: var(--bs-tertiary-bg, #f8f9fa);
   padding: 1rem;
   border-radius: 0.5rem;
   border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.placeholder-item {
-  background-color: var(--bs-body-bg, #ffffff);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.placeholder-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.placeholder-badge {
-  color: white;
-  padding: 0.25rem 0.75rem;
-  border-radius: 1rem;
-  font-size: 0.8rem;
-  font-weight: bold;
-}
-
-.placeholder-type {
-  background-color: var(--bs-secondary-bg, #6c757d);
-  color: var(--bs-body-color, white);
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  font-weight: bold;
-}
-
-.comparison-inputs,
-.single-input {
-  background-color: var(--bs-secondary-bg, #f1f3f4);
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.input-group {
-  background-color: var(--bs-body-bg, #ffffff);
-  padding: 0.5rem;
-  border-radius: 0.25rem;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-}
-
-.form-label {
-  font-weight: 500;
-  color: var(--bs-body-color, #495057);
-  margin-bottom: 0.5rem;
-}
-
-.form-control {
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.form-control:focus {
-  border-color: var(--bs-primary, #0d6efd);
-  box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
 .no-content {

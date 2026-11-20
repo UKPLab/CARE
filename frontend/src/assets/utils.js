@@ -1,6 +1,4 @@
 import "file-saver"; // DO NOT delete this import, required for window.saveAs to work
-import Papa from "papaparse";
-import yaml from "js-yaml";
 import { i18n } from '../main.js';
 
 // Detects key-like messages such as "errors.server.notFound".
@@ -190,137 +188,6 @@ export function overrideObjectAttributes(obj_orig, obj_over) {
 }
 
 /**
- * Returns a CSV version of the provided object. Requires Papa parse formatting.
- *
- * @param objs
- * @returns {*}
- */
-export function objectsToCSV(objs) {
-    return Papa.unparse(objs);
-}
-
-/**
- * Returns a JSON string of the provided objects (including pretty printing).
- *
- * @param objs
- * @returns {string}
- */
-export function objectsToJSON(objs) {
-    return JSON.stringify(objs, null, 2);
-}
-
-/**
- * Returns a YAML string of the provided objects.
- *
- * @param objs
- * @returns {string}
- */
-export function objectsToYAML(objs) {
-    return yaml.dump(objs, {
-        indent: 2,
-        lineWidth: -1,
-        noRefs: true,
-        sortKeys: true
-    });
-}
-
-/**
- * Exports a list of objects into a single string, where nested objects are visualized by indentation.
- *
- * @param objs
- * @returns {String}
- */
-export function objectsToTXT(objs) {
-    return objs.map(o => Object.entries(o).map(([k, v]) => {
-            if (typeof v === "object" && v !== null) {
-                return `${k}\n${objectsToTXT([v])}`;
-            } else if (v === null) {
-                return `${k}:-`;
-            } else {
-                return `${k}:  ${v}`;
-            }
-        }).join("\n")
-    ).join("\n\n");
-}
-
-/**
- * Maps each supported export format to its serializer and MIME type.
- * This is the single source of truth for downloadObjectsAs and getSupportedExportFormats.
- */
-const EXPORT_FORMATS = {
-    csv: {
-        serialize:   objectsToCSV,
-        mimeType:    "text/csv",
-        label:       "modals.importExport.formats.csv.label",
-        icon:        "filetype-csv",
-        description: "modals.importExport.formats.csv.description",
-        extensions:  [".csv"],
-    },
-    json: {
-        serialize:   objectsToJSON,
-        mimeType:    "application/json",
-        label:       "modals.importExport.formats.json.label",
-        icon:        "filetype-json",
-        description: "modals.importExport.formats.json.description",
-        extensions:  [".json"],
-        parse:       (content) => JSON.parse(content),
-    },
-    txt: {
-        serialize:   objectsToTXT,
-        mimeType:    "text/plain",
-        label:       "modals.importExport.formats.txt.label",
-        icon:        "filetype-txt",
-        description: "modals.importExport.formats.txt.description",
-        extensions:  [".txt"],
-    },
-    yaml: {
-        serialize:   objectsToYAML,
-        mimeType:    "application/x-yaml",
-        label:       "modals.importExport.formats.yaml.label",
-        icon:        "filetype-yml",
-        description: "modals.importExport.formats.yaml.description",
-        extensions:  [".yaml", ".yml"],
-        parse:       (content) => yaml.load(content),
-    },
-};
-
-/**
- * Returns all supported export formats for downloadObjectsAs.
- *
- * @returns {string[]}
- */
-export function getSupportedExportFormats() {
-    return Object.entries(EXPORT_FORMATS).map(([key, { label, icon, description }]) => ({ key, label, icon, description }));
-}
-
-/**
- * Returns all formats that can be parsed back for import (i.e. those with a parse function).
- *
- * @returns {{ key: string, label: string, icon: string, description: string, extensions: string[], parse: function }[]}
- */
-export function getSupportedImportFormats() {
-    return Object.entries(EXPORT_FORMATS)
-        .filter(([, fmt]) => typeof fmt.parse === "function")
-        .map(([key, { label, icon, description, extensions, parse }]) => ({ key, label, icon, description, extensions, parse }));
-}
-
-/**
- * Downloads the provided objects by the given file type under the given file name.
- *
- * @param objs objects to be downloaded in the browser
- * @param name name of the resulting file
- * @param file_type the type of the file, either {"csv" | "json" | "txt" | "yaml"}
- */
-export function downloadObjectsAs(objs, name, file_type) {
-    const format = EXPORT_FORMATS[file_type];
-    if (!format) {
-        throw `Invalid argument '${file_type}' passed to downloadObjectsAs`;
-    }
-    const data = format.serialize(objs);
-    window.saveAs(new Blob([data], {type: `${format.mimeType};charset=utf-8`}), `${name}.${file_type}`);
-}
-
-/**
  * Checks whether two arrays are identical.
  * src: https://stackoverflow.com/questions/6229197/how-to-know-if-two-arrays-have-the-same-values/55614659#55614659
  *
@@ -426,6 +293,25 @@ export function downloadDocument(content, fileName, fileType = "") {
     document.body.removeChild(anchor);
 }
 
+/**
+ * Navigates back to the dashboard the user came from.
+ *
+ * If the previous history entry is a dashboard route, the browser goes back to it so that
+ * the dashboard keeps its state (tab, scroll position, filters). Otherwise, e.g. when the
+ * page was opened directly via a link, the fallback route is pushed instead.
+ *
+ * @param {Object} router Vue router instance, e.g. this.$router.
+ * @param {string} [fallback="/dashboard"] Route to push when there is no dashboard entry to go back to.
+ * @returns {Promise<void>}
+ */
+export async function returnToDashboard(router, fallback = "/dashboard") {
+    const back = window.history.state?.back;
+    if (typeof back === "string" && back.startsWith("/dashboard")) {
+        router.back();
+        return;
+    }
+    await router.push(fallback);
+}
 
 /**
  * Sort the data in a graph according to a previous key
@@ -543,7 +429,6 @@ export function applyTheme(mode) {
     localStorage.setItem("care.theme", mode);
 }
 
-
 /**
  * Shifts a colour towards black or white, whichever gives a visible change.
  * Dark colours are lightened, light colours are darkened, so a hover state is
@@ -576,3 +461,27 @@ export function resolveTheme(saved) {
     const osPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
     return saved || cached || (osPrefersDark ? "dark" : "light");
 }
+
+/**
+ * Moves keyboard focus to the header of the next annotation card in the sidebar feed,
+ * or the previous one when there is no next card. Used before a card or reply is deleted,
+ * so focus is not lost when the focused button disappears.
+ * @param {HTMLElement} fromEl - an element inside the annotation card being left
+ * @returns {void}
+ */
+export function focusNextAnnotationCard(fromEl) {
+    const card = fromEl && fromEl.closest('li[role="article"]');
+    if (!card) return;
+    const isCard = (el) => el && el.getAttribute('role') === 'article';
+    let target = card.nextElementSibling;
+    while (target && !isCard(target)) target = target.nextElementSibling;
+    if (!target) {
+        target = card.previousElementSibling;
+        while (target && !isCard(target)) target = target.previousElementSibling;
+    }
+    // The chevron is hidden while a card is being edited, so fall back to its first control
+    const header = target && (target.querySelector('.card-focusable') || target.querySelector('textarea, button'));
+    if (header) header.focus();
+}
+
+export { objectsToCSV, objectsToJSON, objectsToYAML, objectsToTXT, getSupportedExportFormats, getSupportedImportFormats, downloadObjectsAs } from './data.js';

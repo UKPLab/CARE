@@ -43,7 +43,7 @@ Prepare the CARE Instance
 
   PROJECT_NAME=my_care
   PUBLISHED_PORT=8992
-  POSTGRES_URL=postgres
+  POSTGRES_HOST=postgres
   RPC_MOODLE_HOST=rpc_moodle
   RPC_MOODLE_PORT=8081
   ADMIN_PWD=PjGcbLEUDEH93PY
@@ -88,8 +88,8 @@ data/nginx/app.conf::
       server_name rub.ukp.informatik.tu-darmstadt.de;
       server_tokens off;
 
-      ssl_certificate /etc/letsencrypt/live/care.ukp.informatik.tu-darmstadt.de/fullchain.pem;
-      ssl_certificate_key /etc/letsencrypt/live/care.ukp.informatik.tu-darmstadt.de/privkey.pem;
+      ssl_certificate /etc/letsencrypt/live/rub.ukp.informatik.tu-darmstadt.de/fullchain.pem;
+      ssl_certificate_key /etc/letsencrypt/live/rub.ukp.informatik.tu-darmstadt.de/privkey.pem;
       include /etc/letsencrypt/options-ssl-nginx.conf;
       ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem;
 
