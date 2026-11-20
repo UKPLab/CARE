@@ -42,6 +42,11 @@ function uploadFiles(maxFiles) {
             limitHandler: (req, res) => tooLarge(res),
             defParamCharset: 'utf8',
         }),
+        // An Idempotency-Key on an upload is checked now that the files are read (restIdempotency).
+        (req, res, next) => {
+            req.uploadParsed = true;
+            return req.idempotencyCheck ? req.idempotencyCheck(req, res, next) : next();
+        },
     ];
 }
 
@@ -67,11 +72,27 @@ function readId(raw) {
 }
 
 /**
+ * True (and answered 415) when an Idempotency-Key came with a multipart body to a route that takes
+ * no upload: restIdempotency postponed the key check for the upload middleware, which this route
+ * does not have, so running it would ignore the key.
+ */
+function refuseUncheckedMultipart(req, res) {
+    if (req.idempotencyCheck && !req.uploadParsed) {
+        res.status(415).json({message: 'errors.rest.multipartNotAccepted'});
+        return true;
+    }
+    return false;
+}
+
+/**
  * Run a write in one transaction. `work(options)` returns the response body, or null for 404.
  * @param {Object} spec {status, label, notFound: key, errors: map for sendKnownError, writtenFiles,
  *     onRollback, dryRun: body => true to roll back and answer 200}
  */
 async function runWrite(server, req, res, spec, work) {
+    if (refuseUncheckedMultipart(req, res)) {
+        return;
+    }
     const transaction = await startRestTransaction(server, req.apiUserId);
     const options = restOptions(server, req, transaction, spec.writtenFiles ? {writtenFiles: spec.writtenFiles} : {});
     try {
@@ -86,11 +107,24 @@ async function runWrite(server, req, res, spec, work) {
             spec.onRollback?.();
             return res.status(200).json(body);
         }
+        const status = spec.status || 200;
+        // With an Idempotency-Key, the answer is stored in the same transaction as the write, so a
+        // committed write always has its stored answer, even if the process stops right after.
+        if (req.idempotencyRowId) {
+            await server.db.models['api_idempotency_key'].update(
+                {statusCode: status, responseBody: body},
+                {where: {id: req.idempotencyRowId}, transaction}
+            );
+        }
         await transaction.commit();
-        return res.status(spec.status || 200).json(body);
+        req.idempotencyStored = Boolean(req.idempotencyRowId);
+        return res.status(status).json(body);
     } catch (err) {
-        // An after-commit step failed: the data is saved, so keep written files and say so with 500.
-        if (transaction.finished === 'commit') {
+        // COMMIT succeeded but a step after it failed (startRestTransaction sets restCommitted):
+        // the data is saved, so keep written files and say so with 500. A failed COMMIT itself
+        // leaves restCommitted unset and is cleaned up like any other failure below.
+        if (transaction.restCommitted) {
+            req.idempotencyStored = Boolean(req.idempotencyRowId);
             server.logger.error(`REST ${spec.label} failed after commit: ` + err);
             const key = errorKey(err);
             return res.status(500).json(key
@@ -115,6 +149,9 @@ async function runWrite(server, req, res, spec, work) {
  * Run a read. `work(options)` returns the response body, or null for 404.
  */
 async function runRead(server, req, res, spec, work) {
+    if (refuseUncheckedMultipart(req, res)) {
+        return;
+    }
     try {
         const body = await work(restOptions(server, req));
         if (body === null) {
