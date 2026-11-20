@@ -127,9 +127,10 @@
           />
         </div>
       </template>
+      <ConfirmModal ref="closeConfirm" />
     </template>
     <template #footer>
-      <div class="btn-group gap-2">
+      <div class="btn-group">
         <BasicButton
           v-if="!createdSecret"
           class="btn-primary btn-sm"
@@ -147,7 +148,6 @@
       </div>
     </template>
   </Modal>
-  <ConfirmModal ref="closeConfirm" />
 </template>
 
 <script>
