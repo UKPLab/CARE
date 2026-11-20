@@ -159,6 +159,31 @@ describe('REST coursework', () => {
             }
         });
 
+        test('an unknown assignment is 404 even when the projectId is wrong too', async () => {
+            const res = await request(server.http)
+                .post('/rest/v1/submissions')
+                .set('Authorization', 'Bearer ' + full.secret)
+                .field('assignmentId', '99999999')
+                .field('projectId', '99999999')
+                .attach('files', EMPTY_ZIP, 'both-wrong.zip');
+            expect(res.statusCode).toBe(404);
+            expect(res.body.message).toBe('errors.rest.assignmentNotFound');
+        });
+
+        test('a submission keeps at most 10 files; the rest are not read', async () => {
+            let upload = request(server.http)
+                .post('/rest/v1/submissions')
+                .set('Authorization', 'Bearer ' + full.secret)
+                .field('validationConfigurationId', String(validation.id));
+            for (let i = 1; i <= 11; i++) {
+                upload = upload.attach('files', EMPTY_ZIP, `part-${i}.zip`);
+            }
+            const res = await upload;
+            expect(res.statusCode).toBe(201);
+            expect(res.body.submission.documents).toHaveLength(10);
+            await models['submission'].deleteById(res.body.submission.id);
+        });
+
         test('no files, or a closed assignment, is refused', async () => {
             const noFiles = await request(server.http)
                 .post('/rest/v1/submissions')

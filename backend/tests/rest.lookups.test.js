@@ -102,6 +102,18 @@ describe('REST lookups', () => {
         expect(await countSessions()).toBe(before);
     });
 
+    test('an unknown REST path answers JSON 404 and creates no session row', async () => {
+        const countSessions = async () => Number((await server.db.sequelize.query(
+            'SELECT COUNT(*) AS n FROM "Sessions"', {type: server.db.sequelize.QueryTypes.SELECT}))[0].n);
+        const before = await countSessions();
+        const res = await get('/rest/v1/document/7');
+        expect(res.statusCode).toBe(404);
+        expect(res.body.message).toBe('errors.rest.routeNotFound');
+        const wrongMethod = await request(server.http).put('/rest/v1/studies/7').set('Authorization', 'Bearer ' + narrow.secret);
+        expect(wrongMethod.statusCode).toBe(404);
+        expect(await countSessions()).toBe(before);
+    });
+
     test('GET /me describes the token, its owner, and only the rights on the token', async () => {
         const res = await get('/rest/v1/me');
         expect(res.statusCode).toBe(200);

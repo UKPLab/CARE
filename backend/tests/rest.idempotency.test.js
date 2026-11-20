@@ -159,10 +159,44 @@ describe('REST Idempotency-Key', () => {
         await server.db.sequelize.query(
             'UPDATE "api_idempotency_key" SET "createdAt" = NOW() - INTERVAL \'2 days\' WHERE id = :id',
             {replacements: {id: old.id}});
+        // Cleanup runs at most once a minute; make this request the one that runs it.
+        server.restIdempotencyCleanedAt = 0;
         const res = await create({name: 'REST cleanup trigger'}, 'cleanup-' + Date.now());
         createdDocs.push(res.body.document.id);
         expect(await models['api_idempotency_key'].count({where: {id: old.id}})).toBe(0);
         await models['user'].deleteById(otherUser.user.id);
+    });
+
+    test('the same key with a different upload file is 422, and the new file is not stored', async () => {
+        const key = 'upload-other-' + Date.now();
+        const write = (name, content) => {
+            const file = path.join(os.tmpdir(), name);
+            fs.writeFileSync(file, content);
+            return file;
+        };
+        const upload = (file) => request(server.http)
+            .post('/rest/v1/documents/upload')
+            .set('Authorization', 'Bearer ' + token.secret)
+            .set('Idempotency-Key', key)
+            .attach('file', file, 'same-name.zip');
+        const first = await upload(write('care-rest-idem-a.zip', Buffer.from('PK\x05\x06' + '\x00'.repeat(18))));
+        expect(first.statusCode).toBe(201);
+        createdDocs.push(first.body.document.id);
+        const other = await upload(write('care-rest-idem-b.zip', Buffer.from('PK\x05\x06' + '\x01'.repeat(18))));
+        expect(other.statusCode).toBe(422);
+        expect(other.body.message).toBe('errors.rest.idempotencyKeyReused');
+        expect(await countNamed('same-name')).toBe(1);
+    });
+
+    test('a key with a multipart body on a route without uploads is 415, and nothing runs', async () => {
+        const res = await request(server.http)
+            .post('/rest/v1/documents')
+            .set('Authorization', 'Bearer ' + token.secret)
+            .set('Idempotency-Key', 'multipart-' + Date.now())
+            .field('name', 'REST multipart elsewhere');
+        expect(res.statusCode).toBe(415);
+        expect(res.body.message).toBe('errors.rest.multipartNotAccepted');
+        expect(await countNamed('REST multipart elsewhere')).toBe(0);
     });
 
     test('a key that is too long or not plain ASCII is 400', async () => {

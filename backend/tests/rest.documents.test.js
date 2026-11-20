@@ -391,6 +391,32 @@ describe('REST documents', () => {
             expect(res.body.message).toBe('errors.rest.contentLengthRequired');
         });
 
+        test('two files that together pass 100 MB are refused, although each is under the per-file cap', async () => {
+            const before = await server.db.models['document'].count({where: {deleted: false}});
+            const part = Buffer.alloc(60 * 1024 * 1024);
+            const res = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', part, 'one.zip')
+                .attach('file', part, 'two.zip');
+            expect(res.statusCode).toBe(413);
+            expect(res.body.message).toBe('errors.rest.fileTooLarge');
+            expect(await server.db.models['document'].count({where: {deleted: false}})).toBe(before);
+        }, 60000);
+
+        test('a document upload with two files keeps only the first', async () => {
+            const res = await request(server.http)
+                .post('/rest/v1/documents/upload')
+                .set(auth())
+                .attach('file', writeTempZip('care-rest-first.zip'), 'first.zip')
+                .attach('file', writeTempZip('care-rest-second.zip'), 'second.zip');
+            expect(res.statusCode).toBe(201);
+            expect(res.body.document.name).toBe('first');
+            const second = await server.db.models['document'].count({where: {name: 'second', deleted: false}});
+            expect(second).toBe(0);
+            await server.db.models['document'].deleteById(res.body.document.id);
+        });
+
         test('a .json upload is refused instead of creating nothing', async () => {
             const res = await request(server.http)
                 .post('/rest/v1/documents/upload')
