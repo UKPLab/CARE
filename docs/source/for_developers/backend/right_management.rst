@@ -104,7 +104,7 @@ Role Definitions and Rights
 
 Below is a list of the roles currently available in CARE, along with additional information about the rights associated with each role:
 
-- **Admin**: Has full access to all features and settings. Admins can create and assign studies, manage users and roles, and edit platform settings. They automatically have access to everything that other roles can do.  
+- **Admin**: Has full access to all features and settings. Admins can create and assign studies, manage users and roles, and edit platform settings. They automatically have access to everything that other roles can do. This does not carry over to API tokens: a token can only use the rights ticked when it was created, even when an admin owns it (see :doc:`rest_api`).  
 
 - **Teacher**: Coordination role. Teachers can view studies, inspect sessions, see user information (like names and emails), and query lists of students or mentors through the backend. They usually prepare and manage study workflows but do not have full system control.  
 

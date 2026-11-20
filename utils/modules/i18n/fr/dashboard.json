@@ -588,5 +588,51 @@
             "numberOfSteps": "Nombre d'étapes"
         }
     },
-    "ai": {}
+    "ai": {},
+    "apiTokens": {
+        "title": "Jetons API",
+        "createTooltip": "Créer un jeton API",
+        "createTitle": "Créer un jeton API",
+        "nameLabel": "Nom",
+        "secretLabel": "Secret",
+        "rightsLabel": "Droits",
+        "rightsHelp": "Le jeton ne peut faire que ce que vous cochez ici, et jamais plus que votre propre compte. Commencez par le plus petit ensemble dont le script a besoin.",
+        "presetLabel": "Partir de",
+        "presetNone": "Rien de sélectionné",
+        "presetAll": "Tous mes droits",
+        "presetRole": "Rôle : {role}",
+        "rightsSelected": "{count} droits sélectionnés sur {total}",
+        "rightName": "Droit",
+        "rightDescription": "Ce qu'il permet",
+        "rightsRequired": "Sélectionnez au moins un droit.",
+        "expiryLabel": "Expire",
+        "expiryNever": "Jamais",
+        "expiryDays": "Dans {days} jours",
+        "expiryHelp": "Après cette date, le jeton ne fonctionne plus et il faut en créer un nouveau.",
+        "secretOnceWarning": "Copiez ce secret maintenant. CARE ne l'affichera plus.",
+        "showSecret": "Afficher le secret",
+        "hideSecret": "Masquer le secret",
+        "copySecret": "Copier le secret",
+        "closeWithoutCopyTitle": "Fermer sans copier",
+        "closeWithoutCopyMessage": "Vous n'avez ni copié ni affiché le secret. CARE ne peut plus l'afficher ; sans lui, le jeton est inutilisable. Fermer quand même ?",
+        "revoke": "Révoquer",
+        "revokeConfirm": "Révoquer le jeton « {name} » ? Les scripts qui l'utilisent cesseront de fonctionner.",
+        "columns": {
+            "name": "Nom",
+            "prefix": "Préfixe",
+            "createdAt": "Créé",
+            "lastUsedAt": "Dernière utilisation",
+            "userId": "ID utilisateur",
+            "rights": "Droits",
+            "expiresAt": "Expire"
+        },
+        "toasts": {
+            "loadFailed": "Impossible de charger les jetons",
+            "createFailed": "Impossible de créer le jeton",
+            "revokeFailed": "Impossible de révoquer le jeton",
+            "copied": "Secret copié",
+            "copyFailed": "Impossible de copier le secret",
+            "rightsLoadFailed": "Impossible de charger les droits que vous pouvez attribuer"
+        }
+    }
 }

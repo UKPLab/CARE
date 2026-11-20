@@ -16,6 +16,7 @@ Structure
 ---------
 
 Before the test environment is set up, a special test instance of the database is recreated including all migrations available.
+The migrations remove the default admin, so ``make test`` runs with ``DEV_SKIP_WIZARD=true`` and the server creates the admin from ``ADMIN_EMAIL`` / ``ADMIN_PWD``.
 Afterwards, the test environment is set up and the tests are executed in a sequential order.
 Each test file starts his own server instance, each test connects separately to the server instance with a new user instance.
 The test environment is torn down after all tests are executed.

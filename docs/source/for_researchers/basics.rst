@@ -190,3 +190,25 @@ timed out. If this is the case, your model might not run properly anymore.
 .. note::
     An easy-to-use plugin feature for the frontend is currently under development to make modifying the frontend
     for integrating new UI elements for an NLP model as easy as writing a simply configuration file.
+
+
+Working with API tokens
+-----------------------
+
+Scripts can work with CARE without the browser through the REST API, using a
+personal API token. The feature is off by default.
+
+1. An admin turns on **Enable API tokens** under Settings, General, API tokens.
+   The same place holds the two request limits per minute.
+2. Any user except guests then finds **API Tokens** in the Home group of the sidebar.
+3. **Create** asks for a name, the rights the token may use, and when it expires.
+   No right is ticked at the start. **Start from** ticks all of your rights or
+   the rights of one of your roles. A token can never do more than your account.
+4. The secret, starting with ``care_``, is shown once. Copy it into the script's
+   configuration. CARE stores only a hash and cannot show it again.
+5. **Revoke** stops the token at once. Admins see and can revoke every user's token.
+
+Being an admin gives a token nothing by itself. It can only do what its ticked
+rights allow. The routes and their rights are listed in
+:doc:`../for_developers/backend/rest_api`.
+

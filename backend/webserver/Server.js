@@ -79,6 +79,10 @@ module.exports = class Server {
             limit: "10kb" 
         }));
 
+        // REST uses Bearer tokens, never the login session. Registered before session management so
+        // script calls do not create a session row each time.
+        require("./routes/rest")(this);
+
         this.logger.debug("Initializing Session management...");
         this.session = this.#initSessionManagement();
         this.app.use(this.session);
@@ -103,7 +107,7 @@ module.exports = class Server {
             if (req.method !== "GET") {
                 return next();
             }
-            if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/docs")) {
+            if (req.path.startsWith("/api") || req.path.startsWith("/auth") || req.path.startsWith("/docs") || req.path.startsWith("/rest")) {
                 return next();
             }
             return res.sendFile(path.resolve(__dirname, "../../dist/index.html"));
@@ -119,7 +123,9 @@ module.exports = class Server {
         }).catch((err) => {
             this.logger.error("initMailServer failed: " + err);
         });
-        Promise.resolve(setupDevAdmin(this)); // When DEV_SKIP_WIZARD=true only: creates first admin from env and marks wizard complete.
+        // When DEV_SKIP_WIZARD=true only: creates first admin from env and marks wizard complete.
+        // Tests await this before logging in as admin.
+        this.devAdminReady = setupDevAdmin(this);
         this.#initWebsocketServer();
         this.#discoverComponents("./rpcs", RPC, this.addRPC.bind(this));
         this.#discoverComponents("./sockets", Socket, this.addSocket.bind(this));
@@ -555,6 +561,8 @@ module.exports = class Server {
         if (this._statsScheduler) {
             this._statsScheduler.stop(this.logger);
         }
+        // SIGINT/SIGTERM await stop() and then exit, so the pool must finish closing first.
+        await this.db.sequelize.close();
     }
 
     /**

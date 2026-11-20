@@ -8,6 +8,68 @@ const path = require("path");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
 /**
+ * Read-only annotation access for /rest/v1 only. The socket methods below do not call these.
+ */
+
+const NOTES_SEE_ALL = 'frontend.dashboard.studies.fullAccess';
+const ANNOTATION_FIELDS = [
+    'id', 'documentId', 'userId', 'text', 'tagId', 'selectors', 'studySessionId', 'studyStepId',
+    'anonymous', 'createdAt', 'updatedAt',
+];
+
+/**
+ * Which annotations or comments of a document one caller may read:
+ * everything with studies.fullAccess on the token, otherwise their own notes and the notes made
+ * in sessions of studies they own. Drafts are never returned. On an anonymous note that is not
+ * the caller's own, the author is removed.
+ *
+ * @param {Object} models
+ * @param {number} userId
+ * @param {Object[]} rows non-deleted, non-draft rows of one document
+ * @param {string[]} fields keys to return
+ * @param {function(string): Promise<boolean>} can token right check
+ * @returns {Promise<Object[]>}
+ */
+async function visibleNotes(models, userId, rows, fields, can) {
+    const seeAll = await can(NOTES_SEE_ALL);
+    const isOwn = (row) => Number(row.userId) === Number(userId);
+    const ownedSessionIds = new Set();
+    if (!seeAll) {
+        const sessionIds = [...new Set(rows.map((row) => row.studySessionId).filter((id) => id != null))];
+        const sessions = sessionIds.length === 0 ? [] : await models['study_session'].getAllByKeyValues('id', sessionIds);
+        const studyIds = [...new Set(sessions.map((session) => session.studyId))];
+        const studies = studyIds.length === 0 ? [] : await models['study'].getAllByKeyValues('id', studyIds);
+        const ownedStudyIds = new Set(studies
+            .filter((study) => study.userId === userId || study.createdByUserId === userId)
+            .map((study) => study.id));
+        for (const session of sessions) {
+            if (ownedStudyIds.has(session.studyId)) {
+                ownedSessionIds.add(session.id);
+            }
+        }
+    }
+    return rows
+        .filter((row) => seeAll || isOwn(row) || ownedSessionIds.has(row.studySessionId))
+        .map((row) => {
+            const note = Object.fromEntries(fields.map((key) => [key, row[key] ?? null]));
+            if (row.anonymous && !isOwn(row)) {
+                note.userId = null;
+            }
+            return note;
+        });
+}
+
+/**
+ * Annotations of one document that the caller may read. The route checks access to the document.
+ * Mirrors AnnotationSocket.getAnnotationsByDoc (annotationGetByDocument). Differs: filtered by who may read each note.
+ */
+async function listDocumentAnnotations({userId, documentId}, options) {
+    const models = options.models;
+    const rows = await models['annotation'].getAllByKey('documentId', documentId) || [];
+    return visibleNotes(models, userId, rows, ANNOTATION_FIELDS, options.can);
+}
+
+/**
  * Handle all annotation through websocket
  *
  * @author Dennis Zyska, Nils Dycke
@@ -387,3 +449,5 @@ class AnnotationSocket extends Socket {
 }
 
 module.exports = AnnotationSocket;
+module.exports.listDocumentAnnotations = listDocumentAnnotations;
+module.exports.visibleNotes = visibleNotes;

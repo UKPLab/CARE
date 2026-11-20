@@ -1,6 +1,203 @@
 const TranslatableError = require("../../utils/TranslatableError");
+const {canOf} = require('../utils/restHelpers');
 const Socket = require("../Socket.js");
 const {getEmailContent} = require("../../utils/helper/email");
+
+/**
+ * Study session actions for /rest/v1 only. The socket methods below do not call these.
+ * The acting user comes from the token. A caller starts and finishes only their own sessions.
+ */
+
+const SESSION_FIELDS = ['id', 'hash', 'studyId', 'userId', 'studyStepId', 'numberSteps', 'start', 'end', 'createdAt'];
+
+function publicSession(session) {
+    return Object.fromEntries(SESSION_FIELDS.map((key) => [key, session[key] ?? null]));
+}
+
+/**
+ * Sessions of one study, or the caller's own sessions when no study is given.
+ * Someone who may see the study gets all its sessions. Anyone else gets only their own.
+ */
+async function listStudySessions({userId, study}, options) {
+    const {userCanViewStudy} = require('./study');
+    const models = options.models;
+    if (!study) {
+        return (await models['study_session'].getAllByKey('userId', userId)).map(publicSession);
+    }
+    const sessions = await models['study_session'].getAllByKey('studyId', study.id);
+    const seeAll = await userCanViewStudy(canOf(options), userId, study);
+    return sessions.filter((session) => seeAll || session.userId === userId).map(publicSession);
+}
+
+/**
+ * One session: the caller's own, or any session of a study the caller may see.
+ * @returns {Promise<Object|null>} null when the session does not exist
+ * @throws {TranslatableError} errors.rest.sessionNoAccess
+ */
+async function getStudySession({userId, session}, options) {
+    const {userCanViewStudy} = require('./study');
+    if (!session) {
+        return null;
+    }
+    if (session.userId !== userId) {
+        const study = await options.models['study'].getById(session.studyId);
+        if (!(await userCanViewStudy(canOf(options), userId, study))) {
+            throw new TranslatableError('errors.rest.sessionNoAccess');
+        }
+    }
+    return publicSession(session);
+}
+
+/**
+ * Soft-delete a session of a study the caller created, or any with studies.fullAccess on the token.
+ * Mirrors the delete action of StudySessionTable.vue (appDataUpdate with deleted on study_session).
+ */
+async function deleteStudySession({userId, session}, options) {
+    const {ownsStudyRecord} = require('./study');
+    const study = await options.models['study'].getById(session.studyId, {transaction: options.transaction});
+    if (!(study && ownsStudyRecord(userId, study)) && !(await canOf(options)('frontend.dashboard.studies.fullAccess'))) {
+        throw new TranslatableError('errors.rest.sessionNoAccess');
+    }
+    await options.models['study_session'].deleteById(session.id, {transaction: options.transaction});
+    return true;
+}
+
+async function loadOwnSession(models, userId, sessionId, transaction) {
+    const session = await models['study_session'].getById(sessionId, {transaction});
+    if (!session) {
+        throw new TranslatableError('errors.rest.sessionNotFound');
+    }
+    if (session.userId !== userId) {
+        throw new TranslatableError('errors.rest.sessionNoAccess');
+    }
+    return session;
+}
+
+/**
+ * Mirrors StudySessionSocket.sendSessionStartEmail and sendSessionFinishEmail, merged into one.
+ */
+async function sendSessionEmail(kind, session, options) {
+    const models = options.models;
+    const study = await models['study'].getById(session.studyId);
+    if (!study || !study.enableEmailNotifications || (kind === 'sessionFinish' && study.closed)) {
+        return;
+    }
+    const owner = await models['user'].getById(study.userId);
+    if (!owner || !owner.email) {
+        options.logger.warn(`Cannot send ${kind} email: user ${study.userId} has no email`);
+        return;
+    }
+    const baseUrl = await models['setting'].get('system.baseUrl') || 'localhost:3000';
+    const context = {
+        userId: study.userId,
+        creatorId: study.userId,
+        studyId: study.id,
+        studySessionId: session.id,
+        studySessionHash: session.hash,
+        baseUrl,
+    };
+    if (kind === 'sessionFinish') {
+        context.reviewLink = `http://${baseUrl}/review/${session.hash}`;
+    }
+    const content = await getEmailContent(`email.template.${kind}`, kind, context, models, options.logger);
+    await options.server.sendMail(owner.email, content.subject, content.body, {isHtml: content.isHtml});
+}
+
+function emailAfterCommit(kind, session, options) {
+    options.transaction.afterCommit(() => sendSessionEmail(kind, session, options)
+        .catch((error) => options.logger.error(`Failed to send ${kind} email: ` + error)));
+}
+
+/**
+ * Start a new session in a study for the caller, or set the start time of one of their sessions.
+ * Same result as studySessionStart.
+ * Mirrors StudySessionSocket.startStudySession (studySessionStart). Differs: own sessions only.
+ */
+async function startStudySession({userId, study, sessionId}, options) {
+    const models = options.models;
+    const transaction = options.transaction;
+    if (sessionId != null) {
+        const existing = await loadOwnSession(models, userId, sessionId, transaction);
+        const session = await models['study_session'].updateById(existing.id, {start: Date.now()}, {transaction});
+        if (existing.start == null) {
+            emailAfterCommit('sessionStart', session, options);
+        }
+        return publicSession(session);
+    }
+    if (study.template) {
+        throw new TranslatableError('errors.rest.studyNotEditable');
+    }
+    // The model checks the study is open and the session limits before it creates the row.
+    const session = await models['study_session'].add({studyId: study.id, userId, start: Date.now()}, {transaction});
+    emailAfterCommit('sessionStart', session, options);
+    return publicSession(session);
+}
+
+/**
+ * Finish one of the caller's sessions. Same result as studySessionFinish.
+ * Mirrors StudySessionSocket.finishStudySession (studySessionFinish). Differs: own sessions only.
+ */
+async function finishStudySession({userId, sessionId}, options) {
+    const models = options.models;
+    const transaction = options.transaction;
+    const session = await loadOwnSession(models, userId, sessionId, transaction);
+    if (session.end) {
+        throw new TranslatableError('errors.studies.studySession.alreadyFinished');
+    }
+    const study = await models['study'].getById(session.studyId, {transaction});
+    if (study && study.closed) {
+        throw new TranslatableError('errors.studies.studySession.cannotFinishClosedStudy');
+    }
+    const updated = await models['study_session'].updateById(session.id, {end: Date.now()}, {transaction});
+    emailAfterCommit('sessionFinish', updated, options);
+    return publicSession(updated);
+}
+
+/**
+ * Give copies of a session to other users. Only someone who may manage the study can do this.
+ * Raises the study's session limits the same way studySessionCopy does.
+ * Mirrors StudySessionSocket.copyStudySession (studySessionCopy). Differs: manage right from the token, target users checked.
+ */
+async function copyStudySession({userId, sessionId, userIds}, options) {
+    const {userCanManageStudy} = require('./study');
+    const models = options.models;
+    const transaction = options.transaction;
+    const source = await models['study_session'].getById(sessionId, {transaction});
+    if (!source) {
+        throw new TranslatableError('errors.rest.sessionNotFound');
+    }
+    const study = await models['study'].getById(source.studyId, {transaction});
+    if (!(await userCanManageStudy(canOf(options), userId, study))) {
+        throw new TranslatableError('errors.rest.sessionNoAccess');
+    }
+    const targets = [...new Set(userIds)];
+    const users = await models['user'].findAll({
+        where: {id: targets, deleted: false},
+        attributes: ['id'],
+        raw: true,
+        transaction,
+    });
+    for (const id of targets) {
+        if (!users.some((user) => user.id === id)) {
+            throw new TranslatableError('errors.rest.reviewerNotFound', {id});
+        }
+    }
+    const limits = {};
+    if (study.limitSessionsPerUser !== null) {
+        limits.limitSessionsPerUser = study.limitSessionsPerUser + 1;
+    }
+    if (study.limitSessions !== null) {
+        limits.limitSessions = study.limitSessions + targets.length;
+    }
+    if (Object.keys(limits).length > 0) {
+        await models['study'].updateById(study.id, limits, {transaction});
+    }
+    const copies = [];
+    for (const id of targets) {
+        copies.push(await models['study_session'].duplicateStudySession(source.id, {userId: id}, options));
+    }
+    return copies.map(publicSession);
+}
 
 /**
  * Handle all study sessions through websocket
@@ -296,3 +493,9 @@ class StudySessionSocket extends Socket {
 }
 
 module.exports = StudySessionSocket;
+module.exports.listStudySessions = listStudySessions;
+module.exports.getStudySession = getStudySession;
+module.exports.startStudySession = startStudySession;
+module.exports.finishStudySession = finishStudySession;
+module.exports.copyStudySession = copyStudySession;
+module.exports.deleteStudySession = deleteStudySession;

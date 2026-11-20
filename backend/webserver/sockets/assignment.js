@@ -4,7 +4,842 @@ const _ = require("lodash");
 const {Op} = require("sequelize");
 const {getEmailContent} = require("../../utils/helper/email");
 const TranslatableError = require("../../utils/TranslatableError");
+const {canOf} = require("../utils/restHelpers");
 const {buildRoleBulkCsvRows} = require("../../utils/helper/roleBulkCsv.js");
+
+/**
+ * Assignments (the `assignment` table: an assignment collects submissions) for
+ * /rest/v1/assignments only. Not the review assignments below, which create review studies.
+ * The dashboard edits these through the generic table socket (appDataUpdate on assignment and
+ * assignment_share in AssignmentModal.vue and Assignments.vue).
+ */
+
+const ASSIGNMENTS_VIEW_ALL = 'frontend.dashboard.assignments.viewAll';
+const ASSIGNMENTS_EDIT_ALL = 'frontend.dashboard.assignments.edit';
+const ASSIGNMENT_WRITABLE_FIELDS = [
+    'name', 'description', 'projectId', 'start', 'end', 'maxRevisions', 'validationConfigurationId',
+    'allowReUpload', 'notifyOnSubmissionUpload', 'submissionWarning',
+];
+const ASSIGNMENT_PUBLIC_FIELDS = ['id', 'userId', ...ASSIGNMENT_WRITABLE_FIELDS, 'closed', 'createdAt', 'updatedAt'];
+
+/** Share rows of several assignments in one query, as {roles, users} per assignment id. */
+async function sharesByAssignment(models, assignmentIds, transaction) {
+    const rows = assignmentIds.length === 0 ? [] : await models['assignment_share'].findAll({
+        where: {assignmentId: assignmentIds, deleted: {[Op.not]: true}},
+        attributes: ['assignmentId', 'roleId', 'userId'],
+        raw: true,
+        transaction,
+    });
+    const shares = new Map(assignmentIds.map((id) => [id, {roles: [], users: []}]));
+    for (const row of rows) {
+        const entry = shares.get(row.assignmentId);
+        if (row.roleId) {
+            entry.roles.push(row.roleId);
+        }
+        if (row.userId) {
+            entry.users.push(row.userId);
+        }
+    }
+    return shares;
+}
+
+function assignmentWithShares(row, shares) {
+    const plain = typeof row.get === 'function' ? row.get({plain: true}) : row;
+    const assignment = Object.fromEntries(ASSIGNMENT_PUBLIC_FIELDS.map((key) => [key, plain[key] ?? null]));
+    assignment.shareWith = shares.get(plain.id) || {roles: [], users: []};
+    return assignment;
+}
+
+async function publicAssignment(models, row, transaction) {
+    const plain = typeof row.get === 'function' ? row.get({plain: true}) : row;
+    return assignmentWithShares(plain, await sharesByAssignment(models, [plain.id], transaction));
+}
+
+/**
+ * Whether the caller may see one assignment: own, shared with them by user or role, or viewAll.
+ */
+async function canSeeAssignment(models, userId, assignment, can) {
+    if (assignment.userId === userId || await can(ASSIGNMENTS_VIEW_ALL)) {
+        return true;
+    }
+    const filter = await models['assignment'].getUserFilter(userId);
+    return Boolean(filter.shared && filter.shared.id[Op.in].includes(assignment.id));
+}
+
+async function loadAssignmentForChange(options, userId, id) {
+    const assignment = await options.models['assignment'].getById(id, {transaction: options.transaction});
+    if (!assignment) {
+        return null;
+    }
+    if (assignment.userId !== userId && !(await canOf(options)(ASSIGNMENTS_EDIT_ALL))) {
+        throw new TranslatableError('errors.rest.assignmentNoAccess');
+    }
+    return assignment;
+}
+
+/**
+ * Turn {roles: [id or name], users: [id]} into role ids and user ids, checking each exists.
+ */
+async function resolveShares(models, shareWith, transaction) {
+    const roleRows = await models['user_role'].findAll({attributes: ['id', 'name'], raw: true, transaction});
+    const roleIds = [];
+    for (const key of shareWith.roles || []) {
+        const role = roleRows.find((row) => row.id === key || row.name === key);
+        if (!role) {
+            throw new TranslatableError('errors.rest.roleNotFound', {role: key});
+        }
+        roleIds.push(role.id);
+    }
+    const userIds = [...new Set(shareWith.users || [])];
+    if (userIds.length > 0) {
+        const found = await models['user'].findAll({where: {id: userIds, deleted: false}, attributes: ['id'], raw: true, transaction});
+        for (const id of userIds) {
+            if (!found.some((row) => row.id === id)) {
+                throw new TranslatableError('errors.rest.reviewerNotFound', {id});
+            }
+        }
+    }
+    return {roleIds: [...new Set(roleIds)], userIds};
+}
+
+/**
+ * Make the share rows of an assignment match the given roles and users. Mirrors the share step
+ * of AssignmentModal.vue (assignment_share rows with a roleId or a userId).
+ */
+async function replaceShares(models, assignmentId, shareWith, transaction) {
+    const {roleIds, userIds} = await resolveShares(models, shareWith, transaction);
+    const existing = await models['assignment_share'].findAll({
+        where: {assignmentId, deleted: {[Op.not]: true}},
+        raw: true,
+        transaction,
+    });
+    for (const row of existing) {
+        const keep = row.roleId ? roleIds.includes(row.roleId) : userIds.includes(row.userId);
+        if (!keep) {
+            await models['assignment_share'].deleteById(row.id, {transaction});
+        }
+    }
+    for (const roleId of roleIds.filter((id) => !existing.some((row) => row.roleId === id))) {
+        await models['assignment_share'].add({assignmentId, roleId, userId: null}, {transaction});
+    }
+    for (const userId of userIds.filter((id) => !existing.some((row) => row.userId === id))) {
+        await models['assignment_share'].add({assignmentId, userId, roleId: null}, {transaction});
+    }
+}
+
+/**
+ * Project and validation configuration of an assignment must exist; the project must be usable.
+ */
+async function checkAssignmentReferences(models, userId, fields, transaction) {
+    const {userCanUseProject} = require('./project');
+    if (fields.projectId != null && !(await userCanUseProject(models, userId, fields.projectId))) {
+        throw new TranslatableError('errors.rest.invalidProjectId');
+    }
+    if (fields.validationConfigurationId != null) {
+        const configuration = await models['configuration'].getById(fields.validationConfigurationId, {transaction});
+        if (!configuration || configuration.type !== 1) {
+            throw new TranslatableError('errors.rest.invalidValidationConfiguration');
+        }
+    }
+}
+
+/**
+ * Own assignments, those shared with the caller, or all with viewAll on the token.
+ * Mirrors the Assignments dashboard list (assignment table with Assignment.getUserFilter).
+ */
+async function listAssignments({userId}, options) {
+    const models = options.models;
+    let where = {deleted: false};
+    if (!(await canOf(options)(ASSIGNMENTS_VIEW_ALL))) {
+        const filter = await models['assignment'].getUserFilter(userId);
+        where = {deleted: false, [Op.or]: [filter.owned, ...(filter.shared ? [filter.shared] : [])]};
+    }
+    const rows = await models['assignment'].findAll({where, order: [['id', 'ASC']], raw: true});
+    const shares = await sharesByAssignment(models, rows.map((row) => row.id));
+    return rows.map((row) => assignmentWithShares(row, shares));
+}
+
+async function getAssignment({userId, id}, options) {
+    const assignment = await options.models['assignment'].getById(id);
+    if (!assignment) {
+        return null;
+    }
+    if (!(await canSeeAssignment(options.models, userId, assignment, canOf(options)))) {
+        throw new TranslatableError('errors.rest.assignmentNoAccess');
+    }
+    return publicAssignment(options.models, assignment);
+}
+
+/**
+ * Mirrors AssignmentModal.vue save (appDataUpdate on assignment, then assignment_share).
+ * Differs: the owner is always the token's user; project and configuration are checked.
+ */
+async function addAssignment({userId, fields, shareWith}, options) {
+    const models = options.models;
+    // The dashboard creates an assignment inside the current project; REST uses the same default.
+    if (fields.projectId === undefined) {
+        const {defaultProjectFor} = require('./project');
+        fields = {...fields, projectId: await defaultProjectFor(models, userId)};
+    }
+    await checkAssignmentReferences(models, userId, fields, options.transaction);
+    const assignment = await models['assignment'].add({...fields, userId}, {transaction: options.transaction});
+    if (shareWith) {
+        await replaceShares(models, assignment.id, shareWith, options.transaction);
+    }
+    return publicAssignment(models, assignment, options.transaction);
+}
+
+/**
+ * Change fields and, when given, the whole share list. Own assignments, or any with
+ * assignments.edit on the token. Mirrors AssignmentModal.vue edit.
+ */
+async function updateAssignment({userId, id, fields, shareWith}, options) {
+    const models = options.models;
+    const assignment = await loadAssignmentForChange(options, userId, id);
+    if (!assignment) {
+        return null;
+    }
+    await checkAssignmentReferences(models, userId, fields, options.transaction);
+    if (Object.keys(fields).length > 0) {
+        await models['assignment'].updateById(assignment.id, fields, {transaction: options.transaction});
+    }
+    if (shareWith) {
+        await replaceShares(models, assignment.id, shareWith, options.transaction);
+    }
+    return publicAssignment(models, await models['assignment'].getById(assignment.id, {transaction: options.transaction}), options.transaction);
+}
+
+/**
+ * Close an assignment: no more uploads. Mirrors the close action in Assignments.vue.
+ */
+async function closeAssignment({userId, id}, options) {
+    const assignment = await loadAssignmentForChange(options, userId, id);
+    if (!assignment) {
+        return null;
+    }
+    if (assignment.closed) {
+        throw new TranslatableError('errors.rest.assignmentAlreadyClosed');
+    }
+    const updated = await options.models['assignment'].updateById(assignment.id, {closed: new Date()}, {transaction: options.transaction});
+    return publicAssignment(options.models, updated, options.transaction);
+}
+
+/**
+ * Soft-delete an assignment that has no submissions, so no student work loses its assignment.
+ * Mirrors the delete action in Assignments.vue. Differs: refused while submissions exist.
+ */
+async function deleteAssignment({userId, id}, options) {
+    const models = options.models;
+    const assignment = await loadAssignmentForChange(options, userId, id);
+    if (!assignment) {
+        return null;
+    }
+    const submissions = await models['submission'].count({where: {assignmentId: assignment.id, deleted: false}, transaction: options.transaction});
+    if (submissions > 0) {
+        throw new TranslatableError('errors.rest.assignmentHasSubmissions');
+    }
+    await models['assignment'].deleteById(assignment.id, {transaction: options.transaction});
+    return true;
+}
+
+/**
+ * Review-assignment actions for /rest/v1/review-assignments only. The socket methods below do not call these.
+ * Callers pass ids. Every row (template, items, reviewers, study) is loaded and access-checked here,
+ * so a request body can never supply study fields or act as another user.
+ */
+
+const ASSIGNMENT_TYPES = ['document', 'submission', 'study_session'];
+const ASSIGNMENT_MODES = ['everyReviewer', 'byRole', 'byCount', 'sessionOwner'];
+const ITEM_MODEL = {document: 'document', submission: 'submission', study_session: 'study_session'};
+
+async function loadTemplateForAssignment(models, userId, templateId, transaction, can) {
+    const {userCanViewStudy} = require('./study');
+    const template = await models['study'].getById(templateId, {transaction});
+    if (!template) {
+        throw new TranslatableError('errors.rest.templateNotFound');
+    }
+    if (!(await userCanViewStudy(can, userId, template))) {
+        throw new TranslatableError('errors.rest.studyNoAccess');
+    }
+    if (!template.template) {
+        throw new TranslatableError('errors.rest.notAStudyTemplate');
+    }
+    return template;
+}
+
+/**
+ * Load the documents, submissions, or study sessions to assign. Same visibility as the Assignments view.
+ */
+async function loadAssignmentItems(models, userId, type, itemIds, transaction, can) {
+    const {userHasDocumentAccess} = require('./document');
+    const {userCanViewStudy} = require('./study');
+    const seeAll = await can(ASSIGNMENTS_VIEW_ALL);
+    // One query for all items; the checks below still go in the order the caller sent them.
+    const rows = await models[ITEM_MODEL[type]].findAll({where: {id: itemIds, deleted: false}, raw: true, transaction});
+    const byId = new Map(rows.map((row) => [row.id, row]));
+    const items = [];
+    for (const id of itemIds) {
+        const item = byId.get(id);
+        if (!item) {
+            throw new TranslatableError('errors.rest.assignmentItemNotFound', {id});
+        }
+        let allowed = seeAll;
+        if (!allowed && type === 'document') {
+            allowed = await userHasDocumentAccess(models, userId, item.id, can);
+        } else if (!allowed && type === 'submission') {
+            allowed = item.userId === userId;
+        } else if (!allowed) {
+            const study = await models['study'].getById(item.studyId, {transaction});
+            allowed = await userCanViewStudy(can, userId, study);
+        }
+        if (!allowed) {
+            throw new TranslatableError('errors.rest.assignmentItemNoAccess', {id});
+        }
+        items.push(item);
+    }
+    return items;
+}
+
+async function loadReviewers(models, reviewerIds, transaction) {
+    if (reviewerIds.length === 0) {
+        return [];
+    }
+    const users = await models['user'].findAll({
+        where: {id: reviewerIds, deleted: false},
+        attributes: ['id', 'firstName', 'lastName'],
+        raw: true,
+        transaction,
+    });
+    for (const id of reviewerIds) {
+        if (!users.some((user) => user.id === id)) {
+            throw new TranslatableError('errors.rest.reviewerNotFound', {id});
+        }
+    }
+    return users;
+}
+
+/**
+ * Resolve { roleIdOrName: reviewsPerUser } to the users of each role.
+ * Listing a role's users needs the same right the dashboard user list needs.
+ */
+async function loadRoleGroups(models, roles, reviewerIds, transaction, can) {
+    const allRoles = await models['user_role'].findAll({attributes: ['id', 'name'], raw: true, transaction});
+    const groups = [];
+    for (const [key, needed] of Object.entries(roles)) {
+        if (needed === 0) {
+            continue;
+        }
+        const role = allRoles.find((row) => String(row.id) === key || row.name === key);
+        if (!role) {
+            throw new TranslatableError('errors.rest.roleNotFound', {role: key});
+        }
+        const mayList = await can(`backend.socket.user.getUsers.${role.name}`)
+            || await can('backend.socket.user.getUsers.all');
+        if (!mayList) {
+            throw new TranslatableError('errors.rest.roleNoAccess', {role: role.name});
+        }
+        const matches = await models['user_role_matching'].findAll({
+            where: {userRoleId: role.id, deleted: false},
+            attributes: ['userId'],
+            raw: true,
+            transaction,
+        });
+        let memberIds = [...new Set(matches.map((row) => row.userId))];
+        if (reviewerIds.length > 0) {
+            memberIds = memberIds.filter((id) => reviewerIds.includes(id));
+        }
+        const users = memberIds.length === 0 ? [] : await models['user'].findAll({
+            where: {id: memberIds, deleted: false},
+            attributes: ['id', 'firstName', 'lastName'],
+            raw: true,
+            transaction,
+        });
+        groups.push({roleName: role.name, needed, users});
+    }
+    return groups;
+}
+
+/**
+ * Every user of each role reviews `needed` items. Nobody reviews their own item, and items are
+ * filled evenly. Same rules as assignmentCreateBulk in role mode.
+ * @returns {Array<{item: Object, reviewerIds: number[]}>}
+ * Mirrors the role mode of AssignmentSocket.createAssignmentBulk. Rewritten: same rules, different code.
+ */
+function planByRole(items, groups) {
+    const itemById = Object.fromEntries(items.map((item) => [item.id, item]));
+    const counter = Object.fromEntries(items.map((item) => [item.id, 0]));
+    const reviewersByItem = {};
+
+    for (const {roleName, needed, users} of groups) {
+        const queue = _.shuffle(users);
+        if (queue.length === 0) {
+            throw new TranslatableError('errors.assignment.noUsersFoundForRole', {roleName});
+        }
+        if (needed > items.length) {
+            throw new TranslatableError('errors.assignment.notEnoughDocumentsForRole', {roleName});
+        }
+        for (const user of queue) {
+            if (items.filter((item) => item.userId !== user.id).length < needed) {
+                throw new TranslatableError('errors.assignment.notEnoughDocumentsForReviewer', {
+                    reviewerName: `${user.firstName} ${user.lastName}`,
+                });
+            }
+        }
+
+        const assigned = {};
+        const fits = (item, user) => item.userId !== user.id && !assigned[user.id].includes(item.id);
+        for (const user of queue) {
+            assigned[user.id] = [];
+            while (assigned[user.id].length < needed) {
+                const minCount = Math.min(...Object.values(counter));
+                const next = items.find((item) => counter[item.id] === minCount && fits(item, user));
+                if (next) {
+                    assigned[user.id].push(next.id);
+                    counter[next.id]++;
+                    continue;
+                }
+                // No least-reviewed item fits this user. Take a fitting item from an earlier user
+                // and give that user a least-reviewed item instead.
+                let swapped = false;
+                for (const other of queue) {
+                    if (other.id === user.id || !assigned[other.id]) {
+                        continue;
+                    }
+                    const takeId = assigned[other.id].find((id) => fits(itemById[id], user));
+                    if (takeId === undefined) {
+                        continue;
+                    }
+                    const replacement = items.find((item) =>
+                        counter[item.id] === minCount && item.id !== takeId && fits(item, other));
+                    if (!replacement) {
+                        continue;
+                    }
+                    assigned[other.id] = assigned[other.id].filter((id) => id !== takeId);
+                    assigned[other.id].push(replacement.id);
+                    assigned[user.id].push(takeId);
+                    counter[replacement.id]++;
+                    swapped = true;
+                    break;
+                }
+                if (!swapped) {
+                    throw new TranslatableError('errors.assignment.unableToAssignEnoughDocuments', {
+                        reviewerName: `${user.firstName} ${user.lastName}`,
+                        roleName,
+                    });
+                }
+            }
+        }
+        for (const [reviewerId, itemIds] of Object.entries(assigned)) {
+            for (const itemId of itemIds) {
+                (reviewersByItem[itemId] ||= []).push(Number(reviewerId));
+            }
+        }
+    }
+    return Object.entries(reviewersByItem).map(([itemId, reviewerIds]) => ({item: itemById[itemId], reviewerIds}));
+}
+
+/**
+ * Each item goes to exactly one reviewer. `counts` is how many items each reviewer takes.
+ * Nobody reviews their own item. Same rules as assignmentCreateBulk in reviewer mode.
+ * @returns {Array<{item: Object, reviewerIds: number[]}>}
+ * Mirrors the reviewer mode of AssignmentSocket.createAssignmentBulk. Rewritten: same rules, different code.
+ */
+function planByReviewer(items, counts) {
+    const remaining = {...counts};
+    const taken = Object.fromEntries(Object.keys(counts).map((id) => [id, []]));
+
+    for (const item of items) {
+        const free = Object.keys(remaining).find((id) => remaining[id] > 0 && item.userId !== Number(id));
+        if (free !== undefined) {
+            taken[free].push(item);
+            remaining[free]--;
+            continue;
+        }
+        // Only the item's owner has room left. Hand the item to another reviewer and give the owner
+        // one of that reviewer's items in exchange.
+        const owner = String(item.userId);
+        let swapped = false;
+        if (remaining[owner] > 0) {
+            for (const other of Object.keys(taken)) {
+                const give = other === owner ? undefined : taken[other].find((held) => held.userId !== item.userId);
+                if (give === undefined) {
+                    continue;
+                }
+                taken[other] = taken[other].filter((held) => held !== give);
+                taken[other].push(item);
+                taken[owner].push(give);
+                remaining[owner]--;
+                swapped = true;
+                break;
+            }
+        }
+        if (!swapped) {
+            throw new TranslatableError('errors.assignment.couldNotAssignReviewers');
+        }
+    }
+    return Object.entries(taken).flatMap(([reviewerId, held]) =>
+        held.map((item) => ({item, reviewerIds: [Number(reviewerId)]})));
+}
+
+/**
+ * Add the item's id to every template marker in a study step configuration.
+ */
+function fillTemplateMarkers(config, context) {
+    if (Array.isArray(config)) {
+        return config.map((entry) => fillTemplateMarkers(entry, context));
+    }
+    if (!config || typeof config !== 'object') {
+        return config;
+    }
+    const result = {};
+    for (const [key, value] of Object.entries(config)) {
+        if (!value || !value.isTemplate) {
+            result[key] = fillTemplateMarkers(value, context);
+        } else if (context.assignmentType === 'submission') {
+            result[key] = {...value, submissionId: context.submissionId};
+        } else if (context.assignmentType === 'document') {
+            result[key] = {...value, documentId: context.documentId};
+        } else {
+            result[key] = {
+                ...value,
+                ...(context.submissionId && {submissionId: context.submissionId}),
+                ...(context.documentId && {documentId: context.documentId}),
+            };
+        }
+    }
+    return result;
+}
+
+/**
+ * The PDF a submission is reviewed on: the one named in its validation configuration, else the first.
+ */
+async function primaryDocumentId(models, submission, transaction) {
+    const docs = await models['document'].findAll({
+        where: {submissionId: submission.id, deleted: false, type: 0},
+        order: [['id', 'ASC']],
+        raw: true,
+        transaction,
+    });
+    if (docs.length === 0) {
+        return null;
+    }
+    const configuration = submission.validationConfigurationId
+        ? await models['configuration'].getById(submission.validationConfigurationId, {transaction})
+        : null;
+    const primaryId = configuration?.content?.primaryDocument ?? configuration?.primaryDocument;
+    return (docs.find((doc) => doc.id === primaryId) || docs[0]).id;
+}
+
+/**
+ * Copy a study session's documents for a follow-up study, one entry per mapped workflow step.
+ * Same steps as AssignmentSocket.duplicate, for one session.
+ * Mirrors AssignmentSocket.duplicate, for one session.
+ */
+async function duplicateSessionDocuments(models, userId, studySession, workflowMapping, transaction) {
+    const documents = [];
+    let previousSubmissionId = null;
+    for (const [sourceWorkflowStepId, targetWorkflowStepId] of Object.entries(workflowMapping)) {
+        if (targetWorkflowStepId === 'previousSubmission') {
+            if (previousSubmissionId === null) {
+                throw new TranslatableError('errors.assignment.firstStepNotSubmission');
+            }
+            const original = await models['submission'].findOne({where: {id: previousSubmissionId}, transaction});
+            const root = await models['submission'].getRootSubmission(original);
+            const latest = await models['submission'].findOne({where: {previousSubmissionId: root?.id}, transaction});
+            if (!latest) {
+                throw new TranslatableError('errors.assignment.latestSubmissionNotFound');
+            }
+            const document = await models['document'].findOne({where: {submissionId: latest.id, type: 0}, transaction});
+            if (!document) {
+                throw new TranslatableError('errors.assignment.latestSubmissionNotFound');
+            }
+            documents.push({
+                documentId: document.id,
+                workflowStepId: Number(sourceWorkflowStepId),
+                submissionId: document.submissionId || null,
+            });
+            continue;
+        }
+
+        const sourceStep = await models['study_step'].findOne({
+            where: {workflowStepId: targetWorkflowStepId, studyId: studySession.studyId},
+            transaction,
+        });
+        const original = sourceStep && await models['document'].getById(sourceStep.documentId, {transaction});
+        if (!original) {
+            throw new TranslatableError('errors.rest.invalidWorkflowMapping');
+        }
+        previousSubmissionId = original.submissionId;
+        const scope = [
+            {studySessionId: null, studyStepId: null},
+            {studySessionId: studySession.id, studyStepId: sourceStep.id},
+        ];
+        let copy;
+        if (original.submissionId) {
+            const result = await models['submission'].copySubmission(
+                original.submissionId, userId, {hideInFrontend: true}, {}, scope, {transaction});
+            copy = result.copiedDocuments.find((doc) => doc.parentDocumentId === original.id);
+        } else {
+            copy = await models['document'].duplicateDocument(original.id, {}, scope, {transaction});
+        }
+        documents.push({
+            documentId: copy.id,
+            workflowStepId: Number(sourceWorkflowStepId),
+            submissionId: copy.submissionId || null,
+        });
+    }
+    return documents;
+}
+
+/**
+ * The document for each workflow step of one item. Documents and submissions go on the first step.
+ */
+async function itemStepDocuments(models, userId, type, item, workflowSteps, workflowMapping, transaction) {
+    if (type === 'study_session') {
+        return duplicateSessionDocuments(models, userId, item, workflowMapping, transaction);
+    }
+    const firstDocumentId = type === 'submission'
+        ? await primaryDocumentId(models, item, transaction)
+        : item.id;
+    return workflowSteps.map((step, index) => ({
+        documentId: index === 0 ? firstDocumentId : null,
+        workflowStepId: step.id,
+    }));
+}
+
+/**
+ * Create one review study for one item from the template. Same result as AssignmentSocket.createAssignment.
+ * Mirrors AssignmentSocket.createAssignment. Differs: template loaded by id instead of sent by the client.
+ */
+async function createAssignmentStudy({userId, template, templateSteps, workflowSteps, type, item, documents, reviewerCount}, options) {
+    const models = options.models;
+    const workflowStepById = Object.fromEntries(workflowSteps.map((step) => [step.id, step]));
+    const stepDocuments = [];
+    for (const step of templateSteps) {
+        if (!step.workflowStepId) {
+            continue;
+        }
+        const override = documents.find((doc) => doc.workflowStepId === step.workflowStepId) || null;
+        let documentId = override?.documentId ?? step.documentId;
+        if (override?.documentId == null) {
+            // A step that shows another step's document inherits that step's template document.
+            const reference = workflowStepById[step.workflowStepId]?.workflowStepDocument;
+            const referenced = reference != null && templateSteps.find((other) => other.workflowStepId === reference);
+            if (referenced && referenced.documentId != null) {
+                documentId = referenced.documentId;
+            }
+        }
+        const context = {assignmentType: type, submissionId: null, documentId: null};
+        if (type === 'study_session') {
+            context.submissionId = override?.submissionId || null;
+            context.documentId = documentId || null;
+        } else if (type === 'submission') {
+            context.submissionId = item.id;
+        } else {
+            context.documentId = item.id;
+        }
+        stepDocuments.push({
+            id: step.workflowStepId,
+            documentId,
+            configuration: fillTemplateMarkers(step.configuration, context),
+        });
+    }
+
+    const newStudy = {
+        ...template,
+        createdByUserId: userId,
+        userId: item.userId,
+        template: false,
+        id: undefined,
+        hash: undefined,
+        closed: undefined,
+        userIdClosed: undefined,
+        parentStudyId: type === 'study_session' ? item.studyId : null,
+        limitSessions: reviewerCount,
+        limitSessionsPerUser: 1,
+        resumable: true,
+        stepDocuments,
+    };
+    return models['study'].add(newStudy, {
+        transaction: options.transaction,
+        context: newStudy,
+        doNotDuplicate: type === 'study_session',
+    });
+}
+
+/**
+ * One study session per reviewer. Raises the study's session limit when it would be exceeded.
+ * Mirrors AssignmentSocket.addReviewer (assignmentAdd). Differs: a null limit stays unlimited.
+ */
+async function addReviewerSessions(study, reviewerIds, options, {fresh = false} = {}) {
+    const models = options.models;
+    const transaction = options.transaction;
+    // 0 and null both mean unlimited, as in the session model's check. A study created in this
+    // request was made with room for exactly these reviewers, so it needs no count.
+    if (!fresh && study.limitSessions > 0) {
+        const existing = await models['study_session'].count({where: {studyId: study.id}, transaction});
+        if (existing + reviewerIds.length > study.limitSessions) {
+            await models['study'].updateById(study.id, {limitSessions: existing + reviewerIds.length}, {transaction});
+        }
+    }
+    const sessions = [];
+    for (const reviewerId of reviewerIds) {
+        sessions.push(await models['study_session'].add({studyId: study.id, userId: reviewerId}, {transaction}));
+    }
+    return sessions;
+}
+
+/**
+ * Mirrors AssignmentSocket.sendAssignmentEmail.
+ */
+async function sendAssignmentEmail(session, study, type, options) {
+    const models = options.models;
+    const user = await models['user'].getById(session.userId);
+    if (!user || !user.email) {
+        options.logger.warn(`Cannot send assignment email: user ${session.userId} has no email`);
+        return;
+    }
+    const baseUrl = await models['setting'].get('system.baseUrl') || 'localhost:3000';
+    const content = await getEmailContent('email.template.assignment', 'assignment', {
+        userId: session.userId,
+        creatorId: study.userId,
+        studyId: study.id,
+        studySessionId: session.id,
+        studySessionHash: session.hash,
+        baseUrl,
+        link: `http://${baseUrl}/session/${session.hash}`,
+        assignmentType: type,
+        assignmentName: study.name,
+    }, models, options.logger);
+    await options.server.sendMail(user.email, content.subject, content.body, {isHtml: content.isHtml});
+}
+
+function assignmentResult(study, itemId, sessions) {
+    return {
+        id: study.id,
+        hash: study.hash,
+        name: study.name,
+        itemId,
+        sessions: sessions.map((session) => ({id: session.id, hash: session.hash, userId: session.userId})),
+    };
+}
+
+/**
+ * Create review assignments, or add reviewers to an existing study. One function for what the
+ * dashboard does with assignmentCreateSingle, assignmentCreateBulk, and assignmentAdd.
+ *
+ * With `studyId`: add one session per reviewer to that study.
+ * With `templateId`: create one study per item from the template, then add the reviewer sessions.
+ *   mode 'everyReviewer' every item is reviewed by every reviewer (one item is the single assignment)
+ *   mode 'byRole'        every user of each role reviews `roles[role]` items
+ *   mode 'byCount'       each item goes to one reviewer, `counts[userId]` items per reviewer
+ *   mode 'sessionOwner'  each study session goes back to its own user (type 'study_session' only)
+ * The route turns the request's lists into the maps `roles` {roleNameOrId: items} and
+ * `counts` {userId: items}.
+ * With `dryRun` nothing is written and the planned distribution is returned.
+ *
+ * @param {Object} data
+ * @param {number} data.userId acting user, from the token
+ * @param {Object} options needs transaction, models, logger, server
+ * @returns {Promise<{dryRun: boolean, plan?: Array, studies?: Array}>}
+ * Mirrors AssignmentSocket.createAssignmentSingle, createAssignmentBulk and addReviewer (assignmentCreateSingle, assignmentCreateBulk, assignmentAdd). Differs: ids only, rows loaded and checked here.
+ */
+async function createReviewAssignments(data, options) {
+    const models = options.models;
+    const transaction = options.transaction;
+    const {userId, type = 'document', mode = 'everyReviewer', notify = false, dryRun = false} = data;
+    const reviewerIds = [...new Set(data.reviewerIds || [])];
+    // Rights come from the API token, never from the owner alone.
+    const can = canOf(options);
+
+    if (data.studyId != null) {
+        const {userCanViewStudy} = require('./study');
+        const study = await models['study'].getById(data.studyId, {transaction});
+        if (!study) {
+            throw new TranslatableError('errors.rest.studyNotFound');
+        }
+        if (!(await userCanViewStudy(can, userId, study))) {
+            throw new TranslatableError('errors.rest.studyNoAccess');
+        }
+        if (study.template || study.closed) {
+            throw new TranslatableError('errors.rest.studyNotEditable');
+        }
+        await loadReviewers(models, reviewerIds, transaction);
+        if (dryRun) {
+            return {dryRun: true, plan: [{studyId: study.id, reviewerIds}]};
+        }
+        const sessions = await addReviewerSessions(study, reviewerIds, options);
+        if (notify) {
+            // Not returned, so the answer does not wait for mail delivery. Failures are logged.
+            transaction.afterCommit(() => {
+                (async () => {
+                    for (const session of sessions) {
+                        await sendAssignmentEmail(session, study, 'document', options)
+                            .catch((error) => options.logger.error('Failed to send assignment email: ' + error));
+                    }
+                })();
+            });
+        }
+        return {dryRun: false, studies: [assignmentResult(study, null, sessions)]};
+    }
+
+    if (!ASSIGNMENT_TYPES.includes(type) || !ASSIGNMENT_MODES.includes(mode)
+        || (mode === 'sessionOwner' && type !== 'study_session')) {
+        throw new TranslatableError('errors.assignment.invalidMode');
+    }
+    const template = await loadTemplateForAssignment(models, userId, data.templateId, transaction, can);
+    const items = _.shuffle(await loadAssignmentItems(models, userId, type, [...new Set(data.itemIds)], transaction, can));
+
+    let plan;
+    if (mode === 'byRole') {
+        plan = planByRole(items, await loadRoleGroups(models, data.roles, reviewerIds, transaction, can));
+    } else if (mode === 'byCount') {
+        await loadReviewers(models, Object.keys(data.counts).map(Number), transaction);
+        plan = planByReviewer(items, data.counts);
+    } else if (mode === 'sessionOwner') {
+        plan = items.map((item) => ({item, reviewerIds: [item.userId]}));
+    } else {
+        await loadReviewers(models, reviewerIds, transaction);
+        plan = items.map((item) => ({item, reviewerIds}));
+    }
+    if (dryRun) {
+        return {
+            dryRun: true,
+            plan: plan.map((entry) => ({itemId: entry.item.id, reviewerIds: entry.reviewerIds})),
+        };
+    }
+
+    const templateSteps = await models['study_step'].getAllByKey('studyId', template.id) || [];
+    const workflowSteps = await models['workflow_step'].getSortedWorkflowSteps(template.workflowId);
+    const created = [];
+    for (const {item, reviewerIds: itemReviewerIds} of plan) {
+        const documents = await itemStepDocuments(
+            models, userId, type, item, workflowSteps, data.workflowMapping, transaction);
+        const study = await createAssignmentStudy({
+            userId, template, templateSteps, workflowSteps, type, item, documents,
+            reviewerCount: itemReviewerIds.length,
+        }, options);
+        const sessions = await addReviewerSessions(study, itemReviewerIds, options, {fresh: true});
+        created.push({study, itemId: item.id, sessions});
+    }
+    if (notify) {
+        // Not returned, so the answer does not wait for mail delivery. Failures are logged.
+        transaction.afterCommit(() => {
+            (async () => {
+                for (const {study, sessions} of created) {
+                    for (const session of sessions) {
+                        await sendAssignmentEmail(session, study, type, options)
+                            .catch((error) => options.logger.error('Failed to send assignment email: ' + error));
+                    }
+                }
+            })();
+        });
+    }
+    return {
+        dryRun: false,
+        studies: created.map(({study, itemId, sessions}) => assignmentResult(study, itemId, sessions)),
+    };
+}
 
 /**
  * Handle user through websocket
@@ -1155,3 +1990,16 @@ class AssignmentSocket extends Socket {
 };
 
 module.exports = AssignmentSocket;
+module.exports.createReviewAssignments = createReviewAssignments;
+module.exports.planByRole = planByRole;
+module.exports.planByReviewer = planByReviewer;
+module.exports.ASSIGNMENT_TYPES = ASSIGNMENT_TYPES;
+module.exports.ASSIGNMENT_MODES = ASSIGNMENT_MODES;
+module.exports.ASSIGNMENT_WRITABLE_FIELDS = ASSIGNMENT_WRITABLE_FIELDS;
+module.exports.listAssignments = listAssignments;
+module.exports.getAssignment = getAssignment;
+module.exports.canSeeAssignment = canSeeAssignment;
+module.exports.addAssignment = addAssignment;
+module.exports.updateAssignment = updateAssignment;
+module.exports.closeAssignment = closeAssignment;
+module.exports.deleteAssignment = deleteAssignment;
