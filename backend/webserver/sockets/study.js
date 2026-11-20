@@ -79,24 +79,28 @@ async function loadStudyByIdOrHash(models, idOrHash) {
     return loadByIdOrHash(models['study'], idOrHash);
 }
 
-function studyRowVisible(study, userId, projectId, seeAll) {
-    if (!study || study.template || study.deleted) {
-        return false;
-    }
-    if (projectId !== null && study.projectId !== projectId) {
-        return false;
-    }
-    if (seeAll) {
-        return true;
-    }
-    return ownsStudyRecord(userId, study);
+/**
+ * The studies one caller sees in the list, as a where clause: not templates, not deleted, the
+ * caller's default project, and the Studies dashboard grid's own owner rule (none with fullAccess),
+ * so REST and the dashboard agree. Used for the list and for one study, so the rule exists once.
+ */
+async function visibleStudiesWhere(models, userId, can) {
+    const {defaultProjectFor} = require('./project');
+    const projectId = await defaultProjectFor(models, userId);
+    const scope = await models['study'].getQueryTableScopeFilter({dashboard: true}, {userId, hasAccess: can});
+    return {
+        [Op.and]: [
+            {template: {[Op.not]: true}},
+            {deleted: {[Op.not]: true}},
+            ...(projectId !== null ? [{projectId}] : []),
+            ...(scope ? [scope] : []),
+        ],
+    };
 }
 
 async function studyVisibleInList(models, userId, study, can) {
-    const {defaultProjectFor} = require('./project');
-    const projectId = await defaultProjectFor(models, userId);
-    const seeAll = await can(STUDIES_FULL_ACCESS);
-    return studyRowVisible(study, userId, projectId, seeAll);
+    const where = await visibleStudiesWhere(models, userId, can);
+    return (await models['study'].count({where: {[Op.and]: [where, {id: study.id}]}})) > 0;
 }
 
 function normalizeStudyIds(studyIds) {
@@ -141,15 +145,23 @@ async function stepDocumentsFromStudy(models, studyId) {
  */
 async function checkedStepDocuments(models, userId, stepDocuments, can) {
     const {userHasDocumentAccess} = require('./document');
+    // All linked documents in one query; each document is access-checked once.
+    const ids = [...new Set(stepDocuments.map((step) => step.documentId ?? null).filter((id) => id !== null))];
+    const documents = ids.length === 0 ? [] : await models['document'].getAllByKeyValues('id', ids);
+    const byId = new Map((documents || []).map((document) => [document.id, document]));
+    const access = new Map();
     const checked = [];
     for (const step of stepDocuments) {
         const documentId = step.documentId ?? null;
         if (documentId !== null) {
-            const document = await models['document'].getById(documentId);
-            if (!document || document.deleted) {
+            const document = byId.get(documentId);
+            if (!document) {
                 throw new TranslatableError('errors.rest.stepDocumentNotFound');
             }
-            if (!(await userHasDocumentAccess(models, userId, documentId, can))) {
+            if (!access.has(documentId)) {
+                access.set(documentId, await userHasDocumentAccess(models, userId, documentId, can, document));
+            }
+            if (!access.get(documentId)) {
                 throw new TranslatableError('errors.rest.documentNoAccess');
             }
         }
@@ -209,20 +221,9 @@ async function runForEachStudy(studyIds, options, action) {
  * Mirrors the study table subscription in the Studies dashboard. Differs: fullAccess comes from the token.
  */
 async function listStudies({userId}, options) {
-    const {defaultProjectFor} = require('./project');
     const models = options.models;
-    const projectId = await defaultProjectFor(models, userId);
-    // The Studies dashboard grid's own owner rule (null with fullAccess), so REST and dashboard agree.
-    const scope = await models['study'].getQueryTableScopeFilter({dashboard: true}, {userId, hasAccess: canOf(options)});
     return models['study'].findAll({
-        where: {
-            [Op.and]: [
-                {template: {[Op.not]: true}},
-                {deleted: {[Op.not]: true}},
-                ...(projectId !== null ? [{projectId}] : []),
-                ...(scope ? [scope] : []),
-            ],
-        },
+        where: await visibleStudiesWhere(models, userId, canOf(options)),
         order: [['createdAt', 'ASC']],
         raw: true,
     });
