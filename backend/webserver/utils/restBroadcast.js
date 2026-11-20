@@ -22,24 +22,55 @@ async function broadcastRestChanges(server, userId, transaction) {
 }
 
 /**
- * Open a transaction for a REST write. After it commits, its changes go to open dashboards.
- * A rollback (including a dry run) broadcasts nothing.
+ * A transaction whose after-commit steps run only when COMMIT really succeeded.
+ *
+ * Sequelize runs afterCommit hooks even when COMMIT itself fails, which would rename files, send
+ * emails, and refresh dashboards for data that was never saved. Here afterCommit only queues the
+ * step; commit() runs `onCommitted` and then the queued steps after COMMIT resolved, and sets
+ * `restCommitted`. When a queued step throws, commit() rejects with `restCommitted` already true,
+ * so the caller knows the data is saved.
+ *
+ * @param {Object} server the Server instance
+ * @param {function(import("sequelize").Transaction): Promise<void>} onCommitted runs first after COMMIT
+ * @returns {Promise<import("sequelize").Transaction>}
+ */
+async function openRestTransaction(server, onCommitted) {
+    const transaction = await server.db.sequelize.transaction();
+    const steps = [];
+    transaction.afterCommit = (step) => {
+        steps.push(step);
+    };
+    const commit = transaction.commit.bind(transaction);
+    transaction.commit = async () => {
+        await commit();
+        transaction.restCommitted = true;
+        await onCommitted(transaction);
+        for (const step of steps) {
+            await step(transaction);
+        }
+    };
+    return transaction;
+}
+
+/**
+ * Open a transaction for a REST write. After it commits, its changes go to open dashboards, then
+ * its own after-commit steps run. A rollback (including a dry run) or a failed COMMIT broadcasts
+ * nothing.
  *
  * @param {Object} server the Server instance
  * @param {number} userId the token owner
  * @returns {Promise<import("sequelize").Transaction>}
  */
-async function startRestTransaction(server, userId) {
-    const transaction = await server.db.sequelize.transaction();
-    transaction.afterCommit(() => broadcastRestChanges(server, userId, transaction)
+function startRestTransaction(server, userId) {
+    return openRestTransaction(server, (transaction) => broadcastRestChanges(server, userId, transaction)
         .catch((err) => server.logger.error('REST broadcast failed: ' + err)));
-    return transaction;
 }
 
 /**
  * For REST bulk writes that commit item by item: each transaction from `start()` adds its changes to
  * the batch when it commits, and `broadcast()` sends the whole batch to dashboards once at the end,
- * like the dashboard's own bulk actions (Socket.runBulkWithProgress). Rolled-back items add nothing.
+ * like the dashboard's own bulk actions (Socket.runBulkWithProgress). Rolled-back items and items
+ * whose COMMIT failed add nothing.
  *
  * @param {Object} server the Server instance
  * @param {number} userId the token owner
@@ -48,12 +79,10 @@ async function startRestTransaction(server, userId) {
 function restChangeBatch(server, userId) {
     const changes = [];
     return {
-        async start() {
-            const transaction = await server.db.sequelize.transaction();
-            transaction.afterCommit(() => {
+        start() {
+            return openRestTransaction(server, async (transaction) => {
                 changes.push(...(transaction.changes || []));
             });
-            return transaction;
         },
         broadcast() {
             return broadcastRestChanges(server, userId, {changes})
