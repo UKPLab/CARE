@@ -193,11 +193,18 @@ async function getWorkflow({id}, options) {
  * Steps in the order their workflowStepPrevious links give, like workflow_step.getSortedWorkflowSteps.
  */
 function sortWorkflowSteps(steps) {
+    // First step per previous step, like the find() in getSortedWorkflowSteps.
+    const byPrevious = new Map();
+    for (const step of steps) {
+        if (!byPrevious.has(step.workflowStepPrevious)) {
+            byPrevious.set(step.workflowStepPrevious, step);
+        }
+    }
     const sorted = [];
-    let current = steps.find((step) => step.workflowStepPrevious === null);
+    let current = byPrevious.get(null);
     while (current) {
         sorted.push(current);
-        current = steps.find((step) => step.workflowStepPrevious === current.id);
+        current = byPrevious.get(current.id);
     }
     return sorted;
 }
@@ -217,8 +224,12 @@ async function listWorkflows(options, {id} = {}) {
     // All steps in one query, then grouped per workflow.
     const steps = workflows.length === 0 ? []
         : await models['workflow_step'].getAllByKeyValues('workflowId', workflows.map((workflow) => workflow.id));
+    const stepsByWorkflow = new Map(workflows.map((workflow) => [workflow.id, []]));
+    for (const step of steps || []) {
+        stepsByWorkflow.get(step.workflowId)?.push(step);
+    }
     for (const workflow of workflows) {
-        workflow.steps = sortWorkflowSteps((steps || []).filter((step) => step.workflowId === workflow.id)).map((step) => ({
+        workflow.steps = sortWorkflowSteps(stepsByWorkflow.get(workflow.id)).map((step) => ({
             id: step.id,
             name: step.name,
             stepType: step.stepType,

@@ -49,8 +49,9 @@ function ownsDocument(userId, document) {
     return document.userId === userId;
 }
 
-async function userHasDocumentAccess(models, userId, documentId, can = async () => false) {
-    const doc = await models['document'].getById(documentId);
+async function userHasDocumentAccess(models, userId, documentId, can = async () => false, loaded = null) {
+    // A caller that already loaded the document passes it, so it is not read twice.
+    const doc = loaded ?? await models['document'].getById(documentId);
 
     if (doc && (doc.public || doc.userId === userId || await can(DOCUMENTS_SEE_ALL))) {
         return true;

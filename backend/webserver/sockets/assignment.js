@@ -30,13 +30,17 @@ async function sharesByAssignment(models, assignmentIds, transaction) {
         raw: true,
         transaction,
     });
-    return new Map(assignmentIds.map((id) => {
-        const own = rows.filter((row) => row.assignmentId === id);
-        return [id, {
-            roles: own.filter((row) => row.roleId).map((row) => row.roleId),
-            users: own.filter((row) => row.userId).map((row) => row.userId),
-        }];
-    }));
+    const shares = new Map(assignmentIds.map((id) => [id, {roles: [], users: []}]));
+    for (const row of rows) {
+        const entry = shares.get(row.assignmentId);
+        if (row.roleId) {
+            entry.roles.push(row.roleId);
+        }
+        if (row.userId) {
+            entry.users.push(row.userId);
+        }
+    }
+    return shares;
 }
 
 function assignmentWithShares(row, shares) {

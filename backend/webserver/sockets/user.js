@@ -67,9 +67,13 @@ async function findUsers({emails, extIds, canSeeRole}, options) {
     const seeAll = await canSeeRole('all');
     const roleVisible = {};
     const users = [];
+    const roleIdsByUser = new Map(rows.map((row) => [row.id, []]));
+    for (const match of matches) {
+        roleIdsByUser.get(match.userId)?.push(match.userRoleId);
+    }
     for (const row of rows) {
-        const roles = matches.filter((match) => match.userId === row.id)
-            .map((match) => roleNameById[match.userRoleId])
+        const roles = roleIdsByUser.get(row.id)
+            .map((roleId) => roleNameById[roleId])
             .filter(Boolean);
         let visible = seeAll;
         for (const role of roles) {
