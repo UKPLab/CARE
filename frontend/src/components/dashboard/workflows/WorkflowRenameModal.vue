@@ -12,22 +12,20 @@
         <p class="text-muted mb-3">
           {{ $t("workflow.renameModal.description") }}
         </p>
-        
+
         <div class="alert alert-info" role="alert">
           <strong>{{ $t("workflow.renameModal.currentWorkflow") }}:</strong> {{ selectedWorkflow.name }}
         </div>
-        
+
         <BasicForm
           ref="form"
           v-model="formData"
           :fields="formFields"
         />
       </div>
-      
+
       <div v-if="isLoading" class="text-center py-3">
-        <div class="spinner-border spinner-border-sm me-2" role="status">
-          <span class="visually-hidden">{{ $t("common.loading") }}</span>
-        </div>
+        <BasicIcon icon-name="loading" class="me-2" />
         {{ $t("workflow.renameModal.renamingWorkflow") }}
       </div>
     </template>
@@ -54,6 +52,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicForm from "@/basic/Form.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicIcon from "@/basic/Icon.vue";
 
 /**
  * Workflow Rename Modal Component
@@ -66,6 +65,7 @@ import { resolveApiMessage } from "@/assets/utils";
 export default {
   name: "WorkflowRenameModal",
   components: {
+    BasicIcon,
     BasicModal,
     BasicButton,
     BasicForm,
@@ -115,20 +115,20 @@ export default {
         });
         return;
       }
-      
+
       this.formData = {
         name: this.selectedWorkflow.name,
       };
       this.isLoading = false;
-      
+
       this.$refs.modal.open();
     },
-    
+
     close() {
       this.$refs.modal.close();
       this.resetForm();
     },
-    
+
     resetForm() {
       this.selectedWorkflow = null;
       this.formData = {
@@ -136,7 +136,7 @@ export default {
       };
       this.isLoading = false;
     },
-    
+
     async handleSubmit() {
       if (!this.$refs.form.validate() || !this.canSubmit) {
         return;
@@ -162,7 +162,7 @@ export default {
                 });
             }
         });
-             
+
         this.$socket.emit("appDataUpdate", {
             table: "workflow",
             data: {
@@ -178,7 +178,7 @@ export default {
                 });
             }
           });
-        
+
         this.eventBus.emit("toast", {
           title: this.$t("workflow.renameModal.success.title"),
           message: this.$t("workflow.renameModal.success.message", {
@@ -187,9 +187,9 @@ export default {
           }),
           variant: "success",
         });
-        
+
         this.close();
-        
+
       } catch (error) {
         console.error("Failed to rename workflow:", error);
         this.eventBus.emit("toast", {

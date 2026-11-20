@@ -31,30 +31,39 @@
 export default {
   name: "DialogueHeader",
   props: {
-    title: {
-      type: String,
-      required: true,
-    },
+    plan: {type: Object, required: true},
+    currentQuestion: {type: Object, default: null},
     complete: {
       type: Boolean,
       required: false,
       default: false,
     },
-    progressTotal: {
-      type: Number,
-      required: false,
-      default: 0,
+  },
+  computed: {
+    title() {
+      return this.plan?.title || this.$t("workflow.stepTypes.dialogue");
     },
-    progressPercent: {
-      type: Number,
-      required: false,
-      default: 0,
+    progressTotal() {
+      return Number(this.plan?.totalQuestions) || 0;
     },
-    progressLabel: {
-      type: String,
-      required: false,
-      default: "",
+    progressCurrent() {
+      if (this.complete) {
+        return this.progressTotal;
+      }
+      return Number(this.currentQuestion?.number) || 1;
     },
+    progressPercent() {
+      if (!this.progressTotal) {
+        return 0;
+      }
+      return Math.min(100, Math.round((this.progressCurrent / this.progressTotal) * 100));
+    },
+    progressLabel() {
+      if (this.complete) {
+        return this.$t("ai.dialogue.complete");
+      }
+      return this.$t("ai.dialogue.progress", {current: this.progressCurrent, total: this.progressTotal});
+    }
   },
 };
 </script>

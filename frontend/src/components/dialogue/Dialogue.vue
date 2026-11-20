@@ -3,27 +3,28 @@
     <div class="d-flex flex-grow-1 overflow-hidden top-padding">
       <div class="dialogue-container d-flex flex-column flex-grow-1">
         <DialogueHeader
-            :title="title"
+            :plan="plan"
+            :current-question="currentQuestion"
             :complete="complete"
-            :progress-total="progressTotal"
-            :progress-percent="progressPercent"
-            :progress-label="progressLabel"
         />
 
         <div v-if="errorMessage" class="alert alert-danger py-2">{{ errorMessage }}</div>
 
         <DialogueConversationBody
             ref="body"
-            :messages="visibleMessages"
-            :loading="loading && !visibleMessages.length"
+            :messages="messages"
+            :current-question="currentQuestion"
+            :pending-answer="pendingAnswer" :pending-skipped="pendingSkipped" :complete="complete"
+            :context-key="`${studySessionId}:${studyStepId}`"
+            :loading="loading && !messages.length && !currentQuestion"
             :is-busy="isBusy"
             :read-only="readOnly"
             :active-request="activeRequest"
             :sending="sending"
             :aborting="aborting"
-            :active-question-message-id="activeQuestionMessageId"
             :retryable-message-id="retryableMessageId"
             :allow-skip="plan.allowSkip === true"
+            @question-shown="logDialogueEvent('dialogueQuestionShow', $event)"
             @send="sendAnswer"
             @abort="abortActiveRequest"
             @retry="retryMessage"
@@ -45,50 +46,16 @@
             @failed="handleRequestFailed"
         />
       </div>
-      <BasicSidebar
-          v-if="studyDescription || questionHelp"
-          class="dialogue-sidebar"
-          :is-shown="isShown"
-          active-side-bar="instructions"
-      >
-        <template #instructions>
-          <SidebarTemplate icon="info-circle" :title="$t('ai.dialogue.instructions')">
-            <template #content>
-              <div class="dialogue-instructions p-3">
-                <section v-if="studyDescription" class="instruction-section">
-                  <h6 class="instruction-heading">{{ $t('ai.dialogue.generalInstructions') }}</h6>
-                  <BasicEditor
-                      :model-value="studyDescription"
-                      :read-only="true"
-                      class="instruction-editor"
-                  />
-                </section>
-                <section v-if="questionHelp" class="instruction-section">
-                  <h6 class="instruction-heading">{{ $t('ai.dialogue.questionHelp') }}</h6>
-                  <p class="instruction-text mb-0">{{ questionHelp }}</p>
-                </section>
-              </div>
-            </template>
-          </SidebarTemplate>
-        </template>
-      </BasicSidebar>
+      <DialogueInstructions :study-description="studyDescription" :question-help="questionHelp" :is-shown="isShown" />
     </div>
   </div>
 </template>
 
 <script>
+import DialogueInstructions from './DialogueInstructions.vue';
 import AiAssistantRequest from "@/basic/service/AiAssistantRequest.vue";
-import BasicEditor from "@/basic/editor/Editor.vue";
-import BasicSidebar from "@/basic/Sidebar.vue";
-import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import DialogueConversationBody from "@/components/dialogue/DialogueConversationBody.vue";
 import DialogueHeader from "@/components/dialogue/DialogueHeader.vue";
-import {
-  buildDialogueAnswerMessage,
-  buildDialoguePendingMessage,
-  buildDialogueQuestionMessage,
-  isDialogueQuestion,
-} from "@/components/dialogue/dialogueMessages.js";
 import aiRequestMixin from "@/basic/service/aiRequestMixin";
 import {resolveApiMessage} from "@/assets/utils";
 
@@ -103,13 +70,11 @@ const emptyConversationSnapshot = () => ({
  */
 export default {
   name: "DialogueView",
-  components: {AiAssistantRequest, BasicEditor, BasicSidebar, SidebarTemplate, DialogueConversationBody, DialogueHeader},
+  components: {AiAssistantRequest, DialogueInstructions, DialogueConversationBody, DialogueHeader},
   mixins: [aiRequestMixin],
   inject: {
     currentStudyStep: {type: Object, required: false, default: null},
-    acceptStats: {
-      default: () => false,
-    },
+    acceptStats: {default: () => false},
     studyData: {
       type: Object,
       required: true,
@@ -132,27 +97,22 @@ export default {
     },
     documentId: {
       type: Number,
-      required: false,
       default: null,
     },
     config: {
       type: Object,
-      required: false,
       default: () => ({}),
     },
     readOnly: {
       type: Boolean,
-      required: false,
       default: false,
     },
     isShown: {
       type: Boolean,
-      required: false,
       default: true,
     },
     studyDescription: {
       type: String,
-      required: false,
       default: "",
     },
   },
@@ -164,7 +124,6 @@ export default {
       complete: false,
       pendingAnswer: "",
       pendingSkipped: false,
-      shownQuestionKeys: new Set(),
       plan: {},
     };
   },
@@ -175,58 +134,11 @@ export default {
     abortFailedText() {
       return this.$t("ai.dialogue.errors.abortFailed");
     },
-    title() {
-      return this.plan?.title || this.$t("workflow.stepTypes.dialogue");
-    },
+
     questionHelp() {
       return this.complete ? "" : this.currentQuestion?.help || "";
     },
-    progressTotal() {
-      return Number(this.plan?.totalQuestions) || 0;
-    },
-    progressCurrent() {
-      if (this.complete) {
-        return this.progressTotal;
-      }
-      return Number(this.currentQuestion?.number) || 1;
-    },
-    progressPercent() {
-      if (!this.progressTotal) {
-        return 0;
-      }
-      return Math.min(100, Math.round((this.progressCurrent / this.progressTotal) * 100));
-    },
-    progressLabel() {
-      if (this.complete) {
-        return this.$t("ai.dialogue.complete");
-      }
-      return this.$t("ai.dialogue.progress", {current: this.progressCurrent, total: this.progressTotal});
-    },
-    visibleMessages() {
-      const base = this.messages.length || !this.currentQuestion
-          ? this.messages
-          : [buildDialogueQuestionMessage(this.currentQuestion)];
-      if (!this.pendingAnswer) {
-        return base;
-      }
-      return [
-        ...base,
-        buildDialogueAnswerMessage(this.currentQuestion, this.pendingAnswer, this.pendingSkipped),
-        buildDialoguePendingMessage(this.currentQuestion),
-      ];
-    },
-    activeQuestionMessageId() {
-      const questionId = this.activeRequest?.questionId || (!this.complete && this.currentQuestion?.id);
-      if (!questionId) {
-        return null;
-      }
-      const latestQuestion = [...this.visibleMessages].reverse()
-          .find((message) =>
-            isDialogueQuestion(message)
-              && String(message.metadata?.dialogue?.questionId) === String(questionId)
-          );
-      return latestQuestion?.id || null;
-    },
+
     contextService() {
       return (this.config?.services || []).find((service) =>
         service.type === "aiDialogue" && service.name === "dialogueContext"
@@ -240,14 +152,7 @@ export default {
     studyStepId() {
       this.changeContext();
     },
-    activeQuestionMessageId: {
-      handler(messageId) {
-        if (messageId) {
-          this.$nextTick(() => this.logQuestionShown(messageId));
-        }
-      },
-      immediate: true,
-    },
+
     complete: {
       handler(value) {
         this.$emit("update:ready", value);
@@ -272,7 +177,6 @@ export default {
       this.conversationSnapshot = emptyConversationSnapshot();
       this.currentQuestion = null;
       this.complete = false;
-      this.shownQuestionKeys.clear();
       this.loadDialogue();
     },
 
@@ -305,22 +209,6 @@ export default {
      * @param {string|number} messageId - Active question message id.
      * @returns {void}
      */
-    logQuestionShown(messageId) {
-      const message = this.visibleMessages.find((entry) => String(entry.id) === String(messageId));
-      if (!message) {
-        return;
-      }
-      const dialogue = message.metadata?.dialogue || {};
-      const key = [dialogue.kind, dialogue.questionId, dialogue.followUpIndex || 0].join(":");
-      if (this.shownQuestionKeys.has(key)) {
-        return;
-      }
-      this.shownQuestionKeys.add(key);
-      this.logDialogueEvent("dialogueQuestionShow", {
-        questionId: dialogue.questionId,
-        followUpIndex: dialogue.followUpIndex || 0,
-      });
-    },
 
     /**
      * Loads the Dialogue snapshot.
@@ -329,51 +217,39 @@ export default {
      * @param {boolean} [options.silent] - Whether to preserve the current loading state.
      * @returns {Promise<void>}
      */
-    async loadDialogue({silent = false} = {}) {
-      const context = this.beginSnapshotLoad();
-      if (!silent) {
-        this.loading = true;
-        this.errorMessage = "";
-      }
-      try {
-        const result = await this.$aiAssistant.getDialogueConversation({
+    loadDialogue({silent = false} = {}) {
+      return this.loadSnapshot({
+        silent,
+        fetch: (context) => this.$aiAssistant.getDialogueConversation({
           studySessionId: context.studySessionId,
           studyStepId: context.studyStepId,
           conversationId: context.conversationId,
-        });
-        if (!this.isCurrentSnapshotLoad(context)) {
-          return false;
-        }
-        this.conversationSnapshot = {
-          activeConversationId: result.activeConversationId,
-          messages: result.messages || [],
-        };
-        const settled = this.reconcileRequest();
-        if (!this.activeRequest || settled) {
-          this.currentQuestion = result.currentQuestion || null;
-          this.complete = !!result.complete;
-        }
-        this.plan = result.plan || {};
-        this.$emit("update:data", {
-          conversationId: result.activeConversationId,
-          complete: this.complete,
-        });
-        if (settled) {
-          this.clearActiveRequest();
-        }
-        return true;
-      } catch (error) {
-        if (!this.isCurrentSnapshotLoad(context)) {
-          return false;
-        }
-        this.errorMessage = resolveApiMessage(error, "ai.dialogue.errors.loadFailed");
-        return false;
-      } finally {
-        if (context.loadId === this.snapshotLoadId) {
-          this.loading = false;
-        }
-        this.scrollToBottom();
-      }
+        }),
+        apply: (result) => {
+          this.conversationSnapshot = {
+            activeConversationId: result.activeConversationId,
+            messages: result.messages || [],
+          };
+          const settled = this.reconcileRequest();
+          if (!this.activeRequest || settled) {
+            this.currentQuestion = result.currentQuestion || null;
+            this.complete = !!result.complete;
+          }
+          this.plan = result.plan || {};
+          this.$emit("update:data", {
+            conversationId: result.activeConversationId,
+            complete: this.complete,
+          });
+          if (settled) {
+            this.clearActiveRequest();
+          }
+          return true;
+        },
+        fail: (error) => {
+          this.errorMessage = resolveApiMessage(error, "ai.dialogue.errors.loadFailed");
+        },
+        settle: () => this.scrollToBottom(),
+      });
     },
     /**
      * Starts a request for the current answer.
@@ -476,51 +352,4 @@ export default {
   overflow: hidden;
 }
 
-.dialogue-instructions {
-  background-color: var(--bs-body-bg);
-  position: absolute;
-  inset: 0;
-  overflow-y: auto;
-}
-
-.instruction-section {
-  border-bottom: 1px solid var(--bs-border-color);
-  padding-bottom: 1rem;
-  margin-bottom: 1rem;
-}
-
-.instruction-section:last-child {
-  border-bottom: 0;
-  margin-bottom: 0;
-  padding-bottom: 0;
-}
-
-.instruction-heading {
-  color: var(--bs-secondary-color);
-  font-size: 0.875rem;
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-
-.instruction-text {
-  color: var(--bs-body-color);
-  line-height: 1.5;
-}
-
-.instruction-editor {
-  border: 1px solid var(--bs-border-color);
-  border-radius: 0.375rem;
-  overflow: hidden;
-  background-color: var(--bs-body-bg);
-}
-
-.instruction-editor :deep(.ql-editor) {
-  min-height: 0;
-  padding: 0.75rem;
-  line-height: 1.5;
-}
-
-.dialogue-sidebar :deep(.sidebar-content) {
-  background-color: var(--bs-body-bg);
-}
 </style>

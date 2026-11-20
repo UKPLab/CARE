@@ -7,20 +7,7 @@
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="d-flex flex-grow-1 overflow-hidden top-padding">
-        <div
-            :id="'viewerContainer-' + documentId"
-            ref="viewer"
-            class="annotator-viewer flex-grow-1 border mh-100 justify-content-center p-3"
-        >
-          <PDFViewer
-              ref="pdfViewer"
-              class="rounded border border-1 shadow-sm"
-              style="margin:auto"
-              @copy="onCopy"
-              @loaded="pdf = $event"
-          />
-
-        </div>
+        <AnnotatorViewport :anchors="anchors" @copy="onCopy" @loaded="pdf = $event"/>
         <AnnotationScrollMarkers :pdf="pdf"/>
         <BasicSidebar
             v-if="!sidebarDisabled"
@@ -56,37 +43,6 @@
         </BasicSidebar>
       </div>
     </div>
-    <Teleport to="#topbarCustomPlaceholder">
-      <form class="hstack gap-3 container-fluid justify-content-center">
-        <TopBarButton
-            v-if="review"
-            class="btn btn-outline-success me-2"
-            @click="$refs.reviewSubmit.open()"
-        >{{ $t('annotator.submitReview') }}
-        </TopBarButton>
-        <TopBarButton
-            v-if="approve"
-            class="btn btn-outline-dark me-2"
-            @click="$refs.report.open()"
-        >
-          {{ $t('annotator.report') }}
-        </TopBarButton>
-        <TopBarButton
-            v-if="approve"
-            class="btn btn-outline-success me-2"
-            @click="decisionSubmit(true)"
-        >
-          {{ $t('annotator.accept') }}
-        </TopBarButton>
-        <TopBarButton
-            v-if="approve"
-            class="btn btn-outline-danger me-2"
-            @click="decisionSubmit(false)"
-        >
-          {{ $t('annotator.reject') }}
-        </TopBarButton>
-      </form>
-    </Teleport>
   </span>
 </template>
 
@@ -98,19 +54,14 @@
  *
  * @author Dennis Zyska, Marina Sakharova
  */
-import PDFViewer from "./pdfViewer/PDFViewer.vue";
+import AnnotatorViewport from "./AnnotatorViewport.vue";
 import AnnotationScrollMarkers from "./pdfViewer/AnnotationScrollMarkers.vue";
 import AnnotationSidebar from "./sidebar/Sidebar.vue";
 import BasicSidebar from "@/basic/Sidebar.vue";
 import Loader from "@/basic/Loading.vue";
-import {offsetRelativeTo, scrollElement, scrollToPage} from "@/assets/anchoring/scroll";
-import {isInPlaceholder} from "@/assets/anchoring/placeholder";
-import {resolveAnchor} from "@/assets/anchoring/resolveAnchor";
-import debounce from 'lodash.debounce';
 import {mapMutations} from "vuex";
 import {computed} from "vue";
-import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import {mergeAnnotationsAndComments} from "@/assets/data";
+import {exportAnnotationsAndComments} from "@/assets/data";
 import {downloadObjectsAs, resolveApiMessage} from "@/assets/utils";
 import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import CurrentStepNote from "@/components/study/CurrentStepNote.vue";
@@ -122,11 +73,10 @@ export default {
   components: {
     SidebarTemplate,
     CurrentStepNote,
-    PDFViewer,
+    AnnotatorViewport,
     AnnotationScrollMarkers,
     AnnotationSidebar,
     Loader,
-    TopBarButton,
     BasicSidebar,
   },
   provide() {
@@ -139,118 +89,36 @@ export default {
     }
   },
   inject: {
-    hiddenStudyStepId: {type: Number, required: false, default: null},
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    readOnly: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    currentStudyStep:{
-      type: Object,
-      required: false,
-      default: null
-    },
-    acceptStats: {
-      type: Boolean,
-      required: false,
-      default: () => false
-    },
-    studyData: {
-      type: Array,
-      required: false,
-      default: () => [],
-    }
+    studySessionId: {default: null},
+    readOnly: {default: false},
+    currentStudyStep: {default: null},
+    acceptStats: {default: () => false},
   },
   props: {
-    approve: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    isShown: {
-      type: Boolean,
-      required: false,
-      default: true,
-    },
-    review: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    sidebarDisabled: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
+    isShown: {type: Boolean, required: false, default: true},
+    sidebarDisabled: {type: Boolean, required: false, default: false},
     // In a study step that can look back: the step's number, shown on its own sidebar tab like on the earlier ones
-    stepNumber: {
-      type: Number,
-      required: false,
-      default: null,
-    },
+    stepNumber: {type: Number, required: false, default: null},
     ...lookBackPaneProps,
-    documentId: {
-      type: Number,
-      required: false,
-      default: 0,
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
+    documentId: {type: Number, required: false, default: 0},
+    studyStepId: {type: Number, required: false, default: null},
   },
   emits: ['update:data'],
   data() {
     return {
       pdf: null,
       downloading: false,
-      assessmentViewActive: true,
       maxSidebarWidth: 600,
       minSidebarWidth: 250,
-      logScroll: debounce(function (data) {
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "annotatorScrollActivity",
-            data,
-          })
-        }
-      }, 500),
     }
   },
   computed: {
-    userId() {
-      return this.$store.getters["auth/getUserId"];
-    },
-    computedReadOnly() {
-      return this.readOnly || this.currentStudyStep?.configuration?.readOnlyComponents?.includes('annotator') || false;
-    },
     showDefaultAllAnnotations(){
       // From this Annotator's own step, which is not the current step when an earlier step is shown
       return this.$store.getters["table/study_step/get"](this.studyStepId)?.configuration?.settings?.showAllDocumentAnnotations ?? false;
     },
-    savedScroll() {
-      // Normalize to a single record or null for simpler consumers
-      const data = this.$store.getters['table/user_environment/getAll'].filter(
-          e => e.userId === this.userId &&
-              e.documentId === this.documentId &&
-              e.studySessionId === this.studySessionId &&
-              e.studyStepId === this.studyStepId &&
-              e.key === "scroll"
-      );
-      return data[0] || null;
-    },
     anchors() {
-      return [].concat(
-          this.annotations.filter(a => a.anchors !== null)
-              .flatMap(a => a.anchors)
-              .filter(a => a !== undefined)
-      )
+      return this.annotations.filter(a => a.anchors !== null).flatMap(a => a.anchors).filter(a => a !== undefined);
     },
     showAll() {
       const showAllComments = this.$store.getters['settings/getValue']("annotator.showAllComments");
@@ -290,33 +158,13 @@ export default {
 
         return (a.anchors[0].target.selector[0].start - b.anchors[0].target.selector[0].start);
       });
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return annotations.filter(annotation =>
-            !this.openSessionIds.includes(annotation.studySessionId)
-        );
-      } else {
-        return !this.showAllDocumentAnnotations ? annotations.filter(annotation =>
-            annotation.studySessionId === this.studySessionId
-        ) : annotations.filter(annotation =>
-            annotation.studySessionId === null && annotation.studyStepId === null
-        );
-      }
+      return this.inScope(annotations);
     },
     comments() {
       const comments = this.$store.getters["table/comment/getFiltered"](c =>
           c.documentId === this.documentId
       );
-      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
-        return comments.filter(comment =>
-            !this.openSessionIds.includes(comment.studySessionId)
-        );
-      } else {
-        return !this.showAllDocumentAnnotations ? comments.filter(comment =>
-            comment.studySessionId === this.studySessionId
-        ) : comments.filter(comment =>
-            comment.studySessionId === null && comment.studyStepId === null
-        );
-      }
+      return this.inScope(comments);
     },
     sidebarButtons() {
       const buttons = [];
@@ -332,7 +180,7 @@ export default {
       }
 
       // NLP Toggle Button
-      if (this.studySessionId && this.studySessionId !== 0 ? this.nlpEnabled : this.nlpEnabled) {
+      if (this.nlpEnabled) {
         buttons.push({
           id: 'toggle-nlp',
           icon: 'robot',
@@ -345,8 +193,7 @@ export default {
       // Download Button
       if (this.studySessionId && this.studySessionId !== 0) {
         const canDownload = this.annotations.length + this.comments.length > 0 &&
-            !this.downloading &&
-            (this.downloadBeforeStudyClosingAllowed || this.studySessionId === null);
+            !this.downloading && this.downloadBeforeStudyClosingAllowed;
         buttons.push({
           id: 'download-annotations',
           icon: 'download',
@@ -360,118 +207,35 @@ export default {
     },
   },
   watch: {
-    // React to external changes to the saved scroll value (e.g., from store updates)
-    async savedScroll(newVal, _oldVal) {
-      if (newVal) {
-        await this.scrollToSavedValue(newVal.value, 1000);
-      }
-    },
-    studySessionId(newVal, oldVal) {
-      if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        });
-      }
-    },
-    studyStepId(newVal, oldVal) {
-      if (oldVal !== newVal) {
-        this.$socket.emit("documentGetData", {
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId
-        });
-      }
-    },
-    annotations: {
-      handler() {
-        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
-      },
-      deep: true
-    },
-    comments: {
-      handler() {
-        this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
-      },
-      deep: true
-    }
+    studySessionId: "loadDocumentData",
+    studyStepId: "loadDocumentData",
+    annotations: {handler: "emitData", deep: true},
+    comments: {handler: "emitData", deep: true},
   },
   mounted() {
-    // this.minSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.minWidth");
-    // this.maxSidebarWidth = this.$store.getters["settings/getValue"]("annotator.sidebar.maxWidth");
-    // this.sidebarWidth = this.$store.getters["settings/getValue"]("sidebar.width") || this.minSidebarWidth;
-    this.eventBus.on('pdfScroll', this.onPdfScroll);
-
-    // init component
     this.load();
-
-    // scrolling
-    this.$refs.viewer.addEventListener("scroll", this.scrollActivity);
-    // Scroll the viewer container to the saved scroll position
-    this.$nextTick(async () => {
-      if (this.savedScroll) {
-        await this.scrollToSavedValue(this.savedScroll.value, 300);
-      }
-    });
-
   },
   beforeUnmount() {
-    this.logScroll.flush();
-    this.eventBus.off('pdfScroll', this.onPdfScroll);
     // Leave the room for document updates
     this.$socket.emit("collabUnsubscribe", {documentId: this.documentId});
-    this.$refs.viewer.removeEventListener("scroll", this.scrollActivity);
-
-    const currentPage = this.getCurrentPageNumber();
-    const payload = JSON.stringify({page: currentPage, value: this.$refs.viewer.scrollTop});
-    if (!this.savedScroll) {
-      this.$socket.emit("appDataUpdate", {
-        table: "user_environment",
-        data: {
-          userId: this.userId,
-          documentId: this.documentId,
-          studySessionId: this.studySessionId,
-          studyStepId: this.studyStepId,
-          key: "scroll",
-          value: payload
-        }
-      });
-    } else {
-      this.$socket.emit("appDataUpdate", {
-        table: "user_environment",
-        data: {
-          id: this.savedScroll.id,
-          value: payload
-        }
-      });
-    }
   },
   methods: {
-    /** Handles annotation jumps only in the addressed visible document and step. */
-    onPdfScroll(payload) {
-      const annotationId = typeof payload === "object" ? payload.annotationId : payload;
-      const annotation = this.$store.getters["table/annotation/get"](annotationId);
-      if (!annotation || annotation.documentId !== this.documentId || !this.isShown ||
-          (this.studyStepId != null && this.hiddenStudyStepId === this.studyStepId)) return;
-      // Older callers pass only an ID; scoped callers also disambiguate reused PDFs and document-level annotations.
-      const target = typeof payload === "object" ? payload : {
-        studyStepId: annotation.studyStepId ?? this.currentStudyStep?.id,
-        studySessionId: annotation.studySessionId,
-      };
-      if ((target.documentId != null && target.documentId !== this.documentId) ||
-          (target.studyStepId != null && target.studyStepId !== this.studyStepId) ||
-          (target.studySessionId != null && target.studySessionId !== this.studySessionId)) return;
-      this.scrollTo(annotationId);
-      if (this.acceptStats) {
-        this.$socket.emit("stats", {
-          action: "pdfScroll",
-          data: {
-            documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
-            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}), annotationId,
-          },
-        });
+    /**
+     * Keeps annotations or comments of the current study session (or, with showAllDocumentAnnotations, those made
+     * outside of studies); outside a study, hides those of still open studies unless their download is allowed.
+     * @param {Array<Object>} items - annotations or comments of the document
+     * @returns {Array<Object>}
+     */
+    inScope(items) {
+      if (this.studySessionId === null && !(this.downloadBeforeStudyClosingAllowed)) {
+        return items.filter(item => !this.openSessionIds.includes(item.studySessionId));
       }
+      return !this.showAllDocumentAnnotations
+          ? items.filter(item => item.studySessionId === this.studySessionId)
+          : items.filter(item => item.studySessionId === null && item.studyStepId === null);
+    },
+    emitData() {
+      this.$emit('update:data', {annotations: this.annotations, comments: this.comments});
     },
     // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
     isSidebarTabShown(slotName) {
@@ -483,187 +247,38 @@ export default {
     scrollToComment(offset) {
       this.$refs.basicSidebar.scrollTo(offset);
     },
-
     changeSideBarView() {
       if (this.$refs.basicSidebar) {
         this.$refs.basicSidebar.changeView('annotations');
       }
     },
-    handleButtonAction(data) {
-      switch (data.action) {
-        case 'toggleStudyComments':
-          this.toggleStudyComments();
-          break;
-        case 'toggleNlp':
-          this.toggleNlp();
-          break;
-        case 'downloadAnnotations':
-          this.downloadAnnotations();
-          break;
-        default:
-          console.warn('Unknown sidebar button action:', data.action);
+    handleButtonAction({action}) {
+      if (['toggleStudyComments', 'toggleNlp', 'downloadAnnotations'].includes(action)) {
+        this[action]();
+      } else {
+        console.warn('Unknown sidebar button action:', action);
       }
     },
     toggleStudyComments() {
-      this.setSetting({
-        key: 'annotator.showAllComments',
-        value: !this.showAll
-      });
-    },
-    async scrollToSavedValue(value, delayMs) {
-      const data = JSON.parse(value);
-      const container = this.$refs.viewer;
-      await this.delay(delayMs);
-      if (!this.isPdfPageLoaded(parseInt(data.page))) {
-        scrollToPage(container, data.page, {align: 'start', offset: 0});
-        await this.delay(300);
-      }
-      await scrollElement(container, parseFloat(data.value));
-    },
-    getCurrentPageNumber() {
-      //Todo get current page in a better way
-      const container = this.$refs.viewer;
-      if (!container) return 1;
-      const pages = container.querySelectorAll('.scrolling-page' );
-      console.log("pages", pages);
-      if (!pages || pages.length === 0) return 1;
-      let bestIndex = 0;
-      let bestDist = Infinity;
-      const currentTop = container.scrollTop;
-      pages.forEach((el, idx) => {
-        const relTop = offsetRelativeTo(el, container);
-        const dist = Math.abs(relTop - currentTop);
-        if (dist < bestDist) {
-          bestDist = dist;
-          bestIndex = idx;
-        }
-      });
-      return bestIndex + 1; // pages are 1-based
-    },
-    isPdfPageLoaded(pageNumber) {
-      const canvas = document.getElementById('pdf-canvas-' + pageNumber + '-' + this.documentId);
-      const visible = canvas ? getComputedStyle(canvas).visibility === 'visible' : false;
-      const hasDimensions = !!(canvas && canvas.width > 0 && canvas.height > 0);
-      const loaded = (visible && hasDimensions);
-      return loaded;
+      this.setSetting({key: 'annotator.showAllComments', value: !this.showAll});
     },
     ...mapMutations({
       setSetting: "settings/set",
     }),
-    decisionSubmit(decision) {
-      this.$refs.decisionSubmit.open(decision)
-    },
     toggleNlp() {
-      const newNlpActive = !this.nlpActive
-      this.setSetting({
-        key: 'annotator.nlp.activated',
-        value: newNlpActive
-      })
-      this.$socket.emit('appSettingSet', {
-        key: 'annotator.nlp.activated',
-        value: newNlpActive
-      })
+      const value = !this.nlpActive;
+      this.setSetting({key: 'annotator.nlp.activated', value});
+      this.$socket.emit('appSettingSet', {key: 'annotator.nlp.activated', value});
     },
-    scrollActivity() {
-      this.logScroll({
-        documentId: this.documentId,
-        ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
-        ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
-        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
-        scrollTop: this.$refs.viewer.scrollTop,
-        scrollHeight: this.$refs.viewer.scrollHeight,
-      });
-    },
-    async scrollTo(annotationId) {
-      const annotation = this.$store.getters['table/annotation/get'](annotationId);
-      const scrollContainer = this.$refs.viewer || document.getElementById('viewerContainer-' + this.documentId);
-      const hasAnchors = Array.isArray(annotation.anchors) && annotation.anchors.length > 0;
-      if (hasAnchors) {
-        const anchor = annotation.anchors[0];
-        const range = resolveAnchor(anchor);
-        if (!range) {
-          return;
-        }
-
-        const inPlaceholder = this.anchorIsInPlaceholder(anchor);
-        let offset = this._anchorOffset(anchor);
-        if (offset === null) {
-          return;
-        }
-        // Correct offset since we have a fixed top
-        offset -= 123; // see css class padding-top
-        // nb. We only compute the scroll offset once at the start of scrolling.
-        // This is important as the highlight may be removed from the document during
-        // the scroll due to a page transitioning from rendered <-> un-rendered.
-        await scrollElement(scrollContainer, offset);
-
-        if (inPlaceholder) {
-          const anchor = await this._waitForAnnotationToBeAnchored(
-              annotation,
-              3000
-          );
-          if (!anchor) {
-            return;
-          }
-          let offset = this._anchorOffset(anchor);
-          if (offset === null) {
-            return;
-          }
-          await scrollElement(scrollContainer, offset);
-        }
-      } else {
-        await scrollToPage(scrollContainer, annotation.selectors.target[0].selector.find(s => s.type === "PagePositionSelector").number, {
-          align: 'start',
-          maxDuration: 10
-        });
-        await this._waitForAnnotationToBeAnchored(annotation, 2000);
-        if (annotation.anchors === null) {
-          console.error('[scrollTo] No anchors found after paging', annotation);
-          return;
-        }
-        let offset = this._anchorOffset(annotation.anchors[0]);
-        if (offset === null) {
-          return;
-        }
-        offset -= 106;
-        await scrollElement(scrollContainer, offset);
-      }
-    },
-    anchorIsInPlaceholder(anchor) {
-      const highlight = anchor.highlights?.[0];
-      return highlight && isInPlaceholder(highlight);
-    },
-    _anchorOffset(anchor) {
-      const container = this.$refs.viewer;
-      const highlight = anchor.highlights?.find(element => container.contains(element));
-      return highlight ? offsetRelativeTo(highlight, container) : null;
-    },
-    async _waitForAnnotationToBeAnchored(annotation, maxWait) {
-      const start = Date.now();
-      let anchor;
-      do {
-        // nb. Re-anchoring might result in a different anchor object for the
-        // same annotation.
-        anchor = this.anchors.find(a => a.annotation === annotation);
-        if (!anchor || this.anchorIsInPlaceholder(anchor)) {
-          anchor = null;
-
-          // If no anchor was found, wait a bit longer and check again to see if
-          // re-anchoring completed.
-          await this.delay(20);
-        }
-      } while (!anchor && Date.now() - start < maxWait);
-      return anchor ?? null;
-    },
-    delay(ms) {
-      return new Promise(resolve => setTimeout(resolve, ms));
-    },
-    load() {
+    loadDocumentData() {
       this.$socket.emit("documentGetData", {
         documentId: this.documentId,
         studySessionId: this.studySessionId,
         studyStepId: this.studyStepId
       });
+    },
+    load() {
+      this.loadDocumentData();
 
       // Join Room for document updates
       this.$socket.emit("documentSubscribe", {documentId: this.documentId}, (res) => {
@@ -686,42 +301,10 @@ export default {
       }
     },
     downloadAnnotations() {
-
-      const attributesToDelete = [
-        "draft",
-        "anonymous",
-        "createdAt",
-        "updatedAt",
-        "deleted",
-        "deletedAt",
-        "documentId",
-        "studySessionId",
-        "studyStepId",
-        "userId"
-      ];
-      const annotations = this.annotations
-          .filter(a => a.studySessionId === this.studySessionId)
-          .map(a => {
-            return Object.fromEntries(Object.entries(a).filter(([key]) => !attributesToDelete.includes(key)));
-          });
-      // change tagId to tagName
-      annotations.forEach(a => {
-        if (a.tagId) {
-          const tag = this.$store.getters["table/tag/get"](a.tagId);
-          a.tag = tag.name;
-          delete a.tagId;
-        }
-      });
-
-      const comments = this.comments.map(c => {
-        return Object.fromEntries(Object.entries(c).filter(([key]) => !attributesToDelete.includes(key)));
-      });
-
-      const content = mergeAnnotationsAndComments(annotations, comments);
-
-      const filename = `annotations_${this.documentId}_${Date.now()}`;
-      downloadObjectsAs(content, filename, "json");
-
+      const annotations = this.annotations.filter(a => a.studySessionId === this.studySessionId);
+      const content = exportAnnotationsAndComments(annotations, this.comments,
+          (tagId) => this.$store.getters["table/tag/get"](tagId).name);
+      downloadObjectsAs(content, `annotations_${this.documentId}_${Date.now()}`, "json");
     },
     onCopy() {
       const selection = window.getSelection();
@@ -744,20 +327,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-
-.annotator-viewer {
-  /* auto would freeze this column at the widened page width. */
-  min-width: 0;
-  overflow-y: scroll;
-}
-
-.sidebar-highlight {
-  border: 2px solid #ff9800 !important;
-  box-shadow: 0 0 8px #ff9800;
-  border-radius: 4px;
-  transition: border 0.2s, box-shadow 0.2s;
-}
-
-</style>

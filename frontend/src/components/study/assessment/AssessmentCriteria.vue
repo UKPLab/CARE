@@ -1,51 +1,18 @@
 <template>
   <div>
-    <div
+    <AssessmentCriterionHeader
         ref="criterionHeader"
-        class="d-flex justify-content-between align-items-center py-2"
-        style="cursor: pointer"
-        role="button"
-        tabindex="0"
-        :aria-expanded="isExpanded"
-        :aria-controls="panelId"
-        @click="$emit('toggle')"
-        @keydown.enter.exact.prevent="$emit('toggle')"
-        @keydown.space.exact.prevent="$emit('toggle')"
-    >
-      <div class="d-flex align-items-center">
-        <span class="criterion-icon me-2">
-          <LoadIcon
-              :icon-name="isExpanded ? 'chevron-up' : 'chevron-down'"
-              :size="16"
-          />
-        </span>
-        <span class="criterion-name">
-          {{ criterion.name || $t('assessment.criteria.unnamedCriterion') }}
-        </span>
-      </div>
-
-      <div class="d-flex align-items-center">
-        <!-- Info icon -->
-        <span
-            v-if="criterion.description || criterion.scoring"
-            class="info-icon me-2"
-            style="cursor: help;"
-            @click.stop="$emit('toggle-info-panel-pin', criterion)"
-            @mouseenter="$emit('open-info-panel', criterion)"
-            @mouseleave="$emit('close-info-panel')"
-        >
-          <LoadIcon icon-name="info-circle" :size="14"/>
-        </span>
-
-        <!-- Score badge -->
-        <span
-            class="badge"
-            :class="(readOnly || isSaved) ? 'bg-success' : 'bg-secondary'"
-        >
-          {{ displayScore }} P
-        </span>
-      </div>
-    </div>
+        :criterion="criterion"
+        :is-expanded="isExpanded"
+        :panel-id="panelId"
+        :display-score="displayScore"
+        :read-only="readOnly"
+        :is-saved="isSaved"
+        @toggle="$emit('toggle')"
+        @toggle-info-panel-pin="$emit('toggle-info-panel-pin', $event)"
+        @open-info-panel="$emit('open-info-panel', $event)"
+        @close-info-panel="$emit('close-info-panel')"
+    />
 
     <div
         v-if="isExpanded"
@@ -63,25 +30,14 @@
         </div>
 
         <!-- Edit view -->
-        <div v-else class="assessment-edit-form">
-          <div class="mb-3">
-            <textarea
-                ref="assessmentTextarea"
-                v-model="localAssessment"
-                class="form-control assessment-textarea"
-                :placeholder="$t('assessment.criteria.editPlaceholder')"
-                :rows="getTextareaRows(localAssessment)"
-                :disabled="readOnly"
-                @input="autoResizeTextarea"
-                @keydown.ctrl.enter.exact.prevent="saveEdit"
-                @keydown.meta.enter.exact.prevent="saveEdit"
-                @keydown.esc.exact.prevent="cancelEdit"
-            ></textarea>
-            <small class="text-muted assessment-hint">
-              {{ $t('assessment.criteria.keyboardHint', { mod: modifierKey }) }}
-            </small>
-          </div>
-        </div>
+        <AssessmentJustificationEditor
+            v-else
+            ref="assessmentTextarea"
+            v-model="localAssessment"
+            :read-only="readOnly"
+            @save="saveEdit"
+            @cancel="cancelEdit"
+        />
       </div>
 
       <!-- Actions -->
@@ -105,20 +61,7 @@
           </div>
 
           <div v-if="!readOnly" class="d-flex align-items-center gap-2">
-            <select
-                ref="scoreSelect"
-                v-model.number="scoreProxy"
-                class="form-select form-select-sm score-dropdown"
-                :title="$t('assessment.criteria.changeScore')"
-            >
-              <option
-                  v-for="point in pointsDescending"
-                  :key="point"
-                  :value="point"
-              >
-                {{ point }} P
-              </option>
-            </select>
+            <AssessmentScoreInput ref="scoreSelect" v-model="state" :criterion="criterion"/>
 
             <BasicButton
                 :class="['btn-sm', isSaved ? 'btn-success' : 'btn-primary']"
@@ -163,13 +106,15 @@
  *
  * @author Akash Gundapuneni, Dennis Zyska
  */
-import LoadIcon from "@/basic/Icon.vue";
+import AssessmentScoreInput from "./AssessmentScoreInput.vue";
+import AssessmentJustificationEditor from "./AssessmentJustificationEditor.vue";
+import AssessmentCriterionHeader from "./AssessmentCriterionHeader.vue";
 import BasicButton from "@/basic/Button.vue";
 import {useId} from "vue";
 
 export default {
   name: "AssessmentCriteria",
-  components: {LoadIcon, BasicButton},
+  components: {AssessmentScoreInput, AssessmentJustificationEditor, AssessmentCriterionHeader, BasicButton},
   props: {
     criterion: {
       type: Object,
@@ -232,12 +177,7 @@ export default {
      *
      * @returns {string} translated modifier label
      */
-    modifierKey() {
-      const platform = navigator.userAgentData?.platform || navigator.platform || "";
-      return /mac/i.test(platform)
-          ? this.$t("assessment.criteria.modCmd")
-          : this.$t("assessment.criteria.modCtrl");
-    },
+
     /**
      * Unique DOM id for this criterion's panel, used by aria-controls.
      * Uses Vue's useId(), so it stays unique across every mounted
@@ -251,60 +191,11 @@ export default {
     isEditing() {
       return !!this.state.isEditing;
     },
-    hasScoringList() {
-      return Array.isArray(this.criterion.scoring) && this.criterion.scoring.length > 0;
-    },
-    availablePoints() {
-      // Use scoring list if present
-      if (this.hasScoringList) {
-        return this.criterion.scoring.map((opt) =>
-            opt.points !== undefined ? opt.points : opt.score
-        );
-      }
 
-      // Fallback: build range from min/max
-      const min =
-          this.criterion.minPoints !== undefined
-              ? this.criterion.minPoints
-              : 0;
-      const max =
-          this.criterion.maxPoints !== undefined
-              ? this.criterion.maxPoints
-              : this.criterion.maxScore;
-      if (max === undefined) return [0];
 
-      const values = [];
-      for (let i = min; i <= max; i++) values.push(i);
-      return values;
-    },
     // Highest first, so the native ArrowUp moves to a higher score
-    pointsDescending() {
-      return [...this.availablePoints].sort((a, b) => b - a);
-    },
-    scoreProxy: {
-      get() {
-        const s = this.state.currentScore;
-        if (typeof s === "number") return s;
 
-        // Prefer first scoring option if list exists
-        if (this.hasScoringList) {
-          const first = this.criterion.scoring[0];
-          return first.points !== undefined ? first.points : first.score;
-        }
 
-        // Otherwise, fall back to availablePoints
-        const pts = this.availablePoints;
-        return pts.length ? pts[0] : 0;
-      },
-      set(val) {
-        const num = typeof val === "number" ? val : Number(val);
-        this.state = {
-          ...this.state,
-          currentScore: isNaN(num) ? 0 : num,
-          isSaved: false,
-        };
-      },
-    },
   },
   watch: {
     "state.assessment": {
@@ -376,34 +267,13 @@ export default {
       };
       this.$emit("saved-and-next");
     },
-    getTextareaRows(text) {
-      if (!text) return 3;
-      const lines = text.split("\n").length;
-      return Math.min(Math.max(lines, 3), 10);
-    },
-    autoResizeTextarea() {
-      const textarea = this.$refs.assessmentTextarea;
-      if (textarea) {
-        textarea.style.height = 'auto';
-        textarea.style.height = textarea.scrollHeight + 'px';
-      }
-    },
+
+    autoResizeTextarea() { this.$refs.assessmentTextarea?.resize(); },
   },
 };
 </script>
 
 <style scoped>
-.criterion-icon {
-  color: var(--bs-secondary-color);
-  transition: transform 0.2s ease;
-}
-
-.criterion-name {
-  font-weight: 400;
-  color: var(--bs-body-color, #333);
-}
-
-/* Assessment Content */
 .criterion-assessment {
   border-top: 1px solid var(--bs-border-color, #e9ecef);
   margin-top: 0;
@@ -428,37 +298,6 @@ export default {
   margin-top: 4px;
 }
 
-.assessment-edit-form {
-  margin-top: 12px;
-}
-
-.assessment-hint {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.8rem;
-}
-
-.assessment-textarea {
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: 6px;
-  font-size: 0.9rem;
-  resize: vertical;
-  overflow: hidden;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.assessment-textarea:focus {
-  border-color: var(--care-primary);
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
-  outline: 0;
-}
-
-.assessment-textarea::placeholder {
-  color: var(--bs-secondary-color);
-  font-style: italic;
-}
-
-/* Buttons */
 .assessment-actions .btn {
   font-size: 0.875rem;
   padding: 6px 12px;
@@ -495,32 +334,5 @@ export default {
 .assessment-actions .btn-secondary:hover {
   background-color: #5a6268;
   border-color: #545b62;
-}
-
-/* Form Elements */
-.score-dropdown {
-  min-width: 80px;
-  font-size: 0.875rem;
-  border: 1px solid var(--bs-border-color, #ced4da);
-  border-radius: 4px;
-  padding: 4px 8px;
-  background-color: var(--bs-body-bg, white);
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.score-dropdown:focus {
-  border-color: var(--care-primary);
-  box-shadow: 0 0 0 0.2rem color-mix(in srgb, var(--care-primary) 25%, transparent);
-  outline: 0;
-}
-
-/* Info icon */
-.info-icon {
-  color: var(--bs-secondary-color);
-  transition: color 0.2s ease;
-}
-
-.info-icon:hover {
-  color: var(--care-primary);
 }
 </style>

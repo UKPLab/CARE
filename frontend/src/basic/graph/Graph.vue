@@ -2,87 +2,18 @@
   <FormElement v-if="'nodes' in currentData" ref="formElement" :data-table="dataTable" :options="options">
     <template #element>
       <div class="card border-1 text-start rounded-0 w-100">
-        <div class="d-flex justify-content-between align-items-center p-1 card-header">
-          <span class="text-start">
-            <!-- Always visible: inspect and copy -->
-            <BasicButton
-              class="btn border-0"
-              icon="info-circle"
-              :tooltip="$t('basic.graph.inspectNode')"
-              :disabled="!activateEditNode"
-              @click="inspectNode(selectedNodes[0])"
-            />
-            <BasicButton
-              class="btn border-0"
-              icon="copy"
-              :tooltip="$t('basic.graph.copyNode')"
-              :disabled="!activateEditNode"
-              @click="copyNode(selectedNodes[0])"
-            />
-            <!-- Edit mode buttons -->
-            <template v-if="editable">
-              <BasicButton
-                class="btn border-0"
-                :rotate-icon="180"
-                icon="node-plus"
-                :tooltip="$t('basic.graph.addNodeBefore')"
-                :disabled="!activateAddNode"
-                @click="addNodePrevious(selectedNodes[0])"
-              />
-              <BasicButton
-                class="btn border-0"
-                :disabled="!activateAddNode"
-                icon="node-plus"
-                :tooltip="$t('basic.graph.addNodeAfter')"
-                @click="addNodeAfter(selectedNodes[0])"
-              />
-              <BasicButton
-                class="btn border-0"
-                icon="dash-circle"
-                :tooltip="$t('basic.graph.removeNode')"
-                :disabled="!activateRemoveNode"
-                @click="removeNode(selectedNodes[0])"
-              />
-              <BasicButton
-                class="btn border-0"
-                icon="pencil"
-                :tooltip="$t('basic.graph.editNode')"
-                :disabled="!activateEditNode"
-                @click="editNode(selectedNodes[0])"
-              />
-              <div v-if="activatePasteNode" class="position-relative d-inline-block">
-                <BasicButton
-                  class="btn border-0"
-                  :disabled="!activatePasteNode"
-                  icon="clipboard"
-                  :tooltip="$t('basic.graph.pasteCopiedNode')"
-                  @click="togglePasteOptions"
-                />
-                <!-- Paste Options Modal -->
-                <div v-if="showPasteOptions" class="paste-options-modal">
-                  <BasicButton
-                    class="btn border-0"
-                    :rotate-icon="180"
-                    icon="node-plus"
-                    :tooltip="$t('basic.graph.pasteBeforeSelectedNode')"
-                    @click="pasteNodeBefore(selectedNodes[0])"
-                  />
-                  <BasicButton
-                    class="btn border-0"
-                    icon="node-plus"
-                    :tooltip="$t('basic.graph.pasteAfterSelectedNode')"
-                    @click="pasteNodeAfter(selectedNodes[0])"
-                  />
-                </div>
-              </div>
-            </template>
-            <!-- Readonly indicator -->
-            <span v-else class="badge text-bg-secondary ms-1 align-middle d-inline-flex align-items-center gap-1">
-              <BasicIcon icon-name="lock-fill" :size="12" color="#fff" />
-              {{ $t("basic.graph.readOnly") }}
-            </span>
-          </span>
-        </div>
+        <GraphToolbar
+          :editable="editable" :selected-nodes="selectedNodes"
+          :activate-edit-node="activateEditNode" :activate-add-node="activateAddNode"
+          :activate-remove-node="activateRemoveNode" :activate-paste-node="Boolean(activatePasteNode)"
+          @inspect="inspectNode(selectedNodes[0])"
+          @copy="copyNode(selectedNodes[0])"
+          @add-before="addNodePrevious(selectedNodes[0])"
+          @add-after="addNodeAfter(selectedNodes[0])"
+          @remove="removeNode(selectedNodes[0])"
+          @edit="editNode(selectedNodes[0])"
+          @paste-before="pasteNodeBefore(selectedNodes[0])"
+          @paste-after="pasteNodeAfter(selectedNodes[0])" />
         <div class="card-body">
           <v-network-graph
             ref="graph"
@@ -107,8 +38,6 @@
 import FormElement from "@/basic/form/Element.vue"
 import { VNetworkGraph } from "v-network-graph";
 import * as vNG from "v-network-graph";
-import BasicIcon from "@/basic/Icon.vue";
-import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import dagre from "dagre";
 import deepEqual from "deep-equal";
@@ -122,12 +51,14 @@ const nodeSize = 40;
  * Currently only supports linear directed graphs
  *
  * @author: Dennis Zyska, Karim Ouf
- * 
+ *
  */
+import GraphToolbar from './GraphToolbar.vue';
+
 export default {
   name: "FormGraph",
   components: {
-    BasicIcon, BasicButton, FormElement, VNetworkGraph, ConfirmModal,
+    GraphToolbar, FormElement, VNetworkGraph, ConfirmModal,
   },
   inject: {
     mainModal: {
@@ -178,7 +109,6 @@ export default {
       currentEditingNodeId: null,
       currentNodeTable: null,
       editorRef: null,
-      showPasteOptions: false,
       configs: vNG.defineConfigs({
         node: {
           selectable: 1,
@@ -238,11 +168,6 @@ export default {
       },
       deep: true
     },
-    selectedNodes: {
-      handler() {
-        this.showPasteOptions = false;
-      }
-    }
 
   },
   mounted() {
@@ -264,7 +189,7 @@ export default {
       }
       if (!('nodes' in modelValue['layouts'])) {
         modelValue['layouts']['nodes'] = {};
-      }   
+      }
       this.currentData = modelValue;
     },
     /**
@@ -275,7 +200,6 @@ export default {
       // if (Object.keys(this.currentData['nodes']).length <= 1 || Object.keys(this.currentData['edges']).length === 0) {
       //   return
       // }
-
 
       // convert graph
       // ref: https://github.com/dagrejs/dagre/wiki
@@ -338,17 +262,12 @@ export default {
     copyNode(id) {
       this.$emit("copy:node", id);
     },
-    togglePasteOptions() {
-      this.showPasteOptions = !this.showPasteOptions;
-    },
     pasteNodeBefore(id) {
-      this.showPasteOptions = false;
       this.$emit("add:nodePrevious", id, this.copiedNodeData);
     },
     pasteNodeAfter(id) {
-      this.showPasteOptions = false;
       this.$emit("add:nodeAfter", id, this.copiedNodeData);
-    },  
+    },
     deleteSubNodes(nodeId) {
       const node = Number(nodeId)
       Object.entries(this.currentData['edges']).forEach(([edgeId, edge]) => {
@@ -378,7 +297,7 @@ export default {
           if (res) {
             this.deleteSubNodes(nodeId);
             this.selectedNodes = [];
-            this.updateLayout("LR");  
+            this.updateLayout("LR");
           }
           this.mainModal?.show();
         }
@@ -404,21 +323,7 @@ export default {
 
 .rotate-180 {
   transform: scale(-1, -1);
-  
+
 }
 
-.paste-options-modal {
-  position: absolute;
-  top: 100%;
-  left: -75%;
-  background: var(--bs-body-bg, white);
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 0.375rem;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-  padding: 0.5rem;
-  z-index: 1000;
-  display: flex;
-  gap: 0.25rem;
-  margin-top: 0.25rem;
-}
 </style>

@@ -44,7 +44,6 @@
         "validationConfiguration": "Configuration de validation {id}"
     },
     "skillSelector": {
-        "selectNlpSkill": "Sélectionnez une compétence NLP :",
         "selectSkill": "Sélectionnez une compétence :"
     },
     "inputMap": {

@@ -2,7 +2,7 @@
 
 const triggerEvents = [
   {
-    name: 'submission.uploaded',
+    eventName: 'submission.uploaded',
     enabled: true,
     configuration: {
       label: 'triggers.metadata.events.assignment.label',
@@ -106,7 +106,7 @@ module.exports = {
     await queryInterface.bulkInsert(
       'trigger_event',
       triggerEvents.map((event) => ({
-        name: event.name,
+        name: event.eventName,
         enabled: event.enabled,
         configuration: JSON.stringify(event.configuration),
         deleted: false,
@@ -141,7 +141,7 @@ module.exports = {
 
     await queryInterface.bulkDelete(
       'trigger_event',
-      { name: triggerEvents.map((e) => e.name) },
+      { name: triggerEvents.map((e) => e.eventName) },
       {}
     );
   },

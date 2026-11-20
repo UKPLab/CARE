@@ -99,12 +99,10 @@
     },
     "loading": {
         "title": "Chargement de l'étape de l'étude",
-        "nlpError": "Une erreur s'est produite lors du traitement des résultats NLP. Veuillez réessayer ou ignorer l'assistance NLP.",
         "serviceError": "Une erreur s'est produite lors du traitement des résultats du service. Veuillez réessayer ou ignorer l'assistance du service.",
         "generalError": "Une erreur s'est produite lors du chargement de l'étape de l'étude. Veuillez réessayer plus tard.",
         "buttons": {
             "tryAgain": "Réessayer",
-            "skip": "Ignorer l'assistance NLP",
             "skipService": "Ignorer l'assistance du service"
         },
         "messages": [
@@ -123,8 +121,6 @@
             "Presque prêt..."
         ],
         "errorTitle": "Erreur lors du chargement de l'étape de l'étude",
-        "processingTitle": "Traitement des requêtes NLP",
-        "failedTitle": "Échec des requêtes NLP",
         "processingServiceTitle": "Traitement des requêtes au service",
         "failedServiceTitle": "Échec des requêtes au service",
         "readyTitle": "Étape de l'étude prête"

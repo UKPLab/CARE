@@ -9,64 +9,14 @@
       @action="chooseAction"
   >
     <template #headerActions>
-      <div class="btn-group gap-2 flex-wrap">
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.liveSessions')"
-            :text="$t('users.liveSessions')"
-            icon="people-fill"
-            @click="openSessionDetailsModal()"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.downloadUsers')"
-            :text="$t('users.downloadUsers')"
-            icon="download"
-            @click="downloadUsers"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.rights.managementTitle')"
-            :text="$t('users.rights.managementTitle')"
-            icon="shield-lock"
-            @click="openRightsManagementModal"
-        />
-        <BasicButton
-          class="btn-secondary btn-sm"
-          :title="$t('users.roleManagement.button')"
-          :text="$t('users.roleManagement.button')"
-          icon="person-plus"
-          @click="$refs.roleManagementModal.open()"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.uploadPassword')"
-            :text="$t('users.uploadPassword')"
-            icon="key"
-            @click="openUploadModal"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.importCsv')"
-            :text="$t('users.importCsv')"
-            icon="filetype-csv"
-            @click="openImportModal('csv')"
-        />
-        <BasicButton
-            class="btn-secondary btn-sm"
-            :title="$t('users.importViaMoodle')"
-            :text="$t('users.importViaMoodle')"
-            icon="box-arrow-in-down"
-            @click="openImportModal('moodle')"
-        />
-        <BasicButton
-            class="btn-primary btn-sm"
-            :title="$t('users.addUser')"
-            :text="$t('users.addUser')"
-            icon="person-plus"
-            @click="openUserAddModal"
-        />
-      </div>
+      <UsersToolbar
+          @live-sessions="openSessionDetailsModal()"
+          @rights-management="openRightsManagementModal"
+          @role-management="$refs.roleManagementModal.open()"
+          @upload-passwords="openUploadModal"
+          @import="openImportModal"
+          @add-user="openUserAddModal"
+      />
     </template>
   </DashboardListPage>
   <DetailsModal
@@ -107,7 +57,7 @@
 </template>
 
 <script>
-import BasicButton from "@/basic/Button.vue";
+import UsersToolbar from "./users/UsersToolbar.vue";
 import DetailsModal from "./users/DetailsModal.vue";
 import RightsModal from "./users/RightsModal.vue";
 import RightsManagementModal from "./users/RightsManagementModal.vue";
@@ -117,7 +67,7 @@ import UploadModal from "./users/UploadModal.vue";
 import UserAddModal from "./users/UserCreateModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import PasswordModal from "@/basic/modal/PasswordModal.vue";
-import {downloadObjectsAs, formatLocalizedDate, resolveApiMessage} from "@/assets/utils";
+import {formatLocalizedDate, resolveApiMessage} from "@/assets/utils";
 import ActiveSessionsModal from "./users/ActiveSessionsModal.vue";
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
@@ -137,7 +87,7 @@ export default {
     PasswordModal,
     RightsModal,
     RightsManagementModal,
-    BasicButton,
+    UsersToolbar,
     ImportModal,
     UploadModal,
     UserAddModal,
@@ -171,8 +121,6 @@ export default {
           order: "ASC",
         },
       }),
-      // Possible values for role here are all the roles in the DB.
-      role: "all",
     };
   },
   computed: {
@@ -222,71 +170,24 @@ export default {
         };
       });
     },
-    usersExport() {
-      return this.users.filter(user => !user.deleted).map((user) => {
-        return {
-          ID: user.id,
-          "First Name": user.firstName,
-          "Last Name": user.lastName,
-          User: user.userName,
-          Email: user.email,
-          "Accept Terms": user.acceptTerms,
-          "Accept Stats": user.acceptStats,
-          "Accept Data Sharing": user.acceptDataSharing,
-          "Accept Date": user.acceptedAt,
-          "Last Login": user.lastLoginAt,
-          "Created": user.createdAt,
-          "External ID": user.extId,
-          "Verified": user.emailVerified,
-          "Roles": user.roles.map(role => this.systemRoles.find((r) => r.id === role)?.name).join(", "),
-        };
-      });
-    },
-    systemRoles() {
-      return this.$store.getters["admin/getSystemRoles"];
-    },
     buttons() {
+      // Every user row button reports the user id in its stats.
+      const userStats = { stats: { userId: "id" } };
       return [
-        dashboardRowAction("edit", {
-          title: this.$t('users.editUser'),
-          action: "editUser",
-          stats: {
-            userId: "id",
-          },
-        }),
-        dashboardRowAction("rights", {
-          title: this.$t('users.viewRights'),
-          action: "viewRights",
-          stats: {
-            userId: "id",
-          },
-        }),
-        dashboardRowButton("person-lock", {
-          title: this.$t('users.resetPassword'),
-          action: "resetPassword",
-          stats: {
-            userId: "id",
-          },
-        }),
+        dashboardRowAction("edit", { ...userStats, title: this.$t('users.editUser'), action: "editUser" }),
+        dashboardRowAction("rights", { ...userStats, title: this.$t('users.viewRights'), action: "viewRights" }),
+        dashboardRowButton("person-lock", { ...userStats, title: this.$t('users.resetPassword'), action: "resetPassword" }),
         dashboardRowButton("display", {
+          ...userStats,
           title: this.$t('users.viewSessions'),
           action: "viewSessions",
-          stats: {
-            userId: "id",
-          },
           filter: [{ key: "isActive", value: true }],
         }),
-        dashboardRowAction("delete", {
-          title: this.$t('users.deleteUser'),
-          action: "deleteUser",
-          stats: {
-            userId: "id",
-          },
-        }),
+        dashboardRowAction("delete", { ...userStats, title: this.$t('users.deleteUser'), action: "deleteUser" }),
       ];
     },
   },
-  
+
   mounted() {
     this.$socket.emit("userMonitorSubscribe", {}, (response) => {
         this.$store.commit("admin/SOCKET_monitorStatsUpdate", response);
@@ -339,16 +240,13 @@ export default {
     chooseAction(data) {
       switch (data.action) {
         case "editUser":
-          this.openUserDetailsModal(data.params);
+          this.openDetailsModal(data.params.id);
           break;
         case "viewRights":
-          this.openViewRightsModal(data.params);
+          this.openRightsModal(data.params.id);
           break;
         case "resetPassword":
-          this.openResetPasswordModal(data.params);
-          break;
-        case "editReviews":
-          this.openEditReviewsModal(data.params);
+          this.openPasswordModal(data.params.id);
           break;
         case "viewSessions":
           this.openSessionDetailsModal(data.params);
@@ -357,15 +255,6 @@ export default {
           this.deleteUser(data.params);
           break;
       }
-    },
-    openUserDetailsModal(user) {
-      this.openDetailsModal(user.id);
-    },
-    openViewRightsModal(user) {
-      this.openRightsModal(user.id);
-    },
-    openResetPasswordModal(user) {
-      this.openPasswordModal(user.id);
     },
     deleteUser(user) {
       this.openConfirmModal(this.$t('users.messages.deleteTitle'), this.$t('users.messages.deleteConfirm'), null, (val) => {
@@ -398,10 +287,6 @@ export default {
         }
       });
     },
-    downloadUsers() {
-      const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_users';
-      downloadObjectsAs(this.usersExport, filename, "csv");
-    },
     openSessionDetailsModal(params = null) {
       const userId = params ? params.id : null;
       this.modals.activeSessions = true;
@@ -410,5 +295,3 @@ export default {
   },
 };
 </script>
-
-<style scoped></style>

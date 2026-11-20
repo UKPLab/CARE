@@ -83,36 +83,8 @@
           </div>
         </div>
 
-        <div class="border-top pt-3 mt-4">
-          <h6 class="step-group-heading text-muted border-bottom pb-1 mb-3">Send test email</h6>
-          <p class="small text-muted mb-2">
-            Sends a short fixed message so you can verify delivery before finishing setup.
-          </p>
-          <div class="form-group row my-2">
-            <label class="col-md-4 col-form-label text-md-right" for="setup-test-mail-to">Recipient</label>
-            <div class="col-md-6 d-flex flex-column flex-sm-row gap-2 align-items-sm-start">
-              <input
-                id="setup-test-mail-to"
-                :value="testMailTo"
-                class="form-control"
-                type="email"
-                placeholder="you@example.com"
-                autocomplete="email"
-                @input="$emit('update-test-mail-to', $event.target.value)"
-              />
-              <BasicButton
-                class="btn btn-outline-primary flex-shrink-0"
-                :title="testMailSending ? 'Sending...' : 'Send test email'"
-                :disabled="testMailSending || !testMailTo.trim()"
-                @click="$emit('send-test-mail')"
-              />
-            </div>
-          </div>
-          <p v-if="testMailMessage" class="small mb-0" :class="testMailError ? 'text-danger' : 'text-success'">
-            {{ testMailMessage }}
-          </p>
-        </div>
       </template>
+      <SetupWizardTestMail v-show="mailEnabled" :form-settings="formSettings" />
 
       <div class="d-flex justify-content-between mt-4">
         <BasicButton class="btn btn-secondary" title="Previous" @click="$emit('previous')" />
@@ -124,6 +96,7 @@
 
 <script>
 import BasicButton from "@/basic/Button.vue";
+import SetupWizardTestMail from "./SetupWizardTestMail.vue";
 
 /**
  * Renders the first-time setup wizard mail step: mail service master toggle, sendmail versus SMTP subsection
@@ -131,7 +104,7 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "SetupWizardMailStep",
-  components: { BasicButton },
+  components: { BasicButton, SetupWizardTestMail },
   props: {
     wizardSettings: {
       type: Array,
@@ -153,29 +126,11 @@ export default {
       type: Boolean,
       required: true,
     },
-    testMailTo: {
-      type: String,
-      required: true,
-    },
-    testMailSending: {
-      type: Boolean,
-      required: true,
-    },
-    testMailMessage: {
-      type: String,
-      required: true,
-    },
-    testMailError: {
-      type: Boolean,
-      required: true,
-    },
   },
   emits: [
     "download-template",
     "open-import-modal",
     "update:value",
-    "update-test-mail-to",
-    "send-test-mail",
     "previous",
     "next",
   ],

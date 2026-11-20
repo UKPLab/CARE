@@ -165,7 +165,9 @@
             "model": "Modèle",
             "output": "Sortie",
             "review": "Vérification"
-        }
+        },
+        "outputMode": "Mode de sortie",
+        "priority": "Priorité"
     },
     "budgets": {
         "title": "Budget IA",

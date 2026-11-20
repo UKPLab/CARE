@@ -5,63 +5,9 @@
     :options="options"
   >
     <template #element="{ blur }">
-      <div
-        v-if="options.search"
-        ref="searchSelect"
-        class="searchable-select w-100"
-      >
-        <input
-          v-if="isOpen"
-          ref="searchInput"
-          v-model="searchQuery"
-          type="text"
-          class="form-select searchable-select-toggle"
-          :class="selectClass"
-          :disabled="isDisabled"
-          :placeholder="options.placeholder || $t('common.search')"
-          :aria-label="$t('common.searchOptions')"
-          @keydown.escape.prevent="isOpen = false"
-        >
-        <button
-          v-else
-          type="button"
-          class="form-select text-start searchable-select-toggle"
-          :class="selectClass"
-          :disabled="isDisabled"
-          @click="isOpen = true"
-        >
-          <span
-            class="searchable-select-label"
-            :class="{ 'text-muted': !hasSelection }"
-          >
-            {{ selectedLabel }}
-          </span>
-        </button>
-        <div
-          v-if="isOpen"
-          class="dropdown-menu show searchable-select-menu w-100"
-        >
-          <div class="searchable-select-options">
-            <button
-              v-for="option in filteredSelectOptions"
-              :key="option.value"
-              type="button"
-              class="dropdown-item"
-              :class="[option.class, { active: currentData === option.value }]"
-              :disabled="option.disabled"
-              @mousedown.prevent="selectOption(option, blur)"
-            >
-              {{ translateMaybeKey(option.name) }}
-            </button>
-            <div
-              v-if="filteredSelectOptions.length === 0"
-              class="dropdown-item text-muted disabled"
-            >
-              {{ $t('common.noMatches') }}
-            </div>
-          </div>
-        </div>
-      </div>
+      <SearchableSelect
+v-if="options.search" v-model="currentData" :options="options"
+        :select-options="selectOptions" :select-class="selectClass" :is-disabled="isDisabled" @blur="blur" />
       <select
         v-else-if="Array.isArray(options.options)"
         v-model="currentData"
@@ -101,9 +47,11 @@
 import FormElement from "@/basic/form/Element.vue";
 import { translateMaybeKey } from "@/assets/utils";
 
+import SearchableSelect from './SearchableSelect.vue';
+
 export default {
   name: "FormSelect",
-  components: { FormElement },
+  components: {SearchableSelect, FormElement },
   inject: {
     formData: {
       default: () => null,
@@ -140,8 +88,6 @@ export default {
   data() {
     return {
       currentData: null,
-      isOpen: false,
-      searchQuery: "",
     };
   },
   computed: {
@@ -240,8 +186,8 @@ export default {
       // Add document templates (Type 5) to document dropdown for Editor steps in study creation
       if (
         this.options.options.table === 'document' &&
-        this.parentValue?.stepType === 2 && 
-        this.formData?.workflowId 
+        this.parentValue?.stepType === 2 &&
+        this.formData?.workflowId
       ) {
         const currentUserId = this.$store.getters["auth/getUserId"];
         const documentTemplates = this.$store.getters["table/template/getAll"]
@@ -259,31 +205,13 @@ export default {
               templateId: t.id,
             };
           });
-        
+
         baseOptions = [...baseOptions, ...documentTemplates];
       }
 
       return baseOptions;
     },
-    filteredSelectOptions() {
-      const query = this.searchQuery.trim().toLowerCase();
-      if (!query) {
-        return this.selectOptions;
-      }
-      return this.selectOptions.filter((option) =>
-        String(option.name).toLowerCase().includes(query)
-      );
-    },
-    hasSelection() {
-      return this.currentData !== null
-        && this.currentData !== undefined
-        && this.currentData !== -1
-        && this.currentData !== "";
-    },
-    selectedLabel() {
-      const selected = this.selectOptions.find((option) => option.value === this.currentData);
-      return selected?.name || this.options.placeholder || this.$t("common.selectPlaceholder");
-    },
+
   },
   watch: {
     currentData(newVal, oldVal) {
@@ -295,22 +223,13 @@ export default {
       if (next === this.currentData && newVal !== -1) return;
       this.updateData();
     },
-    isOpen(open) {
-      if (open) {
-        this.searchQuery = "";
-        this.$nextTick(() => this.$refs.searchInput?.focus());
-      } else {
-        this.searchQuery = "";
-      }
-    },
+
   },
   mounted() {
     this.updateData();
-    document.addEventListener("mousedown", this.onDocumentClick);
+
   },
-  beforeUnmount() {
-    document.removeEventListener("mousedown", this.onDocumentClick);
-  },
+
   methods: {
     // Native <select> must bind primitives. valueAsObject only affects the emitted/model shape.
     resolveCurrent(modelValue) {
@@ -347,72 +266,10 @@ export default {
         this.currentData = this.resolveCurrent(this.modelValue);
       }
     },
-    selectOption(option, blur) {
-      if (option.disabled) return;
-      this.currentData = option.value;
-      this.isOpen = false;
-      blur(this.currentData !== -1);
-    },
-    onDocumentClick(event) {
-      if (!this.isOpen) return;
-      if (!this.$refs.searchSelect?.contains(event.target)) {
-        this.isOpen = false;
-      }
-    },
+
     validate() {
       return this.$refs.formElement.validate(this.currentData);
     },
   },
 };
 </script>
-
-<style scoped>
-.searchable-select {
-  position: relative;
-}
-
-.searchable-select-toggle {
-  width: 100%;
-  background-color: var(--bs-body-bg, #fff);
-}
-
-button.searchable-select-toggle {
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  cursor: pointer;
-}
-
-input.searchable-select-toggle {
-  cursor: text;
-}
-
-.searchable-select-toggle:disabled {
-  cursor: not-allowed;
-  opacity: 0.65;
-}
-
-.searchable-select-label {
-  display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.searchable-select-menu {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 1050;
-  max-height: 16rem;
-  display: flex;
-  flex-direction: column;
-  padding: 0.25rem 0;
-  margin-top: 0.125rem;
-}
-
-.searchable-select-options {
-  overflow-y: auto;
-  max-height: 16rem;
-}
-</style>

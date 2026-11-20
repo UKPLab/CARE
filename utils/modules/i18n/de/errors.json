@@ -39,7 +39,6 @@
     "idRequiredNoPeriod": "Konfigurations-ID ist erforderlich",
     "contentRequiredNoPeriod": "Konfigurationsinhalt ist erforderlich",
     "notFound": "Konfiguration nicht gefunden.",
-    "accessDenied": "Zugriff verweigert",
     "createForOtherUsersDenied": "Sie haben keine Berechtigung, Konfigurationen für andere Benutzer zu erstellen."
   },
   "validation": {
@@ -390,7 +389,6 @@
     "emptyValue": "Leerer Wert gefunden für {key} an Index {index}",
     "duplicateId": "Doppelte ID gefunden: {extId} an Index {index}",
     "duplicateEmail": "Doppelte E-Mail gefunden: {email} an Index {index}",
-    "rolesNotCommaSeparated": "Rollen sind nicht durch Kommas getrennt für ID {id} an Index {index}",
     "invalidEmailFormat": "Ungültiges E-Mail-Format für ID {id} an Index {index}: {email}",
     "parseError": "Fehler beim Verarbeiten der Datei: {message}"
   },

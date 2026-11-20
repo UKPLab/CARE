@@ -34,7 +34,8 @@
         },
         "submissionWarning": {
             "label": "Avertissement de remise :",
-            "help": "Affiché aux utilisateurs comme demande de confirmation lorsqu'ils effectuent une remise pour ce devoir. Laissez vide pour ne pas afficher d'avertissement."
+            "help": "Affiché aux utilisateurs comme demande de confirmation lorsqu'ils effectuent une remise pour ce devoir. Laissez vide pour ne pas afficher d'avertissement.",
+            "placeholder": "Par exemple, ce devoir doit être soumis en allemand."
         }
     },
     "dashboard": {
@@ -122,6 +123,7 @@
         },
         "modal": {
             "submitText": "Enregistrer le devoir",
+            "previewSubmissionWarning": "Aperçu de l'avertissement de soumission",
             "assignMode": {
                 "roles": "Rôles",
                 "users": "Utilisateurs"
@@ -255,6 +257,8 @@
             "selectField": "Sélectionnez un champ",
             "matchAgainst": "Faire correspondre avec",
             "primaryKeyHelp": "Ce mappage détermine comment CARE associe les lignes importées aux propriétaires des travaux du devoir sélectionné.",
+            "targetFieldExtId": "extId",
+            "targetFieldEmail": "e-mail",
             "metadataHeading": "Mappages des métadonnées",
             "targetMetaKey": "metaKey cible",
             "action": "Action",

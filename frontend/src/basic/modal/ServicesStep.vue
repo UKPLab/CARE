@@ -4,65 +4,20 @@
     <div v-if="hasConfigServices" class="services-config mb-4">
       <h6 class="section-title">{{ $t('nlp.services.availableServices') }}</h6>
 
-      <div
+      <ServiceSlotEditor
           v-for="(skill, index) in selectedSkills"
           :key="index"
-          class="skill-item mb-3"
-      >
-        <h6>{{ getServiceLabel(serviceAt(index).name) }}</h6>
-        <div class="skill-selection mb-2">
-          <SkillSelector
-              v-model="skill.skillName"
-              :service-type="serviceAt(index).type"
-              @update:model-value="onSkillChange(index, $event)"
-          />
-        </div>
-        <!-- Input mapping and optional output mapping -->
-        <InputMap
-            v-if="skill.skillName && serviceAt(index).inputMapping !== false"
-            :skill-name="skill.skillName"
-            :hook-id="hookIdFor(skill)"
-            :study-based="true"
-            :model-value="modelValue.services[index].inputs"
-            :study-step-id="studyStepId"
-            :workflow-steps="workflowSteps"
-            :current-stepper-step="currentStepperStep"
-            :service-index="index"
-            :step-config="modelValue"
-            :selected-skills="selectedSkills"
-            :document-id="documentId"
-            :output-mapping="serviceAt(index).outputMapping !== false"
-            @update:model-value="handleInputMappingUpdate(index, $event)"
-            @validation-change="handleInputValidationChange(index, $event)"
-        />
-        <!-- AI hook budget caps: total / per session / per user -->
-        <div v-if="isHook(skill)" class="cap-fields mt-2">
-          <h6 class="text-secondary">{{ $t('nlp.services.costLimits') }}</h6>
-          <div class="row g-2">
-            <div class="col-md-4">
-              <FormDefault
-                  :model-value="String(skill.capTotal || '')"
-                  :options="{ key: 'capTotal', label: 'nlp.services.totalCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.totalCostLimitHelp' }"
-                  @update:model-value="setHookCap(skill, 'capTotal', $event)"
-              />
-            </div>
-            <div class="col-md-4">
-              <FormDefault
-                  :model-value="String(skill.capPerSession || '')"
-                  :options="{ key: 'capPerSession', label: 'nlp.services.sessionCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.sessionCostLimitHelp' }"
-                  @update:model-value="setHookCap(skill, 'capPerSession', $event)"
-              />
-            </div>
-            <div class="col-md-4">
-              <FormDefault
-                  :model-value="String(skill.capPerUser || '')"
-                  :options="{ key: 'capPerUser', label: 'nlp.services.userCostLimit', type: 'number', min: 0, step: 0.01, placeholder: 'nlp.services.noLimit', help: 'nlp.services.userCostLimitHelp' }"
-                  @update:model-value="setHookCap(skill, 'capPerUser', $event)"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+          :service="serviceAt(index)"
+          :selection="skill"
+          :index="index"
+          :step-config="modelValue"
+          :selected-skills="selectedSkills"
+          :current-stepper-step="currentStepperStep"
+          @update:skill="onSkillChange(index, $event)"
+          @update:mapping="handleInputMappingUpdate(index, $event)"
+          @patch="patchSlot(index, $event)"
+          @validation-change="handleInputValidationChange(index, $event)"
+      />
     </div>
 
     <!-- No Services Message -->
@@ -75,16 +30,15 @@
 </template>
 
 <script>
-import SkillSelector from "@/basic/modal/skills/SkillSelector.vue";
-import InputMap from "@/basic/modal/skills/InputMap.vue";
-import FormDefault from "@/basic/form/Default.vue";
+import ServiceSlotEditor from "./ServiceSlotEditor.vue";
 
 /**
  * ServicesStep Component
  *
  * Configures a step's service slots. Each slot is filled with either an NLP skill or an AI hook.
  * The service declaration controls its type and whether output mapping is available.
- * Budget caps for hook entries live in ai_budget (configured in the budget operations dashboard).
+ * Budget caps for hook entries live in ai_budget (configured in the budget operations dashboard);
+ * each ServiceSlotEditor renders one slot and shows its stored caps until edited.
  * A slot stores `skill` (NLP) or `hookId` and `hookName` (hook).
  *
  * @author Mohammed Rawhani
@@ -92,25 +46,8 @@ import FormDefault from "@/basic/form/Default.vue";
 export default {
   name: "ServicesStep",
   subscribeTable: ["ai_budget", "ai_hook"],
-  components: {
-    SkillSelector,
-    InputMap,
-    FormDefault,
-  },
+  components: {ServiceSlotEditor},
   inject: {
-    studyStepId: {
-      type: Number,
-      required: true,
-    },
-    documentId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    workflowSteps: {
-      type: Array,
-      required: true,
-    },
     isTemplateMode: {
       type: Boolean,
       default: false,
@@ -179,9 +116,6 @@ export default {
         });
       });
     },
-    budgetRefreshCount() {
-      return this.$store.getters["table/ai_budget/refreshCount"] ?? 0;
-    },
   },
   watch: {
     isValid: {
@@ -190,23 +124,8 @@ export default {
       },
       immediate: true,
     },
-    budgetRefreshCount: {
-      handler() {
-        this.hydrateHookCapsFromStore();
-      },
-      immediate: true,
-    },
   },
   methods: {
-    /**
-     * Return the display label for a service name.
-     * @param {string} serviceName Service name
-     * @returns {string} Service display label
-     */
-    getServiceLabel(serviceName) {
-      const key = `ai.services.${serviceName}`;
-      return this.$te(key) ? this.$t(key) : serviceName;
-    },
     /**
      * Return the service declaration at an index.
      * @param {number} index Service index
@@ -236,59 +155,15 @@ export default {
       return typeof skill.skillName === "string" && skill.skillName.startsWith("hook:");
     },
     /**
-     * Reads the latest ai_budget rows for this (studyStepId, aiHookId).
-     * Returns { total, perSession, perUser }
+     * Merges changed fields into one slot, then emits the services.
+     * @param {number} index Service index
+     * @param {Object} fields Slot fields to replace (e.g. caps from ai_budget or user edits)
+     * @returns {void}
      */
-    lookupStepHookCaps(hookId) {
-      const out = { total: null, perSession: null, perUser: null };
-      if (!this.studyStepId || !hookId) return out;
-      const getter = this.$store.getters["table/ai_budget/getFiltered"];
-      if (!getter) return out;
-      const rows = getter(
-        (b) => !b.deleted
-          && Number(b.studyStepId) === Number(this.studyStepId)
-          && Number(b.aiHookId) === Number(hookId)
-      );
-      for (const row of rows) {
-        const value = Number(row.costLimit);
-        if (!Number.isFinite(value)) continue;
-        if (Number(row.limitType) === 0) out.total = value;
-        if (Number(row.limitType) === 1) out.perSession = value;
-        if (Number(row.limitType) === 2) out.perUser = value;
-      }
-      return out;
-    },
-    /** Copies ai_budget caps into hook slots after the table refresh. User edits stay. */
-    hydrateHookCapsFromStore() {
-      let changed = false;
-      const next = this.selectedSkills.map((skill) => {
-        if (!this.isHook(skill) || skill.capsLocked) return skill;
-        const caps = this.lookupStepHookCaps(this.hookIdFor(skill));
-        if (caps.total == null && caps.perSession == null && caps.perUser == null) {
-          return skill;
-        }
-        if (
-          skill.capTotal === caps.total
-          && skill.capPerSession === caps.perSession
-          && skill.capPerUser === caps.perUser
-        ) {
-          return skill;
-        }
-        changed = true;
-        return {
-          ...skill,
-          capTotal: caps.total,
-          capPerSession: caps.perSession,
-          capPerUser: caps.perUser,
-        };
-      });
-      if (!changed) return;
-      this.selectedSkills = next;
-      this.emitServices();
-    },
-    setHookCap(skill, key, value) {
-      skill[key] = value ? Number(value) : null;
-      skill.capsLocked = true;
+    patchSlot(index, fields) {
+      const updated = [...this.selectedSkills];
+      updated[index] = {...updated[index], ...fields};
+      this.selectedSkills = updated;
       this.emitServices();
     },
     /** Parses the hook id from a `hook:<id>` selection, or null for skills. */
@@ -340,14 +215,8 @@ export default {
     /** Resets the slot's mappings when the chosen skill/hook changes, then emits. */
     onSkillChange(index, value) {
       const updated = [...this.selectedSkills];
-      const next = {skillName: value, dataInput: {}, dataOutput: {}, capsLocked: false, inputMappingValid: false};
-      if (this.isHook(next)) {
-        const caps = this.lookupStepHookCaps(this.hookIdFor(next));
-        next.capTotal = caps.total;
-        next.capPerSession = caps.perSession;
-        next.capPerUser = caps.perUser;
-      }
-      updated[index] = next;
+      // A newly chosen hook slot receives its stored caps from ServiceSlotEditor.
+      updated[index] = {skillName: value, dataInput: {}, dataOutput: {}, capsLocked: false, inputMappingValid: false};
       this.selectedSkills = updated;
       this.emitServices();
     },
@@ -413,47 +282,6 @@ export default {
   padding: 1rem;
   border-radius: 0.5rem;
   border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.skill-item {
-  background-color: var(--bs-body-bg, #ffffff);
-  padding: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.skill-selection {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.cap-fields {
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-  padding: 0.75rem;
-  border-radius: 0.375rem;
-  border: 1px solid var(--bs-border-color, #e9ecef);
-}
-
-.form-label {
-  font-weight: 500;
-  color: var(--bs-body-color, #495057);
-  margin-bottom: 0.5rem;
-}
-
-.text-secondary {
-  color: var(--bs-secondary-color) !important;
-  font-weight: 600;
-}
-
-.form-control {
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
-}
-
-.form-control:focus {
-  border-color: var(--care-primary);
-  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--care-primary) 25%, transparent);
 }
 
 .no-content {

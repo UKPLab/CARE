@@ -22,6 +22,7 @@
         v-model:event-data="eventData"
         :event-fields="eventFields"
         :config-fields="eventConfigFields"
+        @assignment-change="clearAssignmentFiles"
       />
     </template>
     <template #step-3>
@@ -31,7 +32,7 @@
         :select-fields="actionSelectFields"
         :config-fields="actionConfigFields"
         :component-fields="actionComponentFields"
-        :validation-configuration-ids="validationConfigurationIds"
+        :assignment-id="eventData.assignmentId"
         :selected="!!selectedAction"
         @validity="actionStepValid = $event"
       />
@@ -48,8 +49,6 @@
       />
     </template>
   </StepperModal>
-
-  <TriggerViewModal ref="viewModal" />
 </template>
 
 <script>
@@ -58,91 +57,33 @@ import BasicForm from "@/basic/Form.vue";
 import TriggerEventStep from "./TriggerEventStep.vue";
 import TriggerActionStep from "./TriggerActionStep.vue";
 import TriggerReviewStep from "./TriggerReviewStep.vue";
-import TriggerViewModal from "./TriggerViewModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
 
-const STEPPER_STEPS = [
-  { title: "triggers.steps.info" },
-  { title: "triggers.common.event" },
-  { title: "triggers.common.action" },
-  { title: "triggers.steps.review" },
-];
+const STEPPER_STEPS = ["triggers.steps.info", "triggers.common.event", "triggers.common.action", "triggers.steps.review"];
 
+// Labels and help texts are i18n keys, localized in localizeField().
 const SETTINGS_FORM_SCHEMA = [
+  { key: "name", label: "triggers.common.name", type: "text", required: true, help: "triggers.fields.nameHelp" },
+  { key: "description", label: "triggers.common.description", type: "textarea", required: true, help: "triggers.fields.descriptionHelp" },
   {
-    key: "name",
-    label: "triggers.common.name",
-    type: "text",
-    required: true,
-    help: "triggers.fields.nameHelp",
-  },
-  {
-    key: "description",
-    label: "triggers.common.description",
-    type: "textarea",
-    required: true,
-    help: "triggers.fields.descriptionHelp",
-  },
-  {
-    key: "projectId",
-    label: "triggers.fields.scopeProject",
-    type: "select",
-    required: true,
-    help: "triggers.fields.scopeProjectHelp",
+    key: "projectId", label: "triggers.fields.scopeProject", type: "select", required: true, help: "triggers.fields.scopeProjectHelp",
     optionsSource: { table: "project", labelKey: "name", valueKey: "id" },
   },
-  {
-    key: "maxRetries",
-    label: "triggers.fields.maxRetries",
-    type: "number",
-    min: 0,
-    required: true,
-    help: "triggers.fields.maxRetriesHelp",
-  },
-  {
-    key: "parallelLimit",
-    label: "triggers.fields.parallelLimit",
-    type: "number",
-    min: 1,
-    required: true,
-    help: "triggers.fields.parallelLimitHelp",
-  },
-  {
-    key: "timeout",
-    label: "triggers.fields.timeoutSeconds",
-    type: "number",
-    min: 1,
-    required: true,
-    help: "triggers.fields.timeoutHelp",
-  },
+  { key: "maxRetries", label: "triggers.fields.maxRetries", type: "number", min: 0, required: true, help: "triggers.fields.maxRetriesHelp" },
+  { key: "parallelLimit", label: "triggers.fields.parallelLimit", type: "number", min: 1, required: true, help: "triggers.fields.parallelLimitHelp" },
+  { key: "timeout", label: "triggers.fields.timeoutSeconds", type: "number", min: 1, required: true, help: "triggers.fields.timeoutHelp" },
 ];
 
 const EVENT_FIELD = {
-  key: "triggerEventId",
-  label: "triggers.fields.whenEvent",
-  type: "select",
-  required: true,
-  optionsSource: {
-    table: "trigger_event",
-    labelKey: "configuration.label",
-    nameKey: "name",
-    valueKey: "id",
-    filter: { enabled: true },
-  },
+  key: "triggerEventId", label: "triggers.fields.whenEvent", type: "select", required: true,
+  optionsSource: { table: "trigger_event", labelKey: "configuration.label", nameKey: "name", valueKey: "id", filter: { enabled: true } },
 };
 
 const ACTION_FIELD = {
-  key: "triggerActionId",
-  label: "triggers.fields.thenAction",
-  type: "select",
-  required: true,
+  key: "triggerActionId", label: "triggers.fields.thenAction", type: "select", required: true,
   optionsSource: {
-    table: "trigger_action",
-    labelKey: "configuration.label",
-    nameKey: "name",
-    valueKey: "id",
-    filter: { enabled: true },
-    compatibleWithEvent: true,
+    table: "trigger_action", labelKey: "configuration.label", nameKey: "name", valueKey: "id",
+    filter: { enabled: true }, compatibleWithEvent: true,
   },
 };
 
@@ -166,7 +107,6 @@ export default {
     TriggerEventStep,
     TriggerActionStep,
     TriggerReviewStep,
-    TriggerViewModal,
   },
   emits: ["saved"],
   data() {
@@ -180,7 +120,7 @@ export default {
   },
   computed: {
     stepperSteps() {
-      return STEPPER_STEPS.map((step) => ({ title: this.$t(step.title) }));
+      return STEPPER_STEPS.map((title) => ({ title: this.$t(title) }));
     },
     selectedEvent() {
       return this.findCatalog("trigger_event", this.triggerForm.triggerEventId);
@@ -211,13 +151,6 @@ export default {
     actionComponentFields() {
       return this.selectedAction?.configuration?.componentSchema || [];
     },
-    validationConfigurationIds() {
-      const assignmentId = this.eventData.assignmentId;
-      if (!assignmentId) return [];
-      const id = this.$store.getters["table/assignment/get"](Number(assignmentId))
-        ?.validationConfigurationId;
-      return id != null ? [id] : [];
-    },
     stepValid() {
       return [
         this.isConfigValid(this.triggerForm, this.settingsFields),
@@ -230,24 +163,11 @@ export default {
       ];
     },
   },
-  watch: {
-    "triggerForm.triggerEventId"(next, prev) {
-      if (prev != null && next !== prev) this.eventData = {};
-    },
-    "triggerForm.triggerActionId"(next, prev) {
-      if (prev != null && next !== prev) this.actionData = {};
-    },
-    "eventData.assignmentId"(next, prev) {
-      if (prev != null && next !== prev) {
-        this.actionData = {
-          ...this.actionData,
-          baseFiles: {},
-          validationConfigurationNames: {},
-        };
-      }
-    },
-  },
   methods: {
+    /** Drops action file choices that belonged to the previous assignment. */
+    clearAssignmentFiles() {
+      this.actionData = {...this.actionData, baseFiles: {}, validationConfigurationNames: {}};
+    },
     localizeField(field) {
       return {
         ...field,
@@ -329,9 +249,6 @@ export default {
     openCreate(projectId) {
       this.resetEditor({ triggerForm: { ...DEFAULT_FORM, projectId } });
       this.$refs.stepper.open();
-    },
-    openView(row) {
-      this.$refs.viewModal.open(row);
     },
     openEdit(row) {
       const config = row.configuration || {};
