@@ -16,7 +16,7 @@ const settings = [
         key: 'system.auth.apiTokens.heavyRateLimitPerMinute',
         value: '20',
         type: 'number',
-        description: 'Uploads, bulk assignments, imports, and session copies per minute one user may send to the REST API',
+        description: 'Uploads, bulk assignments, bulk study close/open/delete, imports, and session copies per minute one user may send to the REST API',
         displayName: 'API uploads and bulk writes per minute',
     },
 ];
