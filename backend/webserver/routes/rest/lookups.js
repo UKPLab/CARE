@@ -13,7 +13,7 @@ function registerRestLookupRoutes(server) {
     // Any valid token may ask what it is and what it can do.
     server.app.get('/rest/v1/me', async (req, res) => {
         try {
-            return res.status(200).json(await describeToken(models, req.apiToken));
+            return res.status(200).json(await describeToken(models, req.apiToken, req.apiAccess));
         } catch (err) {
             server.logger.error('REST me failed: ' + err);
             return res.status(500).json({message: 'errors.server.unknownError'});

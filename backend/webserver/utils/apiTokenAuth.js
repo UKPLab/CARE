@@ -139,26 +139,19 @@ async function listTokenRightChoices(models, userId) {
 }
 
 /**
- * What a token is and may do right now: its stored rights that the owner still has.
- * This is the same answer tokenHasRight gives, for every right at once.
+ * What a token is and may do right now, for GET /rest/v1/me. Uses the access bearerAuth loaded for
+ * this request (loadTokenAccess), so the rights listed are exactly the ones the request checks use.
  * @param {Object} models
  * @param {Object} token api_token row
+ * @param {{rights: Set<string>, roleNames: string[]}} access req.apiAccess
  * @returns {Promise<{token: Object, user: Object, rights: string[]}>}
  */
-async function describeToken(models, token) {
-    const stored = await models['api_token_right'].findAll({
-        where: {apiTokenId: token.id, deleted: false},
-        attributes: ['userRightName'],
-        raw: true,
-    });
-    const attachable = new Set(await listAttachableRights(models, token.userId));
+async function describeToken(models, token, access) {
     const user = await models['user'].findOne({
         where: {id: token.userId},
         attributes: ['id', 'userName', 'firstName', 'lastName'],
         raw: true,
     });
-    const roleIds = await models['user_role_matching'].getUserRolesById(token.userId);
-    const roles = await models['user_role'].findAll({where: {id: roleIds}, attributes: ['name'], raw: true});
     return {
         token: {
             id: token.id,
@@ -168,78 +161,47 @@ async function describeToken(models, token) {
             lastUsedAt: token.lastUsedAt,
             expiresAt: token.expiresAt ?? null,
         },
-        user: {...user, roles: roles.map((role) => role.name)},
-        rights: [...new Set(stored.map((row) => row.userRightName))].filter((name) => attachable.has(name)).sort(),
+        user: {...user, roles: access.roleNames},
+        rights: [...access.rights].sort(),
     };
-}
-
-/**
- * Token may act only if the join row exists and the owner still has that right (or is admin).
- * @param {Object} models
- * @param {Object} token
- * @param {string} right
- * @returns {Promise<boolean>}
- */
-async function tokenHasRight(models, token, right) {
-    const row = await models['api_token_right'].findOne({
-        where: {
-            apiTokenId: token.id,
-            userRightName: right,
-            deleted: false,
-        },
-        raw: true,
-    });
-    if (!row) {
-        return false;
-    }
-    if (await ownerIsAdmin(models, token.userId)) {
-        return true;
-    }
-    return models['user_role_matching'].hasAccessByUserRoles(
-        await models['user_role_matching'].getUserRolesById(token.userId),
-        right
-    );
 }
 
 /**
  * Everything a REST request needs to know about its token, loaded once: whether the owner still
  * exists, whether they are guest-only, and which of the token's rights the owner still holds (all
- * of them for an admin owner). Same rules as hasOnlyGuestRole and tokenHasRight, in about five
- * queries instead of several per right check.
+ * of them for an admin owner). Same rule as hasOnlyGuestRole for guests, and the right check every
+ * route uses, in five reads (three of them in parallel).
  * @param {Object} models
  * @param {Object} token api_token row
- * @returns {Promise<{guestOnly: boolean, rights: Set<string>}|null>} null when the owner is gone or deleted
+ * @returns {Promise<{guestOnly: boolean, rights: Set<string>, roleNames: string[]}|null>} null when the owner is gone or deleted
  */
 async function loadTokenAccess(models, token) {
-    const owner = await models['user'].findOne({where: {id: token.userId}, attributes: ['id', 'deleted'], raw: true});
+    // Independent reads in parallel: the owner row, their roles, and the rights stored on the token.
+    const [owner, roleIds, stored] = await Promise.all([
+        models['user'].findOne({where: {id: token.userId}, attributes: ['id', 'deleted'], raw: true}),
+        models['user_role_matching'].getUserRolesById(token.userId),
+        models['api_token_right'].findAll({
+            where: {apiTokenId: token.id, deleted: false},
+            attributes: ['userRightName'],
+            raw: true,
+        }),
+    ]);
     if (!owner || owner.deleted) {
         return null;
     }
-    const roleIds = await models['user_role_matching'].getUserRolesById(token.userId);
-    const roles = roleIds.length === 0 ? [] : await models['user_role'].findAll({
-        where: {id: roleIds},
-        attributes: ['id', 'name'],
-        raw: true,
-    });
+    const [roles, held] = roleIds.length === 0 ? [[], []] : await Promise.all([
+        models['user_role'].findAll({where: {id: roleIds}, attributes: ['id', 'name'], raw: true}),
+        // Same lookup as user_role_matching.hasAccessByUserRoles, for all the owner's roles at once.
+        models['role_right_matching'].findAll({where: {userRoleId: roleIds}, attributes: ['userRightName'], raw: true}),
+    ]);
     const guestOnly = roleIds.length === 1 && roles.some((role) => role.id === roleIds[0] && role.name === 'guest');
     const isAdmin = roles.some((role) => role.name === 'admin');
-    const stored = await models['api_token_right'].findAll({
-        where: {apiTokenId: token.id, deleted: false},
-        attributes: ['userRightName'],
-        raw: true,
-    });
     let rights = stored.map((row) => row.userRightName);
     if (!isAdmin) {
-        // Same lookup as user_role_matching.hasAccessByUserRoles, for all the owner's roles at once.
-        const held = roleIds.length === 0 ? [] : await models['role_right_matching'].findAll({
-            where: {userRoleId: roleIds},
-            attributes: ['userRightName'],
-            raw: true,
-        });
         const heldNames = new Set(held.map((row) => row.userRightName));
         rights = rights.filter((name) => heldNames.has(name));
     }
-    return {guestOnly, rights: new Set(rights)};
+    return {guestOnly, rights: new Set(rights), roleNames: roles.map((role) => role.name)};
 }
 
 module.exports = {
@@ -254,6 +216,5 @@ module.exports = {
     listAttachableRights,
     listTokenRightChoices,
     describeToken,
-    tokenHasRight,
     loadTokenAccess,
 };
