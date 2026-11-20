@@ -40,6 +40,8 @@ function registerRestRoutes(server) {
     registerRestTagRoutes(server);
     registerRestWorkflowRoutes(server);
     registerRestConfigurationRoutes(server);
+    // An unknown /rest/v1 path ends here as JSON, before the session middleware and the HTML 404.
+    server.app.use('/rest/v1', (req, res) => res.status(404).json({message: 'errors.rest.routeNotFound'}));
     // Last: catches broken or oversized JSON from the global body parser for /rest/v1 requests.
     server.app.use('/rest/v1', restBodyErrors);
 }
