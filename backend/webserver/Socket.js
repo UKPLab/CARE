@@ -251,18 +251,24 @@ module.exports = class Socket {
     static async broadcastChangesWithoutSocket(server, userId, transaction) {
         // One rights cache per server for all REST broadcasts. A user's roles changing reloads their
         // entry at once (isAdmin); entries older than a minute are reloaded too, so a change to a
-        // role's own rights reaches REST broadcasts within a minute. Entries are marked, not deleted,
-        // so a broadcast running at the same time never reads a missing entry.
-        let userInfo = restRightsCaches.get(server);
-        if (!userInfo) {
-            userInfo = {};
-            restRightsCaches.set(server, userInfo);
+        // role's own rights reaches REST broadcasts within a minute.
+        let shared = restRightsCaches.get(server);
+        if (!shared) {
+            shared = {};
+            restRightsCaches.set(server, shared);
         }
+        // Each broadcast works on its own copy and writes back only entries at least as new as the
+        // shared ones, so an answer computed from old roles never lands in an entry reloaded meanwhile.
+        // Expired entries are dropped, not copied: they reload on use, so the cache only holds users
+        // seen in the last minute and stays small.
         const now = Date.now();
-        for (const info of Object.values(userInfo)) {
+        const userInfo = {};
+        for (const [id, info] of Object.entries(shared)) {
             if (now - info.lastRolesUpdate.getTime() > REST_RIGHTS_CACHE_MS) {
-                info.rolesUpdatedAtMs = -1;
+                delete shared[id];
+                continue;
             }
+            userInfo[id] = {...info, rights: {...info.rights}};
         }
         const broadcaster = Object.create(Socket.prototype);
         Object.assign(broadcaster, {
@@ -274,7 +280,16 @@ module.exports = class Socket {
             userId,
             userInfo,
         });
-        await broadcaster.broadcastTransactionChanges(transaction);
+        try {
+            await broadcaster.broadcastTransactionChanges(transaction);
+        } finally {
+            for (const [id, info] of Object.entries(userInfo)) {
+                const current = shared[id];
+                if (!current || info.lastRolesUpdate >= current.lastRolesUpdate) {
+                    shared[id] = info;
+                }
+            }
+        }
     }
 
     /**
