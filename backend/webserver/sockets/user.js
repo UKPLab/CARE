@@ -568,6 +568,33 @@ class UserSocket extends Socket {
             });
         }
                
+        if (newRights.length || deletedRights.length) {
+            const {transaction} = options;
+            const members = await this.models.user_role_matching.findAll({
+                attributes: ["userId"],
+                where: {userRoleId: roleId, deleted: false},
+                raw: true,
+                transaction,
+            });
+            const userIds = new Set(members.map(member => member.userId));
+            if (userIds.size) {
+                await this.models.user.update({rolesUpdatedAt: new Date()}, {
+                    where: {id: [...userIds]},
+                    transaction,
+                });
+                transaction.afterCommit(async () => {
+                    this.models.user.cache?.clear();
+                    const refreshes = [];
+                    for (const socketId of this.io.sockets.sockets.keys()) {
+                        const app = this.server.availSockets[socketId]?.AppSocket;
+                        if (app && userIds.has(app.userId)) {
+                            refreshes.push(app.sendUser());
+                        }
+                    }
+                    await Promise.all(refreshes);
+                });
+            }
+        }
         return { newRights, deletedRights };
     }
 
