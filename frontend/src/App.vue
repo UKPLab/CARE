@@ -6,6 +6,7 @@
     <div v-else>
       <PostLoginPrompts />
       <router-view class="top-padding"/>
+      <ProblemReportLauncher />
     </div>
   </div>
   <div v-else>
@@ -18,6 +19,7 @@
 import PostLoginPrompts from './auth/PostLoginPrompts.vue';
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
+import ProblemReportLauncher from "@/components/problem_report/ProblemReportLauncher.vue";
 import { applyTheme, getContrastColor, resolveTheme, shadeColor } from "@/assets/utils";
 import ConnectionStatus from "@/basic/ConnectionStatus.vue";
 import ApplicationLoading from "@/basic/ApplicationLoading.vue";
@@ -45,7 +47,7 @@ import {
  */
 export default {
   name: "App",
-  components: {TopBar, Toast, ConnectionStatus, ApplicationLoading, PostLoginPrompts},
+  components: {TopBar, Toast, ConnectionStatus, ApplicationLoading, PostLoginPrompts, ProblemReportLauncher},
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),
@@ -63,7 +65,6 @@ export default {
       disconnected: false,
       behaviorLogger: null,
       statsContext: {},
-
     }
   },
   sockets: {
@@ -298,7 +299,6 @@ export default {
         applyLocale(i18n, getAuthPageLocale());
       }
     },
-
   },
 };
 </script>
@@ -311,18 +311,6 @@ html, body {
 
 .top-padding {
   padding-top: 52.5px;
-}
-
-.overlay {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  z-index: 1050;
-  top: 0;
-  left: 0;
-  opacity: 0.9;
-  filter: alpha(opacity=90);
-  background-color: #de1818;
 }
 
 </style>

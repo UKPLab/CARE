@@ -195,8 +195,9 @@ timed out. If this is the case, your model might not run properly anymore.
 Problem reporting
 =================
 
-When enabled, the bug button in the top bar opens **Report a problem**. The
-reporter selects at least one problem type and enters a description. Whether
+When enabled, a floating bug button in the bottom-right corner of every page
+opens **Report a problem**. The reporter selects at least one problem type and
+enters a description. Whether
 the problem blocks progress and how often it occurs are optional answers.
 Images and videos can be attached, previewed and removed before submission.
 The expandable details show the automatic snapshot captured when Report was

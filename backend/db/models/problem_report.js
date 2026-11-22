@@ -3,7 +3,7 @@ const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
 
 /**
- * Problem report submitted from the topbar Report button.
+ * Problem report submitted from the floating Report button.
  *
  * Deliberately not an autoTable: reports are read and written only through
  * ProblemReportSocket, which lets every user submit, only administrators read,

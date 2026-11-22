@@ -67,35 +67,11 @@
               </div>
             </div>
           </li>
-          <li
-            v-if="problemReportEnabled"
-            class="nav-item me-2 d-flex align-items-center"
-          >
-            <BasicButton
-              id="problemReportButton"
-              class="btn problem-report-button"
-              icon="bug"
-              text=""
-              :title="$t('problemReport.button')"
-              :aria-label="$t('problemReport.button')"
-              aria-haspopup="dialog"
-              @click="$refs.problemReportModal.open()"
-            >
-              <LoadIcon
-                :size="18"
-                icon-name="bug"
-              />
-            </BasicButton>
-          </li>
           <ProfileMenu />
         </ul>
       </div>
     </nav>
   </div>
-  <ProblemReportModal
-    v-if="problemReportEnabled"
-    ref="problemReportModal"
-  />
 </template>
 
 <script>
@@ -114,13 +90,10 @@ import RecordingIndicator from './RecordingIndicator.vue';
 import LoadIcon from "@/basic/Icon.vue";
 import { returnToDashboard } from "@/assets/utils";
 import LogoSvg from "@/basic/icon/LogoSvg.vue";
-import BasicButton from "@/basic/Button.vue";
-import ProblemReportModal from "@/components/problem_report/ProblemReportModal.vue";
-import { readReportSettings } from "@/assets/problemReport.js";
 
 export default {
   name: "TopBar",
-  components: {LoadIcon, LogoSvg, ProfileMenu, RecordingIndicator, BasicButton, ProblemReportModal},
+  components: {LoadIcon, LogoSvg, ProfileMenu, RecordingIndicator},
   data() {
     return {
       showProjectDropdown: false,
@@ -130,10 +103,6 @@ export default {
     table: 'project',
   }],
   computed: {
-    // Hidden when report settings are missing or the feature is disabled.
-    problemReportEnabled() {
-      return readReportSettings(this.$store.getters["settings/getValue"]).enabled;
-    },
     allProjects() {
       return this.$store.getters["table/project/getAll"] || [];
     },
@@ -193,34 +162,6 @@ export default {
 </script>
 
 <style>
-
-/* Quiet circular icon button, sized to match the avatar next to it. The id
-   selector outranks Bootstrap's .btn radius, border and padding. */
-#problemReportButton {
-  width: 35px;
-  height: 35px;
-  padding: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  color: var(--bs-secondary-color);
-  background: transparent;
-  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
-}
-
-#problemReportButton:hover,
-#problemReportButton:active {
-  color: var(--bs-emphasis-color);
-  background: var(--bs-secondary-bg);
-}
-
-#problemReportButton:focus-visible {
-  outline: 2px solid var(--care-primary);
-  outline-offset: 2px;
-  box-shadow: none;
-}
 
 body.sidebar-exists #backButton {
   display: none;

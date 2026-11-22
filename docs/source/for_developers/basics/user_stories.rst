@@ -2287,8 +2287,8 @@ Submit a private problem report
      administrators can investigate it with the relevant technical context.
 
    :Acceptance:
-     When reporting is enabled, the topbar action opens an accessible translated
-     form. Problem type and description are required. Blocked status, frequency
+     When reporting is enabled, a floating bottom-right button, shown on every
+     signed-in page, opens an accessible translated form. Problem type and description are required. Blocked status, frequency
      and image/video attachments are optional. The reporter can inspect captured
      details and edit answers before submitting. Unsupported or oversized files
      are rejected. Failed submissions keep the draft, retries do not duplicate

@@ -20,7 +20,7 @@ const ATTACHMENT_ID_PATTERN = /^[0-9a-f]{32}$/;
 const MAX_PAGE_SIZE = 100;
 
 /**
- * Problem reports submitted from the topbar Report button.
+ * Problem reports submitted from the floating Report button.
  *
  * Reports are private to CARE: every user can submit, only administrators can
  * list reports and download their attachments.
