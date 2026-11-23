@@ -12,6 +12,7 @@
     "currentStepTab": "{title} (aktueller Schritt)"
   },
   "topbar": {
+    "starOnGitHub": "CARE auf GitHub einen Stern geben (öffnet einen neuen Tab)",
     "goBack": "Zurück...",
     "projectTitle": "Projekt: {name}",
     "signedInAs": "Angemeldet als {username}",

@@ -12,6 +12,7 @@
         "currentStepTab": "{title} (étape actuelle)"
     },
     "topbar": {
+        "starOnGitHub": "Donner une étoile à CARE sur GitHub (ouvre un nouvel onglet)",
         "goBack": "Retour...",
         "projectTitle": "Projet : {name}",
         "signedInAs": "Connecté en tant que {username}",
