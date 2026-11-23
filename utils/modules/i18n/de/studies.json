@@ -102,12 +102,10 @@
   },
   "loading": {
     "title": "Lade Studienschritt",
-    "nlpError": "Fehler bei der Verarbeitung der NLP-Ergebnisse. Bitte versuchen Sie es erneut oder überspringen Sie die NLP-Unterstützung.",
     "serviceError": "Fehler bei der Verarbeitung der Dienstergebnisse. Bitte versuchen Sie es erneut oder überspringen Sie die Dienst-Unterstützung.",
     "generalError": "Beim Laden des Studienschritts ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.",
     "buttons": {
       "tryAgain": "Erneut versuchen",
-      "skip": "NLP-Unterstützung überspringen",
       "skipService": "Dienst-Unterstützung überspringen"
     },
     "messages": [
@@ -126,8 +124,6 @@
       "Fast geschafft..."
     ],
     "errorTitle": "Fehler beim Laden des Studienschritts",
-    "processingTitle": "NLP-Anfragen werden verarbeitet",
-    "failedTitle": "NLP-Anfragen fehlgeschlagen",
     "processingServiceTitle": "Dienstanfragen werden verarbeitet",
     "failedServiceTitle": "Dienstanfragen fehlgeschlagen",
     "readyTitle": "Studienschritt bereit"

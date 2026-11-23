@@ -62,19 +62,19 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [
             {
                 key: "name",
-                label: "Name",
+                label: "ai.common.name",
                 type: "text",
                 required: true,
             },
             {
                 key: "templateId",
-                label: "Prompt Template",
+                label: "ai.hooks.promptTemplate",
                 type: "select",
                 required: true,
             },
             {
                 key: "outputMode",
-                label: "Output Mode",
+                label: "ai.hooks.outputMode",
                 type: "select",
                 required: true,
                 default: AI_HOOK_OUTPUT_MODES.TEXT,

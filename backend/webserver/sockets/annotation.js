@@ -1,6 +1,7 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 const {pickObjectAttributeSubset} = require("../../utils/helper/generic");
+const {TAG_COLORS} = require("tag-colors");
 const fs = require("fs");
 const path = require("path");
 
@@ -210,6 +211,7 @@ class AnnotationSocket extends Socket {
             return {
                 ...annotation,
                 tag: tag ? tag.name : null,
+                tagColor: tag ? TAG_COLORS[tag.colorCode] ?? null : null,
                 username: getDisplayName(annotation, "annotation"),
                 comments,
             };

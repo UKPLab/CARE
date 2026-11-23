@@ -7,27 +7,11 @@
   <span v-else>
     <div class="container-fluid d-flex min-vh-100 vh-100 flex-column">
       <div class="row d-flex flex-grow-1 overflow-hidden top-padding">
-        <div
-          id="viewerContainer"
-          ref="viewer"
-          class="col border mh-100 justify-content-center p-3"
-          style="overflow-y: scroll; position: relative;"
-        >
-          <!-- Read-Only Toolbar Bar -->
-          <div
-            v-if="!toolbarVisible && finalReadOnly"
-            class="readonly-toolbar-bar"
-          >
-            <LoadIcon icon-name="lock-fill" :size="16" />
-            <span class="readonly-toolbar-text">{{ $t('editor.readOnlyMode') }}</span>
-          </div>
-          <div
-            :id="`editor-container-${studyStepId}`"
-            @paste="onPaste"
-            @copy="onCopy"
-          >
-          </div>
-        </div>
+        <EditorQuillSurface
+          :read-only="finalReadOnly"
+          @ready="editor = $event"
+          @text-change="handleTextChange"
+        />
       </div>
     </div>
   </span>
@@ -36,85 +20,50 @@
 /**
  * Editor component
  *
- * This component provides a Quill editor to edit the document.
+ * This component provides a Quill editor to edit the document: it loads the document with its edits, sends the
+ * user's edits (debounced, and once more when the editor closes), applies edits made elsewhere and reports the
+ * first and current version as study data.
  *
  * @autor Juliane Bechert, Dennis Zyska, Manu Sundar Raj Nandyal, Zheyu Zhang, Alexander Bürkle
  */
 import Quill from "quill";
-import "quill/dist/quill.snow.css";
 import debounce from "lodash.debounce";
 import {dbToDelta, deltaToDb} from "editor-delta-conversion";
-import {Editor} from "@/components/editor/editorStore.js";
 import {downloadDocument, resolveApiMessage} from "@/assets/utils.js";
-import LoadIcon from "@/basic/Icon.vue";
+import Loader from "@/basic/Loading.vue";
+import EditorQuillSurface from "./EditorQuillSurface.vue";
 
 const Delta = Quill.import('delta');
+
+// Order of document edits: by creation time, then by their order within one save
+const byCreation = (a, b) => (new Date(a.createdAt) - new Date(b.createdAt)) || ((a.order || 0) - (b.order || 0));
 
 export default {
   name: "EditorView",
   components: {
-    LoadIcon,
+    EditorQuillSurface,
+    Loader,
   },
   fetch_data: ["document_edit"],
   subscribeTable: ["document_data"],
   inject: {
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    userId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    readOnly: {
-      type: Boolean,
-      required: false,
-      default: false,
-    },
-    studyData: {
-      type: Array,
-      required: false,
-      default: () => [],
-    },
-    documentId: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null,
-    },
-    pendingNlpInsertion: {
-      default: null,
-    },
-    currentStudyStep: {
-      type: Object,
-      required: false,
-      default: null
-    },
+    studySessionId: {default: null},
+    readOnly: {default: false},
+    documentId: {default: 0},
+    studyStepId: {default: null},
+    pendingNlpInsertion: {default: null},
+    currentStudyStep: {default: null},
   },
   emits: ["update:data"],
   data() {
     return {
       documentHash: this.$route.params.documentHash,
       deltaBuffer: [],
-      deltaDataBuffer: [],
       editor: null,
-      documentLoaded: false,
-      data: {},
       firstVersion: null,
-      feedbackLoaded: false,
-      pendingFeedbackText: '',
     };
   },
   computed: {
-    user() {
-      return this.$store.getters["auth/getUser"];
-    },
     componentReadOnly() {
       return this.currentStudyStep?.configuration?.readOnlyComponents?.includes('editor') || false;
     },
@@ -126,165 +75,28 @@ export default {
         (e) => e.documentId === this.documentId
           && e.studySessionId === this.studySessionId
           && e.studyStepId === this.studyStepId
-      ).sort((a, b) => {
-        const timeCompare = new Date(a.createdAt) - new Date(b.createdAt);
-        if (timeCompare !== 0) return timeCompare;
-        return (a.order || 0) - (b.order || 0);
-      });
+      ).sort(byCreation);
     },
     unappliedEdits() {
-      return this.$store.getters["table/document_edit/getFiltered"](
-        (e) => e.applied === false
-      ).sort((a, b) => {
-        const timeCompare = new Date(a.createdAt) - new Date(b.createdAt);
-        if (timeCompare !== 0) return timeCompare;
-        return (a.order || 0) - (b.order || 0);
-      });
+      return this.$store.getters["table/document_edit/getFiltered"]((e) => e.applied === false).sort(byCreation);
     },
     appliedEdits() {
-      return this.$store.getters["table/document_edit/getFiltered"](
-        (e) => e.applied === true
-      ).sort((a, b) => {
-        const timeCompare = new Date(a.createdAt) - new Date(b.createdAt);
-        if (timeCompare !== 0) return timeCompare;
-        return (a.order || 0) - (b.order || 0);
-      });
+      return this.$store.getters["table/document_edit/getFiltered"]((e) => e.applied === true).sort(byCreation);
     },
-    
     debounceTimeForEdits() {
       return parseInt(this.$store.getters["settings/getValue"]("editor.edits.debounceTime"), 10);
     },
-    toolbarVisible() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.finalReadOnly;
-    },
-    editorOptions() {
-      const toolsMap = {
-        "editor.toolbar.tools.font": {font: []},
-        "editor.toolbar.tools.size": {size: []},
-        "editor.toolbar.tools.align": {align: []},
-        "editor.toolbar.tools.header": ["header", "1", "2", "3", "4", "5", "6"],
-        "editor.toolbar.tools.bold": "bold",
-        "editor.toolbar.tools.italic": "italic",
-        "editor.toolbar.tools.underline": "underline",
-        "editor.toolbar.tools.strike": "strike",
-        "editor.toolbar.tools.blockquote": "blockquote",
-        "editor.toolbar.tools.code-block": "code-block",
-        "editor.toolbar.tools.formula": "formula",
-        "editor.toolbar.tools.subscript": {script: "sub"},
-        "editor.toolbar.tools.superscript": {script: "super"},
-        "editor.toolbar.tools.indent": [{indent: "-1"}, {indent: "+1"}],
-        "editor.toolbar.tools.direction": {direction: []},
-        "editor.toolbar.tools.color": {color: []},
-        "editor.toolbar.tools.background": {background: []},
-        "editor.toolbar.tools.orderedList": {list: "ordered"},
-        "editor.toolbar.tools.unorderedList": {list: "bullet"},
-        "editor.toolbar.tools.checkList": {list: "check"},
-        "editor.toolbar.tools.link": "link",
-        "editor.toolbar.tools.image": "image",
-        "editor.toolbar.tools.video": "video",
-        "editor.toolbar.tools.clean": "clean"
-      };
-
-      const toolbarTools = [];
-      // hide some tools, because the functionalities have not been handled: formula, link, image, video
-      const hiddenTools = ['editor.toolbar.tools.formula', 'editor.toolbar.tools.link', 'editor.toolbar.tools.image', 'editor.toolbar.tools.video'];
-
-      for (const [key, tool] of Object.entries(toolsMap)) {
-        if (hiddenTools.includes(key)) {
-          continue;
-        }
-
-        if (this.$store.getters["settings/getValue"](key) === "true") {
-          toolbarTools.push(tool);
-        }
-      }
-
-      return {
-        modules: {
-          toolbar: this.toolbarVisible ? {container: toolbarTools} : false
-        },
-        theme: "snow"
-      };
-    },
-    studySteps() {
-      if (this.studyStepId !== null) {
-        const studyId = this.$store.getters['table/study_step/get'](this.studyStepId)?.studyId;
-        return this.$store.getters['table/study_step/getByKey']("studyId", studyId);
-      } else {
-        return [];
-      }
-    },
-    isAdmin() {
-      return this.$store.getters['auth/isAdmin'];
-    },
   },
   watch: {
-    unappliedEdits: {
-      handler(newEdits) {
-        if (newEdits.length > 0) {
-          this.applyAdditionalEdits();
-        }
-      },
-      deep: true
-    },
+    unappliedEdits: {handler: "applyAdditionalEdits", deep: true},
     appliedEdits(newEdits, oldEdits) {
-        const appliedEdits = newEdits.filter(newEdit =>
-          !oldEdits.some(oldEdit => oldEdit.id === newEdit.id)
-        )
-        this.processEdits(appliedEdits);
+      this.processEdits(newEdits.filter(newEdit => !oldEdits.some(oldEdit => oldEdit.id === newEdit.id)));
     },
-    
-    finalReadOnly: {
-      handler(newReadOnly) {
-        this.editor.getEditor().enable(!newReadOnly);
-        const toolbar = this.editor.getEditor().getModule("toolbar");
-        if (toolbar && toolbar.container) {
-          if (newReadOnly) {
-            toolbar.container.style = "display:none"
-          } else {
-            toolbar.container.style = "display:block"
-          }
-        }
-      }
-    },
-  },
-  created() {
-    this.documentHash = this.$route.params.documentHash;
   },
   mounted() {
-    const editorId = `editor-container-${this.studyStepId}`;
-    const editorContainer = document.getElementById(editorId);
-
-    if (editorContainer) {
-      this.editor = new Editor(editorContainer, this.editorOptions);
-
-      if (this.toolbarVisible) {
-        const toolbarButtons = document.querySelectorAll(`#${editorId} .ql-toolbar button`);
-        toolbarButtons.forEach(button => {
-          const format = button.className.match(/ql-(\w+)/);
-          if (format) {
-            button.setAttribute('title', format[1]);
-          }
-        });
-      }
-
-      this.editor.getEditor().enable(!this.finalReadOnly);
-      this.editor.getEditor().on('text-change', this.handleTextChange);
-      // Store event handler references for cleanup
-      this.selectEditHandler = (data) => {
-        if (data.documentId === this.documentId) {
-          this.setEditInEditor(data.editId);
-        }
-      };
-      this.eventBus.on("editorSelectEdit", this.selectEditHandler);
-
-      this.insertTextHandler = (data) => {
-        if (data.documentId === this.documentId) {
-          this.insertTextAtCursor(data.text);
-        }
-      };
-      this.eventBus.on("editorInsertText", this.insertTextHandler);
-
+    if (this.editor) {
+      this.eventBus.on("editorSelectEdit", this.onSelectEdit);
+      this.eventBus.on("editorInsertText", this.onInsertText);
       setTimeout(() => {
         this.emitContentForPlaceholders();
       }, 500);
@@ -303,14 +115,8 @@ export default {
           let quill = new Quill(document.createElement('div'));
           quill.setContents(res['data']['firstVersion']);
           this.firstVersion = quill.root.innerHTML;
-          let currentVersion = this.editor.getEditor().root.innerHTML;
-
-          let studyData = {
-            firstVersion: this.firstVersion,
-            currentVersion: currentVersion,
-          };
-          this.$emit("update:data", studyData);
-           if(this.isEditorEmpty() && this.pendingNlpInsertion){
+          this.emitVersions();
+          if (this.isEditorEmpty() && this.pendingNlpInsertion) {
             this.addText(this.pendingNlpInsertion);
           }
         } else {
@@ -318,7 +124,6 @@ export default {
         }
       }
     );
-
 
     this.$socket.emit("documentSubscribe", { documentId: this.documentId });
   },
@@ -339,9 +144,8 @@ export default {
     }
   },
   unmounted() {
-    this.eventBus.off("editorSelectEdit", this.selectEditHandler);
-    this.eventBus.off("editorInsertText", this.insertTextHandler);
-    this.eventBus.off('editorApplyGeneratedFeedback', this.applyGeneratedFeedbackHandler);
+    this.eventBus.off("editorSelectEdit", this.onSelectEdit);
+    this.eventBus.off("editorInsertText", this.onInsertText);
 
     this.flushPendingEdits()
       .catch(() => {})
@@ -375,60 +179,73 @@ export default {
       if (!this.editor || this.deltaBuffer.length === 0) {
         return Promise.resolve();
       }
-      const quill = this.editor.getEditor();
+      return this.sendEdits(this.takeBufferedOps());
+    },
+    /** Combines the buffered user changes into database ops and empties the buffer. */
+    takeBufferedOps() {
       const combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-      const dbOps = deltaToDb(combinedDelta.ops);
+      this.deltaBuffer = [];
+      return deltaToDb(combinedDelta.ops);
+    },
+    /**
+     * Saves edit ops; if the server rejects them, the editor goes back to its content before the edit.
+     * @param {Array} dbOps - the ops to save
+     * @returns {Promise<void>} resolves once the server answered
+     */
+    sendEdits(dbOps) {
       if (dbOps.length === 0) {
-        this.deltaBuffer = [];
         return Promise.resolve();
       }
+      const quill = this.editor.getEditor();
       const backup = quill.getContents();
       return new Promise((resolve) => {
-        this.$socket.emit(
-          "documentEdit",
-          {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId || null,
-            studyStepId: this.studyStepId || null,
-            ops: dbOps,
-          },
-          (res) => {
-            if (!res.success) {
-              quill.setContents(backup);
-              this.eventBus.emit("toast", {
-                title: this.$t("errors.editor.previousEditFailed"),
-                message: resolveApiMessage(res),
-                variant: "danger",
-              });
-            }
-            this.deltaBuffer = [];
-            resolve();
+        this.$socket.emit("documentEdit", {
+          documentId: this.documentId,
+          studySessionId: this.studySessionId || null,
+          studyStepId: this.studyStepId || null,
+          ops: dbOps,
+        }, (res) => {
+          if (!res.success) {
+            quill.setContents(backup);
+            this.eventBus.emit("toast", {
+              title: this.$t("errors.editor.previousEditFailed"),
+              message: resolveApiMessage(res),
+              variant: "danger",
+            });
           }
-        );
+          resolve();
+        });
+      });
+    },
+    /** Reports the first and the current version of the document as study data. */
+    emitVersions() {
+      this.$emit("update:data", {
+        firstVersion: this.firstVersion,
+        currentVersion: this.editor.getEditor().root.innerHTML,
       });
     },
     isEditorEmpty() {
-      if (!this.editor || typeof this.editor.getEditor !== "function") {
-        return false;
-      }
-      const quill = this.editor.getEditor();
-      if (!quill) {
-        return false;
-      }
-      const trimmed = quill.getText().trim();
-      return trimmed.length === 0;
+      const quill = typeof this.editor?.getEditor === "function" ? this.editor.getEditor() : null;
+      return !!quill && quill.getText().trim().length === 0;
     },
     clearEditor() {
-      if (this.editor) {
-        const quill = this.editor.getEditor();
-        quill.setContents([{insert: ''}]);
-      }
+      this.editor?.getEditor().setContents([{insert: ''}]);
     },
     addText(text) {
       if (!text || !this.editor) {
         return;
       }
       this.editor.getEditor().insertText(0, text, "user");
+    },
+    onSelectEdit(data) {
+      if (data.documentId === this.documentId) {
+        this.setEditInEditor(data.editId);
+      }
+    },
+    onInsertText(data) {
+      if (data.documentId === this.documentId) {
+        this.insertTextAtCursor(data.text);
+      }
     },
     setEditInEditor(editId) {
       const index = this.allEdits.findIndex((edit) => edit.id === editId);
@@ -459,46 +276,9 @@ export default {
         }
       }
     },
-    onPaste(event) {
-      if (this.user.acceptStats) {
-        const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-        if (pastedText) {
-          this.$socket.emit("stats", {
-            action: "textPasted",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              pastedText: pastedText,
-            }
-          })
-        }
-      }
-    },
-    onCopy(event) {
-      if (this.user.acceptStats) {
-        const copiedText = (event.clipboardData || window.clipboardData).getData('text');
-        if (copiedText) {
-          this.$socket.emit("stats", {
-            action: "textCopied",
-            data: {
-              from: "editor",
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              copiedText: copiedText,
-            }
-          })
-        }
-      }
-    },
     emitContentForPlaceholders() {
       if (this.editor) {
-        const content = this.editor.getEditor().root.innerHTML;
-        this.eventBus.emit("editorContentUpdated", {
-          documentId: this.documentId,
-          content: content,
-        });
+        this.eventBus.emit("editorContentUpdated", {documentId: this.documentId, content: this.editor.getEditor().root.innerHTML});
       }
     },
     handleTextChange(delta, oldContents, source) {
@@ -510,52 +290,20 @@ export default {
       }
     },
     processDelta() {
-      const quill = this.editor.getEditor();
       if (this.deltaBuffer.length > 0) {
-        let combinedDelta = this.deltaBuffer.reduce((acc, delta) => acc.compose(delta), new Delta());
-        let dbOps = deltaToDb(combinedDelta.ops);        
-        if (dbOps.length > 0) {
-          const backup = quill.getContents();
-
-          this.$socket.emit("documentEdit", {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId || null,
-            studyStepId: this.studyStepId || null,
-            ops: dbOps
-          }, (res) => {
-            if (!res.success) {
-              quill.setContents(backup);
-              this.eventBus.emit("toast", {
-                title: this.$t('errors.editor.previousEditFailed'),
-                message: resolveApiMessage(res),
-                variant: "danger",
-              });
-            }
-          });
-        }
-
-        let currentVersion = this.editor.getEditor().root.innerHTML;
-        let studyData = {
-          firstVersion: this.firstVersion,
-          currentVersion: currentVersion,
-        };
-        this.$emit("update:data", studyData);
-        this.deltaBuffer = [];
+        this.sendEdits(this.takeBufferedOps());
+        this.emitVersions();
       }
     },
+    /** Shows edits made elsewhere; the user's own edits are already in the editor. */
     processEdits(edits) {
-      edits.forEach((edit) => {
-              if (!(edit.sender === this.$socket.id)) {
-              const delta = dbToDelta([edit]);
-              this.editor.getEditor().updateContents(delta, "api");
-              }
-            })
+      edits.filter((edit) => edit.sender !== this.$socket.id)
+        .forEach((edit) => this.editor.getEditor().updateContents(dbToDelta([edit]), "api"));
     },
     async initializeEditorWithContent(deltas) {
       if (this.editor) {
         this.editor.getEditor().setContents(deltas);
       }
-      this.documentLoaded = true;
       this.applyAdditionalEdits();
 
       this.emitContentForPlaceholders();
@@ -584,21 +332,3 @@ export default {
   }
 };
 </script>
-
-<style scoped>
-.readonly-toolbar-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  background-color: var(--bs-tertiary-bg, #f3f3f3);
-  border: 1px solid var(--bs-border-color, #ccc);
-  border-radius: 4px;
-  margin-bottom: 0px;
-  color: var(--bs-secondary-color, #666);
-  font-size: 14px;
-}
-.readonly-toolbar-text {
-  font-weight: 500;
-}
-</style>

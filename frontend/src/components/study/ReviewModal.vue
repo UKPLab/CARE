@@ -42,7 +42,7 @@
       </div>
     </template>
     <template #footer>
-      <div v-if="evaluated">
+      <div v-if="evaluated" class="btn-group">
         <BasicButton
           class="btn btn-primary"
           data-bs-dismiss="modal"

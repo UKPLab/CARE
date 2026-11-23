@@ -59,11 +59,13 @@
       </p>
     </template>
     <template #footer>
+      <div class="btn-group">
       <BasicButton
         class="btn btn-primary"
         :text="$t('common.close')"
         data-bs-dismiss="modal"
       />
+      </div>
     </template>
   </Modal>
 </template>

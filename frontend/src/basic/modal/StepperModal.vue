@@ -69,7 +69,7 @@
           @click="submit"
         />
       </div>
-      <div v-else>
+      <div v-else class="btn-group">
         <BasicButton
           :title="$t('common.close')"
           class="btn btn-primary"

@@ -210,6 +210,26 @@ function isPositiveIntegerRangeOptionValue(value) {
 }
 
 /**
+ * Whether a value is valid for a placeholder option definition.
+ *
+ * @param {Object} optionDef - Option definition with `valueType`
+ * @param {*} value - Raw option value
+ * @returns {boolean}
+ */
+function isValidOptionValue(optionDef, value) {
+    if (!optionDef) {
+        return false;
+    }
+    if (optionDef.valueType === "positiveInteger") {
+        return isPositiveIntegerOptionValue(value);
+    }
+    if (optionDef.valueType === "positiveIntegerRange") {
+        return isPositiveIntegerRangeOptionValue(value);
+    }
+    return value !== undefined && value !== null && String(value).trim() !== "";
+}
+
+/**
  * Format from/to sidebar inputs as a range option string.
  *
  * A lone `to` is stored as `N` (first N units). A lone `from` is stored as `N-N`.
@@ -489,6 +509,7 @@ module.exports = {
     supportsRangeLimit,
     parsePositiveIntegerRange,
     isPositiveIntegerRangeOptionValue,
+    isValidOptionValue,
     formatPositiveIntegerRange,
     pagesFromPlaceholderValue,
     applyTextRangeLimit,

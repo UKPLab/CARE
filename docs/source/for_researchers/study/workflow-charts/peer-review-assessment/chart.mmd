@@ -1,0 +1,28 @@
+---
+title: "Peer Review Workflow (Assessment)"
+---
+stateDiagram-v2
+  s0: Awaiting session start
+  s1: Load first-step document
+  s2: Step 1: Annotate PDF and assess criteria
+  s3: Document or access error
+  s4: Load second-step document
+  s5: Second-step document or access error
+  s6: Step 2: Write free-text review
+  s7: Confirm finish
+  s8: Submitting session
+  s9: Session finished
+  [*] --> s0
+  s0 --> s1: Start [admitted writable session]
+  s1 --> s2: Document loaded
+  s1 --> s3: Document load fails
+  s2 --> s4: Next [assessment optional or all criteria saved]
+  s3 --> s1: Reload after resolving problem
+  s4 --> s5: Document load fails
+  s4 --> s6: Document loaded
+  s5 --> s4: Reload after resolving problem
+  s6 --> s2: Previous [allowBackward=true]
+  s6 --> s7: Finish
+  s7 --> s8: Confirm finish [study not closed]
+  s8 --> s9: Server accepts finish#59; end timestamp set
+  s8 --> s6: Server rejects finish#59; show error

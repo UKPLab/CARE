@@ -37,17 +37,19 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn-secondary"
-        :text="$t('common.cancel')"
-        @click="abort"
-      />
-      <BasicButton
-        class="btn-primary"
-        :text="startButtonText"
-        :disabled="!canStart"
-        @click="confirm"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn-secondary"
+          :text="$t('common.cancel')"
+          @click="abort"
+        />
+        <BasicButton
+          class="btn-primary"
+          :text="startButtonText"
+          :disabled="!canStart"
+          @click="confirm"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

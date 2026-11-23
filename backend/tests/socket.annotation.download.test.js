@@ -349,8 +349,8 @@ describe("Annotation PDF download visibility", () => {
         };
         socket.models.tag = {
             getAllByKeyValues: jest.fn().mockResolvedValue([
-                {id: 3, name: "Issue"},
-                {id: 4, name: "Strength"},
+                {id: 3, name: "Issue", colorCode: "danger"},
+                {id: 4, name: "Strength", colorCode: "success"},
             ]),
         };
         socket.models.user = {
@@ -375,6 +375,7 @@ describe("Annotation PDF download visibility", () => {
                 {
                     ...firstAnnotation,
                     tag: "Issue",
+                    tagColor: "e05f5f",
                     username: "participant",
                     comments: [
                         {...rootComment, username: "participant"},
@@ -385,6 +386,7 @@ describe("Annotation PDF download visibility", () => {
                 {
                     ...secondAnnotation,
                     tag: "Strength",
+                    tagColor: "009933",
                     username: "reviewer",
                     comments: [{...secondRootComment, username: "reviewer"}],
                 },

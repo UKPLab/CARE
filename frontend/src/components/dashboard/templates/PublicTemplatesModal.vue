@@ -16,11 +16,13 @@
       />
     </template>
     <template #footer>
-      <BasicButton
-        class="btn btn-secondary"
-        :title="$t('common.close')"
-        @click="close"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn btn-secondary"
+          :title="$t('common.close')"
+          @click="close"
+        />
+      </div>
     </template>
   </Modal>
 </template>

@@ -52,101 +52,35 @@
     </template>
 
     <!-- doc-sub-bulk or session-bulk (shared bulk summary layout) -->
-    <template v-else>
-      <p>{{ $t('dashboard.study.createAssignmentConfirmPrompt') }}</p>
-      <p v-if="reviewerSelectionMode.mode !== 'session_user'" class="text-danger">
-        <strong>{{ $t('dashboard.study.warning') }}</strong> {{ $t('dashboard.study.notReviewOwnDocument') }}
-        <br>{{ $t('dashboard.study.warning1') }}
-        <br>{{ $t('dashboard.study.warning2') }}
-      </p>
-      <p v-else class="text-warning">
-        <strong>{{ $t('dashboard.study.warning') }}</strong> {{ $t('dashboard.study.sessionUserSelectionWarning') }}
-        <br>
-        <span v-if="unmatchedReviewersForSessions.length > 0" class="text-danger">
-          {{ $t('dashboard.study.reviewersWithoutMatchingStudySessions') }}
-          <ul>
-            <li v-for="unmatchedReviewer in unmatchedReviewersForSessions" :key="unmatchedReviewer.id">
-              {{ unmatchedReviewer.firstName }} {{ unmatchedReviewer.lastName }}
-              ({{ $t('common.id') }}: {{ unmatchedReviewer.id }})
-            </li>
-          </ul>
-        </span>
-        <span v-else>{{ $t('dashboard.study.allReviewersHaveMatchingStudySessions') }}</span>
-      </p>
-      <div class="container">
-        <div class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.template') }}</strong></div>
-          <div class="col-8">{{ template && template.name }}</div>
-        </div>
-        <div class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.workflow') }}</strong></div>
-          <div class="col-8">{{ workflow && workflow.name }}</div>
-        </div>
-        <div class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.documents') }}</strong></div>
-          <div class="col-8">{{ assignmentCount || selectedAssignments.length }}</div>
-        </div>
-        <div class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
-          <div class="col-8">{{ reviewerCount || selectedReviewer.length }}</div>
-        </div>
-        <div class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.reviewsToCreate') }}</strong></div>
-          <div class="col-8">{{ numberOfReviews }}</div>
-        </div>
-        <div class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.selectionMode') }}</strong></div>
-          <div class="col-8">
-            {{ reviewerSelectionModeFields[0] && reviewerSelectionModeFields[0].options.find(f => f.value === reviewerSelectionMode.mode)?.name }}
-          </div>
-        </div>
-        <div v-if="reviewerSelectionMode.mode === 'role'" class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.roles') }}</strong></div>
-          <div class="col-8">
-            <ul>
-              <li v-for="(value, key) in listOfSelectedRoles" :key="key">- {{ value.role }}: {{ value.value }}</li>
-            </ul>
-          </div>
-        </div>
-        <div v-if="reviewerSelectionMode.mode === 'reviewer'" class="row mb-2">
-          <div class="col-2"><strong>{{ $t('dashboard.study.reviewers') }}</strong></div>
-          <div class="col-8">
-            <ul>
-              <li v-for="(value, key) in listOfSelectedReviewers" :key="key">- {{ value.reviewer }}: {{ value.value }}</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    </template>
+    <BulkAssignmentSummary v-else />
   </div>
 </template>
 
 <script>
+import BulkAssignmentSummary from "./BulkAssignmentSummary.vue";
+import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils";
+
 /**
- * Final confirmation step of the bulk assignment wizard. Displays a read-only summary
- * of all choices made in previous steps before the user submits the assignment.
- * Supports four variants: doc-sub-single, doc-sub-bulk, session-single, and session-bulk,
- * each rendering an appropriate summary layout. Also warns when reviewers lack matching
- * study sessions in session_user mode.
+ * Final confirmation step of the assignment wizard. Displays a read-only summary of all
+ * choices made in previous steps and owns the create request: the wizard calls submit()
+ * when the user confirms, and this step emits "settled" with the outcome.
+ * Supports four variants: doc-sub-single, doc-sub-bulk, session-single, and session-bulk.
  * @author: Dennis Zyska, Alexander Bürkle, Linyin Huang, Karim Ouf
  */
 export default {
   name: "ConfirmationStep",
+  components: { BulkAssignmentSummary },
   inject: {
+    bulk: { type: Boolean, required: false, default: true },
     template: { type: Object, required: false, default: null },
     workflow: { type: Object, required: false, default: null },
     assignmentType: { type: String, required: false, default: 'document' },
     targetWorkflowId: { type: Number, required: false, default: null },
+    newStudyOwner: { type: String, required: false, default: 'session_owner' },
     selectedAssignments: { type: Array, required: false, default: () => [] },
     selectedReviewer: { type: Array, required: false, default: () => [] },
-    assignmentCount: { type: Number, required: false, default: 0 },
-    reviewerCount: { type: Number, required: false, default: 0 },
     reviewerSelectionMode: { type: Object, required: false, default: () => ({}) },
-    workflowStepsAssignments: { type: Array, required: false, default: () => [] },
-    numberOfReviews: { type: Number, required: false, default: 0 },
-    reviewerSelectionModeFields: { type: Array, required: false, default: () => [] },
-    reviewer: { type: Array, required: false, default: () => [] },
-    documents: { type: Array, required: false, default: () => [] },
+    workflowSteps: { type: Array, required: false, default: () => [] },
     roles: { type: Array, required: false, default: () => [] },
     roleSelection: { type: Object, required: false, default: () => ({}) },
     reviewerSelection: { type: Object, required: false, default: () => ({}) },
@@ -157,38 +91,26 @@ export default {
       required: true,
       validator: v => ['doc-sub-single', 'doc-sub-bulk', 'session-single', 'session-bulk'].includes(v),
     },
+    enableEmailNotification: { type: Boolean, required: false, default: false },
+    workflowMapping: { type: Object, required: false, default: undefined },
   },
+  emits: ["settled"],
   computed: {
+    documents() {
+      return this.$store.getters["table/document/getFiltered"](d => d.readyForReview);
+    },
+    // Document path only. Submissions get their step document on the server (createAssignment).
+    workflowStepsAssignments() {
+      if (this.assignmentType !== "document") return [];
+      return this.selectedAssignments.map((document) => this.workflowSteps.map((step, index) => ({
+        documentId: index === 0 ? document.id : null,
+        workflowStepId: step.id,
+      })));
+    },
     targetWorkflowName() {
       if (!this.targetWorkflowId) return this.$t("common.unknown");
       const workflow = this.$store.getters["table/workflow/get"](this.targetWorkflowId);
       return workflow ? workflow.name : this.$t("common.unknown");
-    },
-    listOfSelectedRoles() {
-      return Object.keys(this.roleSelection).map(key => {
-        const role = this.roles.find(r => r.id === parseInt(key));
-        return { role: role ? role.name : key, value: this.roleSelection[key] };
-      });
-    },
-    listOfSelectedReviewers() {
-      return Object.keys(this.reviewerSelection).map(key => {
-        const user = this.reviewer.find(r => r.id === parseInt(key));
-        return {
-          reviewer: user ? `${user.firstName} ${user.lastName}` : key,
-          value: this.reviewerSelection[key],
-        };
-      });
-    },
-    unmatchedReviewersForSessions() {
-      if (this.assignmentType !== 'study_session' || this.reviewerSelectionMode.mode !== 'session_user') {
-        return [];
-      }
-      const selectedSessionUserIds = new Set(
-          this.selectedAssignments.map(session =>
-            session.sessionUserId ?? session.userId
-          ).filter(userId => userId !== null && userId !== undefined)
-      );
-      return this.selectedReviewer.filter(rev => !selectedSessionUserIds.has(rev.id));
     },
   },
   methods: {
@@ -200,6 +122,88 @@ export default {
       const doc = this.getDoc(stepAssignment.documentId);
       if (!doc) return '';
       return `${doc.firstName || ''} ${doc.lastName || ''}`.trim();
+    },
+    /**
+     * Creates the assignment(s). Called by the wizard on confirm.
+     * @param {string} progressId - Stepper progress id, forwarded to the bulk request.
+     * @param {Object} selection - Resolve payload incl. live query-table selection snapshots.
+     */
+    submit(progressId, selection) {
+      if (this.bulk) {
+        this.createBulkAssignments(progressId, selection);
+      } else {
+        this.createSingleAssignment(selection);
+      }
+    },
+    settle(res) {
+      this.eventBus.emit("toast", res?.success ? {
+        title: this.$t("dashboard.study.assignmentCreated"),
+        message: this.$t("dashboard.study.assignmentCreatedMessage"),
+        variant: "success",
+      } : {
+        title: this.$t("dashboard.study.failedToCreateAssignment"),
+        message: resolveApiMessage(res),
+        variant: "danger",
+      });
+      this.$emit("settled", !!res?.success);
+    },
+    createSingleAssignment(selection) {
+      this.$socket.emit("assignmentBulkResolveSelection", selection, (resolveRes) => {
+        if (!resolveRes?.success) {
+          this.settle(resolveRes);
+          return;
+        }
+        const socketData = {
+          template: this.template,
+          selectedAssignments: resolveRes.data?.selectedAssignments?.length
+            ? resolveRes.data.selectedAssignments
+            : this.selectedAssignments,
+          reviewer: resolveRes.data?.selectedReviewer?.length
+            ? resolveRes.data.selectedReviewer
+            : this.selectedReviewer,
+          assignmentType: this.assignmentType,
+          enableEmailNotification: this.enableEmailNotification,
+          newStudyOwner: this.newStudyOwner,
+        };
+        if (this.assignmentType === "study_session") {
+          socketData.workflowMapping = this.workflowMapping;
+        } else if (this.assignmentType === "document") {
+          socketData.documents = this.workflowStepsAssignments[0];
+        }
+        this.$socket.emit("assignmentCreateSingle", socketData, (res) => this.settle(res));
+      });
+    },
+    createBulkAssignments(progressId, selection) {
+      const socketData = {
+        template: this.template,
+        selectedReviewer: this.selectedReviewer,
+        selectedAssignments: this.selectedAssignments,
+        reviewerSelection: this.reviewerSelection,
+        roleSelection: this.roleSelection,
+        mode: this.reviewerSelectionMode.mode,
+        roles: this.roles,
+        assignmentType: this.assignmentType,
+        enableEmailNotification: this.enableEmailNotification,
+        progressId: progressId,
+        newStudyOwner: this.newStudyOwner,
+        reviewerQuerySelection: selection.reviewerQuerySelection,
+      };
+      if (this.assignmentType === "study_session") {
+        socketData.targetWorkflowId = this.targetWorkflowId;
+        socketData.workflowMapping = this.workflowMapping;
+        socketData.assignmentSelection = selection.assignmentSelection;
+      } else if (this.assignmentType === "submission") {
+        // Server resolves the submissions and picks each one's PDF itself.
+        socketData.assignmentSelection = selection.assignmentSelection;
+      } else {
+        socketData.documents = this.workflowStepsAssignments;
+      }
+      this.$socket.emit("assignmentCreateBulk", socketData, (res) => {
+        if (res.success && this.reviewerSelectionMode.mode === "role" && Array.isArray(res.data?.csvRows)) {
+          downloadObjectsAs(res.data.csvRows, "assignments", "csv");
+        }
+        this.settle(res);
+      });
     },
   },
 };

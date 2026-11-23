@@ -67,7 +67,7 @@
         <div class="summary-item"><strong>{{ $t('dashboard.submission.assignGroup.additionalSettingsLabel') }}</strong> {{ data.settings ?? $t('common.na') }}</div>
         <div class="summary-item"><strong>{{ $t('dashboard.submission.assignGroup.copySubmissionsLabel') }}</strong> {{ data.copySubmissions ? $t('common.yes') : $t('common.no') }}</div>
         <div class="alert alert-info mt-3">
-          <i class="bi bi-info-circle"></i>
+          <BasicIcon icon-name="info-circle" />
           {{ $t('dashboard.submission.assignGroup.reviewNote') }}
         </div>
       </div>
@@ -81,6 +81,7 @@ import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import BasicForm from "@/basic/Form.vue";
 import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
+import BasicIcon from "@/basic/Icon.vue";
 
 /**
  * Submission group modal component
@@ -92,7 +93,7 @@ import { formatLocalizedDate, resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "AssignModal",
-  components: {BasicForm, BasicTable, StepperModal, BasicButton},
+  components: {BasicIcon, BasicForm, BasicTable, StepperModal, BasicButton},
   subscribeTable: ["submission", "user", "document", "document_data"],
   data() {
     return {

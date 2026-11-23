@@ -141,11 +141,7 @@ export default {
     stepValid() {
       const step1Valid = !!this.selectedSkill && this.hasValidInputMappings && this.hasTableBasedParameter;
 
-      let step2Valid = false;
-      if (this.hasTableBasedParameter) {
-        const fileCount = this.getSelectedFileCount();
-        step2Valid = fileCount > 0;
-      }
+      const step2Valid = this.hasTableBasedParameter && this.getSelectedFileCount() > 0;
 
       const steps = [step1Valid, step2Valid];
 
@@ -207,17 +203,9 @@ export default {
   },
   methods: {
     getSelectedFileCount() {
-      if (!this.selectedFiles || typeof this.selectedFiles !== 'object') {
-        return 0;
-      }
-
-      let count = 0;
-      for (const files of Object.values(this.selectedFiles)) {
-        if (Array.isArray(files)) {
-          count += files.length;
-        }
-      }
-      return count;
+      if (!this.selectedFiles || typeof this.selectedFiles !== 'object') return 0;
+      return Object.values(this.selectedFiles).reduce(
+        (count, files) => count + (Array.isArray(files) ? files.length : 0), 0);
     },
     hasMappingsChanged(newMappings, oldMappings) {
       const newKeys = Object.keys(newMappings);
@@ -273,17 +261,8 @@ export default {
       return Object.keys(mappings).length > 0 ? mappings : null;
     },
     formatBaseFiles() {
-      if (!this.requireValidation) {
-        return null;
-      }
-
-      const baseFiles = {};
-      for (const [validationConfigurationId, selection] of Object.entries(this.baseFileSelections)) {
-        if (selection) {
-          baseFiles[validationConfigurationId] = selection;
-        }
-      }
-
+      if (!this.requireValidation) return null;
+      const baseFiles = Object.fromEntries(Object.entries(this.baseFileSelections).filter(([,value]) => value));
       return Object.keys(baseFiles).length > 0 ? baseFiles : null;
     },
     open() {

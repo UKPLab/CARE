@@ -40,34 +40,20 @@
       <p class="text-muted mb-3">
         {{ $t('socketProfiler.import.previewIntro') }} <strong>{{ selectedFile && selectedFile.name }}</strong>?
       </p>
-      <table v-if="parsed" class="table table-sm">
-        <tbody>
-          <tr>
-            <th style="width: 200px">{{ $t('socketProfiler.columns.name') }}</th>
-            <td>{{ parsed.recording.name }}</td>
-          </tr>
-          <tr>
-            <th>{{ $t('socketProfiler.columns.status') }}</th>
-            <td>{{ $t('socketProfiler.status.' + parsed.recording.status) }}</td>
-          </tr>
-          <tr>
-            <th>{{ $t('socketProfiler.columns.startTime') }}</th>
-            <td>{{ formatTime(parsed.recording.startTime) }}</td>
-          </tr>
-          <tr>
-            <th>{{ $t('socketProfiler.columns.endTime') }}</th>
-            <td>{{ formatTime(parsed.recording.endTime) }}</td>
-          </tr>
-          <tr>
-            <th>{{ $t('socketProfiler.import.traceCount') }}</th>
-            <td>{{ parsed.traces.length }}</td>
-          </tr>
-          <tr>
-            <th>{{ $t('socketProfiler.import.exportedAt') }}</th>
-            <td>{{ formatTime(parsed.exportedAt) }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <dl v-if="parsed" class="row mb-0">
+        <dt class="col-sm-4">{{ $t('socketProfiler.columns.name') }}</dt>
+        <dd class="col-sm-8">{{ parsed.recording.name }}</dd>
+        <dt class="col-sm-4">{{ $t('socketProfiler.columns.status') }}</dt>
+        <dd class="col-sm-8">{{ $t(`socketProfiler.status.${parsed.recording.status}`) }}</dd>
+        <dt class="col-sm-4">{{ $t('socketProfiler.columns.startTime') }}</dt>
+        <dd class="col-sm-8">{{ formatTime(parsed.recording.startTime) }}</dd>
+        <dt class="col-sm-4">{{ $t('socketProfiler.columns.endTime') }}</dt>
+        <dd class="col-sm-8">{{ formatTime(parsed.recording.endTime) }}</dd>
+        <dt class="col-sm-4">{{ $t('socketProfiler.import.traceCount') }}</dt>
+        <dd class="col-sm-8">{{ parsed.traces.length }}</dd>
+        <dt class="col-sm-4">{{ $t('socketProfiler.import.exportedAt') }}</dt>
+        <dd class="col-sm-8">{{ formatTime(parsed.exportedAt) }}</dd>
+      </dl>
     </template>
 
     <!-- Step 3: Confirmation -->

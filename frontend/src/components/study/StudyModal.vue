@@ -21,85 +21,32 @@
           :loading="true"
       />
       <span v-else-if="showSessions">
-        <BasicTable
-            :columns="sessionTableColumns"
-            :data="studySessions"
-            :options="sessionTableOptions"
-            :buttons="buttons"
-            :max-table-height="'60vh'"
+        <StudySessionPicker
+            :sessions="studySessions"
+            :study="study"
+            :study-closed="studyClosed"
             @action="sessionAction"
         />
       </span>
-      <span v-else>
-        <div
-            v-if="foreignUnstartedSession"
-            class="text-xxl-center text-danger fs-5">
-          {{ $t('studies.foreignUnstartedSession') }}
-          <br>
-          {{ $t('studies.cannotResumeSession') }}
-        </div>
-        <div
-            v-else-if="!started"
-            class="text-xxl-center text-secondary fs-5">
-          {{ $t('studies.notStartedYet') }} <br>
-          {{ $t('studies.messages.studyStartDate', { date: formatLocalizedDateTime(study.start) }) }}</div>
-        <div
-            v-else-if="studyClosed"
-            class="text-xxl-center text-danger fs-5">
-          {{ $t('studies.messages.studyFinished', { date: studyEnd }) }}</div>
-        <div
-            v-else-if="!sessionsAvailable && studySessionId === 0"
-            class="text-xxl-center text-danger fs-5">
-          {{ $t('studies.noMoreSessions') }}
-        </div>
-        <span v-else>
-          <Editor
-              v-if="study.description"
-              v-model="study.description"
-              :read-only="true"
-              class="ql-snow ql-container border"
-          />
-          <div v-else>
-            {{ $t('studies.clickToStart') }}
-          </div>
-          <div v-if="study.timeLimit > 0 || study.collab">
-            <hr>
-          </div>
-          <div
-              v-if="study.timeLimit > 0"
-              class="mt-1"
-          >
-            {{ $t('studies.messages.timeLimitNote', { minutes: study.timeLimit }) }}
-          </div>
-          <div
-              v-if="study.collab"
-              class="mt-1"
-          >
-            <i18n-t keypath="studies.collaborativeNote" tag="span">
-              <template #collaborative>
-                <b>{{ $t('studies.collaborativeEmphasis') }}</b>
-              </template>
-            </i18n-t>
-          </div>
-          <div
-              v-if="studySessionId === 0 && study.limitSessionsPerUser > 0"
-              class="mt-1"
-          >
-            <i18n-t keypath="studies.messages.sessionsLeft" tag="span">
-              <template #sessions>
-                <b>{{ $t('studies.messages.sessionsLeftEmphasis', { count: study.limitSessionsPerUser - totalNumberOfOpenedSessions }) }}</b>
-              </template>
-            </i18n-t>
-          </div>
-        </span>
-      </span>
+      <StudyParticipationDetails
+          v-else
+          :study="study"
+          :study-closed="studyClosed"
+          :started="started"
+          :sessions-available="sessionsAvailable"
+          :foreign-unstarted-session="Boolean(foreignUnstartedSession)"
+          :study-session-id="studySessionId"
+          :total-number-of-opened-sessions="totalNumberOfOpenedSessions"
+      />
     </template>
     <template v-if="!infoOnly" #footer>
+      <div class="btn-group">
       <BasicButton
           class="btn btn-outline-secondary"
           :text="$t('studies.returnToDashboard')"
           @click="returnToDashboard"
       />
+      </div>
       <vr/>
       <div
           v-if="showSessions"
@@ -141,9 +88,9 @@
 <script>
 import Modal from "@/basic/Modal.vue";
 import Loader from "@/basic/Loading.vue";
-import BasicTable from "@/basic/Table.vue";
-import Editor from "@/basic/editor/Editor.vue";
-import { resolveApiMessage, formatLocalizedDateTime, returnToDashboard as returnToDashboardHelper } from "@/assets/utils";
+import StudySessionPicker from "./StudySessionPicker.vue";
+import StudyParticipationDetails from "./StudyParticipationDetails.vue";
+import { resolveApiMessage, returnToDashboard as returnToDashboardHelper } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
 /**
@@ -156,7 +103,7 @@ import BasicButton from "@/basic/Button.vue";
 export default {
   name: "StudyModal",
   subscribeTable: ["study_session"],
-  components: {Loader, BasicTable, Modal, Editor, BasicButton},
+  components: {Loader, StudySessionPicker, Modal, StudyParticipationDetails, BasicButton},
   inject: {
     acceptStats: {default: () => false},
   },
@@ -186,135 +133,29 @@ export default {
       hash: null,
       documentId: 0,
       showSessions: false,
-      sessionTableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true
-      }
+
     }
   },
   computed: {
-    sessionTableColumns() {
-      return [
-        {name: this.$t('studies.columns.started'), key: "startParsed"},
-        {
-          name: this.$t('studies.columns.finished'),
-          key: "finished",
-          type: "badge",
-          typeOptions: {
-            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
-        },
-        {
-          name: this.$t('studies.columns.resumable'),
-          key: "resumable",
-          type: "badge",
-          typeOptions: {
-            keyMapping: {true: this.$t('common.yes'), false: this.$t('common.no')},
-            classMapping: {true: "bg-success", false: "bg-danger"}
-          }
-        }
-      ];
-    },
+
     study() {
       if (this.studyId !== 0) {
         return this.$store.getters['table/study/get'](this.studyId)
       }
       return null;
     },
-    studyEnd() {
-      if (this.study) {
-        if (this.study.closed) {
-          return formatLocalizedDateTime(this.study.closed)
-        }
-        if (this.study.end) {
-          return formatLocalizedDateTime(this.study.end)
-        }
-      }
-      return "";
-    },
+
     studySession() {
       if (this.studySessionId !== 0) {
         return this.$store.getters['table/study_session/get'](this.studySessionId);
       }
       return null;
     },
-    buttons() {
-      return [
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            }
-          },
-          filter: [
-            {key: "showResumeButton", value: true},
-          ],
-          title: this.$t('studies.resumeSession'),
-          action: "resumeStudySession",
-        },
-        {
-          icon: "box-arrow-in-right",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            }
-          },
-          filter: [
-            {key: "showStartButton", value: true}
-          ],
-          title: this.$t('studies.startSession'),
-          action: "startStudySession",
-          stats: {
-            studySessionId: "id",
-          }
-        },
-        {
-          icon: "x-octagon",
-          options: {
-            iconOnly: true,
-            specifiers: {
-              "btn-outline-secondary": true,
-              "btn-sm": true,
-            }
-          },
-          filter: [
-            {key: "finished", value: false}
-          ],
-          title: this.$t('studies.finishSession'),
-          action: "finishSession",
-          stats: {
-            studySessionId: "id",
-          }
-        }
-      ]
-    },
-    studySessions() {
-      if (this.studyId) {
-        return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
-            .filter(s => this.study && this.study.multipleSubmit ? (!this.study.closed) : s.end === null)
-            .map(s => {
-              let session = {...s}
-              session.resumable = this.study.resumable;
-              session.startParsed = session.start ? formatLocalizedDateTime(session.start) : this.$t('studies.sessionNotStarted');
-              session.finished = session.end !== null
-              session.showResumeButton = session.resumable && session.start && !this.studyClosed;
-              session.showStartButton = !session.start && !this.studyClosed;
 
-              return session;
-            });
-      }
-      return [];
+    studySessions() {
+      if (!this.studyId) return [];
+      return this.$store.getters["table/study_session/getByKey"]("studyId", this.studyId)
+          .filter(s => this.study && this.study.multipleSubmit ? (!this.study.closed) : s.end === null);
     },
     totalNumberOfOpenedSessions() {
       return (this.study.totalNumberOfOpenedSessions) ? this.study.totalNumberOfOpenedSessions : 0;
@@ -361,29 +202,39 @@ export default {
     },
   },
   methods: {
-    formatLocalizedDateTime,
     open() {
       this.$refs.modal?.open();
     },
     close() {
       this.$refs.modal?.close();
     },
+    /**
+     * Starts a study session and reports the result of the server with a toast.
+     *
+     * The session update can reach the parent before the acknowledgement and unmount this modal, which also
+     * removes $t from it. So the toasts only rely on values captured here, while Vue clears the ref to the
+     * modal and ignores the emit of an unmounted component.
+     * @param {number|null} studyId The study to start a session for, null to start an existing session
+     * @param {number} studySessionId The existing session to start, 0 to start a new one
+     */
     startStudy(studyId = null, studySessionId) {
-
+      const eventBus = this.eventBus;
+      const startedToast = {
+        title: this.$t('studies.messages.studyStarted'),
+        message: this.$t('studies.messages.enjoy'),
+        variant: "success"
+      };
+      const errorTitle = this.$t('errors.studies.studyCannotStart');
       this.$socket.emit("studySessionStart",
           {studyId: studyId, studySessionId: studySessionId}, (response) => {
             if (response.success) {
               // Close before emitting: the parent may unmount this modal in response to "start".
               this.$refs.modal?.close();
               this.$emit("start", {studySessionId: response.data.id});
-              this.eventBus.emit('toast', {
-                title: this.$t('studies.messages.studyStarted'),
-                message: this.$t('studies.messages.enjoy'),
-                variant: "success"
-              });
+              eventBus.emit('toast', startedToast);
             } else {
-              this.eventBus.emit('toast', {
-                title: this.$t('errors.studies.studyCannotStart'),
+              eventBus.emit('toast', {
+                title: errorTitle,
                 message: resolveApiMessage(response),
                 variant: "danger"
               });

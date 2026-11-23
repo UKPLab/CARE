@@ -16,65 +16,34 @@
               class="template-viewport"
               :class="{ 'template-viewport--preview': previewMode && templateSupportsPlaceholderPreview }"
             >
-              <div class="template-editor-surface">
-                <div
-                  v-show="!previewMode"
-                  :id="`editor-container-template-${templateId}`"
-                  class="template-editor-container"
-                  @paste="onPaste"
-                  @copy="onCopy"
-                >
-                </div>
-              </div>
-            <div
+              <TemplateQuillSurface
+                :template-id="templateId"
+                :preview-mode="previewMode"
+                @paste="onPaste"
+                @copy="onCopy"
+              />
+            <TemplateExamplePreview
               v-show="previewMode && templateSupportsPlaceholderPreview"
-              class="template-example-preview-panel border rounded bg-body-tertiary"
-            >
-              <div class="alert alert-info mb-0 rounded-0 py-2 small template-preview-banner">
-                {{ $t("templates.editor.viewMode.previewHelp") }}
-              </div>
-              <div class="ql-snow template-preview-scroll p-3">
-                <div
-                  class="ql-editor template-example-preview-inner"
-                  v-html="previewDisplayHtml"
-                ></div>
-              </div>
-            </div>
+              :html="previewDisplayHtml"
+            />
             </div>
           </div>
         </div>
       </div>
-      <BasicModal
+      <TemplateLanguageChoiceModal
         ref="newLanguageModal"
-        name="newLanguage"
+        :message="newLanguageModalMessage"
         @hide="onNewLanguageModalHide"
-      >
-        <template #title>
-          {{ $t("templates.editor.newLanguage") }}
-        </template>
-        <template #body>
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div v-html="newLanguageModalMessage" />
-        </template>
-        <template #footer>
-          <div class="btn-group">
-            <BasicButton
-              class="btn btn-outline-primary"
-              :text="$t('templates.editor.createEmpty')"
-              @click="chooseNewLanguageEmpty"
-            />
-            <BasicButton
-              class="btn btn-primary"
-              :text="$t('templates.editor.copyContent')"
-              @click="chooseNewLanguageCopied"
-            />
-          </div>
-        </template>
-      </BasicModal>
+        @empty="chooseNewLanguageEmpty"
+        @copy="chooseNewLanguageCopied"
+      />
     </span>
   </template>
-  
+
   <script>
+import TemplateQuillSurface from "./TemplateQuillSurface.vue";
+import TemplateExamplePreview from "./TemplateExamplePreview.vue";
+import TemplateLanguageChoiceModal from "./TemplateLanguageChoiceModal.vue";
   /**
    * Template Editor component
    *
@@ -89,8 +58,6 @@
   import debounce from "lodash.debounce";
   import {Editor} from "@/components/editor/editorStore.js";
   import Loader from "@/basic/Loading.vue";
-  import BasicModal from "@/basic/Modal.vue";
-  import BasicButton from "@/basic/Button.vue";
   import { quillTemplateToolbarData, quillTemplateToolbarComputed, quillTemplateToolbarMethods } from "@/components/editor/template/helpers/quillTemplateToolbar.js";
   import { templateLanguageSwitchingData, templateLanguageSwitchingComputed, templateLanguageSwitchingMethods } from "@/components/editor/template/helpers/templateLanguageSwitching.js";
   import { templateContentSyncData, templateContentSyncComputed, templateContentSyncMethods } from "@/components/editor/template/helpers/templateContentSync.js";
@@ -98,8 +65,12 @@
 
   export default {
     name: "TemplateEditor",
-    components: { Loader, BasicModal, BasicButton },
+    components: {TemplateQuillSurface, TemplateExamplePreview, TemplateLanguageChoiceModal, Loader},
     inject: {
+      currentStudyStep: {type: Object, required: false, default: null},
+      studySessionId: {type: Number, required: false, default: null},
+      studyStepId: {type: Number, required: false, default: null},
+      documentId: {type: Number, required: false, default: null},
       templateId: {
         type: Number,
         required: true,
@@ -144,59 +115,7 @@
       ...templateContentSyncComputed,
       // templatePlaceholderPreview.js (templateSupportsPlaceholderPreview, previewDisplayHtml)
       ...templatePlaceholderPreviewComputed,
-      editorOptions() {
-        const toolsMap = {
-          "editor.toolbar.tools.font": {font: []},
-          "editor.toolbar.tools.size": {size: []},
-          "editor.toolbar.tools.align": {align: []},
-          "editor.toolbar.tools.header": ["header", "1", "2", "3", "4", "5", "6"],
-          "editor.toolbar.tools.bold": "bold",
-          "editor.toolbar.tools.italic": "italic",
-          "editor.toolbar.tools.underline": "underline",
-          "editor.toolbar.tools.strike": "strike",
-          "editor.toolbar.tools.blockquote": "blockquote",
-          "editor.toolbar.tools.code-block": "code-block",
-          "editor.toolbar.tools.formula": "formula",
-          "editor.toolbar.tools.subscript": {script: "sub"},
-          "editor.toolbar.tools.superscript": {script: "super"},
-          "editor.toolbar.tools.indent": [{indent: "-1"}, {indent: "+1"}],
-          "editor.toolbar.tools.direction": {direction: []},
-          "editor.toolbar.tools.color": {color: []},
-          "editor.toolbar.tools.background": {background: []},
-          "editor.toolbar.tools.orderedList": {list: "ordered"},
-          "editor.toolbar.tools.unorderedList": {list: "bullet"},
-          "editor.toolbar.tools.checkList": {list: "check"},
-          "editor.toolbar.tools.link": "link",
-          "editor.toolbar.tools.image": "image",
-          "editor.toolbar.tools.video": "video",
-          "editor.toolbar.tools.clean": "clean"
-        };
-  
-        const toolbarTools = [];
-        const hiddenTools = ['editor.toolbar.tools.formula', 'editor.toolbar.tools.link', 'editor.toolbar.tools.image', 'editor.toolbar.tools.video'];
-  
-        for (const [key, tool] of Object.entries(toolsMap)) {
-          if (hiddenTools.includes(key)) {
-            continue;
-          }
-  
-          if (this.$store.getters["settings/getValue"](key) === "true") {
-            toolbarTools.push(tool);
-          }
-        }
-  
-        // Always pass toolbarTools when setting is on so format buttons are created.
-        // readOnly watcher hides/shows them; passing [] when readOnly would leave toolbar with only languages.
-        const toolbarContainer = this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true"
-          ? toolbarTools
-          : [];
-        return {
-          modules: {
-            toolbar: { container: toolbarContainer }
-          },
-          theme: "snow"
-        };
-      },
+
     },
     watch: {
       readOnly: {
@@ -232,10 +151,10 @@
     mounted() {
       const editorId = `editor-container-template-${this.templateId}`;
       const editorContainer = document.getElementById(editorId);
-  
+
       if (editorContainer) {
         this.editor = new Editor(editorContainer, this.editorOptions);
-  
+
         if (this.toolbarVisible) {
           const toolbarButtons = document.querySelectorAll(`#${editorId} .ql-toolbar button`);
           toolbarButtons.forEach(button => {
@@ -249,10 +168,10 @@
         this.injectEditPreviewToggle(editorId);
         this.syncEditPreviewPickerLabel();
         this.syncToolbarFormatVisibility();
-  
+
         this.editor.getEditor().enable(!this.readOnly);
         this.editor.getEditor().on('text-change', this.handleTextChange);
-  
+
         // Handle placeholder insertion
         this.insertTextHandler = (data) => {
           if (data.templateId === this.templateId) {
@@ -260,12 +179,12 @@
           }
         };
         this.eventBus.on("editorInsertText", this.insertTextHandler);
-  
+
         setTimeout(() => {
           this.emitContentForPlaceholders();
         }, 500);
       }
-      
+
       this.debouncedProcessDelta = debounce(this.processDelta, this.debounceTimeForEdits);
 
       // Warn before full-page unload (forced URL / tab close) when edits are unsaved,
@@ -313,6 +232,10 @@
             this.$socket.emit("stats", {
               action: "textPasted",
               data: {
+                ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+                ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+                ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+                ...(this.documentId ? {documentId: this.documentId} : {}),
                 templateId: this.templateId,
                 pastedText: pastedText,
               }
@@ -327,6 +250,10 @@
             this.$socket.emit("stats", {
               action: "textCopied",
               data: {
+                ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+                ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+                ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+                ...(this.documentId ? {documentId: this.documentId} : {}),
                 from: "template-editor",
                 templateId: this.templateId,
                 copiedText: copiedText,
@@ -353,128 +280,27 @@
     }
   };
   </script>
-  
+
   <style scoped>
-  .pageLoader {
+.pageLoader {
     position: absolute;
     top: 25%;
     left: 50%;
     transform: translate(-50%, -50%)
   }
 
-  .template-viewer-column {
+.template-viewer-column {
     display: flex;
     flex-direction: column;
     min-height: 0;
     overflow: hidden;
   }
 
-  .template-viewport {
+.template-viewport {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 0;
     overflow: hidden;
   }
-
-  .template-editor-surface {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-  }
-
-  .template-viewport:not(.template-viewport--preview) .template-editor-surface {
-    flex: 1 1 auto;
-  }
-
-  .template-viewport--preview .template-editor-surface {
-    flex: 0 0 auto;
-    position: relative;
-    z-index: 2;
-    overflow: visible;
-  }
-
-  .template-example-preview-panel {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    overflow: hidden;
-    position: relative;
-    z-index: 1;
-  }
-
-  .template-viewport--preview .template-example-preview-panel {
-    flex: 1 1 auto;
-  }
-
-  .template-editor-surface .ql-toolbar {
-    position: relative;
-    z-index: 2;
-  }
-
-  .template-editor-container {
-    flex: 1 1 auto;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-  }
-
-  .template-editor-surface .ql-container {
-    flex: 1;
-    min-height: 0;
-  }
-
-  .template-preview-banner {
-    flex-shrink: 0;
-  }
-
-  .template-preview-scroll {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
-  }
-
-  .template-example-preview-inner {
-    white-space: pre-wrap;
-    min-height: 0;
-  }
-  </style>
-
-  <style>
-  .ql-toolbar .ql-languageSelector {
-    min-width: 100px;
-    background-color: var(--bs-tertiary-bg, #f5f5f5);
-    margin-left: 10px;
-  }
-  .ql-toolbar .ql-languageSelector .ql-picker-label {
-    padding: 2px 8px;
-  }
-  .ql-toolbar .ql-languageSelector .ql-picker-label svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .ql-toolbar .ql-templateViewMode {
-    min-width: 90px;
-    background-color: var(--bs-tertiary-bg);
-    margin-left: 6px;
-  }
-  .ql-toolbar .ql-templateViewMode .ql-picker-label {
-    padding: 2px 8px;
-  }
-  .ql-toolbar .ql-templateViewMode .ql-picker-label svg {
-    width: 14px;
-    height: 14px;
-  }
-
-  .ql-toolbar .ql-languageSelector.ql-expanded,
-  .ql-toolbar .ql-templateViewMode.ql-expanded {
-    z-index: 10;
-  }
-
-  .ql-toolbar .ql-languageSelector .ql-picker-options,
-  .ql-toolbar .ql-templateViewMode .ql-picker-options {
-    z-index: 11;
-  }
-  </style>
+</style>

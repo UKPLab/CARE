@@ -1,44 +1,25 @@
 <template>
   <div v-if="skillName" class="input-map mb-3">
-    <h6 class="text-secondary">{{ $t('nlp.inputMap.inputMapping') }}</h6>
-    <div
-        v-for="input in skillInputs"
-        :key="input"
-        class="mb-2"
-    >
-      <label class="form-label">{{ input }}:</label>
-      <FormSelect
-          :model-value="inputMappings[input]"
-          :options="{ options: studyBased ? availableDataSources : dataSourcesByInput[input] }"
-          :value-as-object="true"
-          @update:model-value="updateMapping(input, $event)"
-      />
-      <div
-          v-if="isHook && inputMappings[input]?.type === 'submission'"
-          class="mt-1 ps-1"
-      >
-        <FormRadio
-            :model-value="submissionFileSelections[input]?.[0] || null"
-            :options="{ key: `submission_file_${input}`, label: 'nlp.inputMap.selectFilesToInclude', options: validationFileOptions.map(f => ({ value: f.value, label: f.label })) }"
-            @update:model-value="toggleSubmissionFile(input, $event)"
-        />
-      </div>
-    </div>
-
-    <h6 class="text-secondary mt-4">{{ $t('nlp.inputMap.outputMapping') }}</h6>
-    <div
-        v-for="output in skillOutputs"
-        :key="output"
-        class="mb-2"
-    >
-      <label class="form-label">{{ output }}:</label>
-      <FormSelect
-          :model-value="outputMappings[output]"
-          :options="{ options: outputDataOptions }"
-          :value-as-object="true"
-          @update:model-value="updateOutputMapping(output, $event)"
-      />
-    </div>
+    <InputMapInputs
+        :inputs="skillInputs"
+        :mappings="inputMappings"
+        :is-hook="isHook"
+        :study-based="studyBased"
+        :study-step-id="studyStepId"
+        :workflow-steps="workflowSteps"
+        :selected-skills="selectedSkills"
+        :document-id="documentId"
+        :service-index="serviceIndex"
+        @update="updateMapping"
+    />
+    <InputMapOutputs
+        v-if="outputMapping"
+        :outputs="skillOutputs"
+        :mappings="outputMappings"
+        :study-step-id="studyStepId"
+        :workflow-steps="workflowSteps"
+        @update="updateOutputMapping"
+    />
   </div>
 </template>
 
@@ -46,24 +27,20 @@
 /**
  * Input Map Component for mapping skill inputs to data sources
  * Dynamically generates input fields based on the selected skill's configuration
- * This supports both study-based and non-study-based workflows
+ * This supports both study-based and non-study-based workflows.
+ * Owns the input/output mapping value; InputMapInputs and InputMapOutputs render
+ * the two sections, and hook submission file choices are kept on the mapping.
  *
- * @author Manu Sundar Raj Nandyal, Dennis Zyska
+ * @author Manu Sundar Raj Nandyal, Dennis Zyska, Mohammed Rawhani
  */
-import FormSelect from "@/basic/form/Select.vue";
-import FormRadio from "@/basic/form/Radio.vue";
+import InputMapInputs from "./InputMapInputs.vue";
+import InputMapOutputs from "./InputMapOutputs.vue";
 import deepEqual from "deep-equal";
 import { tokenInnerText } from "placeholder-tokens";
 
 export default {
   name: "InputMap",
-  components: {FormSelect, FormRadio},
-  inject: {
-    isTemplateMode: {
-      type: Boolean,
-      default: false,
-    },
-  },
+  components: {InputMapInputs, InputMapOutputs},
   subscribeTable: [
     "ai_hook",
     {table: "configuration", filter: [{key: "type", value: 0}, {key: "hideInFrontend", value: false}]},
@@ -106,96 +83,30 @@ export default {
       type: Number,
       default: null,
     },
+    outputMapping: {
+      type: Boolean,
+      required: false,
+      default: true,
+    },
+    serviceIndex: {
+      type: Number,
+      default: 0,
+    },
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "validation-change"],
   data() {
     return {
       inputMappings: {},
       outputMappings: {},
       isUpdatingFromWithin: false,
       hookPlaceholders: [],
-      submissionFileSelections: {},
+      hookPlaceholdersLoaded: false,
     };
   },
   computed: {
-    // Single source of truth to resolve the data-bearing document (PDF with submission)
-    // Efficient: a single store read + light logic, reused in both case 1 and case 2
-    resolvedSourceDocumentId() {
-      const docId = this.documentId || null;
-      if (!docId) return null;
-      const doc = this.$store.getters["table/document/get"](docId);
-      if (!doc) return null;
-      // If this step's document is an HTML/editor or modal clone, use its parent
-      if ((doc.type === 1 || doc.type === 2) && doc.parentDocumentId) return doc.parentDocumentId;
-      return docId;
-    },
-    resolvedSourceDocument() {
-      const id = this.resolvedSourceDocumentId;
-      return id ? this.$store.getters["table/document/get"](id) : null;
-    },
-    resolvedSubmissionDocs() {
-      const doc = this.resolvedSourceDocument;
-      const submissionId = doc && doc.submissionId ? doc.submissionId : null;
-      if (!submissionId) return [];
-      const docs = this.$store.getters["table/document/getByKey"]("submissionId", submissionId) || [];
-      return docs.filter(d => d && d.type === 4);
-    },
     nlpSkills() {
       const skills = this.$store.getters["service/get"]("NLPService", "skillUpdate");
       return skills && typeof skills === "object" ? Object.values(skills) : [];
-    },
-    configurations() {
-      return this.$store.getters["table/configuration/getAll"] || [];
-    },
-    // First validation configuration (type 1) — defines what files a submission must contain.
-    // TODO: support dynamicty here
-    validationConfig() {
-      return this.configurations.find(cfg => cfg.type === 1) || null;
-    },
-    // File options: always "pdf" (the PDF document) + the named files inside the ZIP entry.
-    // Each zip option carries `pattern` (the validation-config regex) so the backend can match
-    validationFileOptions() {
-      const requiredFiles = this.validationConfig?.content?.rules?.requiredFiles || [];
-      const options = [{value: "pdf", label: "pdf", pattern: null}];
-      const zipEntry = requiredFiles.find(f => Array.isArray(f.includeFiles) && f.includeFiles.length);
-      if (zipEntry) {
-        zipEntry.includeFiles.forEach(f => {
-          if (f.name) options.push({value: f.name, label: f.name, pattern: f.pattern || null});
-        });
-      }
-      return options;
-    },
-    configurationSources() {
-      return this.configurations
-          .filter(entry => entry.type === 0 && entry.hideInFrontend === false)
-          .map(entry => ({
-            value: `config_${entry.id}`,
-            name: this.$t('nlp.inputMap.sources.configuration', {
-              name: entry.name,
-            }),
-            requiresTableSelection: false,
-            configurationId: entry.id,
-            table: "configuration",
-            type: "configuration",
-          }));
-    },
-    orderedWorkflowSteps() {
-      const steps = this.workflowSteps || [];
-      if (!steps.length) return [];
-
-      // Map: previousId → step
-      const next = new Map(steps.map(s => [s.workflowStepPrevious, s]));
-
-      // find first step
-      let current = steps.find(s => s.workflowStepPrevious == null);
-
-      const ordered = [];
-      while (current) {
-        ordered.push(current);
-        current = next.get(current.id); // go to the next in chain
-      }
-
-      return ordered;
     },
     isHook() {
       return !!this.hookId;
@@ -216,6 +127,7 @@ export default {
       return Object.keys(skill.config.input.data || {});
     },
     skillOutputs() {
+      if (!this.outputMapping) return [];
       // A hook produces a single output (the completion) → one destination row.
       if (this.isHook) {
         return ["result"];
@@ -225,93 +137,13 @@ export default {
       if (!skill) return [];
       return Object.keys(skill.config.output.data || {});
     },
-    tableBasedParameter() {
-      for (const [paramName, mapping] of Object.entries(this.inputMappings)) {
-        if (mapping && mapping.requiresTableSelection) {
-          return paramName;
-        }
-      }
-      return null;
-    },
-    applySkillsDataSources() {
-      const sources = [...this.configurationSources];
-
-      sources.unshift(
-          {
-            value: "document",
-            name: this.$t('nlp.inputMap.sources.documents'),
-            requiresTableSelection: true,
-            type: "document",
-            table: "document",
-          },
-          {
-            value: "submission",
-            name: this.$t('nlp.inputMap.sources.submissions'),
-            requiresTableSelection: true,
-            type: "submission",
-            table: "submission",
-          }
-      );
-
-      return sources;
-    },
-    dataSourcesByInput() {
-      const dict = {};
-      this.skillInputs.forEach(input => {
-        const sources = [
-          {
-            value: "document",
-            name: this.$t('nlp.inputMap.sources.documents'),
-            requiresTableSelection: true,
-            table: "document",
-            type: "document",
-          },
-          {
-            value: "submission",
-            name: this.$t('nlp.inputMap.sources.submissions'),
-            requiresTableSelection: true,
-            table: "submission",
-            type: "submission",
-          },
-          ...this.configurationSources,
-        ];
-
-        dict[input] = sources;
+    inputMappingValid() {
+      if (this.isHook && !this.hookPlaceholdersLoaded) return false;
+      return this.skillInputs.every((input) => {
+        const mapping = this.inputMappings[input];
+        return mapping && mapping.value !== null && mapping.value !== undefined;
       });
-      return dict;
     },
-    availableDataSources() {
-      if (this.studyBased) {
-        return this.getSourcesUpToCurrentStep(this.workflowStepIndex);
-      }
-      // non-study-based: just use the skill-based sources
-      return this.applySkillsDataSources;
-    },
-    workflowStepIndex() {
-      return this.orderedWorkflowSteps.findIndex(
-          s => s.id === this.studyStepId
-      );
-    },
-    outputDataOptions() {
-      const sources = [
-        {
-          value: 'saveInDocumentData',
-          name: this.$t('nlp.inputMap.saveInDocumentData'),
-          type: 'documentData',
-        }
-      ];
-
-      // Check if current document is type 2 (editor)
-      const workflow = this.workflowSteps.find(ws => ws.id === this.studyStepId);
-      if (workflow?.stepType === 2) {
-        sources.push({
-          value: 'insertIntoEditor',
-          name: this.$t('nlp.inputMap.insertIntoEditor'),
-          type: 'editor',
-        });
-      }
-      return sources;
-    }
   },
   watch: {
     skillName: {
@@ -335,11 +167,19 @@ export default {
     },
     hookTemplateId: {
       handler(templateId) {
+        this.hookPlaceholdersLoaded = false;
         if (templateId) {
           this.fetchHookPlaceholders(templateId);
         } else {
           this.hookPlaceholders = [];
+          this.hookPlaceholdersLoaded = true;
         }
+      },
+      immediate: true,
+    },
+    inputMappingValid: {
+      handler(isValid) {
+        this.$emit("validation-change", isValid);
       },
       immediate: true,
     },
@@ -375,23 +215,9 @@ export default {
         }
 
         if (typeof newValue === 'object') {
-          // New format: { ...inputMappings, output: {...outputMappings} }
-          if (newValue.output) {
-            this.outputMappings = {...newValue.output};
-            // Extract input mappings (everything except output key)
-            const {output, ...inputMappings} = newValue;
-            this.inputMappings = {...inputMappings};
-          } else {
-            // Legacy format: just input mappings
-            this.inputMappings = {...newValue};
-            this.outputMappings = {};
-          }
-          // Restore submission file selections from saved mapping (hook mode).
-          const fileSelections = {};
-          Object.entries(this.inputMappings).forEach(([key, val]) => {
-            if (val?.selectedFiles) fileSelections[key] = val.selectedFiles;
-          });
-          this.submissionFileSelections = fileSelections;
+          const {output, ...inputMappings} = newValue;
+          this.inputMappings = {...inputMappings};
+          this.outputMappings = this.outputMapping && output ? {...output} : {};
         }
       },
       immediate: true,
@@ -399,29 +225,6 @@ export default {
     },
   },
   methods: {
-    // Select a single file for a hook submission input (radio); re-emits with updated selectedFiles + filePatterns.
-    toggleSubmissionFile(input, fileName) {
-      const next = [fileName];
-      this.submissionFileSelections = {...this.submissionFileSelections, [input]: next};
-      const source = this.inputMappings[input];
-      if (source) {
-        this.isUpdatingFromWithin = true;
-        const updated = {...source, selectedFiles: next, filePatterns: this.buildFilePatterns(next)};
-        this.inputMappings = {...this.inputMappings, [input]: updated};
-        this.$emit("update:modelValue", {...this.inputMappings, output: {...this.outputMappings}});
-        this.$nextTick(() => { this.isUpdatingFromWithin = false; });
-      }
-    },
-    // Build a { name: pattern } map for only the currently selected files (pdf has no pattern).
-    buildFilePatterns(selectedFiles) {
-      const patterns = {};
-      this.validationFileOptions.forEach(opt => {
-        if (opt.pattern && selectedFiles.includes(opt.value)) {
-          patterns[opt.value] = opt.pattern;
-        }
-      });
-      return patterns;
-    },
     // Fetch the placeholders this hook's template actually uses; they become the input-mapping rows.
     fetchHookPlaceholders(templateId) {
       this.$socket.emit("templatePlaceholderGetUsed", {templateId}, (result) => {
@@ -433,34 +236,16 @@ export default {
           }
           return indexes.map((index) => tokenInnerText(placeholder.placeholderKey, index));
         }).filter(Boolean);
+        this.hookPlaceholdersLoaded = true;
       });
     },
-    // Append resolved document and submission-derived sources for the current step
-    appendResolvedDocSources(sources, stepIndex) {
-      if (!this.resolvedSourceDocument) return;
-      const doc = this.resolvedSourceDocument;
-      const docName = doc && doc.name ? doc.name : this.$t('nlp.inputMap.sources.documentFallback', { id: doc.id });
-      sources.push(
-          {
-            value: `document_${doc.id}`,
-            documentId: doc.id,
-            name: this.$t('nlp.inputMap.sources.document', { name: docName }),
-            type: "document",
-            table: "document",
-            stepIndex: stepIndex,
-          });
-      this.resolvedSubmissionDocs.forEach(d => {
-        const name = d && d.name ? d.name : this.$t('nlp.inputMap.sources.documentFallback', { id: d.id });
-        sources.push({
-          value: `submission_${d.id}`,
-          name: this.$t('nlp.inputMap.sources.submissionWithName', { name }),
-          stepIndex: stepIndex,
-          type: "submission",
-          table: "submission",
-          submissionId: d.submissionId,
-          pdfDocumentId: this.resolvedSourceDocumentId, // for extracting
-        });
-      });
+    /**
+     * Build the mapping value supported by this service declaration.
+     * @returns {Object} Input mappings with optional output mappings
+     */
+    getMappingValue() {
+      if (!this.outputMapping) return {...this.inputMappings};
+      return {...this.inputMappings, output: {...this.outputMappings}};
     },
     updateMapping(input, source) {
       this.isUpdatingFromWithin = true;
@@ -475,31 +260,19 @@ export default {
         });
       }
 
-      // For hook submission sources, carry the already-chosen file selections forward.
-      // Switching away from submission clears the selections for this input.
-      let effectiveSource = source;
-      if (this.isHook && source?.type === "submission") {
-        const sel = this.submissionFileSelections[input] || [];
-        effectiveSource = {...source, selectedFiles: sel, filePatterns: this.buildFilePatterns(sel)};
-      } else if (this.isHook && source?.type !== "submission") {
-        this.submissionFileSelections = {...this.submissionFileSelections, [input]: []};
-      }
-
+      // Hook submission sources arrive with their file choice (InputMapSourceRow).
       this.inputMappings = {
         ...this.inputMappings,
-        [input]: effectiveSource,
+        [input]: source,
       };
 
-      this.$emit("update:modelValue", {
-        ...this.inputMappings,
-        output: {...this.outputMappings},
-      });
+      this.$emit("update:modelValue", this.getMappingValue());
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
       });
     },
-    
+
     updateOutputMapping(output, source) {
       this.isUpdatingFromWithin = true;
 
@@ -508,174 +281,12 @@ export default {
         [output]: source
       };
 
-      this.$emit('update:modelValue', {
-        ...this.inputMappings,
-        output: {...this.outputMappings}
-      });
+      this.$emit('update:modelValue', this.getMappingValue());
 
       this.$nextTick(() => {
         this.isUpdatingFromWithin = false;
       });
     },
-    getSourcesUpToCurrentStep(currentWorkflowStepIndex) {
-      const stepCollector = this.orderedWorkflowSteps.slice(0, currentWorkflowStepIndex + 1);
-      const sources = [];
-
-      stepCollector.forEach((step, stepIndex) => {
-
-        switch (step.stepType) {
-          case 1: {
-            if (this.isTemplateMode) {
-              sources.push({
-                value: 'template_submission',
-                name: this.$t('nlp.inputMap.sources.submission'),
-                type: 'submission',
-                table: 'submission',
-                stepIndex: stepIndex,
-                isTemplate: true
-              });
-            } else {
-              // Add specific document/submission sources
-              if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
-            }
-
-            if (stepIndex < currentWorkflowStepIndex) {
-              sources.push(
-                  {
-                    value: "annotator_annotation_step" + stepIndex,
-                    name: this.$t('nlp.inputMap.sources.annotatorAnnotations', { step: stepIndex + 1 }),
-                    stepIndex: stepIndex,
-                    key: 'annotations',
-                    type: 'annotator',
-                  },
-                  {
-                    value: "annotator_comments_step" + stepIndex,
-                    name: this.$t('nlp.inputMap.sources.annotatorComments', { step: stepIndex + 1 }),
-                    stepIndex: stepIndex,
-                    key: 'comments',
-                    type: 'annotator',
-                  }
-              );
-            }
-            break;
-          }
-
-          case 2: // Editor
-            if (stepIndex < currentWorkflowStepIndex) {
-              sources.push(
-                  {
-                    value: "editor_firstVersion_step" + stepIndex,
-                    name: this.$t('nlp.inputMap.sources.editorFirstVersion', { step: stepIndex + 1 }),
-                    stepIndex: stepIndex,
-                    key: 'firstVersion',
-                    type: 'editor',
-                  },
-                  {
-                    value: "editor_currentVersion_step" + stepIndex,
-                    name: this.$t('nlp.inputMap.sources.editorCurrentVersion', { step: stepIndex + 1 }),
-                    stepIndex: stepIndex,
-                    key: 'currentVersion',
-                    type: 'editor',
-                  },
-              );
-            }
-            // If this is the current editor step, also expose the resolved doc/submission sources
-            if (stepIndex === currentWorkflowStepIndex) this.appendResolvedDocSources(sources, stepIndex);
-            break;
-          case 3: // Modal
-            break;
-        }
-        // get assessment from previous steps
-        if (stepIndex < currentWorkflowStepIndex) {
-          // Add Assessment sources
-          sources.push(...this.getAssessmentSources(stepIndex));
-          // Add nlpSkill sources if available
-          sources.push(...this.getSkillSources(stepIndex));
-        }
-
-      });
-
-      // Add configuration sources (study-based format)
-      sources.push(...this.configurationSources);
-
-      return sources;
-    },
-    getAssessmentSources(currentWorkflowStepIndex) {
-      const sources = [];
-
-      const fields = this.orderedWorkflowSteps[currentWorkflowStepIndex]
-          ?.configuration
-          ?.settings
-          ?.fields;
-      if (!Array.isArray(fields) || !fields.length) return sources;
-
-      const configField = fields.find(f => f.key === 'configurationId');
-
-      sources.push({
-        value: `assessment_step${currentWorkflowStepIndex}`,
-        name: this.$t('nlp.inputMap.sources.assessmentResults', { step: currentWorkflowStepIndex + 1 }),
-        type: 'assessment',
-        configurationField: configField.key,
-        stepIndex: currentWorkflowStepIndex,
-      });
-
-      return sources;
-    },
-    getSkillSources(currentWorkflowStepIndex) {
-      const sources = [];
-
-      // get services from the specific step, like in getAssessmentSources
-      const services =
-          this.orderedWorkflowSteps[currentWorkflowStepIndex]
-              ?.configuration
-              ?.services || [];
-
-      if (!this.selectedSkills?.length || !services.length) return sources;
-
-      const skillMap = new Map();
-      this.nlpSkills.forEach(skill => {
-        skillMap.set(skill.name, skill);
-      });
-
-      services.forEach((service) => {
-        this.selectedSkills.forEach(({skillName}) => {
-          if (!skillName) return;
-
-          const skill = skillMap.get(skillName);
-          const outputData = skill?.config?.output?.data;
-          if (!outputData) return;
-
-          Object.keys(outputData).forEach((outputKey) => {
-            sources.push({
-              value: `service_${service.name}_${outputKey}_step${currentWorkflowStepIndex}`,
-              name: this.$t('nlp.inputMap.sources.serviceOutput', {
-                service: service.name,
-                skill: skillName,
-                output: outputKey,
-                step: currentWorkflowStepIndex + 1
-              }),
-              type: 'service',
-              serviceName: service.name,
-              skillName,
-              outputKey,
-              stepIndex: currentWorkflowStepIndex,
-            });
-          });
-        });
-      });
-
-      return sources;
-    },
   }
 };
 </script>
-
-<style scoped>
-.form-label {
-  font-weight: bold;
-}
-
-.text-secondary {
-  color: var(--bs-secondary-color, #6c757d) !important;
-}
-</style>
