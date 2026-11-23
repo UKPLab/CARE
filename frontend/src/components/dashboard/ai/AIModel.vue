@@ -24,11 +24,9 @@
           :text="$t('ai.common.cancel')"
           @click="$refs.modal.close()"
         />
-        <BasicButton
-          class="btn btn-outline-secondary"
-          :disabled="isTestingModel"
-          :text="isTestingModel ? $t('ai.models.testing') : $t('ai.models.sendTestPrompt')"
-          @click="testModel"
+        <AIModelTestButton
+          :model-form="modelForm"
+          :validate="() => $refs.form.validate()"
         />
         <BasicButton
           class="btn btn-primary"
@@ -51,13 +49,15 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import AIModelTestButton from "./AIModelTestButton.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import { emitAppDataUpdate } from "@/basic/dashboard/actions";
 
 const APP_DATA_TIMEOUT_MS = 10000;
 
 export default {
   name: "AIModel",
-  components: { BasicModal, BasicForm, BasicButton },
+  components: { BasicModal, BasicForm, BasicButton, AIModelTestButton },
   props: {
     credentialRows: {
       type: Array,
@@ -68,7 +68,6 @@ export default {
   data() {
     return {
       modelForm: {},
-      isTestingModel: false,
       isLoadingModels: false,
       isSaving: false,
       modelOptions: [],
@@ -103,107 +102,55 @@ export default {
       };
       const modelField = this.modelOptionValues.length
         ? {
-            key: "model",
-            label: this.$t("ai.models.modelName"),
-            type: "select",
-            required: true,
-            default: "",
-            labelButton,
-            help: this.$t("ai.models.modelSelectHelp"),
+            key: "model", label: this.$t("ai.models.modelName"), type: "select", required: true, default: "",
+            labelButton, help: this.$t("ai.models.modelSelectHelp"),
             options: [
               { value: "", name: this.$t("ai.models.selectModel") },
               ...this.modelOptionValues.map((model) => ({ value: model, name: model })),
             ],
           }
         : {
-            key: "model",
-            label: this.$t("ai.models.modelName"),
-            type: "text",
-            required: true,
-            default: "",
-            labelButton,
-            placeholder: this.$t("ai.models.modelNamePlaceholder"),
-            help: this.$t("ai.models.modelLoadHelp"),
+            key: "model", label: this.$t("ai.models.modelName"), type: "text", required: true, default: "",
+            labelButton, placeholder: this.$t("ai.models.modelNamePlaceholder"), help: this.$t("ai.models.modelLoadHelp"),
           };
 
       return [
         {
-          key: "name",
-          label: this.$t("ai.common.name"),
-          type: "text",
-          required: true,
-          default: "",
-          placeholder: this.$t("ai.models.namePlaceholder"),
-          help: this.$t("ai.models.nameHelp"),
+          key: "name", label: this.$t("ai.common.name"), type: "text", required: true, default: "",
+          placeholder: this.$t("ai.models.namePlaceholder"), help: this.$t("ai.models.nameHelp"),
         },
         {
-          key: "aiCredentialId",
-          label: this.$t("ai.models.yourCredentials"),
-          type: "select",
-          required: true,
-          default: null,
+          key: "aiCredentialId", label: this.$t("ai.models.yourCredentials"), type: "select", required: true, default: null,
           options: [
             { value: null, name: this.$t("ai.models.selectCredential") },
-            ...this.selectableCredentialRows.map((credential) => ({
-              value: credential.id,
-              name: credential.name,
-            })),
+            ...this.selectableCredentialRows.map((credential) => ({ value: credential.id, name: credential.name })),
           ],
           help: this.$t("ai.models.credentialHelp"),
         },
         modelField,
         {
-          key: "description",
-          label: this.$t("ai.models.description"),
-          type: "textarea",
-          default: "",
-          rows: 2,
+          key: "description", label: this.$t("ai.models.description"), type: "textarea", default: "", rows: 2,
           help: this.$t("ai.models.descriptionHelp"),
         },
         {
-          key: "contextWindowTokens",
-          label: this.$t("ai.models.contextWindowTokens"),
-          type: "number",
-          default: "",
-          min: 0,
-          step: 1000,
-          placeholder: this.$t("ai.common.noLimit"),
-          help: this.$t("ai.models.contextWindowHelp"),
+          key: "contextWindowTokens", label: this.$t("ai.models.contextWindowTokens"), type: "number", default: "",
+          min: 0, step: 1000, placeholder: this.$t("ai.common.noLimit"), help: this.$t("ai.models.contextWindowHelp"),
         },
         {
-          key: "additionalParameters",
-          label: this.$t("ai.models.additionalParameters"),
-          type: "json",
-          default: {},
-          rows: 4,
-          placeholder: "{}",
-          help: this.$t("ai.models.additionalParametersHelp"),
+          key: "additionalParameters", label: this.$t("ai.models.additionalParameters"), type: "json", default: {},
+          rows: 4, placeholder: "{}", help: this.$t("ai.models.additionalParametersHelp"),
         },
         {
-          key: "freeModel",
-          label: this.$t("ai.models.freeModel"),
-          type: "switch",
-          default: false,
+          key: "freeModel", label: this.$t("ai.models.freeModel"), type: "switch", default: false,
           help: this.$t("ai.models.freeModelHelp"),
         },
         ...(!this.modelForm.freeModel
           ? [{
-              key: "costLimit",
-              label: this.$t("ai.budgets.costLimitUsd"),
-              type: "number",
-              default: "",
-              min: 0,
-              step: 0.01,
-              placeholder: this.$t("ai.common.noLimit"),
-              help: this.$t("ai.models.costLimitHelp"),
+              key: "costLimit", label: this.$t("ai.budgets.costLimitUsd"), type: "number", default: "",
+              min: 0, step: 0.01, placeholder: this.$t("ai.common.noLimit"), help: this.$t("ai.models.costLimitHelp"),
             }]
           : []),
-        {
-          key: "enabled",
-          label: this.$t("ai.status.enabled"),
-          type: "switch",
-          default: true,
-        },
+        { key: "enabled", label: this.$t("ai.status.enabled"), type: "switch", default: true },
       ];
     },
   },
@@ -244,7 +191,6 @@ export default {
     },
     resetForm() {
       this.modelForm = {};
-      this.isTestingModel = false;
       this.isLoadingModels = false;
       this.isSaving = false;
       this.clearModelOptions();
@@ -291,27 +237,18 @@ export default {
         this.isLoadingModels = false;
       }
     },
+    /**
+     * Saves one row, failing after APP_DATA_TIMEOUT_MS without an acknowledgement.
+     * @param {string} table - Table name.
+     * @param {Object} data - Row fields.
+     * @param {string} errorKey - i18n fallback for backend failures.
+     * @returns {Promise<*>} Saved row data.
+     */
     emitAppDataUpdate(table, data, errorKey) {
-      return new Promise((resolve, reject) => {
-        let settled = false;
-        const timer = setTimeout(() => {
-          if (settled) return;
-          settled = true;
-          reject(new Error(this.$t("ai.errors.requestTimeout", {
-            timeoutMs: APP_DATA_TIMEOUT_MS,
-            command: table,
-          })));
-        }, APP_DATA_TIMEOUT_MS);
-        this.$socket.emit("appDataUpdate", { table, data }, (result) => {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          if (result?.success) {
-            resolve(result.data);
-          } else {
-            reject(new Error(resolveApiMessage(result, errorKey)));
-          }
-        });
+      return emitAppDataUpdate(this.$socket, table, data, {
+        errorKey,
+        timeoutMs: APP_DATA_TIMEOUT_MS,
+        timeoutMessage: this.$t("ai.errors.requestTimeout", { timeoutMs: APP_DATA_TIMEOUT_MS, command: table }),
       });
     },
     async saveModel() {
@@ -362,25 +299,6 @@ export default {
         this.toastError(error?.message || resolveApiMessage(error, "ai.errors.saveModel"));
       } finally {
         this.isSaving = false;
-      }
-    },
-    async testModel() {
-      if (!this.$refs.form.validate()) return;
-
-      this.isTestingModel = true;
-      try {
-        const result = await this.$ai.testModel({
-          aiModelId: this.modelForm.id || null,
-          credentialId: this.modelForm.aiCredentialId,
-          model: this.modelForm.model.trim(),
-          additionalParameters: this.modelForm.additionalParameters || {},
-        });
-        const outputText = result?.outputText ? String(result.outputText) : "";
-        this.toastSuccess(outputText ? this.$t("ai.messages.modelTestOutput", { output: outputText }) : this.$t("ai.messages.modelTestSuccess"));
-      } catch (error) {
-        this.toastError(resolveApiMessage(error, "ai.errors.modelTestFailed"));
-      } finally {
-        this.isTestingModel = false;
       }
     },
     toastSuccess(message) {

@@ -231,6 +231,40 @@ export function dashboardRowButton(icon, overrides = {}, style = "default") {
 }
 
 /**
+ * Sends one appDataUpdate and resolves with the saved row data.
+ * @param {Object} socket - Socket.io client.
+ * @param {string} table - Table name (e.g. "ai_model").
+ * @param {Object} data - Row fields to create or update.
+ * @param {Object} [options]
+ * @param {string} [options.errorKey] - i18n key used when the backend reports no message.
+ * @param {number} [options.timeoutMs] - Rejects when no acknowledgement arrives in time (0 = wait).
+ * @param {string} [options.timeoutMessage] - Error message for a timeout.
+ * @returns {Promise<*>} Saved row data.
+ */
+export function emitAppDataUpdate(socket, table, data, { errorKey, timeoutMs = 0, timeoutMessage = "" } = {}) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = timeoutMs > 0
+      ? setTimeout(() => {
+        if (settled) return;
+        settled = true;
+        reject(new Error(timeoutMessage));
+      }, timeoutMs)
+      : null;
+    socket.emit("appDataUpdate", { table, data }, (result) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (result?.success) {
+        resolve(result.data);
+      } else {
+        reject(new Error(resolveApiMessage(result, errorKey)));
+      }
+    });
+  });
+}
+
+/**
  * Ask for confirmation, then soft-delete the row if the user confirms.
  *
  * @param {Object} deps - Values from the page component

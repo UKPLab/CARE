@@ -39,7 +39,6 @@
         "idRequiredNoPeriod": "L'ID de configuration est obligatoire",
         "contentRequiredNoPeriod": "Le contenu de la configuration est obligatoire",
         "notFound": "Configuration introuvable.",
-        "accessDenied": "Accès refusé",
         "createForOtherUsersDenied": "Vous n'avez pas l'autorisation de créer des configurations pour d'autres utilisateurs."
     },
     "validation": {
@@ -390,7 +389,6 @@
         "emptyValue": "Valeur vide trouvée pour {key} à l'index {index}",
         "duplicateId": "ID en double trouvé : {extId} à l'index {index}",
         "duplicateEmail": "Adresse e-mail en double trouvée : {email} à l'index {index}",
-        "rolesNotCommaSeparated": "Rôles non séparés par des virgules pour l'ID {id} à l'index {index}",
         "invalidEmailFormat": "Format d'adresse e-mail invalide pour l'ID {id} à l'index {index} : {email}",
         "parseError": "Erreur lors de l'analyse du fichier : {message}"
     },

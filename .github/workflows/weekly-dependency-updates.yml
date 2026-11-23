@@ -19,6 +19,7 @@ env:
     backend
     utils/modules/editor-delta-conversion
     utils/modules/assessment-score
+    utils/modules/placeholder-tokens
 
 jobs:
   # Minor + patch only. Always open a PR when those bumps exist.
@@ -72,6 +73,7 @@ jobs:
             - `backend`
             - `utils/modules/editor-delta-conversion`
             - `utils/modules/assessment-score`
+            - `utils/modules/placeholder-tokens`
 
             Includes non-breaking `npm audit fix` patches. Remaining audit
             findings (those that need a major bump) do not block this PR.
@@ -155,6 +157,7 @@ jobs:
             - `backend`
             - `utils/modules/editor-delta-conversion`
             - `utils/modules/assessment-score`
+            - `utils/modules/placeholder-tokens`
 
             Major upgrades can break APIs and behaviour. Use this PR as a checklist:
 

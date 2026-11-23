@@ -12,32 +12,12 @@
           <p>{{$t('dashboard.users.userHasNoAssignedRights')}}</p>
         </template>
         <template v-else>
-          <table>
-            <thead>
-              <tr>
-                <th>{{$t('dashboard.users.userRole')}}</th>
-                <th>{{$t('dashboard.users.userRight')}}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="(rights, role) in userRight"
-                :key="role"
-              >
-                <td>{{ tSystemRoleName(role) }}</td>
-                <td>
-                  <ul>
-                    <li
-                      v-for="right in rights"
-                      :key="right"
-                    >
-                      {{ right }}
-                    </li>
-                  </ul>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <BasicTable
+            class="w-100"
+            :columns="rightColumns"
+            :data="rightRows"
+            :options="{ bordered: true }"
+          />
         </template>
       </div>
     </template>
@@ -57,6 +37,7 @@
 import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicTable from "@/basic/Table.vue";
 
 /**
  * Modal for viewing the rights the user has on this platform
@@ -64,10 +45,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "RightsModal",
-  components: { BasicModal, BasicButton },
-  data() {
-    return {};
-  },
+  components: {BasicTable,  BasicModal, BasicButton },
   computed: {
     systemRoles() {
       return this.$store.getters["admin/getSystemRoles"];
@@ -87,6 +65,19 @@ export default {
         }
       }
       return formattedRights;
+    },
+    rightColumns() {
+      return [
+        { name: this.$t("dashboard.users.userRole"), key: "role", width: 3 },
+        { name: this.$t("dashboard.users.userRight"), key: "rights" },
+      ];
+    },
+    rightRows() {
+      return Object.entries(this.userRight).map(([role, rights]) => ({
+        id: role,
+        role: this.tSystemRoleName(role),
+        rights: rights.join(", "),
+      }));
     },
   },
   methods: {
@@ -123,22 +114,5 @@ export default {
 }
 .table-container > p {
   font-weight: 800;
-}
-table {
-  width: 100%;
-}
-th,
-td {
-  padding: 10px;
-  text-align: left;
-  border: 1px solid var(--bs-border-color, #ddd);
-}
-th:first-child,
-td:first-child {
-  width: 25%;
-}
-ul {
-  margin-bottom: 0;
-  padding-left: 1rem;
 }
 </style>

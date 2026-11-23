@@ -32,53 +32,20 @@
             >
               {{ errorMessage }}
             </p>
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="username"
-              >{{ $t('auth.username') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="username"
-                    v-model="formData.username"
-                    autocomplete="username"
-                    autofocus
-                    class="form-control"
-                    :placeholder="$t('auth.usernameOrEmail')"
-                    required
-                    type="text"
-                    @blur="checkVal('username')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['username'] && !validUsername}">
-                  {{ $t('errors.validation.auth.provideUsername') }}
-                </div>
-              </div>
-            </div>
-
-
-            <div class="form-group row my-2">
-              <label
-                  class="col-md-4 col-form-label text-md-right"
-                  for="password"
-              >{{ $t('auth.password') }}</label>
-              <div class="col-md-6">
-                <input
-                    id="password"
-                    v-model="formData.password"
-                    autocomplete="current-password"
-                    class="form-control"
-                    name="password"
-                    :placeholder="$t('auth.password')"
-                    required
-                    type="password"
-                    @blur="checkVal('password')"
-                >
-                <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
-                  {{ $t('errors.validation.auth.providePassword') }}
-                </div>
-              </div>
-            </div>
-
+            <AuthInputField
+              v-model="formData.username" :label="$t('auth.username')"
+              :input="{ id: 'username',  type: 'text',
+                autocomplete: 'username', autofocus: true, required: true,
+                placeholder: $t('auth.usernameOrEmail') }"
+              :invalid="validity.username && !validUsername" @blur="checkVal('username')"
+            >{{ $t('errors.validation.auth.provideUsername') }}</AuthInputField>
+            <AuthInputField
+              v-model="formData.password" :label="$t('auth.password')"
+              :input="{ id: 'password', name: 'password', type: 'password',
+                autocomplete: 'current-password',  required: true,
+                placeholder: $t('auth.password') }"
+              :invalid="validity.password && !validPassword" @blur="checkVal('password')"
+            >{{ $t('errors.validation.auth.providePassword') }}</AuthInputField>
             <div class="col-md-6 offset-md-4 my-4">
               <BasicButton
                   class="btn btn-primary btn-block"
@@ -98,66 +65,9 @@
               >{{ $t('auth.forgotPassword') }}</a>
             </div>
 
-            <hr v-if="showExternalLoginOptions">
-
-            <div v-if="showExternalLoginOptions" class="col-md-8 offset-md-2 mt-3">
-              <p class="text-center text-muted small mb-2">
-                {{ $t('auth.orSignInWith') }}
-              </p>
-              <div class="d-grid gap-2">
-                <BasicButton
-                  v-if="showOrcidLogin"
-                  class="btn btn-outline-success btn-block"
-                  text="ORCID"
-                  @click="loginWithOrcid"
-                />
-                <BasicButton
-                  v-if="showLdapLogin"
-                  class="btn btn-outline-secondary btn-block"
-                  text="LDAP"
-                  @click="toLdapLogin"
-                />
-                <BasicButton
-                  v-if="showSamlLogin"
-                  class="btn btn-outline-dark btn-block"
-                  text="SSO"
-                  @click="loginWithSaml"
-                />
-              </div>
-            </div>
-          </div>
+            <ExternalLoginOptions />          </div>
         </div>
-        <div
-            v-if="showDocs || showFeedback || showProject"
-            class="text-center"
-        >
-          <span v-if="showDocs"><a
-              :href="linkDocs"
-              target="_blank"
-          >{{ $t('navigation.documentation') }}</a></span>
-          <span
-              v-if="showFeedback && showDocs"
-              class="mx-1"
-          >&#x2022;</span>
-          <span v-if="showFeedback"><a
-              :href="linkFeedback"
-              target="_blank"
-          >{{ $t('navigation.feedback') }}</a></span>
-          <span
-              v-if="showProject && (showDocs || showFeedback)"
-              class="mx-1"
-          >&#x2022;</span>
-          <span v-if="showProject"><a
-              :href="linkProject"
-              target="_blank"
-          >{{ $t('navigation.projectPage') }}</a></span>
-        </div>
-        <div class="text-center text-secondary">
-          {{ copyright }}
-        </div>
-        <div v-if="showVersion" class="text-center text-secondary">
-          {{ $t('common.appVersion') }}: {{ version }}
-        </div>
+        <AuthLinksFooter />
       </div>
     </div>
   </form>
@@ -185,9 +95,14 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
+import AuthLinksFooter from './AuthLinksFooter.vue';
+import ExternalLoginOptions from './ExternalLoginOptions.vue';
+
+import AuthInputField from "./AuthInputField.vue";
+
 export default {
   name: "AuthLogin",
-  components: {LogoSvg, BasicButton, ForgotPasswordModal, EmailVerificationModal},
+  components: {AuthInputField,AuthLinksFooter, ExternalLoginOptions,LogoSvg, BasicButton, ForgotPasswordModal, EmailVerificationModal},
   data() {
     return {
       showError: false,
@@ -200,53 +115,21 @@ export default {
       },
       validity: null,
       isSubmitting: false,
-      version: APP_VERSION,
-      showVersion: (process.env.NODE_ENV !== 'production'),
     }
   },
   computed: {
-    copyright() {
-      return window.config['app.config.copyright'];
-    },
+
     showGuestLogin() {
       return window.config['app.login.guest'] === 'true';
     },
-    linkDocs() {
-      return window.config['app.landing.linkDocs'];
-    },
-    showDocs() {
-      return window.config['app.landing.showDocs'] === 'true' && this.linkDocs !== '';
-    },
-    linkFeedback() {
-      return window.config['app.landing.linkFeedback'];
-    },
-    showFeedback() {
-      return window.config['app.landing.showFeedback'] === 'true' && this.linkFeedback !== '';
-    },
-    linkProject() {
-      return window.config['app.landing.linkProject'];
-    },
-    showProject() {
-      return window.config['app.landing.showProject'] === 'true' && this.linkProject !== '';
-    },
+
     showForgotPassword() {
       return window.config['app.login.forgotPassword'] === 'true';
     },
     showRegisterButton() {
       return window.config['app.register.enabled'] === 'true';
     },
-    showOrcidLogin() {
-      return window.config['system.auth.orcid.enabled'] === 'true';
-    },
-    showLdapLogin() {
-      return window.config['system.auth.ldap.enabled'] === 'true';
-    },
-    showSamlLogin() {
-      return window.config['system.auth.saml.enabled'] === 'true';
-    },
-    showExternalLoginOptions() {
-      return this.showOrcidLogin || this.showLdapLogin || this.showSamlLogin;
-    },
+
     validUsername() {
       return this.formData.username !== "";
     },
@@ -394,23 +277,11 @@ export default {
             return { completedLogin: false };
           }
 
-          // Single method, go directly to corresponding verification
-          if (method === "email") {
+          const verificationRoutes = { email: '2fa-verify-email', totp: '2fa-verify-totp' };
+          if (verificationRoutes[method]) {
             await this.$router.push({
-              name: "2fa-verify-email",
-              query: {
-                redirectedFrom: this.$route.query.redirectedFrom
-              }
-            });
-            return { completedLogin: false };
-          }
-
-          if (method === "totp") {
-            await this.$router.push({
-              name: "2fa-verify-totp",
-              query: {
-                redirectedFrom: this.$route.query.redirectedFrom
-              }
+              name: verificationRoutes[method],
+              query: { redirectedFrom: this.$route.query.redirectedFrom },
             });
             return { completedLogin: false };
           }
@@ -424,54 +295,12 @@ export default {
         return { completedLogin: true };
       }
     },
-    loginWithOrcid() {
-      const redirectedFrom = this.$route.query.redirectedFrom;
-      const query = redirectedFrom ? `?redirectedFrom=${encodeURIComponent(redirectedFrom)}`: "";
-      window.location.href = getServerURL() + "/auth/login/orcid" + query;
-    },
-    loginWithSaml() {
-      const redirectedFrom = this.$route.query.redirectedFrom;
-      const query = redirectedFrom ? `?redirectedFrom=${encodeURIComponent(redirectedFrom)}`: "";
-      window.location.href = getServerURL() + "/auth/login/saml" + query;
-    },
-    toLdapLogin() {
-      this.$router.push({
-        name: "login-ldap",
-        query: { redirectedFrom: this.$route.query.redirectedFrom },
-      });
-    },
+
     showEmailVerificationModal(email) {
       this.$refs.emailVerificationModal.open(email);
     },
-    async verifyEmail(token) {
-      try {
-        const response = await axios.get(getServerURL() + '/verify-email?token=' + token,
-          {
-            validateStatus: function (status) {
-              return status === 200 || status === 400 || status === 500;
-            },
-          }
-        );
-        if (response.status === 200) {
-          this.eventBus.emit("toast", {
-            title: this.$t('auth.messages.emailVerified'),
-            message: resolveApiMessage(response.data, "auth.messages.emailVerifiedSuccess"),
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: this.$t('errors.auth.emailVerificationError'),
-            message: resolveApiMessage(response.data, "errors.auth.failedToVerifyEmail"),
-            variant: "danger",
-          });
-        }
-      } catch (_error) {
-        this.eventBus.emit("toast", {
-          title: this.$t('errors.auth.emailVerificationError'),
-          message: this.$t('errors.auth.failedToVerifyEmail'),
-          variant: "danger",
-        });
-      }
+    verifyEmail(token) {
+      return this.$refs.emailVerificationModal.verifyEmail(token);
     },
 
   }
@@ -507,5 +336,4 @@ input:focus.custom-invalid {
   border: 1px solid var(--bs-border-color, #ced4da);
   border-radius: 0.25rem;
 }
-
 </style>

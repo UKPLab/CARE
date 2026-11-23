@@ -41,17 +41,36 @@ Object.assign(globalThis, {
 })
 Object.defineProperty(globalThis, 'localStorage', {value: {getItem: () => null, setItem: noop}})
 
-/** Evaluates the options object and the template of an SFC, replacing its imports with the given stubs. */
+/** Evaluates real SFC options, replacing unrelated dependencies with the given stubs. */
 function loadComponent(path, stubs = {}) {
-    const source = readFileSync(new URL(`../../src/${path}`, import.meta.url), 'utf8')
-    const script = source.match(/<script>([\s\S]*?)<\/script>/)[1]
-    const importPattern = /^import\s+([^'"]*?)\s+from\s+['"][^'"]+['"];?[ \t]*$/gm
-    const names = [...script.matchAll(importPattern)].flatMap(([, clause]) =>
-        clause.replace(/[{}]/g, '').split(',').map(name => name.trim().split(/\s+as\s+/).pop()).filter(Boolean))
-    const body = script.replace(importPattern, '').replace(/^import\s+['"][^'"]+['"];?[ \t]*$/gm, '')
-        .replace('export default', 'return')
-    const options = new Function(...names, body)(...names.map(name => stubs[name] ?? {}))
+    const url = new URL('../../src/' + path, import.meta.url)
+    const source = readFileSync(url, 'utf8')
+    const options = loadOptions(url, stubs).default
     return {...options, render: compile(source.match(/<template>([\s\S]*)<\/template>/)[1])}
+}
+
+// Follow script-only Vue modules so extracted methods still run in these tests.
+function loadOptions(url, stubs) {
+    const source = readFileSync(url, 'utf8')
+    const script = source.match(/<script>([\s\S]*?)<\/script>/)[1]
+    const importPattern = /^import\s+([^'"]*?)\s+from\s+['"]([^'"]+)['"];?[ \t]*$/gm
+    const names = [], values = []
+    for (const [, clause, specifier] of script.matchAll(importPattern)) {
+        let dependency
+        if (specifier.startsWith('.') && specifier.endsWith('.vue')) {
+            const target = new URL(specifier, url)
+            if (!readFileSync(target, 'utf8').includes('<template>')) dependency = loadOptions(target, stubs)
+        }
+        for (const item of clause.replace(/[{}]/g, '').split(',').map(s => s.trim()).filter(Boolean)) {
+            const [exported, local = exported] = item.split(/\s+as\s+/)
+            names.push(local)
+            values.push(stubs[local] ?? dependency?.[clause.includes('{') ? exported : 'default'] ?? {})
+        }
+    }
+    const exports = [...script.matchAll(/export\s+(?:const|let|function)\s+(\w+)/g)].map(m => m[1])
+    const body = script.replace(importPattern, '').replace(/^import\s+['"][^'"]+['"];?[ \t]*$/gm, '').replace(/export default/, 'const defaultExport =')
+        .replace(/export (?=(?:const|let|function)\b)/g, '')
+    return new Function(...names, `${body}\nreturn {${exports.join(',')}${exports.length ? ',' : ''} default: typeof defaultExport === 'undefined' ? undefined : defaultExport};`)(...values)
 }
 
 /** Waits for promises, Vue's queues and the page's nextTick to finish. */
@@ -70,7 +89,12 @@ async function openPdf({pageCount = 6, acceptStats = true, ObserveVisibility} = 
     const observed = new Map()
     const pageFromElement = el => Number(el.id.split('-')[2])
 
+    const PDFPageCanvas = loadComponent('components/annotator/pdfViewer/PDFPageCanvas.vue', {
+        Loader: {render: () => null},
+        toRaw,
+    })
     const PDFPage = loadComponent('components/annotator/pdfViewer/PDFPage.vue', {
+        PDFPageCanvas,
         ObserveVisibility: ObserveVisibility ?? {
             beforeMount: (el, {value}) => observed.set(pageFromElement(el), value.callback),
         },
@@ -346,4 +370,86 @@ test('a fresh viewer logs page 1 again after remount', async () => {
     } finally {
         second.unmount()
     }
+})
+
+
+test('a replaced page paint cannot mark the replacement ready or publish stale anchors', async () => {
+    class RenderingCancelledException extends Error {}
+    const events = []
+    const options = loadOptions(new URL('../../src/components/annotator/pdfViewer/PDFPageCanvas.vue', import.meta.url), {
+        toRaw,
+        pdfjsLib: {
+            RenderingCancelledException,
+            TextLayer: class { render() { return Promise.resolve() } },
+        },
+    }).default
+    const state = {...options.data(), ...options.methods,
+        documentId: DOCUMENT_ID, pageNumber: 1, scale: 1,
+        pdf: {renderingDone: new Map()},
+        $emit: (...args) => events.push(args),
+    }
+    elementsById.set('pdf-canvas-1-' + DOCUMENT_ID, {getContext: () => ({})})
+    elementsById.set('text-layer-1-' + DOCUMENT_ID, {style: {setProperty: noop}, firstChild: null})
+    const makePage = () => {
+        let finish
+        let cancellations = 0
+        const task = {promise: new Promise(resolve => {finish = resolve}), cancel: () => {cancellations++}}
+        const viewport = {width: 100, height: 140, scale: 1, clone() {return this}}
+        return {pageNumber: 1, getViewport: () => viewport, render: () => task,
+            getTextContent: async () => ({}), finish: () => finish(), cancelled: () => cancellations}
+    }
+    const oldPage = makePage(), newPage = makePage()
+    state.renderPage(oldPage)
+    state.destroyRenderTask()
+    state.renderPage(newPage)
+    oldPage.finish()
+    await settle()
+    assert.equal(oldPage.cancelled(), 1)
+    assert.equal(state.isRendered, false)
+    assert.equal(events.filter(([event]) => event === 'painted').length, 0)
+    newPage.finish()
+    await settle()
+    assert.equal(state.isRendered, true)
+    assert.deepEqual(events.filter(([event]) => event === 'painted'), [['painted', 1]])
+    state.destroyPage()
+    assert.equal(state.isRendered, false)
+    assert.equal(state.pdf.renderingDone.get(1), false)
+    assert.equal(newPage.cancelled(), 1)
+    assert.equal(events.filter(([event]) => event === 'clearing').length, 1)
+})
+
+
+test('an annotation overlay preserves text and clears markers after its anchors are reset', async t => {
+    const {Window} = await import('happy-dom')
+    const dom = new Window()
+    const previous = {document: globalThis.document, Node: globalThis.Node,
+        NodeFilter: globalThis.NodeFilter, CSS: globalThis.CSS}
+    Object.assign(globalThis, {document: dom.document, Node: dom.Node,
+        NodeFilter: dom.NodeFilter, CSS: {supports: () => true}})
+    t.after(() => Object.assign(globalThis, previous))
+    document.body.innerHTML = '<div class="pageContainer"><div class="canvasWrapper"><canvas></canvas></div><div class="textLayer">Selected annotation text</div></div>'
+    const layer = document.querySelector('.textLayer')
+    const range = document.createRange()
+    range.selectNodeContents(layer)
+    const options = loadOptions(new URL('../../src/components/annotator/pdfViewer/PDFAnnotationHighlight.vue', import.meta.url), {
+        resolveAnchor: anchor => anchor.range,
+        isNodeInRange: (selectedRange, node) => selectedRange.intersectsNode(node),
+        isInPlaceholder: () => false,
+        getTagColor: () => 'ffaa00',
+    }).default
+    const events = []
+    const state = {...options.data(), ...options.methods,
+        annotation: {id: 5, tagId: 2, anchors: [{range}]},
+        $store: {}, eventBus: {emit: (...args) => events.push(args)}}
+    state.redraw()
+    assert.equal(layer.textContent, 'Selected annotation text')
+    assert.equal(layer.querySelectorAll('highlight').length, 1)
+    assert.equal(document.querySelectorAll('rect.svg-highlight').length, 1)
+    layer.querySelector('highlight').dispatchEvent(new dom.Event('click'))
+    assert.deepEqual(events, [['sidebarScroll', 5]])
+    state.annotation.anchors = null
+    state.clear()
+    assert.equal(layer.textContent, 'Selected annotation text')
+    assert.equal(layer.querySelectorAll('highlight').length, 0)
+    assert.equal(document.querySelectorAll('rect.svg-highlight').length, 0)
 })

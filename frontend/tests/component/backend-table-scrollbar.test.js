@@ -1,7 +1,7 @@
 /**
  * Scrollbar regression checks for BackendTable's All mode.
- * Uses the real component and Vue with a Happy DOM document. The socket returns
- * sample rows; layout measurements are supplied because Happy DOM has no layout.
+ * Mounts the real controller, rendered table parts and helpers with Vue and Happy DOM.
+ * The socket returns sample rows; layout measurements are supplied because Happy DOM has no layout.
  */
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
@@ -9,12 +9,7 @@ import {afterEach, test} from 'node:test'
 import {setTimeout as wait} from 'node:timers/promises'
 import {Window} from 'happy-dom'
 import deepEqual from 'deep-equal'
-import * as layout from '../../src/basic/table/helpers/tableLayout.js'
-import * as fixedColumns from '../../src/basic/table/helpers/tableFixedColumns.js'
-import * as pipeline from '../../src/basic/table/helpers/tableDataPipeline.js'
-import * as interactions from '../../src/basic/table/helpers/tableRowInteractions.js'
-import {filterRowButtons} from '../../src/basic/table/helpers/tableCellHelpers.js'
-import {matchesTokenList} from '../../src/basic/table/searchTokens.js'
+import debounce from 'lodash.debounce'
 
 const window = new Window()
 Object.assign(globalThis, {
@@ -24,36 +19,63 @@ Object.assign(globalThis, {
     requestAnimationFrame: window.requestAnimationFrame.bind(window),
     cancelAnimationFrame: window.cancelAnimationFrame.bind(window),
 })
-const {compile, createApp, h, nextTick} = await import('vue')
+const vueRuntime = await import('vue')
+const {compile, createApp, h, nextTick} = vueRuntime
 const ROW_HEIGHT = 41
 const VIEW_HEIGHT = 410
 const studies = Array.from({length: 102}, (_, index) => ({id: index + 1, name: `Study ${index + 1}`}))
 const cleanups = []
 
-/** Loads the real SFC using the existing component-test approach and actual table helpers. */
-function loadTable() {
-    const source = readFileSync(new URL('../../src/basic/BackendTable.vue', import.meta.url), 'utf8')
-    const script = source.match(/<script>([\s\S]*?)<\/script>/)[1]
-    const imports = /^import\s+([\s\S]*?)\s+from\s+['"][^'"]+['"];?[ \t]*$/gm
-    const names = [...script.matchAll(imports)].flatMap(([, clause]) =>
-        clause.replace(/[{}]/g, '').split(',').map(name => name.trim()).filter(Boolean))
-    const dependencies = {
-        ...layout, ...fixedColumns, ...pipeline, ...interactions,
-        deepEqual, filterRowButtons, matchesTokenList,
-        resolveApiMessage: response => response?.message,
-        TCell: {props: ['row', 'column'], render() { return h('span', String(this.row[this.column.key])) }},
-        HeaderCell: {props: ['column'], render() { return h('th', this.column.key) }},
-        TButtonGroup: {render: () => null},
-        Pagination: {render: () => null},
-        TableSearch: {render: () => null},
-        Loader: {render: () => null},
+// Keep unrelated leaf views/services small; scrolling and virtualization run their real code.
+const stubs = {
+    deepEqual, debounce,
+    resolveApiMessage: response => response?.message,
+    TCell: {props: ['row', 'column'], render() { return h('span', String(this.row[this.column.key])) }},
+    HeaderCell: {props: ['column'], render() { return h('th', this.column.key) }},
+    TButtonGroup: {render: () => null},
+    Pagination: {render: () => null},
+    TableSearch: {render: () => null},
+    Loader: {render: () => null},
+}
+const modules = new Map()
+
+/** Follows real Vue parts and JS helpers, resolving Vite's @/ alias inside this test loader. */
+function loadModule(url) {
+    if (modules.has(url.href)) return modules.get(url.href)
+    const source = readFileSync(url, 'utf8')
+    const script = url.pathname.endsWith('.vue') ? source.match(/<script>([\s\S]*?)<\/script>/)[1] : source
+    const imports = /^import\s+([^'"]*?)\s+from\s+['"]([^'"]+)['"];?[ \t]*$/gm
+    const names = [], values = []
+    for (const [, clause, specifier] of script.matchAll(imports)) {
+        const bindings = clause.replace(/[{}]/g, '').split(',').map(item => item.trim()).filter(Boolean)
+        let dependency
+        if (!bindings.every(item => item.split(/\s+as\s+/).at(-1) in stubs)) {
+            if (specifier === 'vue') dependency = vueRuntime
+            else if (specifier.startsWith('@/')) {
+                dependency = loadModule(new URL(`../../src/${specifier.slice(2)}`, import.meta.url))
+            } else if (specifier.startsWith('.')) dependency = loadModule(new URL(specifier, url))
+            else throw new Error(`Unsupported test dependency: ${specifier}`)
+        }
+        for (const item of bindings) {
+            const [exported, local = exported] = item.split(/\s+as\s+/)
+            const value = stubs[local] ?? dependency?.[clause.includes('{') ? exported : 'default']
+            assert.notEqual(value, undefined, `${specifier} provides ${exported}`)
+            names.push(local)
+            values.push(value)
+        }
     }
-    const options = new Function(...names, script.replace(imports, '').replace('export default', 'return'))(
-        ...names.map(name => dependencies[name]))
-    return {...options, render: compile(source.match(/<template>([\s\S]*)<\/template>/)[1])}
+    const exports = [...script.matchAll(/export\s+(?:const|let|function)\s+(\w+)/g)].map(match => match[1])
+    const body = script.replace(imports, '').replace(/export default/, 'const defaultExport =')
+        .replace(/export (?=(?:const|let|function)\b)/g, '')
+    const result = new Function(...names,
+        `${body}\nreturn {${exports.join(',')}${exports.length ? ',' : ''} default: typeof defaultExport === 'undefined' ? undefined : defaultExport};`)(...values)
+    const template = source.match(/<template>([\s\S]*)<\/template>/)
+    if (result.default && template) result.default.render = compile(template[1])
+    modules.set(url.href, result)
+    return result
 }
 
-const BackendTable = loadTable()
+const BackendTable = loadModule(new URL('../../src/basic/BackendTable.vue', import.meta.url)).default
 
 afterEach(async () => {
     while (cleanups.length) {

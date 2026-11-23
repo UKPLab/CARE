@@ -202,7 +202,8 @@
         "replayFailed": "Échec de la relecture",
         "deleted": "Enregistrement supprimé",
         "deletedBody": "L'enregistrement a été supprimé",
-        "deleteFailed": "Impossible de supprimer l'enregistrement"
+        "deleteFailed": "Impossible de supprimer l'enregistrement",
+        "operationFailed": "{operation} : {message}"
     },
     "columns": {
         "id": "ID",

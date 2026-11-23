@@ -1,16 +1,10 @@
 <template>
-  <div
-      v-if="showReplies"
-      class="d-grid gap-1 my-2"
-  >
+  <div v-if="showReplies">
     <span
         v-for="c in displayedComments"
         :key="c.id"
     >
-      <Comment
-          :comment-id="c.id"
-          :level="1"
-      />
+      <slot :reply="c"/>
     </span>
     <div class="btn-group">
       <BasicButton
@@ -27,7 +21,7 @@
       @click="showLess"
       />
       <BasicButton
-      v-if="numChildComments > 0"
+      v-if="showHideButton"
       class="btn btn-light btn-sm"
       :text="$t('common.hideReplies')"
       @click="$emit('update:maxComments', defaultNumComments); $emit('update:showReplies', !showReplies)"
@@ -38,24 +32,22 @@
 </template>
 
 <script>
-import Comment from "./Comment.vue";
 import BasicButton from "@/basic/Button.vue";
 
 /** Reply thread list
  *
- * Displays the reply thread for a comment with show more / show less / hide controls.
- * Extracted from AnnoCard.vue. showReplies/maxComments remain owned by the parent (the
- * footer's own reply-count toggle button and the summarize flow both need them too), so
- * this component receives them as props and emits update:showReplies/update:maxComments
- * for its own internal controls, plus exposes expandForNewReply() for the parent's reply
- * button wiring.
+ * Displays the replies to a comment, oldest first, with show more / show less / hide controls. Used for the
+ * replies of an annotation card (level 1) and, recursively, for the replies to a reply (level 2 and deeper).
+ * Each reply is rendered through the default slot ({reply}), so the thread does not depend on the comment
+ * component that renders it. showReplies/maxComments stay with the parent, which also has controls for them;
+ * this component emits update:showReplies/update:maxComments and exposes expandForNewReply().
  *
  * @author Nils Dycke, Dennis Zyska
  *
  */
 export default {
   name: "AnnotationReplies",
-  components: {Comment, BasicButton},
+  components: {BasicButton},
   props: {
     'commentId': {
       type: Number,
@@ -69,11 +61,17 @@ export default {
       type: Number,
       required: true,
     },
+    // Level of the listed replies: 1 for the replies of an annotation card
+    'level': {
+      type: Number,
+      default: 1,
+    },
   },
   emits: ['update:showReplies', 'update:maxComments'],
   computed: {
     defaultNumComments() {
-      return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelZero"));
+      const key = this.level > 1 ? "levelOneUp" : "levelZero";
+      return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown." + key));
     },
     childComments() {
       return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId).sort(
@@ -96,6 +94,10 @@ export default {
     },
     showExtenderButton() {
       return this.numChildComments > this.maxComments;
+    },
+    // Replies of a card can always be hidden; deeper threads only once more than the default are shown
+    showHideButton() {
+      return this.level > 1 ? this.maxComments > this.defaultNumComments : this.numChildComments > 0;
     },
   },
   methods: {

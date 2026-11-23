@@ -26,11 +26,11 @@
         </div>
       </div>
       <div v-if="forgotPassword.success" class="alert alert-success">
-        <i class="bi bi-check-circle me-2"></i>
+        <BasicIcon icon-name="check-circle" class="me-2" />
         {{ forgotPassword.message }}
       </div>
       <div v-if="forgotPassword.error" class="alert alert-danger">
-        <i class="bi bi-exclamation-triangle me-2"></i>
+        <BasicIcon icon-name="exclamation-triangle" class="me-2" />
         {{ forgotPassword.message }}
       </div>
     </template>
@@ -77,9 +77,11 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
+import BasicIcon from "@/basic/Icon.vue";
+
 export default {
   name: "ForgotPasswordModal",
-  components: { BasicModal, BasicButton },
+  components: { BasicIcon, BasicModal, BasicButton },
   emits: ['reset-email-sent', 'reset-email-error'],
   data() {
     return {
@@ -153,7 +155,7 @@ export default {
         if (response.status === 200) {
           this.forgotPassword.success = true;
           this.forgotPassword.message = resolveApiMessage(response.data, 'auth.messages.passwordResetLinkSent');
-          
+
           // Emit success event for parent components to handle
           this.$emit('reset-email-sent', {
             email: this.forgotPassword.email,
@@ -171,7 +173,7 @@ export default {
         } else {
           this.forgotPassword.error = true;
           this.forgotPassword.message = resolveApiMessage(response.data, 'errors.auth.failedToSendResetEmail');
-          
+
           // Emit error event for parent components to handle
           this.$emit('reset-email-error', {
             email: this.forgotPassword.email,
@@ -190,7 +192,7 @@ export default {
       } catch (_error) {
         this.forgotPassword.error = true;
         this.forgotPassword.message = this.$t('errors.server.unexpectedError');
-        
+
         // Emit error event for parent components to handle
         this.$emit('reset-email-error', {
           email: this.forgotPassword.email,

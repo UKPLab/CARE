@@ -1,24 +1,10 @@
 <template>
-  <div
+  <QuickFilter
     v-if="options && options['search']"
-    class="input-group input-group-sm"
+    v-model="search"
   >
-    <span
-      id="search-addon1"
-      class="input-group-text"
-    >
-      <BasicIcon icon-name="search"></BasicIcon>
-    </span>
-    <input
-      v-model="search"
-      type="text"
-      class="form-control"
-      :placeholder="$t('common.typeToFilter')"
-      aria-label="table-search"
-      aria-describedby="search-addon1"
-    />
-    <slot name="additional-buttons"/>
-  </div>
+    <slot name="additional-buttons" />
+  </QuickFilter>
   <div
     ref="tableWrapper"
     class="table-wrapper"
@@ -88,61 +74,12 @@
             {{ $t('common.noData') }}
           </td>
         </tr>
-        <tr
+        <BasicRow
           v-for="r in tableData"
           v-else
           :key="r.id"
-          @click="selectRow(r)"
-        >
-          <td v-if="selectableRows">
-            <div
-              class="form-check"
-              @click.stop=""
-            >
-              <input
-                class="form-check-input"
-                type="checkbox"
-                :class="{
-                  pointer: selectableRows && !r.isDisabled,
-                }"
-                :disabled="r.isDisabled"
-                :checked="isRowSelected(r)"
-                @change="(e) => selectRow(r)"
-              />
-            </div>
-          </td>
-          <td
-            v-for="(c, index) in visibleColumns"
-            :key="c.key"
-            :class="[
-              'width' in c ? 'col-' + c.width : 'col-auto',
-              { pointer: selectableRows && !r.isDisabled },
-              getFixedColumnClass(c, index),
-            ]"
-            :style="[getFixedColumnStyle(c), c.style || {}]"
-          >
-            <span v-if="c.key in r">
-              <TCell
-                :column="c"
-                :row="r"
-                @action="actionEmitter"
-              />
-            </span>
-            <span v-else> - </span>
-          </td>
-          <td
-            v-if="getFilteredButtons(r).length > 0"
-            :class="getManageColumnClass()"
-            :style="manageColumnStyle"
-            @click.stop=""
-          >
-            <TButtonGroup
-              :buttons="getFilteredButtons(r)"
-              :params="r"
-              @action="actionEmitter"
-            />
-          </td>
-        </tr>
+          :row="r"
+        />
         <tr v-if="isAllMode && allRenderLimit < total" ref="loadMoreSentinel">
           <td 
             :colspan="emptyColspan" 
@@ -176,11 +113,10 @@
 </template>
 
 <script>
-import TButtonGroup from "./table/ButtonGroup.vue";
-import TCell from "./table/Cell.vue";
 import Pagination from "./table/Pagination.vue";
 import HeaderCell from "./table/HeaderCell.vue";
-import BasicIcon from "@/basic/Icon.vue";
+import BasicRow from "./table/BasicRow.vue";
+import QuickFilter from "./table/QuickFilter.vue";
 import deepEqual from "deep-equal";
 import { tableLayoutData, tableLayoutComputed, tableLayoutMethods, visibleColumnsForRows } from "@/basic/table/helpers/tableLayout.js";
 import { tableFixedColumnsData, tableFixedColumnsComputed, tableFixedColumnsMethods } from "@/basic/table/helpers/tableFixedColumns.js";
@@ -220,11 +156,13 @@ import { tableCellHelpersMethods } from "@/basic/table/helpers/tableCellHelpers.
 export default {
   name: "BasicTable",
   components: {
-    BasicIcon,
+    QuickFilter,
     Pagination,
-    TCell,
-    TButtonGroup,
     HeaderCell,
+    BasicRow,
+  },
+  provide() {
+    return { basicTableController: this };
   },
   inject: {
     acceptStats: {
@@ -405,13 +343,3 @@ export default {
 </script>
 
 <style scoped src="./table/table.css"></style>
-
-<style scoped>
-.form-check-input:disabled {
-  cursor: not-allowed;
-  pointer-events: initial;
-  opacity: 0.5;
-  background-color: var(--bs-secondary-bg, #d8d8d8);
-  border: 1px solid var(--bs-border-color, gray);
-}
-</style>

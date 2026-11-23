@@ -1,27 +1,19 @@
 <template>
-  <BasicCard :title="$t('ai.budgets.title')">
-    <template #body>
-      <ul class="nav nav-tabs mb-3">
-        <li v-for="tab in tabs" :key="tab.key" class="nav-item">
-          <BasicButton
-            class="nav-link"
-            :class="{ active: activeTab === tab.key }"
-            @click="activeTab = tab.key"
-          >
-            {{ tab.label }}
-            <span v-if="tabRows(tab.key).length" class="badge bg-secondary ms-1">{{ tabRows(tab.key).length }}</span>
-          </BasicButton>
-        </li>
-      </ul>
-      <BasicTable
-        :columns="tabColumns"
-        :data="tabRows(activeTab)"
-        :options="tableOptions"
-        :buttons="rowButtons"
-        @action="onAction"
+  <DashboardListPage
+    :title="$t('ai.budgets.title')"
+    :columns="tabColumns"
+    :data="tabRows(activeTab)"
+    :table-options="tableOptions"
+    :buttons="rowButtons"
+    @action="onAction"
+  >
+    <template #beforeTable>
+      <NavTabs
+        v-model="activeTab"
+        :tabs="tabs"
       />
     </template>
-  </BasicCard>
+  </DashboardListPage>
 
   <AIBudgetEditModal ref="editModal" />
   <ConfirmModal ref="confirmModal" />
@@ -37,12 +29,13 @@
  *
  * @author Mohammed Rawhani
  */
-import BasicCard from "@/basic/dashboard/card/Card.vue";
-import BasicButton from "@/basic/Button.vue";
-import BasicTable from "@/basic/Table.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import NavTabs from "@/components/dashboard/NavTabs.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AIBudgetEditModal from "@/components/dashboard/ai/AIBudgetEditModal.vue";
 import { resolveApiMessage, formatLocalizedDateTime } from "@/assets/utils";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 
 export default {
@@ -51,24 +44,26 @@ export default {
     "ai_budget", "ai_model", "ai_hook", "study", "study_step",
     "ai_model_share", "ai_hook_share", "user",
   ],
-  components: { BasicCard, BasicButton, BasicTable, ConfirmModal, AIBudgetEditModal },
+  components: { DashboardListPage, NavTabs, ConfirmModal, AIBudgetEditModal },
   data() {
     return {
       activeTab: "models",
-      tabs: [
-        { key: "models", label: this.$t("ai.budgets.tabs.models"), types: ["model", "model_share"] },
-        { key: "hooks", label: this.$t("ai.budgets.tabs.hooks"), types: ["hook", "hook_share"] },
-        { key: "studies", label: this.$t("ai.budgets.tabs.studies"), types: ["study", "step_hook"] },
+      tabDefs: [
+        { key: "models", types: ["model", "model_share"] },
+        { key: "hooks", types: ["hook", "hook_share"] },
+        { key: "studies", types: ["study", "step_hook"] },
       ],
-      tableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {
+    tabs() {
+      return this.tabDefs.map((tab) => ({
+        key: tab.key,
+        label: this.$t(`ai.budgets.tabs.${tab.key}`),
+        count: this.tabRows(tab.key).length,
+      }));
+    },
     budgets() {
       return this.$store.getters["table/ai_budget/getAll"] || [];
     },
@@ -162,30 +157,24 @@ export default {
     },
     rowButtons() {
       return [
-        {
-          icon: "pencil",
+        dashboardRowAction("edit", {
           title: this.$t("ai.actions.editLimit"),
           action: "edit",
-          options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
-        },
-        {
-          icon: "arrow-counterclockwise",
+        }),
+        dashboardRowButton("arrow-counterclockwise", {
           title: this.$t("ai.actions.resetSpendingWindow"),
           action: "reset",
-          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
-        },
-        {
-          icon: "trash",
+        }, "warning"),
+        dashboardRowAction("delete", {
           title: this.$t("ai.actions.removeCap"),
           action: "delete",
-          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
-        },
+        }),
       ];
     },
   },
   methods: {
     tabRows(tabKey) {
-      const tab = this.tabs.find((t) => t.key === tabKey);
+      const tab = this.tabDefs.find((t) => t.key === tabKey);
       if (!tab) return [];
       return this.budgetRows.filter((r) => tab.types.includes(r.entityType));
     },

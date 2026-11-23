@@ -124,7 +124,7 @@ class ReplayerSocket extends Socket {
         }
 
         const iterations = await this.runScalingTest(
-            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId, latencyThreshold, sequential
+            pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId, latencyThreshold, sequential, notifyOnStop
         );
 
         return iterations;
@@ -395,9 +395,10 @@ class ReplayerSocket extends Socket {
      * @param {string} [progressId=null] - Id to emit progressUpdate against
      * @param {number} [latencyThreshold=Infinity] - Stop if a level's p95 exceeds this (ms)
      * @param {boolean} [sequential=false] - Replay sessions one at a time within each level
+     * @param {boolean} [notifyOnStop=true] - Send a toast when the run stops early; CLI callers pass false
      * @returns {Promise<Array<Object>>} One entry per iteration run
      */
-    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId = null, latencyThreshold = Infinity, sequential = false) {
+    async runScalingTest(pool, serverUrl, timingMode, continueOnFailure, maxIterations, ackTimeout, progressId = null, latencyThreshold = Infinity, sequential = false, notifyOnStop = true) {
         const allResults = [];
         const N = pool.sessions.length;
 

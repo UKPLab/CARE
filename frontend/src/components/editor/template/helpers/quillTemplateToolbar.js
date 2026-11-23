@@ -13,6 +13,7 @@
  */
 
 import { SUPPORTED_LANGUAGES } from "@/components/editor/template/helpers/templateLanguageSwitching.js";
+import { getToolbarTools } from "@/components/editor/editorStore.js";
 
 const VIEW_MODE_LABEL_KEYS = {
   edit: "templates.editor.viewMode.edit",
@@ -28,6 +29,21 @@ export function quillTemplateToolbarData() {
 }
 
 export const quillTemplateToolbarComputed = {
+editorOptions() {
+        const toolbarTools = getToolbarTools(this.$store.getters["settings/getValue"]);
+
+        // Always pass toolbarTools when setting is on so format buttons are created.
+        // readOnly watcher hides/shows them; passing [] when readOnly would leave toolbar with only languages.
+        const toolbarContainer = this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true"
+          ? toolbarTools
+          : [];
+        return {
+          modules: {
+            toolbar: { container: toolbarContainer }
+          },
+          theme: "snow"
+        };
+      },
   toolbarVisible() {
     return this.$store.getters["settings/getValue"]("editor.toolbar.visibility") === "true" && !this.readOnly;
   },

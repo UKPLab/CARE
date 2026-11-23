@@ -200,7 +200,6 @@ export default {
     },
     settingsFromFile: {
       type: Object,
-      required: false,
       default: null,
     },
     settingsTouched: {
@@ -264,15 +263,13 @@ export default {
         bySubsection[sub].push(s);
       }
       const result = [];
-      if (order) {
-        for (const title of order) {
-          if (bySubsection[title]?.length) {
-            result.push({ title, settings: bySubsection[title] });
-          }
+      for (const title of order) {
+        if (bySubsection[title]?.length) {
+          result.push({ title, settings: bySubsection[title] });
         }
       }
       for (const [title, settingsList] of Object.entries(bySubsection)) {
-        if (!order || !order.includes(title)) {
+        if (!order.includes(title)) {
           result.push({ title: title || "", settings: settingsList });
         }
       }
