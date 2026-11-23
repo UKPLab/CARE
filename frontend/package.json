@@ -72,7 +72,7 @@
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.12.1",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "21.0.4",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-dropcursor": "1.8.4",
     "prosemirror-gapcursor": "^1.4.1",
