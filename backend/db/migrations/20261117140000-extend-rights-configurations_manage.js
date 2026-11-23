@@ -2,11 +2,11 @@
 
 /**
  * Right for creating, editing, and deleting own configurations (assessment rubrics and criteria,
- * validation schemas, dialogue plans) through the REST API. Only the REST routes check it; the
- * dashboard does not. Granted to admin and teacher.
+ * validation schemas, dialogue plans) through the REST API. Only the REST routes check it. Granted to
+ * admin only, matching the dashboard, where creating configurations is admin-only.
  */
 const RIGHT = 'frontend.dashboard.configurations.manage';
-const ROLES = ['admin', 'teacher'];
+const ROLES = ['admin'];
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
