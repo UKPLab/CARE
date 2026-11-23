@@ -11,11 +11,21 @@ const {
     ownerIsAdmin,
     listAttachableRights,
     listTokenRightChoices,
+    userHasRight,
 } = require('../../utils/apiTokenAuth');
 
 // Active tokens one user may hold at a time.
 const MAX_TOKENS_PER_USER = 25;
+// The right of the API tokens page; every route below needs it.
+const API_TOKENS_VIEW = 'frontend.dashboard.api_tokens.view';
 
+/**
+ * A token row as the list and create answers show it: never the secret or its hash.
+ *
+ * @param {Object} token the api_token row
+ * @param {string[]} rights the rights stored on the token
+ * @returns {Object} {rights, id, userId, name, prefix, lastUsedAt, expiresAt, createdAt}
+ */
 function publicTokenRow(token, rights) {
     return {
         rights,
@@ -30,18 +40,33 @@ function publicTokenRow(token, rights) {
 }
 
 /**
- * Cookie-authenticated token mint/list/revoke. Scripts never call these paths.
+ * Cookie-authenticated token list, rights, create, and revoke. Scripts never call these paths.
+ *
+ * @param {Server} server main server instance
+ * @param {Object} helpers route helpers from routes/auth (uses helpers.shared.ensureAuthenticated)
  */
 function registerApiTokenRoutes(server, helpers) {
     const {shared} = helpers;
     const models = server.db.models;
 
+    /**
+     * Tokens on, and the user holds the API tokens page right: the same rule as the dashboard page,
+     * so the routes cannot be reached by someone who cannot see the page.
+     *
+     * @param {Object} req express request with req.user
+     * @param {Object} res express response, answered with 403 when not allowed
+     * @returns {Promise<boolean>} true when the request may go on
+     */
     async function requireEnabled(req, res) {
         const enabled = isApiTokensEnabled(
             await models['setting'].get('system.auth.apiTokens.enabled')
         );
         if (!enabled) {
             res.status(403).json({message: 'errors.rest.apiTokensDisabled'});
+            return false;
+        }
+        if (!(await userHasRight(models, req.user.id, API_TOKENS_VIEW))) {
+            res.status(403).json({message: 'errors.rest.apiTokensNoAccess'});
             return false;
         }
         return true;

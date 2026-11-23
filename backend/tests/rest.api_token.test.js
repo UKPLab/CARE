@@ -323,7 +323,8 @@ describe('REST API tokens', () => {
                 .set('Cookie', demotedCookie)
                 .send({name: 'guest token'});
             expect(created.statusCode).toBe(403);
-            expect(created.body.message).toBe('errors.rest.guestCannotCreateToken');
+            // Guests do not hold the API tokens page right, so that check answers first.
+            expect(created.body.message).toBe('errors.rest.apiTokensNoAccess');
         });
 
         test('Bearer rejects a token whose owner is now guest-only', async () => {
@@ -494,6 +495,33 @@ describe('REST API tokens', () => {
             expect(after.statusCode).toBe(403);
             expect(after.body.message).toBe('errors.rest.missingTokenRight');
             await server.db.models['user'].deleteById(researcher.user.id);
+        });
+
+        test('a user without the API tokens right cannot list, see rights, create, or revoke tokens', async () => {
+            const models = server.db.models;
+            const researcher = await freshResearcher();
+            const role = await models['user_role'].create({name: 'rest-no-tokens-' + Date.now(), deleted: false});
+            const matching = models['user_role_matching'];
+            await matching.deleteUserRoles(researcher.user.id, await matching.getUserRolesById(researcher.user.id));
+            await matching.create({userId: researcher.user.id, userRoleId: role.id, deleted: false});
+            try {
+                const {cookie} = await login(researcher.user.email, researcher.password);
+                const answers = [
+                    await request(server.http).get('/auth/api-tokens').set('Cookie', cookie),
+                    await request(server.http).get('/auth/api-tokens/rights').set('Cookie', cookie),
+                    await request(server.http).post('/auth/api-tokens').set('Cookie', cookie)
+                        .send({name: 'no right', rights: ['frontend.dashboard.documents.view']}),
+                    await request(server.http).delete('/auth/api-tokens/1').set('Cookie', cookie),
+                ];
+                for (const res of answers) {
+                    expect({status: res.statusCode, message: res.body.message})
+                        .toEqual({status: 403, message: 'errors.rest.apiTokensNoAccess'});
+                }
+            } finally {
+                await server.db.models['user'].deleteById(researcher.user.id);
+                await matching.deleteUserRoles(researcher.user.id, [role.id]);
+                await models['user_role'].destroy({where: {id: role.id}, force: true});
+            }
         });
 
         test('create refuses a form post, so another site cannot create tokens', async () => {

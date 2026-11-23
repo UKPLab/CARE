@@ -8,7 +8,8 @@ const DISPLAY_PREFIX_HEX_LEN = 8;
 
 /**
  * Random CARE API secret. Prefix is for leak scanners; bytes are not derived from user data (P23).
- * @returns {string}
+ *
+ * @returns {string} the secret
  */
 function generateSecret() {
     return PREFIX + crypto.randomBytes(TOKEN_BYTES).toString('hex');
@@ -16,8 +17,9 @@ function generateSecret() {
 
 /**
  * One-way lookup hash. High-entropy secret, so SHA-256 is enough (not password PBKDF2).
- * @param {string} secret
- * @returns {string}
+ *
+ * @param {string} secret the token secret
+ * @returns {string} the sha256 hex hash
  */
 function hashSecret(secret) {
     return crypto.createHash('sha256').update(secret, 'utf8').digest('hex');
@@ -25,8 +27,9 @@ function hashSecret(secret) {
 
 /**
  * Stable list label. Never the full secret.
- * @param {string} secret
- * @returns {string}
+ *
+ * @param {string} secret the token secret
+ * @returns {string} the prefix shown in the token list
  */
 function displayPrefixFromSecret(secret) {
     const hex = secret.slice(PREFIX.length, PREFIX.length + DISPLAY_PREFIX_HEX_LEN);
@@ -34,7 +37,9 @@ function displayPrefixFromSecret(secret) {
 }
 
 /**
- * @param {string|null|undefined} value
+ * Whether the system.auth.apiTokens.enabled setting is on.
+ *
+ * @param {string|null} value the setting value
  * @returns {boolean}
  */
 function isApiTokensEnabled(value) {
@@ -42,9 +47,10 @@ function isApiTokensEnabled(value) {
 }
 
 /**
- * 4-only: blocked when the user has exactly one role and that role is guest.
- * @param {Object} models
- * @param {number} userId
+ * Blocked when the user has exactly one role and that role is guest.
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the user id
  * @returns {Promise<boolean>}
  */
 async function hasOnlyGuestRole(models, userId) {
@@ -61,16 +67,20 @@ async function hasOnlyGuestRole(models, userId) {
 }
 
 /**
- * @param {Object} userRightsByRole
- * @returns {string[]}
+ * All right names of a user, from the per-role lists of user.getUserRights.
+ *
+ * @param {Object} userRightsByRole role name to its right names
+ * @returns {string[]} the unique right names
  */
 function flattenOwnerRights(userRightsByRole) {
     return [...new Set(Object.values(userRightsByRole || {}).flat())];
 }
 
 /**
- * @param {Object} models
- * @param {number} userId
+ * Whether the user has the admin role.
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the user id
  * @returns {Promise<boolean>}
  */
 async function ownerIsAdmin(models, userId) {
@@ -79,10 +89,28 @@ async function ownerIsAdmin(models, userId) {
 }
 
 /**
+ * Whether a logged-in user holds a right through their roles (admins hold every right). Used by
+ * the cookie routes that manage tokens, which need the same right as the API tokens page.
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the user id
+ * @param {string} right the right name
+ * @returns {Promise<boolean>}
+ */
+async function userHasRight(models, userId, right) {
+    if (await ownerIsAdmin(models, userId)) {
+        return true;
+    }
+    const roleIds = await models['user_role_matching'].getUserRolesById(userId);
+    return roleIds.length > 0 && models['user_role_matching'].hasAccessByUserRoles(roleIds, right);
+}
+
+/**
  * Rights the owner may attach to a token. Admin is treated as every defined user_right.
- * @param {Object} models
- * @param {number} userId
- * @returns {Promise<string[]>}
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @returns {Promise<string[]>} the right names
  */
 async function listAttachableRights(models, userId) {
     if (await ownerIsAdmin(models, userId)) {
@@ -101,9 +129,10 @@ async function listAttachableRights(models, userId) {
  * preset per role. A preset is the role's rights cut down to what the owner may attach, so
  * choosing it can never widen a token. Admins see every role, other users their own roles.
  * The admin role has no rights of its own (it bypasses checks), so it is not a preset.
- * @param {Object} models
- * @param {number} userId
- * @returns {Promise<{rights: Array<{name: string, description: string}>, roles: Array<{id: number, name: string, rights: string[]}>}>}
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @returns {Promise<Object>} {rights: [{name, description}], roles: [{id, name, rights}]}
  */
 async function listTokenRightChoices(models, userId) {
     const attachable = new Set(await listAttachableRights(models, userId));
@@ -141,10 +170,11 @@ async function listTokenRightChoices(models, userId) {
 /**
  * What a token is and may do right now, for GET /rest/v1/me. Uses the access bearerAuth loaded for
  * this request (loadTokenAccess), so the rights listed are exactly the ones the request checks use.
- * @param {Object} models
- * @param {Object} token api_token row
- * @param {{rights: Set<string>, roleNames: string[]}} access req.apiAccess
- * @returns {Promise<{token: Object, user: Object, rights: string[]}>}
+ *
+ * @param {Object} models the database models
+ * @param {Object} token the api_token row
+ * @param {Object} access req.apiAccess from loadTokenAccess
+ * @returns {Promise<Object>} {token, user, rights}
  */
 async function describeToken(models, token, access) {
     const user = await models['user'].findOne({
@@ -171,9 +201,10 @@ async function describeToken(models, token, access) {
  * exists, whether they are guest-only, and which of the token's rights the owner still holds (all
  * of them for an admin owner). Same rule as hasOnlyGuestRole for guests, and the right check every
  * route uses, in five reads (three of them in parallel).
- * @param {Object} models
- * @param {Object} token api_token row
- * @returns {Promise<{guestOnly: boolean, rights: Set<string>, roleNames: string[]}|null>} null when the owner is gone or deleted
+ *
+ * @param {Object} models the database models
+ * @param {Object} token the api_token row
+ * @returns {Promise<Object|null>} {guestOnly, rights (a Set of right names), roleNames}, or null when the owner is gone or deleted
  */
 async function loadTokenAccess(models, token) {
     // Independent reads in parallel: the owner row, their roles, and the rights stored on the token.
@@ -213,6 +244,7 @@ module.exports = {
     hasOnlyGuestRole,
     flattenOwnerRights,
     ownerIsAdmin,
+    userHasRight,
     listAttachableRights,
     listTokenRightChoices,
     describeToken,
