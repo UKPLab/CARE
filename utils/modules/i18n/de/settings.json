@@ -25,5 +25,21 @@
       "displayName": "Abfrageintervall der Trigger-Warteschlange (Minuten)",
       "description": "Legt fest, wie oft der Trigger-Warteschlangenprozess nach ausstehenden Aufträgen sucht. Neue Aufträge starten weiterhin sofort, wenn ein Ereignis ausgelöst wird. Erfordert einen Serverneustart."
     }
+  },
+  "pgStats": {
+    "group": "PostgreSQL-Statistiken",
+    "intervalSeconds": {
+      "displayName": "Erfassungsintervall (Sekunden)",
+      "description": "Zeit zwischen Statistikaufnahmen: 1 bis 2147483 ganze Sekunden. Standard: 100. Gespeicherte Änderungen gelten ohne Neustart."
+    },
+    "autoDelete": {
+      "displayName": "Alte Statistiken automatisch löschen",
+      "description": "Standardmäßig deaktiviert. Bei Aktivierung werden vorhandene und zukünftige datierte Statistik-CSV-Dateien vor dem Aufbewahrungsstichtag dauerhaft gelöscht. Andere Dateien bleiben erhalten."
+    },
+    "retentionDays": {
+      "displayName": "Aufbewahrungsdauer (Tage)",
+      "description": "Gilt nur bei aktivierter automatischer Löschung. Standard: 30 Tage; Bereich: 1–36500. Dateien mit einem Datum vor heute (UTC) minus dieser Anzahl Tage werden beim Start, nach Einstellungsänderungen und täglich gelöscht."
+    },
+    "invalidValue": "Geben Sie ein ganzzahliges Intervall von 1 bis 2147483 Sekunden, eine Aufbewahrungsdauer von 1 bis 36500 Tagen und true oder false für die automatische Löschung ein."
   }
 }

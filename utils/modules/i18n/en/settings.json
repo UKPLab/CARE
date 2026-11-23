@@ -25,5 +25,21 @@
       "displayName": "Trigger queue poll interval (minutes)",
       "description": "How often the trigger queue worker looks for pending jobs, in minutes. New jobs still start immediately when an event fires. Requires a server restart."
     }
+  },
+  "pgStats": {
+    "group": "PostgreSQL statistics",
+    "intervalSeconds": {
+      "displayName": "Collection interval (seconds)",
+      "description": "Time between statistics snapshots, from 1 to 2147483 whole seconds. Default: 100. Saved changes apply without a restart."
+    },
+    "autoDelete": {
+      "displayName": "Automatically delete old statistics",
+      "description": "Off by default. Enabling this permanently deletes existing and future dated statistics CSV files older than the retention cutoff. Other files are preserved."
+    },
+    "retentionDays": {
+      "displayName": "Retention period (days)",
+      "description": "Used only when automatic deletion is enabled. Default: 30 days; range: 1–36500. Files dated before today (UTC) minus this many days are deleted at startup, after settings changes, and daily."
+    },
+    "invalidValue": "Enter a whole collection interval between 1 and 2147483 seconds, a retention period between 1 and 36500 days, and true or false for automatic deletion."
   }
 }
