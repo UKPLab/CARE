@@ -16,7 +16,7 @@ const {
  * why the climb ended. Reports only; it does not judge the result.
  * @param {Object} cfg - Run configuration; reads maxIterations (levels to climb), ackTimeout, latencyThreshold (p95 stop condition), continueOnFailure, and the recordings/files that resolvePayload consumes
  * @param {Object} ctx - Run context: { socket, emitWithAck, userId } from the CLI's connected session
- * @returns {Promise<number>} Exit code: 0 when the run completed, 1 when the tool could not run it
+ * @returns {Promise<number>} Exit code: 0 when the run completed, 1 when the tool could not run it or the server connection dropped
  */
 async function runRamp(cfg, ctx) {
     const capture = makeOutputCapture();
@@ -39,6 +39,8 @@ async function runRamp(cfg, ctx) {
     await sampler.start();
 
     let ack;
+    // Set when the server connection drops mid-run; the report is still printed and saved.
+    let lostConnection = null;
     try {
         ack = await ctx.emitWithAck('replayRun', {
             recordingIds,
@@ -51,12 +53,21 @@ async function runRamp(cfg, ctx) {
             latencyThreshold: cfg.latencyThreshold,
             notifyOnStop: false,       // no browser here; the outcome comes back in the ack
         }, 0);
+    } catch (err) {
+        lostConnection = err.message;
     } finally {
         ctx.socket.off('progressUpdate', onProgress);
         await sampler.stop();
     }
 
     process.stdout.write('\n');
+
+    if (lostConnection) {
+        console.error('RAMP STOPPED — ' + lostConnection);
+        const summary = printLostConnectionReport(lostConnection, sampler);
+        saveAndClose(cfg, capture, { results: [], metrics: [], sampler, summary });
+        return 1;
+    }
 
     if (!ack || !ack.success) {
         console.error('RAMP ERROR — replayRun failed: ' + (ack && ack.message));
@@ -67,12 +78,24 @@ async function runRamp(cfg, ctx) {
     const levels = ack.data || [];
     const summary = printRampReport(levels, cfg, sampler);
 
-    const saved = saveResults('ramp', cfg, {
+    saveAndClose(cfg, capture, {
         results: levels.flatMap(l => l.results || []),
         metrics: levels.map(({ results, ...rest }) => ({ ...rest, ...levelMetrics(results, rest.duration) })),
         sampler,
         summary,
     });
+    return 0;
+}
+
+/**
+ * Save the run's JSON and readable report, and stop capturing the terminal output.
+ * @param {Object} cfg - Run configuration, recorded in the JSON
+ * @param {Object} capture - Output capture from makeOutputCapture, already started
+ * @param {Object} payload - Passed to saveResults: { results, metrics, sampler, summary }
+ * @returns {void}
+ */
+function saveAndClose(cfg, capture, payload) {
+    const saved = saveResults('ramp', cfg, payload);
     const text = capture.stop();
     if (saved) {
         const txt = saveReadableReport(saved, text);
@@ -81,7 +104,24 @@ async function runRamp(cfg, ctx) {
             console.log(`  readable report: ${txt}`);
         }
     }
-    return 0;
+}
+
+/**
+ * Print the report for a ramp whose server connection dropped. The server
+ * returns every level in one final reply, so no level results reached the
+ * CLI; only the vitals sampled until the drop are reported.
+ * @param {string} reason - Why the connection was lost
+ * @param {Object} sampler - Stopped MetricSampler
+ * @returns {Object} Summary saved in the JSON
+ */
+function printLostConnectionReport(reason, sampler) {
+    console.log('');
+    console.log('=== Ramp report ===');
+    console.log(`  Ended early: ${reason}.`);
+    console.log('  Ramp receives its level results in one reply at the end, so none arrived; the vitals below cover the run until the drop.');
+    printVitals(sampler);
+    printReadingNotes();
+    return { levels: 0, lastSessions: 0, endedBecause: `lost the server connection: ${reason}` };
 }
 
 /**
