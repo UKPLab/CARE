@@ -14,6 +14,7 @@ const {generateError} = require("../../utils/helper/generic.js");
 const TranslatableError = require("../../utils/TranslatableError");
 const i18n = require("../../utils/i18n.js");
 const {getEmailContent} = require("../../utils/helper/email.js");
+const documentQueue = require("../../utils/helper/queue.js");
 
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 
@@ -586,6 +587,25 @@ class DocumentSocket extends Socket {
      *  Any of the underlying database operations (`getById`, `findAll`, `update`) fail.
      */
     async saveDocument(documentId) {
+        // closeDocument leaves undefined slots in openComponents, so the disconnect loop can pass undefined
+        if (!documentId) {
+            this.logger.error(`Document with ID ${documentId} not found.`);
+            return;
+        }
+        // One save per document at a time, in the same queue as the base document's edits (key as in editDocument).
+        // Two saves can no longer read the same drafts or write over each other's file.
+        // Never call this from a task that runs in that queue: it would wait for itself.
+        const key = `${documentId}-null-null`;
+        return documentQueue.enqueueDocumentTask(this.server.documentQueues, key, () => this.saveDocumentNow(documentId));
+    }
+
+    /**
+     * Merges the draft edits of a base document into its .delta file. Call it only through saveDocument.
+     *
+     * @param {number} documentId The ID of the document to save.
+     * @returns {Promise<void>}
+     */
+    async saveDocumentNow(documentId) {
         const doc = await this.models['document'].getById(documentId);
         if (!doc) {
             this.logger.error(`Document with ID ${documentId} not found.`);
