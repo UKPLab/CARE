@@ -1,8 +1,5 @@
 import Quill from "quill";
-import {toRaw} from 'vue';
-
-// make sure, it's not been reactive!
-const state = {editor: undefined};
+import {markRaw, toRaw} from 'vue';
 
 /**import {LeafBlot, Scope} from 'parchment';
 
@@ -19,11 +16,13 @@ export class Editor {
     }
 
     init() {
-        state.editor = new Quill(this.container, this.options);
+        // Each Editor keeps its own Quill. markRaw: the Editor is often stored in Vue data,
+        // and Quill breaks inside a reactive proxy
+        this.quill = markRaw(new Quill(this.container, this.options));
     }
 
     getEditor() {
-        return state.editor;
+        return this.quill;
     }
 
 }
