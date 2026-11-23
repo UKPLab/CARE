@@ -17,6 +17,11 @@
         :key="`preview-${element.id}`"
         :element="element"
         variant="preview"
+        :is-active="String(element.id) === String(activeElementId)"
+        :is-favorite="isFavorite(element)"
+        :favorite-disabled="favoriteDisabled"
+        @toggle-favorite="$emit('toggle-favorite', $event)"
+        @navigate="$emit('navigate')"
       />
     </div>
   </div>
@@ -30,12 +35,11 @@
  *
  * mouseenter/mouseleave listeners bound on <SidebarPreview> by the parent attach
  * directly to this component's single root element via Vue's attribute/listener
- * fallthrough, so no explicit emits are declared here.
+ * fallthrough.
  *
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
 import SidebarNavItem from "./SidebarNavItem.vue";
-import { navGroupLabel } from "./helpers/navLabels.js";
 
 export default {
   name: "SidebarPreview",
@@ -53,10 +57,29 @@ export default {
       type: Object,
       required: true,
     },
+    activeElementId: {
+      type: [Number, String],
+      default: null,
+    },
+    favoriteIds: {
+      type: Array,
+      default: () => [],
+    },
+    favoriteDisabled: {
+      type: Boolean,
+      default: false,
+    },
   },
+  emits: ["toggle-favorite", "navigate"],
   computed: {
     groupLabel() {
-      return navGroupLabel(this.$t, this.$te, this.subgroup);
+      const key = `sidebar.nav.groups.${this.subgroup.name.toLowerCase()}`;
+      return this.$te(key) ? this.$t(key) : this.subgroup.name;
+    },
+  },
+  methods: {
+    isFavorite(element) {
+      return this.favoriteIds.includes(String(element.id));
     },
   },
 };
@@ -71,13 +94,20 @@ export default {
 .submenu-preview {
   position: fixed;
   z-index: 9999;
+  box-sizing: border-box;
   padding-left: 8px;
   padding-top: 8px;
   padding-bottom: 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(120, 120, 120, 0.45) transparent;
 }
 
 .submenu-preview-inner {
-  min-width: 220px;
+  min-width: min(220px, calc(100vw - 32px));
+  max-width: 100%;
   background: var(--bs-tertiary-bg, #ebebeb);
   color: inherit;
   border-radius: 12px;
@@ -102,28 +132,21 @@ export default {
   background: rgba(0, 0, 0, 0.08);
 }
 
-.submenu-preview .preview-subitem {
-  border-radius: 0 !important;
+.submenu-preview::-webkit-scrollbar {
+  width: 6px;
 }
 
-.submenu-preview .preview-subitem:first-child,
-.submenu-preview .preview-subitem:last-child {
-  border-radius: 0 !important;
+.submenu-preview::-webkit-scrollbar-track {
+  background: transparent;
 }
 
-.submenu-preview .list-group-item-custom {
-  background-color: var(--bs-tertiary-bg, #f2f2f2) !important;
-  color: inherit;
+.submenu-preview::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.35);
+  border-radius: 999px;
 }
 
-.submenu-preview .list-group-item-custom:hover {
-  background-color: var(--bs-body-bg, #fff) !important;
-}
-
-.submenu-preview .preview-subitem.router-link-active,
-.submenu-preview .preview-subitem.router-link-exact-active {
-  background-color: var(--bs-secondary-bg, #e0e0e0) !important;
-  box-shadow: inset 2px 0 0 var(--bs-emphasis-color, #222);
+.submenu-preview:hover::-webkit-scrollbar-thumb {
+  background: rgba(120, 120, 120, 0.5);
 }
 
 #sidebar-wrapper.collapsed .submenu-preview .list-group-item-text {

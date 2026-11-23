@@ -1,5 +1,6 @@
 <template>
   <div class="sidebar-scroll-area">
+    <slot />
     <div class="list-group-test">
       <span>
         <SidebarGroup
@@ -10,9 +11,13 @@
           :is-open="!!groupStates[subgroup.key]"
           :is-active="activeGroup === subgroup.key"
           :is-hovered="hoveredGroup === subgroup.key"
-          @toggle="$emit('toggle', subgroup.key)"
+          :active-element-id="activeElementId"
+          :favorite-ids="favoriteIds"
+          :favorite-disabled="favoriteDisabled"
+          @toggle="$emit('toggle', $event, subgroup.key)"
           @hover="$emit('hover', $event, subgroup.key)"
           @leave="$emit('leave', $event, subgroup.key)"
+          @toggle-favorite="$emit('toggle-favorite', $event)"
         />
       </span>
     </div>
@@ -32,6 +37,18 @@ export default {
   name: "SidebarGroupList",
   components: { SidebarGroup },
   props: {
+    activeElementId: {
+      type: [Number, String],
+      default: null,
+    },
+    favoriteIds: {
+      type: Array,
+      default: () => [],
+    },
+    favoriteDisabled: {
+      type: Boolean,
+      default: false,
+    },
     groups: {
       type: Array,
       required: true,
@@ -53,7 +70,7 @@ export default {
       default: null,
     },
   },
-  emits: ["toggle", "hover", "leave"],
+  emits: ["toggle", "hover", "leave", "toggle-favorite"],
 };
 </script>
 
@@ -63,7 +80,6 @@ export default {
   min-height: 0;
   overflow-y: auto;
   overflow-x: visible;
-  scrollbar-gutter: stable;
 
   scrollbar-width: thin;
   scrollbar-color: rgba(120, 120, 120, 0.45) transparent;

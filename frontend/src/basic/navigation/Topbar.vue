@@ -4,7 +4,7 @@
     ref="topbar"
     class="nav-container"
   >
-    <nav class="navbar fixed-top navbar-expand-lg bg-body-tertiary border-bottom">
+    <nav class="navbar fixed-top navbar-expand bg-body-tertiary border-bottom">
       <div class="container-fluid">
         <button
           id="backButton"
@@ -31,7 +31,7 @@
         <div id="topbarCenterPlaceholder"/>
         <ul
           id="topBarNavItems"
-          class="navbar-nav ms-auto mt-2 mt-lg-0"
+          class="navbar-nav ms-auto"
         />
         <ul class="navbar-nav">
           <li
@@ -241,6 +241,7 @@ export default {
     },
     async toHome() {
       await this.$router.push(this.homeRoute);
+      this.eventBus.emit("dashboardHome");
     },
     onRecordingIconClick() {
       // Admins jump to the Socket Profiler dashboard. Non-admin participants
@@ -255,6 +256,18 @@ export default {
 </script>
 
 <style>
+
+.navbar.fixed-top {
+  min-height: 52.5px;
+  max-height: 52.5px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.navbar-brand {
+  padding-top: 0;
+  padding-bottom: 0;
+}
 
 body.sidebar-exists #backButton {
   display: none;
