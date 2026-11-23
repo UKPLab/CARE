@@ -156,7 +156,9 @@ const REDACTIONS = [
     [/\b(password|passwd|pwd|token|secret|api[_-]?key|authorization|cookie|session(?:id)?|sid|access[_-]?token|refresh[_-]?token|csrf[_-]?token)\b(["']?\s*[:=]\s*["']?)[^\s"'&,;]+/gi, "$1$2[redacted]"],
     // Query strings and fragments can carry reset or login tokens
     [/(https?:\/\/[^\s?#]+)[?#]\S*/gi, "$1"],
-    [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]"],
+    // Starts only at the beginning of a run, with bounded parts: the unanchored form takes
+    // quadratic time on long runs without "@", and clients control the text length
+    [/(?<![A-Za-z0-9._%+-])[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,}/g, "[email]"],
     // Long opaque strings (keys, hashes, session ids)
     [/[A-Za-z0-9+/_]{32,}={0,2}/g, "[redacted]"],
 ];

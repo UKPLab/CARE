@@ -167,6 +167,20 @@ describe("problem report normalization", () => {
         expect(sanitizeText("x".repeat(10), 5)).toHaveLength(5);
         expect(sanitizeText(42, 5)).toBeNull();
     });
+
+    test("sanitizeText stays fast on long text without an e-mail address", () => {
+        // Clients control the text length; an unanchored e-mail pattern takes seconds here
+        for (const text of ["a".repeat(100000), "a.".repeat(50000), "a@".repeat(50000)]) {
+            const start = Date.now();
+            sanitizeText(text, 300);
+            expect(Date.now() - start).toBeLessThan(500);
+        }
+    });
+
+    test("sanitizeText still redacts e-mail addresses", () => {
+        expect(sanitizeText("mail jane.doe+x@example.org now", 100)).toBe("mail [email] now");
+        expect(sanitizeText("user@sub.example.co.uk,bob@x.io", 100)).toBe("[email],[email]");
+    });
 });
 
 describe("problem report activity trail", () => {
