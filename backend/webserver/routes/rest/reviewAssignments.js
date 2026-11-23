@@ -1,14 +1,14 @@
 'use strict';
 
-const TranslatableError = require('../../../utils/TranslatableError');
-const AssignmentSocket = require('../../sockets/assignment');
 const {heavyRateLimit} = require('../../middleware/restRateLimit');
 const {runWrite, is} = require('./routeHelpers');
+const {requestHasRight} = require('../../middleware/bearerAuth');
+const {ASSIGNMENT_TYPES, ASSIGNMENT_MODES} = require('../../rest/reviewAssignmentPlans');
+const {createReviewAssignments} = require('../../rest/reviewAssignments');
 
 const ADD_SINGLE = 'frontend.dashboard.studies.addSingleAssignments';
 const ADD_BULK = 'frontend.dashboard.studies.addBulkAssignments';
 
-const {createReviewAssignments, ASSIGNMENT_TYPES, ASSIGNMENT_MODES} = AssignmentSocket;
 
 const NOT_FOUND = new Set([
     'errors.rest.studyNotFound',
@@ -25,7 +25,10 @@ const FORBIDDEN = new Set([
 ]);
 
 /**
- * @returns {number[]|null} unique integers, or null when the value is not an array of integers
+ * Read a list of ids from the body.
+ *
+ * @param {*} raw the list from the body
+ * @returns {number[]|null} the unique ids, or null when the value is not a list of integers
  */
 function readIds(raw) {
     if (!Array.isArray(raw) || raw.some((id) => !Number.isInteger(id))) {
@@ -37,9 +40,10 @@ function readIds(raw) {
 /**
  * A list like [{"role": "student", "items": 2}] or [{"userId": 7, "items": 2}] as the map the
  * assignment function uses ({"student": 2} or {"7": 2}). Entries with 0 items are dropped.
- * @param {*} raw the request value
+ *
+ * @param {*} raw the list from the body
  * @param {string} keyName "role" or "userId"
- * @returns {Object|null} null when the shape is wrong, a key repeats, or nothing is left
+ * @returns {Object|null} the map, or null when the shape is wrong, a key repeats, or nothing is left
  */
 function readItemsList(raw, keyName) {
     if (!Array.isArray(raw)) {
@@ -65,7 +69,10 @@ function readItemsList(raw, keyName) {
 }
 
 /**
- * { sourceWorkflowStepId: targetWorkflowStepId | "previousSubmission" }
+ * Read the workflow mapping: { sourceWorkflowStepId: targetWorkflowStepId | "previousSubmission" }.
+ *
+ * @param {*} raw the mapping from the body
+ * @returns {Object|null} the mapping, or null when the shape is wrong
  */
 function readWorkflowMapping(raw) {
     if (!is.object(raw) || Object.keys(raw).length === 0) {
@@ -81,7 +88,9 @@ function readWorkflowMapping(raw) {
 
 /**
  * Turn the request body into the arguments of createReviewAssignments. Only known keys are read.
- * @returns {{error: string}|{data: Object, bulk: boolean}}
+ *
+ * @param {Object} body request body
+ * @returns {Object} {data, bulk}, or {error} with the error key to answer with 400
  */
 function readAssignmentBody(body) {
     if (!is.object(body)) {
@@ -165,6 +174,8 @@ function readAssignmentBody(body) {
 /**
  * REST review assignments: one route for single, bulk, and add-reviewer. Named review-assignments
  * because the `assignment` table (assignments that collect submissions) is a different thing.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestReviewAssignmentRoutes(server) {
     server.app.post('/rest/v1/review-assignments', heavyRateLimit(server), (req, res) => {
@@ -172,19 +183,18 @@ function registerRestReviewAssignmentRoutes(server) {
         if (parsed.error) {
             return res.status(400).json({message: parsed.error});
         }
+        // Same split as the dashboard: one right for a single assignment, another for bulk. Checked
+        // before runWrite, so a token without the right never gets a stored Idempotency-Key answer.
+        if (!requestHasRight(req, parsed.bulk ? ADD_BULK : ADD_SINGLE)) {
+            return res.status(403).json({message: 'errors.rest.missingTokenRight'});
+        }
         return runWrite(server, req, res, {
             status: 201,
             label: 'create assignments',
             errors: {notFound: NOT_FOUND, forbidden: FORBIDDEN},
             // A dry run answers 200 with the plan and keeps nothing.
             dryRun: (body) => body.dryRun === true,
-        }, async (options) => {
-            // Same split as the dashboard: one right for a single assignment, another for bulk.
-            if (!(await options.can(parsed.bulk ? ADD_BULK : ADD_SINGLE))) {
-                throw new TranslatableError('errors.rest.missingTokenRight');
-            }
-            return createReviewAssignments({userId: req.apiUserId, ...parsed.data}, options);
-        });
+        }, (options) => createReviewAssignments({userId: req.apiUserId, ...parsed.data}, options));
     });
 }
 

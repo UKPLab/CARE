@@ -574,6 +574,7 @@
     },
     "rest": {
         "apiTokensDisabled": "Les jetons API sont désactivés.",
+        "apiTokensNoAccess": "Vous n'avez pas le droit de gérer les jetons API.",
         "missingBearer": "Jeton Authorization Bearer manquant.",
         "invalidBearer": "Jeton API invalide ou révoqué.",
         "routeNotFound": "Aucune route REST ne correspond à cette méthode et à ce chemin.",
@@ -646,7 +647,6 @@
         "templateImportRequired": "Importez un modèle ou un tableau de modèles au format d'export.",
         "fileTooLarge": "Le fichier dépasse la limite de 100 Mo.",
         "contentLengthRequired": "Envoyez les téléversements avec un en-tête Content-Length ; les envois par blocs (chunked) ne sont pas acceptés.",
-        "multipartNotAccepted": "Cette route n'accepte pas de téléversement. Envoyez le contenu en JSON.",
         "invalidJson": "Le corps de la requête n'est pas un JSON valide.",
         "bodyTooLarge": "Le corps de la requête est trop volumineux.",
         "documentHasNoText": "Seuls les documents HTML et modaux ont un texte. Utilisez /file pour les documents PDF et ZIP.",

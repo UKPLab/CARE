@@ -609,6 +609,7 @@
   },
   "rest": {
     "apiTokensDisabled": "API-Tokens sind deaktiviert.",
+    "apiTokensNoAccess": "Sie haben nicht das Recht, API-Tokens zu verwalten.",
     "missingBearer": "Authorization-Bearer-Token fehlt.",
     "invalidBearer": "Ungueltiges oder widerrufenes API-Token.",
     "routeNotFound": "Keine REST-Route passt zu dieser Methode und diesem Pfad.",
@@ -681,7 +682,6 @@
     "templateImportRequired": "Eine Vorlage oder ein Array von Vorlagen im Exportformat importieren.",
     "fileTooLarge": "Die Datei ist größer als die Grenze von 100 MB.",
     "contentLengthRequired": "Uploads mit einem Content-Length-Header senden; Uploads in Blöcken (chunked) werden nicht angenommen.",
-    "multipartNotAccepted": "Diese Route nimmt keinen Upload an. Den Inhalt als JSON senden.",
     "invalidJson": "Der Anfrageinhalt ist kein gültiges JSON.",
     "bodyTooLarge": "Der Anfrageinhalt ist zu groß.",
     "documentHasNoText": "Nur HTML- und Modal-Dokumente haben Text. Für PDF- und ZIP-Dokumente /file verwenden.",

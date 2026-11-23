@@ -188,15 +188,64 @@ describe('REST Idempotency-Key', () => {
         expect(await countNamed('same-name')).toBe(1);
     });
 
-    test('a key with a multipart body on a route without uploads is 415, and nothing runs', async () => {
-        const res = await request(server.http)
-            .post('/rest/v1/documents')
-            .set('Authorization', 'Bearer ' + token.secret)
-            .set('Idempotency-Key', 'multipart-' + Date.now())
-            .field('name', 'REST multipart elsewhere');
-        expect(res.statusCode).toBe(415);
-        expect(res.body.message).toBe('errors.rest.multipartNotAccepted');
-        expect(await countNamed('REST multipart elsewhere')).toBe(0);
+    test('a client that hangs up mid-request can retry with the same key, and only one document exists', async () => {
+        const http = require('http');
+        const key = 'hangup-' + Date.now();
+        await new Promise((resolve) => {
+            const hangUp = http.request({
+                host: '127.0.0.1', port: PORT, path: '/rest/v1/documents', method: 'POST',
+                headers: {'Authorization': 'Bearer ' + token.secret, 'Content-Type': 'application/json', 'Idempotency-Key': key},
+            });
+            hangUp.on('error', () => resolve());
+            hangUp.end(JSON.stringify({name: 'REST hang up'}), () => {
+                hangUp.destroy();
+                resolve();
+            });
+        });
+        // The first request may still be finishing; a retry waits for it and then answers from the key.
+        const again = await create({name: 'REST hang up'}, key);
+        expect(again.statusCode).toBe(201);
+        createdDocs.push(again.body.document.id);
+        expect(await countNamed('REST hang up')).toBe(1);
+    });
+
+    test('a request that dies while holding a key leaves nothing behind; a waiting retry then runs', async () => {
+        const {reserveKeyInTransaction} = require('../webserver/middleware/restIdempotency');
+        const key = 'crash-' + Date.now();
+        const body = {name: 'REST crash retry'};
+        // Stand-in for an in-flight request: it holds the key in its own, uncommitted transaction.
+        const inFlight = await server.db.sequelize.transaction();
+        await reserveKeyInTransaction(server, {
+            apiUserId: token.token.userId, apiToken: {id: token.token.id}, idempotencyKey: key,
+            method: 'POST', baseUrl: '', path: '/rest/v1/documents', body,
+        }, inFlight);
+        const retry = create(body, key);
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        await inFlight.rollback(); // the "crash": the database drops the reservation with the transaction
+        const res = await retry;
+        expect(res.statusCode).toBe(201);
+        expect(res.headers['idempotent-replayed']).toBeUndefined();
+        createdDocs.push(res.body.document.id);
+        expect(await countNamed('REST crash retry')).toBe(1);
+    });
+
+    test('a token that lost the route right gets 403, not the stored answer', async () => {
+        const narrow = (await request(server.http).post('/auth/api-tokens').set('Cookie', cookie)
+            .send({name: 'idempotency narrow', rights: ['frontend.dashboard.documents.view']})).body;
+        try {
+            const key = 'lost-right-' + Date.now();
+            const send = () => request(server.http).post('/rest/v1/documents')
+                .set('Authorization', 'Bearer ' + narrow.secret).set('Idempotency-Key', key).send({name: 'REST lost right'});
+            const first = await send();
+            expect(first.statusCode).toBe(201);
+            createdDocs.push(first.body.document.id);
+            await models['api_token_right'].update({deleted: true}, {where: {apiTokenId: narrow.token.id}});
+            const replay = await send();
+            expect(replay.statusCode).toBe(403);
+            expect(replay.body.message).toBe('errors.rest.missingTokenRight');
+        } finally {
+            await request(server.http).delete('/auth/api-tokens/' + narrow.token.id).set('Cookie', cookie);
+        }
     });
 
     test('a key that is too long or not plain ASCII is 400', async () => {
