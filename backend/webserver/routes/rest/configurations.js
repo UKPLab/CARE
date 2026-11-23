@@ -2,10 +2,7 @@
 
 const {requireTokenRight} = require('../../middleware/bearerAuth');
 const {runWrite, runRead, readId, readFields, is} = require('./routeHelpers');
-const {
-    CONFIGURATION_TYPES, listConfigurations, getConfiguration, createConfiguration, updateConfiguration,
-    deleteConfiguration,
-} = require('../../sockets/configuration');
+const {CONFIGURATION_TYPES, listConfigurations, getConfiguration, createConfiguration, updateConfiguration, deleteConfiguration} = require('../../rest/configurations');
 
 const CONFIGURATIONS_MANAGE = 'frontend.dashboard.configurations.manage';
 const ERRORS = {
@@ -13,7 +10,12 @@ const ERRORS = {
     forbidden: new Set(['errors.rest.configurationNoAccess', 'errors.rest.missingTokenRight']),
 };
 
-/** "assessment", "validation", "dialoguePlan", or the number 0, 1, 2. */
+/**
+ * Read a configuration type: "assessment", "validation", "dialoguePlan", or the number 0, 1, 2.
+ *
+ * @param {*} raw the type value from the body
+ * @returns {number|null} the type number, or null when it is not known
+ */
 function readType(raw) {
     if (Object.prototype.hasOwnProperty.call(CONFIGURATION_TYPES, raw)) {
         return CONFIGURATION_TYPES[raw];
@@ -24,6 +26,8 @@ function readType(raw) {
 /**
  * REST configurations: assessment rubrics and criteria, validation schemas, dialogue plans.
  * Reading needs any valid token (a public table in the dashboard); writing needs the manage right.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestConfigurationRoutes(server) {
     const models = server.db.models;

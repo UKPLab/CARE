@@ -2,10 +2,7 @@
 
 const {requireTokenRight} = require('../../middleware/bearerAuth');
 const {runWrite, runRead, readId, readFields, is} = require('./routeHelpers');
-const {
-    listAssignments, getAssignment, addAssignment, updateAssignment, closeAssignment,
-    deleteAssignment,
-} = require('../../sockets/assignment');
+const {listAssignments, getAssignment, addAssignment, updateAssignment, closeAssignment, deleteAssignment} = require('../../rest/assignments');
 
 const ASSIGNMENTS_VIEW = 'frontend.dashboard.assignments.view';
 const ERRORS = {
@@ -26,8 +23,10 @@ const FIELDS = {
 };
 
 /**
- * {"roles": [id or name], "users": [id]}, both optional.
- * @returns {{shareWith: Object|undefined}|{error: true}}
+ * Read the share list of an assignment: {"roles": [id or name], "users": [id]}, both optional.
+ *
+ * @param {*} raw the shareWith value from the body
+ * @returns {Object} {shareWith}, or {error: true} when the shape is wrong
  */
 function readShareWith(raw) {
     if (raw === undefined) {
@@ -48,6 +47,8 @@ function readShareWith(raw) {
 /**
  * REST assignments: the `assignment` table, which collects submissions (not review assignments,
  * which are under /review-assignments).
+ *
+ * @param {Server} server main server instance
  */
 function registerRestAssignmentRoutes(server) {
     const needView = requireTokenRight(server, ASSIGNMENTS_VIEW);

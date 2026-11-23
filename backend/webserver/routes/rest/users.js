@@ -1,10 +1,13 @@
 'use strict';
 
 const {tokenCan} = require('../../middleware/bearerAuth');
-const {findUsers, USER_LOOKUP_LIMIT} = require('../../sockets/user');
+const {findUsers, USER_LOOKUP_LIMIT} = require('../../rest/users');
 
 /**
  * Comma-separated or repeated query values, trimmed, without empties.
+ *
+ * @param {string|string[]|undefined} raw the query value
+ * @returns {string[]} the unique values
  */
 function readList(raw) {
     if (raw === undefined) {
@@ -16,6 +19,8 @@ function readList(raw) {
 
 /**
  * REST users: lookup by email or external id only. There is no route that lists all users.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestUserRoutes(server) {
     const models = server.db.models;

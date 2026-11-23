@@ -2,7 +2,7 @@
 
 const {requireTokenRight, requireAnyTokenRight} = require('../../middleware/bearerAuth');
 const {runWrite, runRead, readId, readFields, is} = require('./routeHelpers');
-const {listProjects, getProject, publicProject, createProject, updateProject, deleteProject} = require('../../sockets/project');
+const {listProjects, getProject, publicProject, createProject, updateProject, deleteProject} = require('../../rest/projects');
 
 const PROJECTS_VIEW = 'frontend.dashboard.projects.view';
 const ERRORS = {
@@ -13,6 +13,8 @@ const FIELDS = {name: is.text, description: is.textOrEmpty, public: (value) => v
 
 /**
  * REST projects: list your own and public ones; create, change, publish, close, and delete your own.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestProjectRoutes(server) {
     const models = server.db.models;

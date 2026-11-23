@@ -1,20 +1,20 @@
 'use strict';
 
 const {requireTokenRight} = require('../../middleware/bearerAuth');
-const {
-    listSubmissions,
-    getSubmission,
-    deleteSubmission,
-    uploadSubmission,
-} = require('../../sockets/submission');
 const {heavyRateLimit} = require('../../middleware/restRateLimit');
-const {removeWrittenFiles} = require('../../sockets/document');
 const {runWrite, runRead, readId, uploadFiles} = require('./routeHelpers');
+const {removeWrittenFiles} = require('../../rest/documentUpload');
+const {listSubmissions, getSubmission, deleteSubmission, uploadSubmission} = require('../../rest/submissions');
 
 // One submission may need several files (one per file the assignment's validation asks for).
 const MAX_SUBMISSION_FILES = 10;
 
-/** A whole number from a multipart field, or undefined when the field is absent. */
+/**
+ * Read a whole number from a multipart field.
+ *
+ * @param {*} raw the field value
+ * @returns {number|null|undefined} the number, null when it is not a whole number, or undefined when the field is absent
+ */
 function multipartId(raw) {
     if (raw === undefined || raw === '') {
         return undefined;
@@ -31,6 +31,8 @@ const SUBMISSION_ERRORS = {
 
 /**
  * REST submissions: list, get, upload, and delete. Grouping and grade publishing are not here.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestSubmissionRoutes(server) {
     const needView = requireTokenRight(server, SUBMISSIONS_VIEW);

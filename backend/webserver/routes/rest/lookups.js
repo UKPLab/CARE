@@ -1,11 +1,13 @@
 'use strict';
 
 const {describeToken} = require('../../utils/apiTokenAuth');
-const {listRoles} = require('../../sockets/user');
+const {listRoles} = require('../../rest/users');
 
 /**
  * Read-only routes: who the token is, and the roles review assignments and shares refer to.
  * Projects, workflows, tag sets, and study templates have their own route files.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestLookupRoutes(server) {
     const models = server.db.models;

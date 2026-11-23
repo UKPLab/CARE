@@ -1,16 +1,24 @@
 'use strict';
 
 /**
- * Project actions for /rest/v1 only. There is no socket class for this resource yet: the dashboard
- * reads it through the generic table socket. If one is added, it goes in this file below these functions.
+ * Projects, for /rest/v1/projects.
+ *
+ * REST-only: the dashboard keeps using its socket methods, which these functions mirror where noted
+ * ("Mirrors …"). Called by the routes in routes/rest/.
  */
 
-const {Op} = require('sequelize');
 const TranslatableError = require('../../utils/TranslatableError');
+const {Op} = require('sequelize');
 const {pickFields} = require('../utils/restHelpers');
 
 const PROJECT_PUBLIC_FIELDS = ['id', 'name', 'description', 'userId', 'public', 'closed', 'createdAt', 'updatedAt'];
 
+/**
+ * The project fields REST returns.
+ *
+ * @param {Object} project the project row
+ * @returns {Object} the public fields
+ */
 function publicProject(project) {
     return pickFields(project, PROJECT_PUBLIC_FIELDS);
 }
@@ -18,7 +26,10 @@ function publicProject(project) {
 /**
  * The project new items go into when none is given: the user's own projects.default setting, else
  * the system projects.default. Same rule as the dashboard, which reads the merged setting.
- * @returns {Promise<number|null>}
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @returns {Promise<number|null>} the project id, or null when none is set
  */
 async function defaultProjectFor(models, userId) {
     const own = parseInt(await models['user_setting'].get('projects.default', userId), 10);
@@ -31,7 +42,12 @@ async function defaultProjectFor(models, userId) {
 
 /**
  * A project the caller owns, for changing it. Others' projects stay a dashboard action.
- * @returns {Promise<Object|null>} null when it does not exist
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @param {number} id the project id
+ * @param {Object} [transaction] the Sequelize transaction
+ * @returns {Promise<Object|null>} the project, or null when it does not exist
  * @throws {TranslatableError} errors.rest.projectNoAccess
  */
 async function loadOwnProject(models, userId, id, transaction) {
@@ -47,6 +63,13 @@ async function loadOwnProject(models, userId, id, transaction) {
 
 /**
  * Mirrors the dashboard's project form (appDataUpdate on project). Differs: owner from the token.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {string} data.name the project name
+ * @param {string} [data.description] the description
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Object>} the new project
  */
 async function createProject({userId, name, description}, options) {
     return options.models['project'].add({name, description: description ?? '', userId, public: false},
@@ -56,6 +79,14 @@ async function createProject({userId, name, description}, options) {
 /**
  * Change name, description, closed, or public of an own project. Publishing cannot be undone, as in
  * the dashboard. Mirrors appDataUpdate on project.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the project id
+ * @param {Object} data.fields the fields to change
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Object|null>} the updated project, or null when it does not exist
+ * @throws {TranslatableError} errors.rest.projectAlreadyPublic
  */
 async function updateProject({userId, id, fields}, options) {
     const project = await loadOwnProject(options.models, userId, id, options.transaction);
@@ -71,6 +102,12 @@ async function updateProject({userId, id, fields}, options) {
 /**
  * Soft-delete an own project. The project model then deletes its documents and studies too.
  * Mirrors the dashboard's project delete (appDataUpdate with deleted).
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the project id
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<boolean|null>} true, or null when it does not exist
  */
 async function deleteProject({userId, id}, options) {
     const project = await loadOwnProject(options.models, userId, id, options.transaction);
@@ -83,6 +120,11 @@ async function deleteProject({userId, id}, options) {
 
 /**
  * A caller may attach a document to a project they own or a public one.
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @param {number} projectId the project id
+ * @returns {Promise<boolean>}
  */
 async function userCanUseProject(models, userId, projectId) {
     const project = await models['project'].getById(projectId);
@@ -94,6 +136,11 @@ async function userCanUseProject(models, userId, projectId) {
 
 /**
  * Projects the caller may put documents in: their own and public ones.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {Object} options the REST options (models)
+ * @returns {Promise<Array<Object>>} the projects
  */
 async function listProjects({userId}, options) {
     const projects = await options.models['project'].findAll({
@@ -107,7 +154,12 @@ async function listProjects({userId}, options) {
 
 /**
  * One project the caller may see: their own or a public one.
- * @returns {Promise<Object|null>} null when it does not exist
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the project id
+ * @param {Object} options the REST options (models)
+ * @returns {Promise<Object|null>} the project, or null when it does not exist
  * @throws {TranslatableError} errors.rest.projectNoAccess
  */
 async function getProject({userId, id}, options) {
@@ -121,4 +173,13 @@ async function getProject({userId, id}, options) {
     return project;
 }
 
-module.exports = {userCanUseProject, defaultProjectFor, listProjects, getProject, publicProject, createProject, updateProject, deleteProject};
+module.exports = {
+    createProject,
+    defaultProjectFor,
+    deleteProject,
+    getProject,
+    listProjects,
+    publicProject,
+    updateProject,
+    userCanUseProject,
+};

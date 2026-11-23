@@ -5,18 +5,11 @@ const {requireTokenRight, requireAnyTokenRight} = require('../../middleware/bear
 const {loadByIdOrHash} = require('../../utils/restHelpers');
 const {heavyRateLimit} = require('../../middleware/restRateLimit');
 const {runWrite, runRead} = require('./routeHelpers');
-const {loadStudyByIdOrHash} = require('../../sockets/study');
-const {
-    listStudySessions,
-    getStudySession,
-    startStudySession,
-    finishStudySession,
-    copyStudySession,
-    deleteStudySession,
-} = require('../../sockets/study_session');
+const {studyAssessmentScores} = require('../../rest/assessments');
+const {listStudySessions, getStudySession, startStudySession, finishStudySession, copyStudySession, deleteStudySession} = require('../../rest/sessions');
+const {loadStudyByIdOrHash} = require('../../rest/studies');
 
 // "My sessions" is the participant's own view. "Session overview" is the manager's view of a study.
-const {studyAssessmentScores} = require('../../sockets/publish_assessment');
 
 const SESSIONS_VIEW = 'frontend.dashboard.my_sessions.view';
 const SESSIONS_OVERVIEW = 'frontend.dashboard.session_overview.view';
@@ -30,6 +23,8 @@ const SESSION_ERRORS = {notFound: NOT_FOUND, forbidden: FORBIDDEN};
 
 /**
  * REST study sessions: list, start, finish, and copy to other users.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestSessionRoutes(server) {
     const models = server.db.models;
@@ -42,6 +37,13 @@ function registerRestSessionRoutes(server) {
     const read = (req, res, label, work) => runRead(server, req, res, {label, errors: SESSION_ERRORS}, work);
     const write = (req, res, status, label, work) => runWrite(server, req, res, {status, label, errors: SESSION_ERRORS}, work);
 
+    /**
+     * Load a study session by id or hash.
+     *
+     * @param {number|string} idOrHash the session id or hash from the path
+     * @returns {Promise<Object>} the session
+     * @throws {TranslatableError} errors.rest.sessionNotFound
+     */
     async function sessionOrThrow(idOrHash) {
         const session = await loadByIdOrHash(models['study_session'], idOrHash);
         if (!session) {
@@ -50,6 +52,13 @@ function registerRestSessionRoutes(server) {
         return session;
     }
 
+    /**
+     * Load a study by id or hash.
+     *
+     * @param {number|string} idOrHash the study id or hash from the path
+     * @returns {Promise<Object>} the study
+     * @throws {TranslatableError} errors.rest.studyNotFound
+     */
     async function studyOrThrow(idOrHash) {
         const study = await loadStudyByIdOrHash(models, idOrHash);
         if (!study) {

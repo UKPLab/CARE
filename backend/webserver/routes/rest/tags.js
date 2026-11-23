@@ -2,7 +2,7 @@
 
 const {requireTokenRight, requireAnyTokenRight} = require('../../middleware/bearerAuth');
 const {runWrite, runRead, readId, readFields, is} = require('./routeHelpers');
-const {listTagSets, getVisibleTagSet, createTagSet, updateTagSet, deleteTagSet, readTag} = require('../../sockets/tag');
+const {listTagSets, getVisibleTagSet, createTagSet, updateTagSet, deleteTagSet, readTag} = require('../../rest/tags');
 
 const TAGS_VIEW = 'frontend.dashboard.tags.view';
 const STUDIES_VIEW = 'frontend.dashboard.studies.view';
@@ -11,6 +11,12 @@ const ERRORS = {
     forbidden: new Set(['errors.rest.tagSetNoAccess']),
 };
 
+/**
+ * Read the tag list of a tag set from the body.
+ *
+ * @param {*} raw the tags value from the body
+ * @returns {Object} {tags} (undefined when not given), or {error: true} when the shape is wrong
+ */
 function readTags(raw) {
     if (raw === undefined) {
         return {tags: undefined};
@@ -24,6 +30,8 @@ function readTags(raw) {
 
 /**
  * REST tag sets with their tags. Reading also works with studies.view, since studies pick a tag set.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestTagRoutes(server) {
     const models = server.db.models;

@@ -6,28 +6,15 @@ const {requireTokenRight, tokenCan} = require('../../middleware/bearerAuth');
 const {sendKnownError} = require('../../utils/restHelpers');
 const {heavyRateLimit} = require('../../middleware/restRateLimit');
 const {runWrite, runRead, uploadFiles} = require('./routeHelpers');
-const DocumentSocket = require('../../sockets/document');
-const {userCanUseProject} = require('../../sockets/project');
-const {listDocumentAnnotations} = require('../../sockets/annotation');
-const {listDocumentComments} = require('../../sockets/comment');
+const {docTypes} = require('../../../db/models/document.js');
+const {replaceDocumentFile, storedFilePath} = require('../../rest/documentReplace');
+const {addDocument, removeWrittenFiles} = require('../../rest/documentUpload');
+const {createDocument, listDocuments, updateDocumentFields, userHasDocumentAccess, ownsDocument, publicDocument, readDocumentContent, loadDocumentByIdOrHash} = require('../../rest/documents');
+const {listDocumentAnnotations, listDocumentComments} = require('../../rest/notes');
+const {userCanUseProject} = require('../../rest/projects');
 
 const DOCUMENTS_VIEW = 'frontend.dashboard.documents.view';
 const DOCUMENTS_UPLOAD = 'frontend.dashboard.documents.upload';
-const {
-    createDocument,
-    addDocument,
-    listDocuments,
-    updateDocumentFields,
-    replaceDocumentFile,
-    userHasDocumentAccess,
-    ownsDocument,
-    publicDocument,
-    removeWrittenFiles,
-    readDocumentContent,
-    loadDocumentByIdOrHash,
-    storedFilePath,
-    docTypes,
-} = DocumentSocket;
 
 // Socket error keys mapped to the REST keys the docs promise.
 const DOCUMENT_ERRORS = {
@@ -44,6 +31,12 @@ const DOCUMENT_ERRORS = {
 
 /**
  * The document behind :idOrHash if the caller may see it.
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @param {number|string} idOrHash the document id or hash from the path
+ * @param {Function} can checks a right of the token
+ * @returns {Promise<Object>} the document
  * @throws {TranslatableError} errors.rest.documentNotFound (404) or errors.rest.documentNoAccess (403)
  */
 async function accessibleDocument(models, userId, idOrHash, can) {
@@ -57,6 +50,12 @@ async function accessibleDocument(models, userId, idOrHash, can) {
     return document;
 }
 
+/**
+ * The uploaded file in the "file" field; the first one when several were sent.
+ *
+ * @param {Object} req express request, after the upload middleware
+ * @returns {Object|null} the file, or null when none was sent
+ */
 function uploadedFile(req) {
     const raw = req.files && req.files.file;
     if (!raw) {
@@ -65,13 +64,20 @@ function uploadedFile(req) {
     return Array.isArray(raw) ? raw[0] : raw;
 }
 
-/** A multipart field that is absent or empty is undefined. */
+/**
+ * Whether a multipart field was sent with a value. An absent or empty field counts as not sent.
+ *
+ * @param {*} value the field value
+ * @returns {boolean}
+ */
 function present(value) {
     return value !== undefined && value !== '';
 }
 
 /**
  * REST documents: collection, item, /upload for a new file, /file to download or replace one.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestDocumentRoutes(server) {
     const models = server.db.models;

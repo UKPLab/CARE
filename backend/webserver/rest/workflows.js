@@ -1,14 +1,26 @@
 'use strict';
 
 /**
- * Workflow actions for /rest/v1 only. There is no socket class for this resource yet: the dashboard
- * reads it through the generic table socket. If one is added, it goes in this file below these functions.
+ * Workflows and their steps, for /rest/v1/workflows.
+ *
+ * REST-only: the dashboard keeps using its socket methods, which these functions mirror where noted
+ * ("Mirrors …"). Called by the routes in routes/rest/.
  */
 
 const TranslatableError = require('../../utils/TranslatableError');
 
 const STEP_TYPES = [1, 2, 3, 4];
 
+/**
+ * Load an own workflow for a change.
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @param {number} id the workflow id
+ * @param {Object} [transaction] the Sequelize transaction
+ * @returns {Promise<Object|null>} the workflow, or null when it does not exist
+ * @throws {TranslatableError} errors.rest.workflowNoAccess
+ */
 async function loadOwnWorkflow(models, userId, id, transaction) {
     const workflow = await models['workflow'].getById(id, {transaction});
     if (!workflow) {
@@ -23,6 +35,11 @@ async function loadOwnWorkflow(models, userId, id, transaction) {
 /**
  * Whether any study or study template is built on the workflow. Changing its steps or deleting it
  * would break those studies.
+ *
+ * @param {Object} models the database models
+ * @param {number} workflowId the workflow id
+ * @param {Object} [transaction] the Sequelize transaction
+ * @returns {Promise<boolean>}
  */
 async function workflowInUse(models, workflowId, transaction) {
     const count = await models['study'].count({where: {workflowId, deleted: false}, transaction});
@@ -33,7 +50,9 @@ async function workflowInUse(models, workflowId, transaction) {
  * Check a step list from a request. Each step: {name, stepType 1-4, allowBackward, configuration,
  * documentFromStep}. documentFromStep is the 1-based position of an earlier step whose document this
  * step shows. Unknown keys are ignored.
- * @returns {Object[]|null} null when the shape is wrong
+ *
+ * @param {*} raw the steps from the body
+ * @returns {Array<Object>|null} the checked steps, or null when the shape is wrong
  */
 function readSteps(raw) {
     if (!Array.isArray(raw) || raw.length === 0) {
@@ -66,6 +85,12 @@ function readSteps(raw) {
 /**
  * Create the steps of a workflow in order, linking each to the one before, then set the
  * "show the document of an earlier step" links. Same chain the dashboard import builds.
+ *
+ * @param {Object} models the database models
+ * @param {number} workflowId the workflow id
+ * @param {Array<Object>} steps the steps from readSteps
+ * @param {Object} [transaction] the Sequelize transaction
+ * @returns {Promise<void>}
  */
 async function writeSteps(models, workflowId, steps, transaction) {
     const created = [];
@@ -92,6 +117,13 @@ async function writeSteps(models, workflowId, steps, transaction) {
  * Copy a workflow with all its steps; the caller owns the copy.
  * Mirrors WorkflowCreateModal.copy (appDataUpdate on workflow with parentWorkflowId; the workflow
  * model's afterCreate hook copies the steps).
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.sourceId the workflow to copy
+ * @param {string} [data.name] the copy's name; the source's name when not given
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Object|null>} the copy, or null when the source does not exist
  */
 async function copyWorkflow({userId, sourceId, name}, options) {
     const models = options.models;
@@ -112,6 +144,13 @@ async function copyWorkflow({userId, sourceId, name}, options) {
  * Create workflows from the dashboard's workflow export file. Mirrors ImportFormatModal for
  * workflow and workflow_step. Differs: the file's workflowStepDocument ids point at the source
  * database (the export drops step ids), so they are ignored; documentFromStep sets the link instead.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {Array<Object>} data.items the export entries
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Array<Object>>} the new workflows
+ * @throws {TranslatableError} errors.rest.invalidWorkflowImport
  */
 async function importWorkflows({userId, items}, options) {
     const models = options.models;
@@ -135,6 +174,13 @@ async function importWorkflows({userId, items}, options) {
 
 /**
  * Change name, description, or hideInFrontend of an own workflow. Mirrors WorkflowRenameModal.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the workflow id
+ * @param {Object} data.fields the fields to change
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Object|null>} the updated workflow, or null when it does not exist
  */
 async function updateWorkflow({userId, id, fields}, options) {
     const workflow = await loadOwnWorkflow(options.models, userId, id, options.transaction);
@@ -147,6 +193,14 @@ async function updateWorkflow({userId, id, fields}, options) {
 /**
  * Replace all steps of an own workflow, only while no study uses it. Mirrors the step editor in
  * WorkflowEditModal, which changes one step at a time.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the workflow id
+ * @param {Array<Object>} data.steps the steps from readSteps
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Object|null>} the workflow, or null when it does not exist
+ * @throws {TranslatableError} errors.rest.workflowInUse
  */
 async function replaceWorkflowSteps({userId, id, steps}, options) {
     const models = options.models;
@@ -167,6 +221,13 @@ async function replaceWorkflowSteps({userId, id, steps}, options) {
 
 /**
  * Soft-delete an own workflow that no study uses. Mirrors deleteWorkflow in Workflows.vue.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the workflow id
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<boolean|null>} true, or null when it does not exist
+ * @throws {TranslatableError} errors.rest.workflowInUse
  */
 async function deleteWorkflow({userId, id}, options) {
     const models = options.models;
@@ -183,6 +244,11 @@ async function deleteWorkflow({userId, id}, options) {
 
 /**
  * One workflow with its steps in order. Workflows are a public table in the dashboard.
+ *
+ * @param {Object} data
+ * @param {number} data.id the workflow id
+ * @param {Object} options the REST options (models)
+ * @returns {Promise<Object|null>} the workflow, or null when it does not exist
  */
 async function getWorkflow({id}, options) {
     const [workflow] = await listWorkflows(options, {id});
@@ -191,6 +257,9 @@ async function getWorkflow({id}, options) {
 
 /**
  * Steps in the order their workflowStepPrevious links give, like workflow_step.getSortedWorkflowSteps.
+ *
+ * @param {Array<Object>} steps the workflow_step rows of one workflow
+ * @returns {Array<Object>} the steps in order
  */
 function sortWorkflowSteps(steps) {
     // First step per previous step, like the find() in getSortedWorkflowSteps.
@@ -212,6 +281,11 @@ function sortWorkflowSteps(steps) {
 /**
  * All workflows (or the one with `id`) with their steps in order. Workflows are a public table in
  * the dashboard too. A step's id is what stepDocuments and workflowMapping refer to.
+ *
+ * @param {Object} options the REST options (models)
+ * @param {Object} [filter]
+ * @param {number} [filter.id] only this workflow
+ * @returns {Promise<Array<Object>>} the workflows
  */
 async function listWorkflows(options, {id} = {}) {
     const models = options.models;
@@ -241,6 +315,12 @@ async function listWorkflows(options, {id} = {}) {
 }
 
 module.exports = {
-    listWorkflows, getWorkflow, copyWorkflow, importWorkflows, updateWorkflow, replaceWorkflowSteps,
-    deleteWorkflow, readSteps,
+    copyWorkflow,
+    deleteWorkflow,
+    getWorkflow,
+    importWorkflows,
+    listWorkflows,
+    readSteps,
+    replaceWorkflowSteps,
+    updateWorkflow,
 };

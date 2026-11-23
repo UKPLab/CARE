@@ -1,16 +1,28 @@
 'use strict';
 
 /**
- * Tag set and tag actions for /rest/v1 only. There is no socket class for this resource yet: the dashboard
- * reads it through the generic table socket. If one is added, it goes in this file below these functions.
+ * Tag sets and their tags, for /rest/v1/tag-sets.
+ *
+ * REST-only: the dashboard keeps using its socket methods, which these functions mirror where noted
+ * ("Mirrors …"). Called by the routes in routes/rest/.
  */
 
+const TranslatableError = require('../../utils/TranslatableError');
 const {Op} = require('sequelize');
 const {TAG_COLORS} = require('tag-colors');
-const TranslatableError = require('../../utils/TranslatableError');
 
 const TAG_FIELDS = ['name', 'description', 'colorCode'];
 
+/**
+ * Load an own tag set for a change.
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @param {number} id the tag set id
+ * @param {Object} [transaction] the Sequelize transaction
+ * @returns {Promise<Object|null>} the tag set, or null when it does not exist
+ * @throws {TranslatableError} errors.rest.tagSetNoAccess
+ */
 async function loadOwnTagSet(models, userId, id, transaction) {
     const tagSet = await models['tag_set'].getById(id, {transaction});
     if (!tagSet) {
@@ -24,6 +36,8 @@ async function loadOwnTagSet(models, userId, id, transaction) {
 
 /**
  * Check one tag from a request body. colorCode is one of the annotator colours (TAG_COLORS keys).
+ *
+ * @param {*} raw the tag from the body
  * @returns {Object|null} the tag fields, or null when the shape is wrong
  */
 function readTag(raw) {
@@ -45,6 +59,14 @@ function readTag(raw) {
 /**
  * Make the tags of a tag set match the list: entries with an id update that tag, entries without one
  * are created, tags left out are soft-deleted. Tags follow the set's public flag.
+ *
+ * @param {Object} models the database models
+ * @param {number} userId the token owner's user id
+ * @param {Object} tagSet the tag set row
+ * @param {Array<Object>} tags the tags from readTag
+ * @param {Object} [transaction] the Sequelize transaction
+ * @returns {Promise<void>}
+ * @throws {TranslatableError} errors.rest.tagNotInSet
  */
 async function replaceTags(models, userId, tagSet, tags, transaction) {
     const existing = await models['tag'].getAllByKey('tagSetId', tagSet.id) || [];
@@ -72,9 +94,19 @@ async function replaceTags(models, userId, tagSet, tags, transaction) {
 /**
  * Mirrors the dashboard's tag set form (appDataUpdate on tag_set and tag). Differs: owner from the
  * token. Without projectId the set goes into the user's default project, else the system default.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {string} data.name the tag set name
+ * @param {string} [data.description] the description
+ * @param {number} [data.projectId] the project id
+ * @param {Array<Object>} [data.tags] the tags
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Object>} the new tag set with its tags
+ * @throws {TranslatableError} errors.rest.invalidProjectId
  */
 async function createTagSet({userId, name, description, projectId, tags}, options) {
-    const {defaultProjectFor, userCanUseProject} = require('./project');
+    const {defaultProjectFor, userCanUseProject} = require('./projects');
     const models = options.models;
     // Same rule as documents and assignments: an own or public project.
     if (projectId != null && !(await userCanUseProject(models, userId, projectId))) {
@@ -92,6 +124,15 @@ async function createTagSet({userId, name, description, projectId, tags}, option
 /**
  * Change name, description, publish (public true), or the tag list of an own tag set. Publishing
  * also publishes its tags and cannot be undone, as in the dashboard.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the tag set id
+ * @param {Object} data.fields the fields to change
+ * @param {Array<Object>} [data.tags] the new tag list
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Object|null>} the tag set with its tags, or null when it does not exist
+ * @throws {TranslatableError} errors.rest.tagSetAlreadyPublic
  */
 async function updateTagSet({userId, id, fields, tags}, options) {
     const models = options.models;
@@ -114,6 +155,12 @@ async function updateTagSet({userId, id, fields, tags}, options) {
 
 /**
  * Soft-delete an own tag set. The model deletes its tags too.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the tag set id
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<boolean|null>} true, or null when it does not exist
  */
 async function deleteTagSet({userId, id}, options) {
     const tagSet = await loadOwnTagSet(options.models, userId, id, options.transaction);
@@ -124,6 +171,14 @@ async function deleteTagSet({userId, id}, options) {
     return true;
 }
 
+/**
+ * One tag set with its tags, without an access check.
+ *
+ * @param {Object} models the database models
+ * @param {number} id the tag set id
+ * @param {Object} [transaction] the Sequelize transaction
+ * @returns {Promise<Object|null>} the tag set, or null when it does not exist
+ */
 async function getTagSet(models, id, transaction) {
     const tagSet = await models['tag_set'].findOne({
         where: {id, deleted: false},
@@ -146,7 +201,12 @@ async function getTagSet(models, id, transaction) {
 
 /**
  * One tag set with its tags, if it is the caller's own or public.
- * @returns {Promise<Object|null>}
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.id the tag set id
+ * @param {Object} options the REST options (models)
+ * @returns {Promise<Object|null>} the tag set, or null when it does not exist
  * @throws {TranslatableError} errors.rest.tagSetNoAccess
  */
 async function getVisibleTagSet({userId, id}, options) {
@@ -159,6 +219,11 @@ async function getVisibleTagSet({userId, id}, options) {
 
 /**
  * Tag sets the caller may use in a study, with their tags: their own and public ones.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {Object} options the REST options (models)
+ * @returns {Promise<Array<Object>>} the tag sets
  */
 async function listTagSets({userId}, options) {
     const models = options.models;
@@ -181,4 +246,11 @@ async function listTagSets({userId}, options) {
     }));
 }
 
-module.exports = {listTagSets, getVisibleTagSet, createTagSet, updateTagSet, deleteTagSet, readTag};
+module.exports = {
+    createTagSet,
+    deleteTagSet,
+    getVisibleTagSet,
+    listTagSets,
+    readTag,
+    updateTagSet,
+};

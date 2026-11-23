@@ -3,11 +3,8 @@
 const TranslatableError = require('../../../utils/TranslatableError');
 const {requireTokenRight} = require('../../middleware/bearerAuth');
 const {heavyRateLimit} = require('../../middleware/restRateLimit');
-const {
-    listTemplates, exportTemplates, importTemplate, createTemplate, updateTemplate, setTemplateContent,
-    removeTemplateLanguage, copyTemplate, deleteTemplate,
-} = require('../../sockets/template');
 const {runWrite, runRead, readId, readFields, is} = require('./routeHelpers');
+const {listTemplates, exportTemplates, importTemplate, createTemplate, updateTemplate, setTemplateContent, removeTemplateLanguage, copyTemplate, deleteTemplate} = require('../../rest/templates');
 
 const TEMPLATE_ERRORS = {
     notFound: new Set(['errors.templates.notFound', 'errors.rest.templateLanguageNotFound']),
@@ -20,6 +17,8 @@ const TEMPLATES_VIEW = 'frontend.dashboard.templates.view';
 /**
  * REST templates: document, study, and prompt templates. Study templates (studies marked as
  * template) are a different thing and live under /rest/v1/study-templates.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestTemplateRoutes(server) {
     const needView = requireTokenRight(server, TEMPLATES_VIEW);

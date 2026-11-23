@@ -3,10 +3,7 @@
 const {requireTokenRight, requireAnyTokenRight} = require('../../middleware/bearerAuth');
 const {heavyRateLimit} = require('../../middleware/restRateLimit');
 const {runWrite, runRead, readId, readFields, is} = require('./routeHelpers');
-const {
-    listWorkflows, getWorkflow, copyWorkflow, importWorkflows, updateWorkflow, replaceWorkflowSteps, deleteWorkflow,
-    readSteps,
-} = require('../../sockets/workflow');
+const {listWorkflows, getWorkflow, copyWorkflow, importWorkflows, updateWorkflow, replaceWorkflowSteps, deleteWorkflow, readSteps} = require('../../rest/workflows');
 
 const WORKFLOWS_VIEW = 'frontend.dashboard.workflows.view';
 const STUDIES_VIEW = 'frontend.dashboard.studies.view';
@@ -19,6 +16,8 @@ const pick = (row) => ({id: row.id, name: row.name, description: row.description
 /**
  * REST workflows. Created by copying an existing one or importing the dashboard's export file;
  * own workflows can be renamed, deleted while unused, and have their steps replaced while unused.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestWorkflowRoutes(server) {
     const models = server.db.models;
