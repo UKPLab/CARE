@@ -56,12 +56,12 @@ import BasicButton from "@/basic/Button.vue";
  */
 export default {
   name: "PDFToolbar",
-  inheritAttrs: false,
   components: {
     TopBarButton,
     BasicForm,
     BasicButton,
   },
+  inheritAttrs: false,
   props: {
     zoomFormData: {
       type: Object,

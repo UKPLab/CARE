@@ -138,7 +138,9 @@ export default {
   },
   created() {
     // Re-split when crossing the phone breakpoint, even if no observed size changed.
-    this.$watch(() => viewport.compact, () => this.$nextTick(this.updateLayout));
+    this.$watch(() => viewport.compact, () => {
+      this.$nextTick(() => this.updateLayout());
+    });
   },
   mounted() {
     this.header = this.$el.closest(".card-header") || this.$el.parentElement;

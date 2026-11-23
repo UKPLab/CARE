@@ -48,7 +48,7 @@
         <!-- Grid layout: icon + title + close in the header row, body and "show more" below at full width. -->
         <div
           v-if="toast.title"
-          :ref="(el) => { if (!toast.hasBody) this.setClipEl(toast.id, el); }"
+          :ref="(el) => { if (!toast.hasBody) setClipEl(toast.id, el); }"
           class="care-toast__title"
           :class="{
             'is-clamped': toast.overflows && !toast.expanded && !toast.hasBody,
@@ -57,7 +57,7 @@
         >{{ toast.title }}</div>
         <div
           v-if="toast.hasBody"
-          :ref="(el) => this.setClipEl(toast.id, el)"
+          :ref="(el) => setClipEl(toast.id, el)"
           class="care-toast__body"
           :class="{
             'has-list': toast.items.length > 0,

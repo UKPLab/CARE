@@ -1134,29 +1134,12 @@ html .dashboard-page .card-header-actions .btn-secondary:is(:hover, :focus-visib
   box-shadow: var(--care-card-shadow-flat);
 }
 
-/* Sectioned card dashboards (My Sessions, Submissions): sections with a
-   heading and an empty state. The cards are StatusCard.vue, their grid is below. */
+/* Sectioned card dashboards (My Sessions, Submissions): NavTabs switch between
+   sections, each with an empty state. The cards are StatusCard.vue, their grid is below. */
 html .sessions-page {
   display: flex;
   flex-direction: column;
   gap: 1.75rem;
-}
-
-html .sessions-section-head {
-  display: flex;
-  align-items: center;
-  gap: .6rem;
-  margin-bottom: .85rem;
-  padding-bottom: .6rem;
-  border-bottom: 1px solid var(--care-card-border);
-}
-
-html .sessions-section-title {
-  margin: 0;
-  font-size: 1.05rem;
-  font-weight: 650;
-  letter-spacing: -.012em;
-  color: var(--care-card-text);
 }
 
 html .sessions-empty {

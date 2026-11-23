@@ -33,7 +33,7 @@ function parse(value) {
       timePresets: Array.isArray(saved?.timePresets) ? cleanPresets(saved.timePresets) : [...DEFAULT_TIME_PRESETS],
       timeZone: isValidTimeZone(saved?.timeZone) ? saved.timeZone : null,
     };
-  } catch {
+  } catch (_error) {
     return defaults();
   }
 }

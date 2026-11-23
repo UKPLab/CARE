@@ -117,6 +117,7 @@
             "hint": "Drag or use the arrows to change the order",
             "drag": "Drag to reorder",
             "timeLabel": "Quick time {n}",
+            "timePlaceholder": "HH:MM",
             "sort": "Sort ascending",
             "remove": "Remove",
             "empty": "No quick times yet",

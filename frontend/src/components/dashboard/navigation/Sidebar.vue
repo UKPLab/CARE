@@ -12,8 +12,7 @@
       @mouseenter="showGroup(group.key, $event)"
       @mouseleave="scheduleClose"
     >
-      <button
-        type="button"
+      <BasicButton
         class="dashboard-topnav-group-btn"
         :class="{
           active: activeGroup === group.key,
@@ -23,7 +22,7 @@
         @focus="showGroup(group.key, $event)"
       >
         {{ groupLabel(group) }}
-      </button>
+      </BasicButton>
       <div
         v-if="hoveredKey === group.key"
         class="dashboard-topnav-menu"
@@ -111,13 +110,14 @@
  * @author Carly Gettinger, Dennis Zyska, Nils Dycke, Andrii Nikitin
  */
 import LoadIcon from "@/basic/Icon.vue";
+import BasicButton from "@/basic/Button.vue";
 import { navElementLabel, navGroupLabel } from "./helpers/navLabels.js";
 import { COMPACT_QUERY } from "@/assets/viewport.js";
 
 export default {
   subscribeTable: ['nav_group', 'nav_element'],
   name: "SidebarNavigation",
-  components: { LoadIcon },
+  components: { LoadIcon, BasicButton },
 
   props: {
     /** Phone drawer open (burger button in Topbar.vue). */

@@ -979,7 +979,7 @@ export default {
     async copyQuery() {
       const text = this.queryString;
       if (!text) return;
-      let ok = false;
+      let ok;
       try {
         await navigator.clipboard.writeText(text);
         ok = true;

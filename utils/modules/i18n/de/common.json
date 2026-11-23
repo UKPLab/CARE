@@ -117,6 +117,7 @@
             "hint": "Zum Sortieren ziehen oder die Pfeile nutzen",
             "drag": "Zum Sortieren ziehen",
             "timeLabel": "Schnellzeit {n}",
+            "timePlaceholder": "HH:MM",
             "sort": "Aufsteigend sortieren",
             "remove": "Entfernen",
             "empty": "Noch keine Schnellzeiten",

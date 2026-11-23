@@ -37,10 +37,10 @@
                 class="mb-2"
             >
               <AssessmentRubric
+                  :ref="el => { if (el) rubricRefs[groupIndex] = el; }"
                   :rubric="rubric"
                   :group-index="groupIndex"
                   :is-expanded="!!expandedGroups[groupIndex]"
-                  :ref="el => { if (el) rubricRefs[groupIndex] = el; }"
                   :assessment-state="assessmentState"
                   :info-pinned="isPinned"
                   :pinned-item="selectedCriterion"

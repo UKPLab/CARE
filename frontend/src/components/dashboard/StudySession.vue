@@ -33,114 +33,115 @@
             :enrich-row="(row) => enrichStudyRow(row)"
             :options="section.options"
             card-mode
+            @total-change="totals[section.key] = $event"
           >
             <template #cards="cards">
-          <div
-            v-if="cards.rows.length === 0"
-            class="sessions-empty"
-          >
-            <span
-              class="sessions-empty-icon"
-              aria-hidden="true"
-            >
-              <LoadIcon
-                :icon-name="cards.searching ? 'search' : section.emptyIcon"
-                :size="22"
-              />
-            </span>
-            <p v-if="cards.loading">{{ $t('common.loadingFromServer') }}</p>
-            <p v-else-if="cards.searching">{{ $t('common.noMatches') }}</p>
-            <p v-else>{{ section.emptyText }}</p>
-          </div>
-
-          <div
-            v-else
-            :ref="(el) => setGridRef(section.key, el)"
-            class="status-card-grid"
-            :class="{ 'is-refreshing': cards.loadingVisible }"
-          >
-            <template
-              v-for="(study, index) in cards.rows"
-              :key="study.id"
-            >
-            <StatusCard
-              v-bind="study.cardStatus"
-              :index="index"
-              :item-id="study.id"
-              :title="study.displayName"
-              title-clickable
-              :expanded="isOpen(study.id)"
-              :controls="'sessions-of-' + study.id"
-              :meta="metaItems(study)"
-              :progress="progressOf(study)"
-              :timeline="timeline(study)"
-              @title-click="toggle(study.id)"
-            >
-              <template #footer>
-                <BasicButton
-                  class="status-card-primary"
-                  :aria-expanded="isOpen(study.id) ? 'true' : 'false'"
-                  :aria-controls="'sessions-of-' + study.id"
-                  @click="toggle(study.id)"
+              <div
+                v-if="cards.rows.length === 0"
+                class="sessions-empty"
+              >
+                <span
+                  class="sessions-empty-icon"
+                  aria-hidden="true"
                 >
                   <LoadIcon
-                    icon-name="person-video2"
-                    :size="14"
+                    :icon-name="cards.searching ? 'search' : section.emptyIcon"
+                    :size="22"
                   />
-                  {{ isOpen(study.id) ? $t('studies.dashboard.hideSessions') : $t('studies.dashboard.showSessions') }}
-                  <LoadIcon
-                    class="status-card-chevron"
-                    icon-name="chevron-down"
-                    :size="13"
-                  />
-                </BasicButton>
-              </template>
-            </StatusCard>
+                </span>
+                <p v-if="cards.loading">{{ $t('common.loadingFromServer') }}</p>
+                <p v-else-if="cards.searching">{{ $t('common.noMatches') }}</p>
+                <p v-else>{{ section.emptyText }}</p>
+              </div>
 
-            <!-- Sessions panel: its own full-width grid row right after the row of the open
-                 card, so the card itself stays where it is. Not keyed by study: switching
-                 within one row reuses the panel (the notch slides over); a panel that
-                 appears in or leaves a row unfolds / collapses (animatePanel). -->
-            <Transition
-              :css="false"
-              @enter="panelEnter"
-              @enter-cancelled="panelPause"
-              @leave="panelLeave"
-              @after-leave="panelStop"
-            >
-            <div
-              v-if="openStudyId !== null && index === panelAfterIndex(section.key, cards.rows)"
-              :id="'sessions-of-' + openStudyId"
-              class="session-panel"
-              :class="'session-panel--' + openStudy(cards.rows).cardStatus.tone"
-              :style="{ '--notch-left': notchLeft(section.key, cards.rows) }"
-              role="region"
-              :aria-label="openStudy(cards.rows).displayName"
-            >
-              <header class="session-panel-head">
-                <span class="session-panel-title">{{ openStudy(cards.rows).displayName }}</span>
-                <BasicButton
-                  class="btn-icon btn-sm"
-                  :title="$t('studies.dashboard.hideSessions')"
-                  :aria-label="$t('studies.dashboard.hideSessions')"
-                  @click="toggle(openStudyId)"
+              <div
+                v-else
+                :ref="(el) => setGridRef(section.key, el)"
+                class="status-card-grid"
+                :class="{ 'is-refreshing': cards.loadingVisible }"
+              >
+                <template
+                  v-for="(study, index) in cards.rows"
+                  :key="study.id"
                 >
-                  <LoadIcon
-                    icon-name="x-lg"
-                    :size="13"
-                  />
-                </BasicButton>
-              </header>
-              <StudySessionCards
-                :key="openStudyId"
-                :study="openStudy(cards.rows)"
-                :show-closed="section.closed"
-                @action="onSessionAction"
-              />
-            </div>
-            </Transition>
-            </template>
-          </div>
+                  <StatusCard
+                    v-bind="study.cardStatus"
+                    :index="index"
+                    :item-id="study.id"
+                    :title="study.displayName"
+                    title-clickable
+                    :expanded="isOpen(study.id)"
+                    :controls="'sessions-of-' + study.id"
+                    :meta="metaItems(study)"
+                    :progress="progressOf(study)"
+                    :timeline="timeline(study)"
+                    @title-click="toggle(study.id)"
+                  >
+                    <template #footer>
+                      <BasicButton
+                        class="status-card-primary"
+                        :aria-expanded="isOpen(study.id) ? 'true' : 'false'"
+                        :aria-controls="'sessions-of-' + study.id"
+                        @click="toggle(study.id)"
+                      >
+                        <LoadIcon
+                          icon-name="person-video2"
+                          :size="14"
+                        />
+                        {{ isOpen(study.id) ? $t('studies.dashboard.hideSessions') : $t('studies.dashboard.showSessions') }}
+                        <LoadIcon
+                          class="status-card-chevron"
+                          icon-name="chevron-down"
+                          :size="13"
+                        />
+                      </BasicButton>
+                    </template>
+                  </StatusCard>
+
+                  <!-- Sessions panel: its own full-width grid row right after the row of the open
+                       card, so the card itself stays where it is. Not keyed by study: switching
+                       within one row reuses the panel (the notch slides over); a panel that
+                       appears in or leaves a row unfolds / collapses (animatePanel). -->
+                  <Transition
+                    :css="false"
+                    @enter="panelEnter"
+                    @enter-cancelled="panelPause"
+                    @leave="panelLeave"
+                    @after-leave="panelStop"
+                  >
+                    <div
+                      v-if="openStudyId !== null && index === panelAfterIndex(section.key, cards.rows)"
+                      :id="'sessions-of-' + openStudyId"
+                      class="session-panel"
+                      :class="'session-panel--' + openStudy(cards.rows).cardStatus.tone"
+                      :style="{ '--notch-left': notchLeft(section.key, cards.rows) }"
+                      role="region"
+                      :aria-label="openStudy(cards.rows).displayName"
+                    >
+                      <header class="session-panel-head">
+                        <span class="session-panel-title">{{ openStudy(cards.rows).displayName }}</span>
+                        <BasicButton
+                          class="btn-icon btn-sm"
+                          :title="$t('studies.dashboard.hideSessions')"
+                          :aria-label="$t('studies.dashboard.hideSessions')"
+                          @click="toggle(openStudyId)"
+                        >
+                          <LoadIcon
+                            icon-name="x-lg"
+                            :size="13"
+                          />
+                        </BasicButton>
+                      </header>
+                      <StudySessionCards
+                        :key="openStudyId"
+                        :study="openStudy(cards.rows)"
+                        :show-closed="section.closed"
+                        @action="onSessionAction"
+                      />
+                    </div>
+                  </Transition>
+                </template>
+              </div>
             </template>
           </BackendTable>
         </section>
@@ -194,14 +195,13 @@ function easeInOutCubic(t) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 }
 
-/** One BackendTable per section; each needs its own options (pagination.total is written back). */
+/** One BackendTable per section, each with its own options object. */
 function sectionOptions() {
   return {
     pagination: {
       serverSide: true,
       itemsPerPage: 9,
       itemsPerPageList: [9, 18, 36],
-      total: 0,
     },
     search: true,
     sort: { column: "createdAt", order: "DESC" },
@@ -230,6 +230,8 @@ export default {
       openStudyId: null,
       // Grid columns per section, measured so the panel can follow the open card's row.
       gridColumns: {},
+      // Server total per section (BackendTable total-change), shown as the tab count.
+      totals: { active: 0, closed: 0 },
       activeOptions: sectionOptions(),
       closedOptions: sectionOptions(),
     };
@@ -299,7 +301,7 @@ export default {
       return this.sections.map((section) => ({
         key: section.key,
         label: section.title,
-        count: section.options.pagination.total,
+        count: this.totals[section.key],
       }));
     },
   },

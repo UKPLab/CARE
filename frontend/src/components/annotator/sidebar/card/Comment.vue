@@ -115,9 +115,9 @@
       @update:show-replies="collapseComment = !$event"
       @update:max-comments="maxComments = $event"
     >
-      <template #default="{reply}">
+      <template #default="{reply: childReply}">
         <CommentCard
-          :comment-id="reply.id"
+          :comment-id="childReply.id"
           :level="level + 1"
         />
       </template>

@@ -510,7 +510,7 @@ export default {
       default: false,
     },
   },
-  emits: ["action", "update:modelValue", "selectionChange"],
+  emits: ["action", "update:modelValue", "selectionChange", "total-change"],
   data: function () {
     return {
       // tableLayout.js
@@ -527,7 +527,7 @@ export default {
       itemsPerPage: null,
       itemsPerPageList: [10, 25, 50, 100],
       searchQuery: {search: "", columnFilters: {}},
-      _appliedSearchKey: "{\"search\":\"\",\"columnFilters\":{}}",
+      appliedSearchKey: "{\"search\":\"\",\"columnFilters\":{}}",
       hasManageButtons: false, // Use this flag to decide on the visibility of the column header
       manageSizerParams: {},
       // `allMatching` carries the intention ("every row this query matches"), `excludeIds` the
@@ -551,18 +551,18 @@ export default {
       queryLoading: false,
       queryLoadingVisible: false,
       queryLoadingTimer: null,
-      _deltaHandler: null,
-      _staleHandler: null,
-      _pendingConnectFetch: null,
-      _queryHold: false,
-      _queryHeldOnSocket: false,
-      _onQueryConnect: null,
-      _pendingLoadBusy: false,
-      _enteringClearTimer: null,
-      _backfillTimer: null,
-      _backfillBusy: false,
-      _hopBusy: false,
-      _deleteAnimMs: 750,
+      deltaHandler: null,
+      staleHandler: null,
+      pendingConnectFetch: null,
+      queryHold: false,
+      queryHeldOnSocket: false,
+      onQueryConnect: null,
+      pendingLoadBusy: false,
+      enteringClearTimer: null,
+      backfillTimer: null,
+      backfillBusy: false,
+      hopBusy: false,
+      deleteAnimMs: 750,
       // Infinite scroll ("All" page size): sliding keyset window + row virtualization.
       // queryItems holds the loaded window; rowsBefore says where that window sits in the
       // result set, so the spacers can stand in for every row we did not load.
@@ -576,9 +576,9 @@ export default {
       virtualEnd: 0,
       visibleFirstRow: 0, // global index of the first row on screen
       visibleLastRow: 0,
-      _thumbFraction: null, // scrollbar drag: 0 = first row, 1 = last screen
-      _pinnedRow: null,
-      _windowHold: false, // thumb jump in progress: do not stack another fetch
+      thumbFraction: null, // scrollbar drag: 0 = first row, 1 = last screen
+      pinnedRow: null,
+      windowHold: false, // thumb jump in progress: do not stack another fetch
       viewportHeight: 0,
       scrollTop: 0,
       scrollHeight: 0,
@@ -587,19 +587,19 @@ export default {
       infiniteMaxRows: 150, // loaded window cap; the far edge is dropped past this
       infiniteOverscan: 8, // rendered rows above/below the viewport
       infinitePrefetchRows: 15, // distance to the window edge that triggers the next block
-      _scrollTarget: null,
-      _scrollHandler: null,
-      _scrollRaf: null,
-      _windowFetchBusy: false,
-      _seekTimer: null,
-      _seekToken: 0,
-      _queryToken: 0,
-      _windowRefetchTimer: null,
-      _windowRefetchHighlight: [],
-      _emptyBlockKey: null,
-      _windowRetryAt: 0,
-      _windowErrorShown: false,
-      _infiniteResizeObserver: null,
+      scrollTarget: null,
+      scrollHandler: null,
+      scrollRaf: null,
+      windowFetchBusy: false,
+      seekTimer: null,
+      seekToken: 0,
+      queryToken: 0,
+      windowRefetchTimer: null,
+      windowRefetchHighlight: [],
+      emptyBlockKey: null,
+      windowRetryAt: 0,
+      windowErrorShown: false,
+      infiniteResizeObserver: null,
     };
   },
   computed: {
@@ -657,7 +657,7 @@ export default {
     thumbAwaitingRows() {
       // Keep spacers collapsed for the whole jump, including the moment rows arrive,
       // so the viewport does not fall into an empty block and schedule another load.
-      return this._pinnedRow != null;
+      return this.pinnedRow != null;
     },
     /** True when the viewport is looking at rows we have not fetched yet. */
     infiniteViewportUnloaded() {
@@ -702,7 +702,7 @@ export default {
       return rows;
     },
     infiniteFetching() {
-      return this.isInfiniteMode && (this.queryLoading || this._windowFetchBusy);
+      return this.isInfiniteMode && (this.queryLoading || this.windowFetchBusy);
     },
     /**
      * Whether the Manage column exists at all. Derived from the loaded rows rather than the
@@ -742,9 +742,9 @@ export default {
       const thumb = this.infiniteThumbHeight;
       const maxTop = Math.max(0, view - thumb);
       const maxFirst = Math.max(1, this.total - Math.round(view / this.effectiveRowHeight));
-      const index = this._thumbFraction != null
-        ? this.rowIndexForFraction(this._thumbFraction)
-        : (this._pinnedRow != null ? this._pinnedRow : this.visibleFirstRow);
+      const index = this.thumbFraction != null
+        ? this.rowIndexForFraction(this.thumbFraction)
+        : (this.pinnedRow != null ? this.pinnedRow : this.visibleFirstRow);
       const fraction = maxFirst > 0 ? index / maxFirst : 0;
       return {
         height: `${thumb}px`,
@@ -944,7 +944,7 @@ export default {
       handler(value) {
         const next = this.searchQueryKey(value);
         clearTimeout(this.searchDebounceTimer);
-        if (next === this._appliedSearchKey) {
+        if (next === this.appliedSearchKey) {
           this.searchPending = false;
           return;
         }
@@ -953,8 +953,8 @@ export default {
         this.searchPending = true;
         this.searchDebounceTimer = setTimeout(() => {
           this.searchPending = false;
-          if (next === this._appliedSearchKey) return;
-          this._appliedSearchKey = next;
+          if (next === this.appliedSearchKey) return;
+          this.appliedSearchKey = next;
           this.resetSelection();
           this.currentPage = 1;
           this.fetchQueryPage({nav: {}});
@@ -1013,8 +1013,8 @@ export default {
     this.teardownQueryMode();
     clearTimeout(this.searchDebounceTimer);
     clearTimeout(this.queryLoadingTimer);
-    clearTimeout(this._enteringClearTimer);
-    clearTimeout(this._backfillTimer);
+    clearTimeout(this.enteringClearTimer);
+    clearTimeout(this.backfillTimer);
     this.cleanupFixedColumns();
     this.exitInfiniteMode();
   },
@@ -1112,8 +1112,8 @@ export default {
         columnFilters: query?.columnFilters ? {...query.columnFilters} : {},
       };
       const key = this.searchQueryKey(next);
-      if (key === this._appliedSearchKey) return;
-      this._appliedSearchKey = key;
+      if (key === this.appliedSearchKey) return;
+      this.appliedSearchKey = key;
       this.searchQuery = next;
       this.currentPage = 1;
       this.fetchQueryPage({nav: {}});
@@ -1174,8 +1174,8 @@ export default {
     },
     /** Reserve for a non-neighbour page jump. Nothing in the current pager calls this. */
     async hopToPage(target) {
-      if (this._hopBusy) return;
-      this._hopBusy = true;
+      if (this.hopBusy) return;
+      this.hopBusy = true;
       try {
         let guard = 0;
         while (this.currentPage !== target && guard++ < 200) {
@@ -1193,7 +1193,7 @@ export default {
         if (err?.superseded) return;
         console.warn("BackendTable hopToPage failed", err);
       } finally {
-        this._hopBusy = false;
+        this.hopBusy = false;
       }
     },
     paginationUpdate() {
@@ -1312,17 +1312,17 @@ export default {
       if (!this.$socket) return;
 
       this.teardownQueryMode();
-      this._deltaHandler = (payload) => this.handleDelta(payload);
-      this._staleHandler = (payload) => this.handleStale(payload);
+      this.deltaHandler = (payload) => this.handleDelta(payload);
+      this.staleHandler = (payload) => this.handleStale(payload);
       // vue-3-socket.io overrides socket.io onevent and routes custom events
       // through its emitter — $socket.on(...) never fires for studyDelta/Stale.
       // Use sockets.subscribe (same pattern as DownloadSingle / Toast).
       if (this.sockets?.subscribe) {
-        this.sockets.subscribe(this.table + "Delta", this._deltaHandler);
-        this.sockets.subscribe(this.table + "Stale", this._staleHandler);
+        this.sockets.subscribe(this.table + "Delta", this.deltaHandler);
+        this.sockets.subscribe(this.table + "Stale", this.staleHandler);
       } else {
-        this.$socket.on(this.table + "Delta", this._deltaHandler);
-        this.$socket.on(this.table + "Stale", this._staleHandler);
+        this.$socket.on(this.table + "Delta", this.deltaHandler);
+        this.$socket.on(this.table + "Stale", this.staleHandler);
       }
       this.holdQueryMode();
       // fetchQueryPage waits for socket.connect when autoConnect:false
@@ -1330,53 +1330,53 @@ export default {
     },
     // Tell the server this table is open so it also sends row updates.
     holdQueryMode() {
-      if (this._queryHold || !this.$socket) return;
-      this._queryHold = true;
-      this._onQueryConnect = () => {
-        if (!this._queryHold) return;
-        this._queryHeldOnSocket = true;
+      if (this.queryHold || !this.$socket) return;
+      this.queryHold = true;
+      this.onQueryConnect = () => {
+        if (!this.queryHold) return;
+        this.queryHeldOnSocket = true;
         this.$socket.emit("queryTableAcquire", {table: this.table});
       };
-      this.$socket.on("connect", this._onQueryConnect);
+      this.$socket.on("connect", this.onQueryConnect);
       if (this.$socket.connected) {
-        this._onQueryConnect();
+        this.onQueryConnect();
       }
     },
     // table closed so server can drop that hold. 
     releaseQueryMode() {
-      if (this._onQueryConnect && this.$socket) {
-        this.$socket.off("connect", this._onQueryConnect);
+      if (this.onQueryConnect && this.$socket) {
+        this.$socket.off("connect", this.onQueryConnect);
       }
-      this._onQueryConnect = null;
-      if (this._queryHeldOnSocket && this.$socket) {
+      this.onQueryConnect = null;
+      if (this.queryHeldOnSocket && this.$socket) {
         this.$socket.emit("queryTableRelease", {table: this.table});
       }
-      this._queryHold = false;
-      this._queryHeldOnSocket = false;
+      this.queryHold = false;
+      this.queryHeldOnSocket = false;
     },
     // Stop listening for row updates and tell the server this table closed.
     teardownQueryMode() {
       this.releaseQueryMode();
       if (!this.$socket) return;
-      if (this._deltaHandler || this._staleHandler) {
+      if (this.deltaHandler || this.staleHandler) {
         if (this.sockets?.unsubscribe) {
           this.sockets.unsubscribe(this.table + "Delta");
           this.sockets.unsubscribe(this.table + "Stale");
         } else {
-          if (this._deltaHandler) {
-            this.$socket.off(this.table + "Delta", this._deltaHandler);
+          if (this.deltaHandler) {
+            this.$socket.off(this.table + "Delta", this.deltaHandler);
           }
-          if (this._staleHandler) {
-            this.$socket.off(this.table + "Stale", this._staleHandler);
+          if (this.staleHandler) {
+            this.$socket.off(this.table + "Stale", this.staleHandler);
           }
         }
       }
-      if (this._pendingConnectFetch) {
-        this.$socket.off("connect", this._pendingConnectFetch);
+      if (this.pendingConnectFetch) {
+        this.$socket.off("connect", this.pendingConnectFetch);
       }
-      this._deltaHandler = null;
-      this._staleHandler = null;
-      this._pendingConnectFetch = null;
+      this.deltaHandler = null;
+      this.staleHandler = null;
+      this.pendingConnectFetch = null;
     },
     buildQueryPayload(nav = {}) {
       // Sort, search and column filters ride along on every request — block fetches of the
@@ -1413,17 +1413,15 @@ export default {
       return payload;
     },
     releaseSupersededWindow() {
-      this._windowFetchBusy = false;
-      this._windowHold = false;
-      this._pinnedRow = null;
+      this.windowFetchBusy = false;
+      this.windowHold = false;
+      this.pinnedRow = null;
     },
     applyQueryResult(result, {highlightNewFrom = null, requestedNav = {}} = {}) {
       const items = (result.items || []).map((row) => this.applyEnrich(row));
       this.queryItems = items;
       this.queryMeta = result.meta || this.queryMeta;
-      if (this.options?.pagination) {
-        this.options.pagination.total = this.queryMeta.total;
-      }
+      this.$emit("total-change", this.queryMeta.total);
       // Remember the cursors that produced THIS page, so delta refetch/backfill
       // re-requests the exact same window (keyset boundary, not a page index).
       this.currentQuery = {
@@ -1457,14 +1455,14 @@ export default {
       }
       if (this.isInfiniteMode) {
         // A fresh window: sort / search / filter / page-size changes all land here.
-        // fetchQueryPage bumped _seekToken, so the displaced block will not clear this itself.
+        // fetchQueryPage bumped seekToken, so the displaced block will not clear this itself.
         this.releaseSupersededWindow();
         this.rowsBefore = requestedNav.fromEnd
           ? Math.max(0, (this.queryMeta.total || 0) - items.length)
           : (Number.isFinite(this.queryMeta.offset) ? this.queryMeta.offset : 0);
         this.windowStartCursorValid = true;
         this.windowEndCursorValid = true;
-        this._emptyBlockKey = null;
+        this.emptyBlockKey = null;
         this.clearWindowLoadError();
         this.virtualStart = 0;
         this.virtualEnd = items.length;
@@ -1493,30 +1491,30 @@ export default {
       if (!this.$socket) return;
       if (!this.$socket.connected) {
         // Socket uses autoConnect:false; emit+ack before connect is dropped.
-        if (!this._pendingConnectFetch) {
-          this._pendingConnectFetch = () => {
-            this._pendingConnectFetch = null;
+        if (!this.pendingConnectFetch) {
+          this.pendingConnectFetch = () => {
+            this.pendingConnectFetch = null;
             this.fetchQueryPage(options);
           };
-          this.$socket.once("connect", this._pendingConnectFetch);
+          this.$socket.once("connect", this.pendingConnectFetch);
         }
         return;
       }
       const nav = options.nav || {};
       this.queryLoading = true;
-      const token = ++this._queryToken;
+      const token = ++this.queryToken;
       if (this.isInfiniteMode) {
-        // Window blocks use _seekToken, not _queryToken. Bump it so an in-flight
+        // Window blocks use seekToken, not queryToken. Bump it so an in-flight
         // fetchWindowBlock / seek / refetch cannot append into this new result.
-        this._seekToken += 1;
-        clearTimeout(this._seekTimer);
-        this._seekTimer = null;
+        this.seekToken += 1;
+        clearTimeout(this.seekTimer);
+        this.seekTimer = null;
       }
       const payload = this.buildQueryPayload(nav);
       // timeout() makes the ack (err, response). A lost ack or a disconnect
       // ends the wait, so pagination is not stuck on queryLoading.
       this.$socket.timeout(15000).emit("queryTable", payload, (err, response) => {
-        if (token !== this._queryToken) {
+        if (token !== this.queryToken) {
           if (typeof options.onIgnored === "function") options.onIgnored();
           return;
         }
@@ -1617,9 +1615,7 @@ export default {
       this.queryMeta.totalPages = this.queryMeta.pageSize
         ? Math.ceil(this.queryMeta.total / this.queryMeta.pageSize)
         : 1;
-      if (this.options?.pagination) {
-        this.options.pagination.total = this.queryMeta.total;
-      }
+      this.$emit("total-change", this.queryMeta.total);
     },
     /**
      * UTC calendar day `YYYY-MM-DD` for a timestamp / ISO string, or "" when unknown.
@@ -1828,7 +1824,7 @@ export default {
       next.add(id);
       this.deletingIds = next;
 
-      const animMs = this._deleteAnimMs;
+      const animMs = this.deleteAnimMs;
       setTimeout(() => {
         // Keep the slot as a frozen skeleton until backfill so layout does not
         // briefly shrink (double-jump). Atomic swap then shifts rows up once.
@@ -1842,8 +1838,8 @@ export default {
       }, animMs);
     },
     schedulePageBackfill() {
-      clearTimeout(this._backfillTimer);
-      this._backfillTimer = setTimeout(() => {
+      clearTimeout(this.backfillTimer);
+      this.backfillTimer = setTimeout(() => {
         // A page keeps its row count and backfills; a scroll window just gets shorter.
         if (this.isInfiniteMode) {
           this.finishInfiniteDeletes();
@@ -1858,7 +1854,7 @@ export default {
      * No previous-page / top enter. Last page: leave the page short.
      */
     async backfillAfterDeletes() {
-      if (this._backfillBusy || !this.$socket?.connected) return;
+      if (this.backfillBusy || !this.$socket?.connected) return;
       if (this.deletingIds && this.deletingIds.size > 0) {
         this.schedulePageBackfill();
         return;
@@ -1884,10 +1880,10 @@ export default {
         return;
       }
 
-      this._backfillBusy = true;
+      this.backfillBusy = true;
       // Any fetchQueryPage started while this request is in flight (search, sort, page, ...)
-      // bumps _queryToken; its result owns the page and also clears placeholderIds.
-      const token = this._queryToken;
+      // bumps queryToken; its result owns the page and also clears placeholderIds.
+      const token = this.queryToken;
       try {
         const visibleIds = new Set(remaining.map((i) => i.id));
         // Fill from the *next* page (after current endCursor), not by re-sorting the
@@ -1897,7 +1893,7 @@ export default {
           ? this.buildQueryPayload({after: endCursor})
           : this.buildQueryPayload(this.currentNav());
         const {items: nextItems, meta} = await this.requestQueryItems(nextPayload);
-        if (token !== this._queryToken) return;
+        if (token !== this.queryToken) return;
         const bottomFill = nextItems
           .filter((row) => !visibleIds.has(row.id))
           .slice(0, need);
@@ -1914,17 +1910,17 @@ export default {
         this.placeholderIds = new Set();
         this.enteringIds = [];
         this.enteringBottomIds = bottomFill.map((row) => row.id);
-        clearTimeout(this._enteringClearTimer);
-        this._enteringClearTimer = setTimeout(() => {
+        clearTimeout(this.enteringClearTimer);
+        this.enteringClearTimer = setTimeout(() => {
           this.enteringBottomIds = [];
         }, 1100);
       } catch (err) {
         console.warn("BackendTable backfillAfterDeletes failed", err);
-        if (token !== this._queryToken) return;
+        if (token !== this.queryToken) return;
         this.queryItems = remaining;
         this.placeholderIds = new Set();
       } finally {
-        this._backfillBusy = false;
+        this.backfillBusy = false;
       }
     },
     /** One-off queryTable call that returns its rows instead of replacing the current page. */
@@ -1955,9 +1951,9 @@ export default {
      * @param {Error} err rejection of requestQueryItems (`err.response` is the server reply, if any)
      */
     handleWindowLoadError(err) {
-      this._windowRetryAt = Date.now() + WINDOW_RETRY_MS;
-      if (this._windowErrorShown) return;
-      this._windowErrorShown = true;
+      this.windowRetryAt = Date.now() + WINDOW_RETRY_MS;
+      if (this.windowErrorShown) return;
+      this.windowErrorShown = true;
       this.eventBus.emit("toast", {
         message: resolveApiMessage(err?.response),
         variant: "danger",
@@ -1965,8 +1961,8 @@ export default {
     },
     /** A window load worked again: allow the next failure to toast and load without pause. */
     clearWindowLoadError() {
-      this._windowRetryAt = 0;
-      this._windowErrorShown = false;
+      this.windowRetryAt = 0;
+      this.windowErrorShown = false;
     },
     replaceRow(updatedRow) {
       const enriched = this.applyEnrich(updatedRow);
@@ -2123,7 +2119,7 @@ export default {
       return {offset: (target - 1) * this.limit};
     },
     async loadPendingChanges() {
-      if (this._pendingLoadBusy) return;
+      if (this.pendingLoadBusy) return;
       if (!this.currentQuery) {
         this.fetchQueryPage();
         return;
@@ -2132,7 +2128,7 @@ export default {
       const previousIds = new Set(this.queryItems.map((i) => i.id));
       const page = this.currentPage;
 
-      this._pendingLoadBusy = true;
+      this.pendingLoadBusy = true;
       this.pendingInserts = 0;
       this.pendingStructural = false;
       this.pendingLoadPhase = "out";
@@ -2150,11 +2146,11 @@ export default {
             this.pendingLoadPhase = null;
           });
         });
-        clearTimeout(this._enteringClearTimer);
-        this._enteringClearTimer = setTimeout(() => {
+        clearTimeout(this.enteringClearTimer);
+        this.enteringClearTimer = setTimeout(() => {
           this.enteringIds = [];
           this.enteringBottomIds = [];
-          this._pendingLoadBusy = false;
+          this.pendingLoadBusy = false;
         }, reduceMotion ? 0 : 1200);
       };
 
@@ -2168,7 +2164,7 @@ export default {
       };
       const resetBanner = () => {
         this.pendingLoadPhase = null;
-        this._pendingLoadBusy = false;
+        this.pendingLoadBusy = false;
       };
       const callbacks = {
         highlightNewFrom: previousIds,
@@ -2224,7 +2220,7 @@ export default {
       this.visibleLastRow = 0;
       this.windowStartCursorValid = true;
       this.windowEndCursorValid = true;
-      this._emptyBlockKey = null;
+      this.emptyBlockKey = null;
       this.pendingInserts = 0;
       this.pendingStructural = false;
       this.$nextTick(() => {
@@ -2240,11 +2236,11 @@ export default {
     exitInfiniteMode() {
       this.detachInfiniteScroll();
       this.infiniteScrollbarVisible = false;
-      clearTimeout(this._seekTimer);
-      clearTimeout(this._windowRefetchTimer);
-      this._seekTimer = null;
-      this._windowRefetchTimer = null;
-      this._windowRefetchHighlight = [];
+      clearTimeout(this.seekTimer);
+      clearTimeout(this.windowRefetchTimer);
+      this.seekTimer = null;
+      this.windowRefetchTimer = null;
+      this.windowRefetchHighlight = [];
       this.rowsBefore = 0;
       this.virtualStart = 0;
       this.virtualEnd = 0;
@@ -2259,40 +2255,40 @@ export default {
     },
     attachInfiniteScroll() {
       this.detachInfiniteScroll();
-      this._scrollTarget = this.infiniteScrollTarget();
-      this._scrollHandler = () => {
+      this.scrollTarget = this.infiniteScrollTarget();
+      this.scrollHandler = () => {
         if (this._suppressScroll) {
           this._suppressScroll = false;
           return;
         }
-        this._pinnedRow = null;
-        this._thumbFraction = null;
+        this.pinnedRow = null;
+        this.thumbFraction = null;
         this.scheduleVirtualUpdate();
       };
-      (this._scrollTarget || window).addEventListener("scroll", this._scrollHandler, {passive: true});
-      window.addEventListener("resize", this._scrollHandler, {passive: true});
+      (this.scrollTarget || window).addEventListener("scroll", this.scrollHandler, {passive: true});
+      window.addEventListener("resize", this.scrollHandler, {passive: true});
       // First layout often has clientHeight 0 / a few rows; wait for the scroll area to settle.
       if (typeof ResizeObserver !== "undefined" && this.$refs.tableWrapper) {
-        this._infiniteResizeObserver = new ResizeObserver(() => this.scheduleVirtualUpdate());
-        this._infiniteResizeObserver.observe(this.$refs.tableWrapper);
+        this.infiniteResizeObserver = new ResizeObserver(() => this.scheduleVirtualUpdate());
+        this.infiniteResizeObserver.observe(this.$refs.tableWrapper);
       }
     },
     detachInfiniteScroll() {
       this.stopInfiniteThumbDrag();
-      if (this._infiniteResizeObserver) {
-        this._infiniteResizeObserver.disconnect();
-        this._infiniteResizeObserver = null;
+      if (this.infiniteResizeObserver) {
+        this.infiniteResizeObserver.disconnect();
+        this.infiniteResizeObserver = null;
       }
-      if (this._scrollHandler) {
-        (this._scrollTarget || window).removeEventListener("scroll", this._scrollHandler);
-        window.removeEventListener("resize", this._scrollHandler);
+      if (this.scrollHandler) {
+        (this.scrollTarget || window).removeEventListener("scroll", this.scrollHandler);
+        window.removeEventListener("resize", this.scrollHandler);
       }
-      if (this._scrollRaf) {
-        cancelAnimationFrame(this._scrollRaf);
-        this._scrollRaf = null;
+      if (this.scrollRaf) {
+        cancelAnimationFrame(this.scrollRaf);
+        this.scrollRaf = null;
       }
-      this._scrollHandler = null;
-      this._scrollTarget = null;
+      this.scrollHandler = null;
+      this.scrollTarget = null;
     },
     onInfiniteScrollbarDown(event) {
       const track = this.$refs.infiniteScrollbar;
@@ -2325,8 +2321,8 @@ export default {
       const fraction = maxTop > 0 ? thumbTop / maxTop : 0;
       const target = this.rowIndexForFraction(fraction);
       const visible = Math.max(1, Math.round((this.viewportHeight || 1) / this.effectiveRowHeight));
-      this._thumbFraction = fraction;
-      this._pinnedRow = target;
+      this.thumbFraction = fraction;
+      this.pinnedRow = target;
       this.visibleFirstRow = target;
       this.visibleLastRow = Math.min(Math.max(0, this.total - 1), target + visible - 1);
       const outside = target < this.rowsBefore || target >= this.rowsBefore + this.loadedCount;
@@ -2341,24 +2337,24 @@ export default {
      * scrolls; a target outside it is the one case that fetches.
      */
     commitThumbFraction() {
-      const fraction = this._thumbFraction;
-      this._thumbFraction = null;
+      const fraction = this.thumbFraction;
+      this.thumbFraction = null;
       if (fraction == null || !this.total) return;
       const target = this.rowIndexForFraction(fraction);
       const visible = Math.max(1, Math.round((this.viewportHeight || 1) / this.effectiveRowHeight));
-      this._pinnedRow = target;
+      this.pinnedRow = target;
       this.visibleFirstRow = target;
       this.visibleLastRow = Math.min(Math.max(0, this.total - 1), target + visible - 1);
       const windowStart = this.rowsBefore;
       const windowEnd = windowStart + this.loadedCount;
       if (target >= windowStart && target < windowEnd) {
-        this._pinnedRow = null;
-        this._windowHold = false;
+        this.pinnedRow = null;
+        this.windowHold = false;
         this.scrollToRowIndex(target);
         this.scheduleVirtualUpdate();
         return;
       }
-      this._windowHold = true;
+      this.windowHold = true;
       this.scheduleWindowSeek(target);
     },
     stopInfiniteThumbDrag() {
@@ -2387,9 +2383,9 @@ export default {
       wrapper.scrollTop = row * this.effectiveRowHeight;
     },
     scheduleVirtualUpdate() {
-      if (!this.isInfiniteMode || this._scrollRaf) return;
-      this._scrollRaf = requestAnimationFrame(() => {
-        this._scrollRaf = null;
+      if (!this.isInfiniteMode || this.scrollRaf) return;
+      this.scrollRaf = requestAnimationFrame(() => {
+        this.scrollRaf = null;
         this.updateVirtualWindow();
       });
     },
@@ -2418,7 +2414,7 @@ export default {
     },
     updateVirtualWindow() {
       if (!this.isInfiniteMode) return;
-      const target = this._scrollTarget || this.infiniteScrollTarget();
+      const target = this.scrollTarget || this.infiniteScrollTarget();
       if (!target || target.clientHeight <= 0) return;
       this.scrollTop = target.scrollTop;
       this.scrollHeight = target.scrollHeight;
@@ -2436,12 +2432,12 @@ export default {
       // Spacers sit outside the table, so row N starts at headHeight + N * rowHeight. The
       // sticky header covers the top headHeight pixels of the viewport.
       const headHeight = this.$refs.tableElement?.tHead?.offsetHeight || 0;
-      const first = this._pinnedRow != null
-        ? this._pinnedRow
+      const first = this.pinnedRow != null
+        ? this.pinnedRow
         : Math.max(0, Math.floor(this.scrollTop / rowHeight));
       const usable = Math.max(rowHeight, this.viewportHeight - headHeight);
-      const last = this._pinnedRow != null
-        ? this._pinnedRow + Math.max(1, Math.round(usable / rowHeight)) - 1
+      const last = this.pinnedRow != null
+        ? this.pinnedRow + Math.max(1, Math.round(usable / rowHeight)) - 1
         : Math.max(first, Math.floor((this.scrollTop + usable - 1) / rowHeight));
       this.visibleFirstRow = Math.min(first, lastRow);
       this.visibleLastRow = Math.min(last, lastRow);
@@ -2460,13 +2456,13 @@ export default {
     },
     /** Pull the next block in, or jump the window when the viewport left it entirely. */
     maintainInfiniteWindow() {
-      if (!this.isInfiniteMode || this.queryLoading || this._windowFetchBusy) return;
+      if (!this.isInfiniteMode || this.queryLoading || this.windowFetchBusy) return;
       // A load just failed: without this pause the same rows are requested again on the next
       // frame. The next scroll after the pause tries again.
-      if (Date.now() < this._windowRetryAt) return;
+      if (Date.now() < this.windowRetryAt) return;
       // Thumb jump owns the viewport until its rows are on screen. A resize in that
       // gap used to queue a second and third load.
-      if (this._pinnedRow != null || this._windowHold || this._seekTimer) return;
+      if (this.pinnedRow != null || this.windowHold || this.seekTimer) return;
       if (this.loadedCount === 0) {
         // Window ran dry (e.g. everything on it was deleted) but the result set is not empty.
         if (this.total > 0) {
@@ -2476,7 +2472,7 @@ export default {
       }
       const windowStart = this.rowsBefore;
       const windowEnd = this.rowsBefore + this.loadedCount;
-      const anchor = this._pinnedRow != null ? this._pinnedRow : this.visibleFirstRow;
+      const anchor = this.pinnedRow != null ? this.pinnedRow : this.visibleFirstRow;
 
       if (anchor < windowStart - this.infinitePrefetchRows
         || anchor > windowEnd + this.infinitePrefetchRows) {
@@ -2493,7 +2489,7 @@ export default {
       }
     },
     resetInfiniteScroll() {
-      const target = this._scrollTarget || this.infiniteScrollTarget();
+      const target = this.scrollTarget || this.infiniteScrollTarget();
       if (target) target.scrollTop = 0;
       this.visibleFirstRow = 0;
       this.visibleLastRow = 0;
@@ -2503,7 +2499,7 @@ export default {
       if (!this.isInfiniteMode || !rowDelta) return;
       const px = rowDelta * this.effectiveRowHeight;
       this.$nextTick(() => {
-        const target = this._scrollTarget || this.infiniteScrollTarget();
+        const target = this.scrollTarget || this.infiniteScrollTarget();
         if (target) {
           this._suppressScroll = true;
           const before = target.scrollTop;
@@ -2521,9 +2517,7 @@ export default {
       if (Number.isFinite(meta.total)) {
         this.queryMeta.total = meta.total;
         this.queryMeta.totalPages = 1;
-        if (this.options?.pagination) {
-          this.options.pagination.total = meta.total;
-        }
+        this.$emit("total-change", meta.total);
       }
       if (start && meta.startCursor) this.queryMeta.startCursor = meta.startCursor;
       if (end && meta.endCursor) this.queryMeta.endCursor = meta.endCursor;
@@ -2547,7 +2541,7 @@ export default {
       };
     },
     async fetchWindowBlock(direction) {
-      if (!this.isInfiniteMode || this._windowFetchBusy || !this.$socket?.connected) return;
+      if (!this.isInfiniteMode || this.windowFetchBusy || !this.$socket?.connected) return;
       let nav;
       if (direction === "after") {
         nav = (this.windowEndCursorValid && this.queryMeta.endCursor)
@@ -2562,24 +2556,24 @@ export default {
       }
       // A block that brings nothing new must not be requested again on the next scroll frame.
       const navKey = `${direction}:${nav.after || nav.before || `offset-${nav.offset}`}`;
-      if (this._emptyBlockKey === navKey) return;
-      const token = ++this._seekToken;
-      this._windowFetchBusy = true;
+      if (this.emptyBlockKey === navKey) return;
+      const token = ++this.seekToken;
+      this.windowFetchBusy = true;
       try {
         const {items, meta} = await this.requestQueryItems(this.buildQueryPayload(nav));
-        if (!this.isInfiniteMode || token !== this._seekToken) return;
+        if (!this.isInfiniteMode || token !== this.seekToken) return;
         const added = direction === "after"
           ? this.appendWindowBlock(items, meta)
           : this.prependWindowBlock(items, meta);
-        this._emptyBlockKey = added > 0 ? null : navKey;
+        this.emptyBlockKey = added > 0 ? null : navKey;
         this.clearWindowLoadError();
       } catch (err) {
-        if (token === this._seekToken) {
+        if (token === this.seekToken) {
           this.handleWindowLoadError(err);
         }
       } finally {
-        if (token === this._seekToken) {
-          this._windowFetchBusy = false;
+        if (token === this.seekToken) {
+          this.windowFetchBusy = false;
           this.$nextTick(() => {
             this.measureRowHeight();
             this.scheduleVirtualUpdate();
@@ -2631,9 +2625,9 @@ export default {
       return fresh.length;
     },
     scheduleWindowSeek(targetRow) {
-      clearTimeout(this._seekTimer);
-      this._seekTimer = setTimeout(() => {
-        this._seekTimer = null;
+      clearTimeout(this.seekTimer);
+      this.seekTimer = setTimeout(() => {
+        this.seekTimer = null;
         this.seekWindow(targetRow);
       }, 120);
     },
@@ -2652,7 +2646,7 @@ export default {
       this.rowsBefore = (meta && Number.isFinite(meta.offset)) ? meta.offset : offset;
       this.windowStartCursorValid = true;
       this.windowEndCursorValid = true;
-      this._emptyBlockKey = null;
+      this.emptyBlockKey = null;
       this.clearWindowLoadError();
       this.applyWindowMeta(meta, {start: true, end: true});
       this.deletingIds = new Set();
@@ -2668,8 +2662,8 @@ export default {
      * the one place that sends an offset; the window keeps walking by cursor afterwards.
      */
     async seekWindow(targetRow) {
-      if (!this.isInfiniteMode || this._windowFetchBusy || !this.$socket?.connected) {
-        if (!this._windowFetchBusy) this._windowHold = false;
+      if (!this.isInfiniteMode || this.windowFetchBusy || !this.$socket?.connected) {
+        if (!this.windowFetchBusy) this.windowHold = false;
         return;
       }
       // Sit the target in the middle of the window. A short pad left it inside the
@@ -2677,17 +2671,17 @@ export default {
       const wanted = this.infiniteMaxRows;
       const highest = Math.max(0, this.total - wanted);
       const offset = Math.max(0, Math.min(targetRow - Math.floor(wanted / 2), highest));
-      const token = ++this._seekToken;
-      this._windowHold = true;
-      this._windowFetchBusy = true;
+      const token = ++this.seekToken;
+      this.windowHold = true;
+      this.windowFetchBusy = true;
       try {
         const {items, meta} = await this.requestQueryItems(
           this.buildQueryPayload({offset, limit: wanted})
         );
-        if (!this.isInfiniteMode || token !== this._seekToken) {
-          if (token === this._seekToken) {
-            this._windowHold = false;
-            this._pinnedRow = null;
+        if (!this.isInfiniteMode || token !== this.seekToken) {
+          if (token === this.seekToken) {
+            this.windowHold = false;
+            this.pinnedRow = null;
           }
           return;
         }
@@ -2699,33 +2693,33 @@ export default {
         this.virtualEnd = items.length;
         // Spacers stay collapsed while pinned, so these rows sit in the viewport at once.
         this.$nextTick(() => {
-          this._pinnedRow = null;
+          this.pinnedRow = null;
           this.$nextTick(() => {
             this.scrollToRowIndex(show);
             this.updateVirtualWindow();
-            this._windowHold = false;
+            this.windowHold = false;
           });
         });
       } catch (err) {
-        if (token === this._seekToken) {
+        if (token === this.seekToken) {
           this.handleWindowLoadError(err);
-          this._windowHold = false;
-          this._pinnedRow = null;
+          this.windowHold = false;
+          this.pinnedRow = null;
         }
       } finally {
-        if (token === this._seekToken) {
-          this._windowFetchBusy = false;
+        if (token === this.seekToken) {
+          this.windowFetchBusy = false;
         }
       }
     },
     scheduleWindowRefetch(highlightId = null) {
       if (!this.isInfiniteMode) return;
-      if (highlightId != null && !this._windowRefetchHighlight.includes(highlightId)) {
-        this._windowRefetchHighlight.push(highlightId);
+      if (highlightId != null && !this.windowRefetchHighlight.includes(highlightId)) {
+        this.windowRefetchHighlight.push(highlightId);
       }
-      clearTimeout(this._windowRefetchTimer);
-      this._windowRefetchTimer = setTimeout(() => {
-        this._windowRefetchTimer = null;
+      clearTimeout(this.windowRefetchTimer);
+      this.windowRefetchTimer = setTimeout(() => {
+        this.windowRefetchTimer = null;
         this.refetchWindow();
       }, 150);
     },
@@ -2735,7 +2729,7 @@ export default {
      */
     async refetchWindow() {
       if (!this.isInfiniteMode || !this.$socket?.connected) return;
-      if (this._windowFetchBusy) {
+      if (this.windowFetchBusy) {
         this.scheduleWindowRefetch();
         return;
       }
@@ -2745,15 +2739,15 @@ export default {
       const anchorIndex = anchorId != null
         ? this.rowsBefore + this.queryItems.findIndex((row) => row.id === anchorId)
         : -1;
-      const highlight = this._windowRefetchHighlight;
-      this._windowRefetchHighlight = [];
-      const token = ++this._seekToken;
-      this._windowFetchBusy = true;
+      const highlight = this.windowRefetchHighlight;
+      this.windowRefetchHighlight = [];
+      const token = ++this.seekToken;
+      this.windowFetchBusy = true;
       try {
         const {items, meta} = await this.requestQueryItems(
           this.buildQueryPayload({offset, limit: wanted})
         );
-        if (!this.isInfiniteMode || token !== this._seekToken) return;
+        if (!this.isInfiniteMode || token !== this.seekToken) return;
         this.replaceWindow(items, meta, offset);
 
         if (anchorIndex >= 0) {
@@ -2775,12 +2769,12 @@ export default {
           this.updateVirtualWindow();
         });
       } catch (err) {
-        if (token === this._seekToken) {
+        if (token === this.seekToken) {
           this.handleWindowLoadError(err);
         }
       } finally {
-        if (token === this._seekToken) {
-          this._windowFetchBusy = false;
+        if (token === this.seekToken) {
+          this.windowFetchBusy = false;
         }
       }
     },
@@ -2835,8 +2829,8 @@ export default {
     },
     flashEnteringRow(id) {
       this.enteringIds = [...this.enteringIds.filter((x) => x !== id), id];
-      clearTimeout(this._enteringClearTimer);
-      this._enteringClearTimer = setTimeout(() => {
+      clearTimeout(this.enteringClearTimer);
+      this.enteringClearTimer = setTimeout(() => {
         this.enteringIds = [];
         this.enteringBottomIds = [];
       }, 1200);
@@ -2902,7 +2896,7 @@ export default {
       const loadedIndex = this.queryItems.findIndex((item) => item.id === row.id);
       const loaded = loadedIndex >= 0;
       // The result set moved, so an edge that had nothing to give may have rows now.
-      this._emptyBlockKey = null;
+      this.emptyBlockKey = null;
 
       if (operation === "delete") {
         if (this.processedDeleteIds.has(row.id)) return;

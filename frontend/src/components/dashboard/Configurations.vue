@@ -35,7 +35,6 @@
 </template>
 
 <script>
-import BasicButton from "@/basic/Button.vue";
 import ExportFormatModal from "@/basic/modal/ExportFormatModal.vue";
 import ImportFormatModal from "@/basic/modal/ImportFormatModal.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -57,7 +56,6 @@ export default {
   subscribeTable: ["configuration"],
   components: {
     DashboardListPage,
-    BasicButton,
     HeaderActions,
     ExportFormatModal,
     ImportFormatModal,

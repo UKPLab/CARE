@@ -334,7 +334,7 @@ export default {
       if (this.zone?.id) {
         try {
           return zonedParts(this.zone.id, Date.now()).ymd;
-        } catch {
+        } catch (_error) {
           // fall through to the device date
         }
       }

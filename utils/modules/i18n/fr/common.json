@@ -117,6 +117,7 @@
             "hint": "Faites glisser ou utilisez les flèches pour changer l'ordre",
             "drag": "Glisser pour réordonner",
             "timeLabel": "Heure rapide {n}",
+            "timePlaceholder": "HH:MM",
             "sort": "Trier par ordre croissant",
             "remove": "Supprimer",
             "empty": "Aucune heure rapide",

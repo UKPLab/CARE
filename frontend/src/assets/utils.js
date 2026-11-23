@@ -281,25 +281,6 @@ export function tagColorVar(colorCode) {
     return `var(--bs-${color})`;
 }
 
-// The PDF highlight keeps its own softer palette on purpose: it sits under the text.
-const TAG_HIGHLIGHT_COLORS = {
-    success: "#009933",
-    danger: "#e05f5f",
-    info: "#5fe0df",
-    dark: "#c8c8c8",
-    warning: "#eed042",
-    secondary: "#4290ee",
-};
-
-/**
- * Fill colour of a tag's PDF highlight.
- * @param {string} colorCode
- * @returns {string} hex colour, blue for an unknown code
- */
-export function tagHighlightColor(colorCode) {
-    return TAG_HIGHLIGHT_COLORS[colorCode] || "#4c86f7";
-}
-
 /**
  * Assignments shown on the dashboard lists (Submissions, Assignments for
  * users who cannot view all, and the Home submissions tile).

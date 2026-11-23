@@ -19,8 +19,8 @@
           {{ $t('dashboard.study.selectActionHint') }}
         </p>
         <BasicForm
-          class="mb-3"
           v-model="selectedMode"
+          class="mb-3"
           :fields="modeSelectionFields"
         />
       </div>

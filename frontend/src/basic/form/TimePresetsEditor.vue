@@ -68,7 +68,7 @@
           inputmode="numeric"
           maxlength="5"
           autocomplete="off"
-          placeholder="HH:MM"
+          :placeholder="$t('common.datePicker.presets.timePlaceholder')"
           :aria-label="$t('common.datePicker.presets.timeLabel', {n: index + 1})"
           :aria-invalid="row.error ? 'true' : 'false'"
           @focus="$event.target.select()"

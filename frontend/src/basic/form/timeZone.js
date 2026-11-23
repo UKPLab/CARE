@@ -59,7 +59,7 @@ function wallClock(zone, ts) {
 export function deviceTimeZone() {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
-  } catch {
+  } catch (_error) {
     return "UTC";
   }
 }
@@ -70,7 +70,7 @@ export function isValidTimeZone(zone) {
   try {
     partsFormatter(zone);
     return true;
-  } catch {
+  } catch (_error) {
     return false;
   }
 }
@@ -80,7 +80,7 @@ export function listTimeZones() {
   let zones;
   try {
     zones = typeof Intl.supportedValuesOf === "function" ? Intl.supportedValuesOf("timeZone") : null;
-  } catch {
+  } catch (_error) {
     zones = null;
   }
   const all = new Set(zones && zones.length ? zones : FALLBACK_ZONES);
@@ -165,7 +165,7 @@ export function zoneName(zone, ts, locale, style = "long") {
       .formatToParts(new Date(ts))
       .find((part) => part.type === "timeZoneName")?.value || "";
     return /^(GMT|UTC)([+\-−]|$)/.test(name) ? "" : name;
-  } catch {
+  } catch (_error) {
     return "";
   }
 }

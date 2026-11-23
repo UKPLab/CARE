@@ -95,11 +95,13 @@
       </div>
     </template>
     <template v-if="!infoOnly" #footer>
-      <BasicButton
-          class="btn btn-outline-secondary"
-          :text="$t('studies.returnToDashboard')"
-          @click="returnToDashboard"
-      />
+      <div class="btn-group">
+        <BasicButton
+            class="btn btn-outline-secondary"
+            :text="$t('studies.returnToDashboard')"
+            @click="returnToDashboard"
+        />
+      </div>
       <div
           v-if="showSessions"
           class="btn-group"

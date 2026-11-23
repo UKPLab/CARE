@@ -82,7 +82,7 @@ export default [
                 {
                     // Empty, non-Latin, single letter, tiny UI crumbs.
                     ignorePattern: '^$|^([^A-Za-z]+|[A-Za-z]|KB\\)?|\\(ID:)$',
-                    ignoreText: ['CARE', 'ID', 'REQ', 'CMD', 'ORCID', 'LDAP', 'SSO', '-'],
+                    ignoreText: ['CARE', 'DOCS', 'ID', 'REQ', 'CMD', 'ORCID', 'LDAP', 'SSO', '-'],
                     // Vue props
                     attributes: {
                         '/.+/': [

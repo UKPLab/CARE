@@ -114,18 +114,20 @@
           <p v-if="importError" class="text-danger small mt-2 mb-0">{{ importError }}</p>
         </template>
         <template #footer>
-          <BasicButton
-            class="btn btn-outline-secondary"
-            title="Close"
-            :disabled="importing"
-            @click="$refs.importModal.close()"
-          />
-          <BasicButton
-            class="btn btn-primary"
-            :title="importing ? 'Importing…' : 'Import'"
-            :disabled="!importFile || importing"
-            @click="confirmImport"
-          />
+          <div class="btn-group">
+            <BasicButton
+              class="btn btn-outline-secondary"
+              title="Close"
+              :disabled="importing"
+              @click="$refs.importModal.close()"
+            />
+            <BasicButton
+              class="btn btn-primary"
+              :title="importing ? 'Importing…' : 'Import'"
+              :disabled="!importFile || importing"
+              @click="confirmImport"
+            />
+          </div>
         </template>
       </Modal>
     </div>
