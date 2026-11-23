@@ -1,0 +1,163 @@
+{
+    "title": "Évaluations",
+    "recordCount": "{count} enregistrements",
+    "tabs": {
+        "assessments": "Évaluations",
+        "rubrics": "Grilles",
+        "criteria": "Critères"
+    },
+    "actions": {
+        "delete": "Supprimer",
+        "next": "Suivant",
+        "view": "Afficher",
+        "newVersion": "Créer une nouvelle version",
+        "versions": "Versions",
+        "retry": "Réessayer"
+    },
+    "kinds": {
+        "criterion": "critère",
+        "rubric": "grille",
+        "assessment": "évaluation"
+    },
+    "versions": {
+        "title": "Versions de « {name} »",
+        "empty": "Aucune version."
+    },
+    "bounds": {
+        "inactive": "Non défini : aucune limite ne s'applique"
+    },
+    "settings": {
+        "title": "Paramètres avancés",
+        "description": "Paires clé/valeur facultatives",
+        "empty": "Aucun paramètre.",
+        "key": "Clé",
+        "value": "Valeur",
+        "add": "Ajouter un paramètre",
+        "remove": "Supprimer le paramètre",
+        "emptyEditable": "Aucun paramètre. Ajoutez une clé et une valeur si nécessaire."
+    },
+    "fields": {
+        "id": "ID",
+        "name": "Nom",
+        "assessmentName": "Nom de l'évaluation",
+        "description": "Description",
+        "version": "Version",
+        "rubrics": "Grilles",
+        "criteria": "Critères",
+        "points": "Points",
+        "minPoints": "Points minimum",
+        "maxPoints": "Points maximum",
+        "calculation": "Méthode de calcul",
+        "defaultPoints": "Points par défaut",
+        "defaultPointsHelp": "Score de départ ; les scores des critères y sont ajoutés.",
+        "isBonus": "Grille bonus",
+        "scoringDescription": "Description de l'attribution des points",
+        "latestVersion": "Dernière version",
+        "versions": "Versions",
+        "createdAt": "Créé le"
+    },
+    "calculation": {
+        "sum": "Sommation",
+        "min": "Somme plafonnée (anciennes grilles)",
+        "max": "Base + ajustements"
+    },
+    "assessment": {
+        "listTitle": "Définitions d'évaluation",
+        "add": "Ajouter une évaluation",
+        "addTitle": "Ajouter une évaluation",
+        "viewTitle": "Afficher l'évaluation — v{version}",
+        "versionTitle": "Créer une nouvelle version de l'évaluation",
+        "create": "Créer l'évaluation",
+        "createVersion": "Créer la nouvelle version",
+        "stepDetails": "Détails de l'évaluation",
+        "stepRubrics": "Sélection et ordre des grilles",
+        "detailsTitle": "Détails de l'évaluation",
+        "rubricsTitle": "Sélection et ordre des grilles",
+        "rubricsHelp": "Utilisez le tableau pour ajouter des versions de grilles et les classer dans l'ordre voulu.",
+        "noRubricsSelected": "Aucune grille sélectionnée.",
+        "empty": "Aucune évaluation pour l'instant. Ajoutez la première."
+    },
+    "rubric": {
+        "listTitle": "Bibliothèque de grilles",
+        "add": "Ajouter une grille",
+        "addTitle": "Ajouter une grille",
+        "viewTitle": "Afficher la grille — v{version}",
+        "versionTitle": "Créer une nouvelle version de la grille",
+        "create": "Créer la grille",
+        "createVersion": "Créer la nouvelle version",
+        "stepDetails": "Détails de la grille",
+        "stepCriteria": "Sélection et ordre des critères",
+        "detailsTitle": "Détails de la grille",
+        "criteriaTitle": "Sélection et ordre des critères",
+        "criteriaHelp": "Utilisez le tableau pour ajouter des versions de critères et les classer dans l'ordre voulu.",
+        "noCriteriaSelected": "Aucun critère sélectionné.",
+        "bonusHelp": "Une grille bonus ajoute ses points comme points supplémentaires au score obtenu, mais n'augmente pas le score maximal de l'évaluation. Le score final ne peut pas dépasser 100 %.",
+        "empty": "Aucune grille pour l'instant. Ajoutez la première."
+    },
+    "criterion": {
+        "listTitle": "Bibliothèque de critères",
+        "add": "Ajouter un critère",
+        "addTitle": "Ajouter un critère",
+        "stepDetails": "Détails du critère",
+        "stepScoring": "Options de notation",
+        "detailsTitle": "Détails du critère",
+        "scoringTitle": "Options de notation",
+        "scoringHelp": "Définissez comment chaque valeur de points est attribuée pour {name}.",
+        "optionCount": "{count} options",
+        "optionNumber": "Option de notation {number}",
+        "addOption": "Ajouter une option de notation",
+        "removeOption": "Supprimer l'option de notation",
+        "viewTitle": "Afficher le critère — v{version}",
+        "versionTitle": "Créer une nouvelle version du critère",
+        "create": "Créer le critère",
+        "createVersion": "Créer la nouvelle version",
+        "noOptions": "Aucune option de notation.",
+        "empty": "Aucun critère pour l'instant. Ajoutez le premier."
+    },
+    "selection": {
+        "selectedOrder": "Ordre sélectionné",
+        "selectedCount": "{count} sélectionné(s)",
+        "reorderHint": "Ordre à modifier ci-dessous",
+        "moveUp": "Monter",
+        "moveDown": "Descendre",
+        "remove": "Retirer de la liste"
+    },
+    "errors": {
+        "required": "Ce champ est obligatoire.",
+        "maxBelowMin": "Le maximum doit être supérieur ou égal au minimum.",
+        "selectRubric": "Sélectionnez au moins une grille.",
+        "selectCriterion": "Sélectionnez au moins un critère.",
+        "number": "Saisissez un nombre.",
+        "tooLong": "Utilisez 255 caractères au maximum.",
+        "pointsBetween": "Les points doivent être compris entre {min} et {max}.",
+        "pointsAtLeast": "Les points doivent être d'au moins {min}.",
+        "pointsAtMost": "Les points ne doivent pas dépasser {max}.",
+        "settingsKeyRequired": "Saisissez une clé.",
+        "settingsKeyTooLong": "Une clé peut comporter 255 caractères au maximum.",
+        "settingsKeyUnsafe": "Ce nom de clé n'est pas autorisé.",
+        "settingsKeyDuplicate": "Cette clé est utilisée plusieurs fois.",
+        "settingsValueTooLong": "Une valeur peut comporter 10000 caractères au maximum.",
+        "settingsTooMany": "{max} paramètres au maximum sont autorisés."
+    },
+    "confirm": {
+        "title": "Supprimer la version",
+        "deleteVersion": "Supprimer la version « {version} » de l'élément « {name} » ({kind}) ? Seule cette version est supprimée, les autres restent. Elle ne peut pas être supprimée tant qu'elle est encore utilisée."
+    },
+    "messages": {
+        "saved": "Enregistré",
+        "deleted": "Supprimé",
+        "assessmentCreated": "L'évaluation « {name} » (version {version}) a été créée.",
+        "assessmentVersionCreated": "La version {version} de l'évaluation « {name} » a été créée.",
+        "rubricCreated": "La grille « {name} » (version {version}) a été créée.",
+        "rubricVersionCreated": "La version {version} de la grille « {name} » a été créée.",
+        "loading": "Chargement…",
+        "error": "Erreur",
+        "deleteFailed": "Échec de la suppression",
+        "notConnected": "Pas de connexion au serveur. Vérifiez la connexion et réessayez.",
+        "timeout": "Le serveur n'a pas répondu à temps. Réessayez.",
+        "criterionCreated": "Le critère « {name} » (version {version}) a été créé.",
+        "criterionVersionCreated": "La version {version} du critère « {name} » a été créée.",
+        "versionDeleted": "La version {version} de « {name} » ({kind}) a été supprimée.",
+        "requestFailed": "La requête a échoué. Veuillez réessayer."
+    }
+}

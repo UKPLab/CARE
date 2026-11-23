@@ -42,6 +42,7 @@
         "ai_models": "AI Models",
         "ai_hooks": "AI Hooks",
         "ai_budget": "AI Budget",
+        "assessments": "Assessments",
         "triggers": "Triggers",
         "trigger_logs": "Trigger Logs",
         "socket_profiler": "Socket Profiler",

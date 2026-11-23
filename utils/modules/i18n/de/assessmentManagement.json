@@ -1,0 +1,163 @@
+{
+    "title": "Bewertungen",
+    "recordCount": "{count} Einträge",
+    "tabs": {
+        "assessments": "Bewertungen",
+        "rubrics": "Rubriken",
+        "criteria": "Kriterien"
+    },
+    "actions": {
+        "delete": "Löschen",
+        "next": "Weiter",
+        "view": "Ansehen",
+        "newVersion": "Neue Version erstellen",
+        "versions": "Versionen",
+        "retry": "Erneut versuchen"
+    },
+    "kinds": {
+        "criterion": "Kriterium",
+        "rubric": "Rubrik",
+        "assessment": "Bewertung"
+    },
+    "versions": {
+        "title": "Versionen von „{name}“",
+        "empty": "Keine Versionen."
+    },
+    "bounds": {
+        "inactive": "Nicht gesetzt: Es gilt keine Grenze"
+    },
+    "settings": {
+        "title": "Erweiterte Einstellungen",
+        "description": "Optionale Schlüssel-Wert-Paare",
+        "empty": "Keine Einstellungen.",
+        "key": "Schlüssel",
+        "value": "Wert",
+        "add": "Einstellung hinzufügen",
+        "remove": "Einstellung entfernen",
+        "emptyEditable": "Keine Einstellungen. Fügen Sie bei Bedarf einen Schlüssel und einen Wert hinzu."
+    },
+    "fields": {
+        "id": "ID",
+        "name": "Name",
+        "assessmentName": "Name der Bewertung",
+        "description": "Beschreibung",
+        "version": "Version",
+        "rubrics": "Rubriken",
+        "criteria": "Kriterien",
+        "points": "Punkte",
+        "minPoints": "Minimale Punktzahl",
+        "maxPoints": "Maximale Punktzahl",
+        "calculation": "Berechnungsmethode",
+        "defaultPoints": "Standardpunkte",
+        "defaultPointsHelp": "Startwert; die Kriterienpunkte werden dazu addiert.",
+        "isBonus": "Bonus-Rubrik",
+        "scoringDescription": "Beschreibung der Punktevergabe",
+        "latestVersion": "Neueste Version",
+        "versions": "Versionen",
+        "createdAt": "Erstellt am"
+    },
+    "calculation": {
+        "sum": "Summierung",
+        "min": "Begrenzte Summe (ältere Rubriken)",
+        "max": "Basis + Anpassungen"
+    },
+    "assessment": {
+        "listTitle": "Bewertungsdefinitionen",
+        "add": "Bewertung hinzufügen",
+        "addTitle": "Bewertung hinzufügen",
+        "viewTitle": "Bewertung ansehen — v{version}",
+        "versionTitle": "Neue Bewertungsversion erstellen",
+        "create": "Bewertung erstellen",
+        "createVersion": "Neue Version erstellen",
+        "stepDetails": "Details der Bewertung",
+        "stepRubrics": "Rubriken auswählen & ordnen",
+        "detailsTitle": "Details der Bewertung",
+        "rubricsTitle": "Rubriken auswählen & ordnen",
+        "rubricsHelp": "Wählen Sie Rubrikversionen in der Tabelle aus und ordnen Sie sie in der gewünschten Reihenfolge.",
+        "noRubricsSelected": "Noch keine Rubriken ausgewählt.",
+        "empty": "Noch keine Bewertungen. Fügen Sie die erste hinzu."
+    },
+    "rubric": {
+        "listTitle": "Rubrikenbibliothek",
+        "add": "Rubrik hinzufügen",
+        "addTitle": "Rubrik hinzufügen",
+        "viewTitle": "Rubrik ansehen — v{version}",
+        "versionTitle": "Neue Rubrikversion erstellen",
+        "create": "Rubrik erstellen",
+        "createVersion": "Neue Version erstellen",
+        "stepDetails": "Details der Rubrik",
+        "stepCriteria": "Kriterien auswählen & ordnen",
+        "detailsTitle": "Details der Rubrik",
+        "criteriaTitle": "Kriterien auswählen & ordnen",
+        "criteriaHelp": "Wählen Sie Kriteriumsversionen in der Tabelle aus und ordnen Sie sie in der gewünschten Reihenfolge.",
+        "noCriteriaSelected": "Noch keine Kriterien ausgewählt.",
+        "bonusHelp": "Eine Bonus-Rubrik addiert ihre Punkte als Zusatzpunkte zur erreichten Punktzahl, erhöht aber nicht die Maximalpunktzahl der Bewertung. Die Endpunktzahl kann 100 % nicht überschreiten.",
+        "empty": "Noch keine Rubriken. Fügen Sie die erste hinzu."
+    },
+    "criterion": {
+        "listTitle": "Kriterienbibliothek",
+        "add": "Kriterium hinzufügen",
+        "addTitle": "Kriterium hinzufügen",
+        "stepDetails": "Details des Kriteriums",
+        "stepScoring": "Punkteoptionen",
+        "detailsTitle": "Details des Kriteriums",
+        "scoringTitle": "Punkteoptionen",
+        "scoringHelp": "Legen Sie fest, wie die einzelnen Punktwerte für {name} vergeben werden.",
+        "optionCount": "{count} Optionen",
+        "optionNumber": "Punkteoption {number}",
+        "addOption": "Punkteoption hinzufügen",
+        "removeOption": "Punkteoption entfernen",
+        "viewTitle": "Kriterium ansehen — v{version}",
+        "versionTitle": "Neue Kriteriumsversion erstellen",
+        "create": "Kriterium erstellen",
+        "createVersion": "Neue Version erstellen",
+        "noOptions": "Keine Bewertungsoptionen.",
+        "empty": "Noch keine Kriterien. Fügen Sie das erste hinzu."
+    },
+    "selection": {
+        "selectedOrder": "Ausgewählte Reihenfolge",
+        "selectedCount": "{count} ausgewählt",
+        "reorderHint": "Reihenfolge unten ändern",
+        "moveUp": "Nach oben",
+        "moveDown": "Nach unten",
+        "remove": "Aus der Liste entfernen"
+    },
+    "errors": {
+        "required": "Dieses Feld ist erforderlich.",
+        "maxBelowMin": "Die maximale Punktzahl muss größer oder gleich der minimalen sein.",
+        "selectRubric": "Wählen Sie mindestens eine Rubrik aus.",
+        "selectCriterion": "Wählen Sie mindestens ein Kriterium aus.",
+        "number": "Geben Sie eine Zahl ein.",
+        "tooLong": "Verwenden Sie höchstens 255 Zeichen.",
+        "pointsBetween": "Die Punkte müssen zwischen {min} und {max} liegen.",
+        "pointsAtLeast": "Die Punkte müssen mindestens {min} betragen.",
+        "pointsAtMost": "Die Punkte dürfen höchstens {max} betragen.",
+        "settingsKeyRequired": "Geben Sie einen Schlüssel ein.",
+        "settingsKeyTooLong": "Ein Schlüssel darf höchstens 255 Zeichen haben.",
+        "settingsKeyUnsafe": "Dieser Schlüsselname ist nicht erlaubt.",
+        "settingsKeyDuplicate": "Dieser Schlüssel wird mehrfach verwendet.",
+        "settingsValueTooLong": "Ein Wert darf höchstens 10000 Zeichen haben.",
+        "settingsTooMany": "Es sind höchstens {max} Einstellungen erlaubt."
+    },
+    "confirm": {
+        "title": "Version löschen",
+        "deleteVersion": "Version „{version}“ des Eintrags „{name}“ ({kind}) löschen? Nur diese Version wird gelöscht, andere Versionen bleiben erhalten. Sie kann nicht gelöscht werden, solange sie noch verwendet wird."
+    },
+    "messages": {
+        "saved": "Gespeichert",
+        "deleted": "Gelöscht",
+        "assessmentCreated": "Bewertung „{name}“ (Version {version}) wurde erstellt.",
+        "assessmentVersionCreated": "Version {version} der Bewertung „{name}“ wurde erstellt.",
+        "rubricCreated": "Rubrik „{name}“ (Version {version}) wurde erstellt.",
+        "rubricVersionCreated": "Version {version} der Rubrik „{name}“ wurde erstellt.",
+        "loading": "Wird geladen…",
+        "error": "Fehler",
+        "deleteFailed": "Löschen fehlgeschlagen",
+        "notConnected": "Keine Verbindung zum Server. Prüfen Sie die Verbindung und versuchen Sie es erneut.",
+        "timeout": "Der Server hat nicht rechtzeitig geantwortet. Versuchen Sie es erneut.",
+        "criterionCreated": "Kriterium „{name}“ (Version {version}) wurde erstellt.",
+        "criterionVersionCreated": "Version {version} des Kriteriums „{name}“ wurde erstellt.",
+        "versionDeleted": "Version {version} von „{name}“ ({kind}) wurde gelöscht.",
+        "requestFailed": "Die Anfrage ist fehlgeschlagen. Bitte versuchen Sie es erneut."
+    }
+}

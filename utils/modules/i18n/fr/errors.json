@@ -35,6 +35,45 @@
         "noCommentAccess": "Vous n'avez pas accès à ce commentaire",
         "noPreprocessSubmissionPermission": "Vous n'avez pas l'autorisation de prétraiter les travaux"
     },
+    "assessment": {
+        "accessDenied": "Vous n'avez pas accès au tableau de bord de gestion des évaluations.",
+        "fieldRequired": "{field} est obligatoire.",
+        "fieldInvalid": "{field} est invalide.",
+        "optionInvalid": "Option de notation {position} : {field} est invalide.",
+        "pointsRange": "Le minimum de points ne doit pas dépasser le maximum.",
+        "versionNumberNotAllowed": "Le numéro de version est attribué automatiquement et ne peut pas être défini.",
+        "versionConflict": "Une autre version a été créée en même temps. Veuillez réessayer.",
+        "settingsInvalid": "Les paramètres doivent être un objet d'au plus {max} entrées.",
+        "settingsKeyInvalid": "La clé de paramètre « {key} » est vide, trop longue ou non autorisée.",
+        "settingsKeyDuplicate": "La clé de paramètre « {key} » est utilisée plusieurs fois.",
+        "settingsValueInvalid": "La valeur du paramètre « {key} » doit être du texte, un nombre ou true/false.",
+        "optionBelowMin": "Option de notation {position} : les points ne doivent pas être inférieurs au minimum du critère ({min}).",
+        "optionAboveMax": "Option de notation {position} : les points ne doivent pas dépasser le maximum du critère ({max}).",
+        "criterion": {
+            "notFound": "Critère introuvable.",
+            "groupNotFound": "Groupe de critères introuvable.",
+            "copySourceMismatch": "La version à copier n'appartient pas à ce groupe de critères.",
+            "inUse": "Impossible de supprimer « {name} » (version {version}) : elle est utilisée par {count} version(s) de grille : {references}.",
+            "inUseUnknown": "Impossible de supprimer « {name} » (version {version}) : elle est encore utilisée par une grille."
+        },
+        "rubric": {
+            "notFound": "Grille introuvable.",
+            "groupNotFound": "Groupe de grilles introuvable.",
+            "copySourceMismatch": "La version à copier n'appartient pas à ce groupe de grilles.",
+            "duplicateCriterion": "La version {criterionId} du critère est sélectionnée plusieurs fois.",
+            "criteriaNotFound": "Version(s) de critère introuvable(s) : {criterionIds}.",
+            "inUse": "Impossible de supprimer « {name} » (version {version}) : elle est utilisée par {count} version(s) d'évaluation : {references}.",
+            "inUseUnknown": "Impossible de supprimer « {name} » (version {version}) : elle est encore utilisée par une évaluation."
+        },
+        "assessment": {
+            "notFound": "Évaluation introuvable.",
+            "groupNotFound": "Groupe d'évaluations introuvable.",
+            "copySourceMismatch": "La version à copier n'appartient pas à ce groupe d'évaluations.",
+            "duplicateRubric": "La version {rubricId} de la grille est sélectionnée plusieurs fois.",
+            "rubricsNotFound": "Version(s) de grille introuvable(s) : {rubricIds}.",
+            "inUse": "Impossible de supprimer « {name} » (version {version}) : elle est encore utilisée. Études : {studySteps} ; modèles d'étude : {templateSteps} ; déclencheurs : {triggers} ; actions de déclencheur : {triggerActions} ; exécutions en attente : {queuedRuns}."
+        }
+    },
     "configuration": {
         "idRequiredNoPeriod": "L'ID de configuration est obligatoire",
         "contentRequiredNoPeriod": "Le contenu de la configuration est obligatoire",

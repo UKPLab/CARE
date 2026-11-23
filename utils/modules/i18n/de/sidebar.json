@@ -42,6 +42,7 @@
         "ai_models": "KI-Modelle",
         "ai_hooks": "KI-Hooks",
         "ai_budget": "KI-Budget",
+        "assessments": "Bewertungen",
         "triggers": "Trigger",
         "trigger_logs": "Trigger-Protokolle",
         "socket_profiler": "Socket-Profiler",
