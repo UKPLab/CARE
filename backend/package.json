@@ -79,6 +79,9 @@
   "overrides": {
     "sequelize": {
       "uuid": "14.0.0"
+    },
+    "archiver@^8.0.0": {
+      "readdir-glob": "4.0.0"
     }
   }
 }
