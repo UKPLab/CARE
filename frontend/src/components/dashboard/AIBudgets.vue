@@ -7,19 +7,11 @@
     :buttons="rowButtons"
     @action="onAction"
   >
-    <template #headerActions>
-      <ul class="nav nav-pills">
-        <li v-for="tab in tabs" :key="tab.key" class="nav-item">
-          <BasicButton
-            class="nav-link btn-sm"
-            :class="{ active: activeTab === tab.key }"
-            @click="activeTab = tab.key"
-          >
-            {{ tab.label }}
-            <span v-if="tabRows(tab.key).length" class="badge bg-secondary ms-1">{{ tabRows(tab.key).length }}</span>
-          </BasicButton>
-        </li>
-      </ul>
+    <template #beforeTable>
+      <NavTabs
+        v-model="activeTab"
+        :tabs="tabs"
+      />
     </template>
   </DashboardListPage>
 
@@ -38,7 +30,7 @@
  * @author Mohammed Rawhani
  */
 import DashboardListPage from "@/basic/dashboard/ListPage.vue";
-import BasicButton from "@/basic/Button.vue";
+import NavTabs from "@/components/dashboard/NavTabs.vue";
 import { withSearch } from "@/basic/dashboard/constants.js";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AIBudgetEditModal from "@/components/dashboard/ai/AIBudgetEditModal.vue";
@@ -52,19 +44,26 @@ export default {
     "ai_budget", "ai_model", "ai_hook", "study", "study_step",
     "ai_model_share", "ai_hook_share", "user",
   ],
-  components: { DashboardListPage, BasicButton, ConfirmModal, AIBudgetEditModal },
+  components: { DashboardListPage, NavTabs, ConfirmModal, AIBudgetEditModal },
   data() {
     return {
       activeTab: "models",
-      tabs: [
-        { key: "models", label: this.$t("ai.budgets.tabs.models"), types: ["model", "model_share"] },
-        { key: "hooks", label: this.$t("ai.budgets.tabs.hooks"), types: ["hook", "hook_share"] },
-        { key: "studies", label: this.$t("ai.budgets.tabs.studies"), types: ["study", "step_hook"] },
+      tabDefs: [
+        { key: "models", types: ["model", "model_share"] },
+        { key: "hooks", types: ["hook", "hook_share"] },
+        { key: "studies", types: ["study", "step_hook"] },
       ],
       tableOptions: withSearch(),
     };
   },
   computed: {
+    tabs() {
+      return this.tabDefs.map((tab) => ({
+        key: tab.key,
+        label: this.$t(`ai.budgets.tabs.${tab.key}`),
+        count: this.tabRows(tab.key).length,
+      }));
+    },
     budgets() {
       return this.$store.getters["table/ai_budget/getAll"] || [];
     },
@@ -175,7 +174,7 @@ export default {
   },
   methods: {
     tabRows(tabKey) {
-      const tab = this.tabs.find((t) => t.key === tabKey);
+      const tab = this.tabDefs.find((t) => t.key === tabKey);
       if (!tab) return [];
       return this.budgetRows.filter((r) => tab.types.includes(r.entityType));
     },
