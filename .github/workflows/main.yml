@@ -32,6 +32,7 @@ jobs:
             npm install --prefix "$package" --ignore-scripts --no-audit --no-fund
           done
       - name: Run unit tests
+        if: always()
         run: |
           for module in editor-delta-conversion assessment-score placeholder-tokens; do
             npm run test:module --prefix "utils/modules/$module" -- --ci --json --outputFile=coverage/test-results.json

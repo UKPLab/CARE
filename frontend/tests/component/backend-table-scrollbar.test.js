@@ -85,11 +85,19 @@ afterEach(async () => {
     document.body.innerHTML = ''
 })
 
-/** Lets the window-seek debounce and queued Vue updates finish. */
-async function settle() {
-    // Includes the component's 100 ms window-seek debounce and queued Vue updates.
-    await wait(180)
-    await nextTick()
+/** Waits for loaded rows and pending seek/fetch/render work, failing if the table stays busy. */
+async function settle(vm) {
+    const deadline = Date.now() + 3000
+    while (Date.now() < deadline) {
+        await nextTick()
+        if (vm.loadedCount > 0 && vm.viewportHeight > 0
+            && !vm.queryLoading && !vm.seekTimer && !vm.windowFetchBusy
+            && !vm.windowHold && !vm.scrollRaf) {
+            return
+        }
+        await wait(5)
+    }
+    assert.fail('Timed out waiting for the table to finish loading and rendering')
 }
 
 /** Mounts the real table with deterministic sample rows and browser-like dimensions. */
@@ -148,7 +156,7 @@ async function mountTable() {
             set(value) { this.fixtureScrollTop = Math.max(0, Math.min(value, this.scrollHeight - VIEW_HEIGHT)) },
         },
     })
-    await settle()
+    await settle(vm)
     assert.deepEqual(errors, [], 'component mounts without runtime errors')
     const track = host.querySelector('[role="scrollbar"]')
     assert.ok(track, 'All mode displays the scrollbar')
@@ -168,7 +176,7 @@ async function dragTo(table, fraction) {
     // The browser paints the drag preview before the user releases the button.
     await nextTick()
     window.dispatchEvent(new window.MouseEvent('mouseup'))
-    await settle()
+    await settle(table.vm)
     assert.deepEqual(table.errors, [], 'dragging causes no component errors')
 }
 
