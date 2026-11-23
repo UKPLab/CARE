@@ -49,9 +49,11 @@ function normalizeCountRow(row) {
  * object with `read`/`write` pools. Intentionally defensive: never throws and
  * returns `null` when pool metrics are unavailable.
  *
- * @private
- * @param {import('sequelize').Sequelize} sequelizeInstance
- * @returns {object|null}
+ * Exported for the perf monitor's health check, which must answer without a
+ * DB query.
+ *
+ * @param {import('sequelize').Sequelize} sequelizeInstance - Initialized Sequelize instance
+ * @returns {object|null} Pool counters, or null when unavailable
  */
 function getSequelizePoolStats(sequelizeInstance) {
 	function readMaybeFn(obj, key) {
@@ -314,4 +316,4 @@ function stop(logger) {
 	}
 }
 
-module.exports = { start, stop, snapshot };
+module.exports = { start, stop, snapshot, getSequelizePoolStats };
