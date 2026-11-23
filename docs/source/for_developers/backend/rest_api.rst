@@ -24,6 +24,19 @@ Two doors
 Secrets start with ``care_``. CARE stores only a SHA-256 hash. The full secret
 is returned once on create.
 
+Where the code is
+-----------------
+
+* ``routes/rest/`` — the HTTP routes: they read and check the request, then call
+  a REST function. ``routeHelpers.js`` holds the shared transaction, error, and
+  upload handling.
+* ``backend/webserver/rest/`` — the REST functions, one file per resource. They
+  mirror the dashboard's socket methods where noted ("Mirrors …") and never call
+  them. Files are named in the plural, like the route file that calls them and
+  its URL (``rest/documents.js`` for ``/rest/v1/documents``); a resource split
+  into parts adds the part (``documentUpload.js``, ``studyActions.js``).
+* ``sockets/`` — the dashboard's socket methods, unchanged by the REST API.
+
 Rate limits
 -----------
 
@@ -72,26 +85,33 @@ answer reports how many were done. Emails and dashboard refresh happen only
 after commit. Files an upload wrote before a failure are deleted again.
 
 Retrying a read, a ``PATCH``, or a ``DELETE`` is safe (a second delete is
-``404``). A retried create would create twice, so creating ``POST`` requests
-accept an optional ``Idempotency-Key`` header (1 to 255 visible ASCII
-characters, for example a random UUID):
+``404``). A retried create would create twice, so ``POST`` requests accept an
+optional ``Idempotency-Key`` header (1 to 255 visible ASCII characters, for
+example a random UUID):
 
 * the first request runs normally, and a successful answer is kept for 24 hours;
-* a repeat with the same key, route, and body returns that answer with the
-  header ``Idempotent-Replayed: true`` and does nothing again;
-* the same key for another route, another body, or from another token of the
-  same user is ``422``
-  ``errors.rest.idempotencyKeyReused``; a repeat while the first is still
-  running is ``409`` ``errors.rest.idempotencyKeyInProgress``;
-* a failed first request keeps nothing, so it can be retried with the same key.
+* a repeat from the same token with the same key, route, and body returns that
+  answer with the header ``Idempotent-Replayed: true`` and does nothing again;
+* the same key for another route or body, or from another token of the same
+  user, is ``422`` ``errors.rest.idempotencyKeyReused``;
+* a repeat while the first is still running waits for it and then gets its
+  answer;
+* a failed request keeps nothing, so it can be retried with the same key.
 
-For uploads the body means the form fields plus each file's field, name, and
-content (its md5), checked after the upload is read: the same key with another
-file is ``422``, so a corrected file needs a new key. A key on a multipart request
-to a route that takes no upload is ``415`` ``errors.rest.multipartNotAccepted``, or
-the route's own ``400`` when it checks the body first; either way nothing runs
-(send JSON there). Keys are per user and live in the
-``api_idempotency_key`` table (``middleware/restIdempotency.js``).
+The key is checked after the route's right checks, so a token that has lost the
+route's right gets ``403``, not a stored answer. For uploads the body means the
+form fields plus each file's field, name, and content (its md5): the same key
+with another file is ``422``, so a corrected file needs a new key.
+
+A write reserves its key inside its own transaction and stores the answer there
+too. If the server stops mid-request, the database drops the reservation with
+the unfinished write, so a retry simply runs. The bulk study routes commit study
+by study and cannot do that: their key is saved before they start, a repeat
+while it runs is ``409`` ``errors.rest.idempotencyKeyInProgress``, and a key
+still running after 10 minutes is treated as left behind by a stopped request
+and taken over by the next retry. Repeating a bulk open, close, or delete is
+safe, because studies already done are skipped. Keys are per user and live in
+the ``api_idempotency_key`` table (``middleware/restIdempotency.js``).
 
 Open dashboards
 ---------------
@@ -111,7 +131,7 @@ Rights are checked on the token
 
 Every right check under ``/rest/v1`` asks one question: is the right on the
 token, and does the owner still have it. The routes pass that check to the
-functions in the socket files as ``options.can`` (``tokenCan`` in
+REST functions as ``options.can`` (``tokenCan`` in
 ``middleware/bearerAuth.js``). The functions never look at the owner's roles
 directly.
 
@@ -136,6 +156,10 @@ A token only has the rights listed when it was created. There is no implicit
 
 Cookie paths
 ------------
+
+All four need the API tokens page right ``frontend.dashboard.api_tokens.view``
+(admins hold every right); without it they are ``403``
+``errors.rest.apiTokensNoAccess``.
 
 * ``GET /auth/api-tokens`` — own tokens. Admins see all (including ``userId``).
 * ``POST /auth/api-tokens`` — body ``{ "name": "...", "rights": ["..."] }``.
@@ -166,10 +190,10 @@ parameter accepts the numeric id or the document hash.
 A document is returned with these fields only: ``id``, ``hash``, ``name``,
 ``type``, ``userId``, ``projectId``, ``public``, ``submissionId``,
 ``originalFilename``, ``createdAt``, ``updatedAt`` (``DOCUMENT_PUBLIC_FIELDS`` in
-``sockets/document.js``). A new column stays out of REST until it is added
-there. The routes call REST-only functions exported from
-``sockets/document.js`` (``createDocument``, ``addDocument``, ...). The socket
-methods are separate and unchanged.
+``rest/documents.js``). A new column stays out of REST until it is added
+there. The routes call REST-only functions in ``backend/webserver/rest/``
+(``documents.js``, ``documentUpload.js``, ``documentReplace.js``). The socket
+methods in ``sockets/document.js`` are separate and unchanged.
 
 * ``GET /rest/v1/documents`` — list. The owner's documents, or all documents
   with ``frontend.dashboard.assignments.viewAll`` on the token.
@@ -215,10 +239,13 @@ List and get need token right ``frontend.dashboard.studies.view``. Create,
 patch, open, close, delete, template, import, and export need
 ``frontend.dashboard.studies.canManageStudies``. The ``:idOrHash`` parameter
 accepts the numeric id or the study hash. A study is returned with the fields in
-``STUDY_PUBLIC_FIELDS`` in ``sockets/study.js`` (no ``deleted``, ``deletedAt``,
-or ``userIdClosed``).
-The routes call REST-only functions exported from ``sockets/study.js``. The
-socket methods are separate and unchanged. Live bulk progress stays on the
+``STUDY_PUBLIC_FIELDS`` in ``rest/studies.js`` (no ``deleted``, ``deletedAt``,
+or ``userIdClosed``), plus the study's AI cost limits ``aiCostLimitTotal``,
+``aiCostLimitPerSession``, and ``aiCostLimitPerUser`` (a number, or ``null`` for
+no limit).
+The routes call REST-only functions in ``rest/studies.js``,
+``rest/studyActions.js``, and ``rest/studyTransfer.js``. The socket methods are
+separate and unchanged. Live bulk progress stays on the
 socket; bulk open, close, and delete commit study by study and refresh
 dashboards once at the end.
 
@@ -233,9 +260,13 @@ dashboards once at the end.
 * ``POST /rest/v1/studies`` — create from a study template via ``study.add``.
   Body ``{ "templateId": 1 }`` plus any fields the create form sends (``name``,
   ``description``, ``workflowId``, ``tagSetId``, limits, dates, switches,
-  ``stepDocuments``). ``userId`` in the body is ignored.
+  ``stepDocuments``, and the three AI cost limits). ``userId`` in the body is
+  ignored. Without AI cost limits the study keeps the template's, as in the
+  dashboard form.
 * ``PATCH /rest/v1/studies/:idOrHash`` — those same fields. A closed study or a
-  template is rejected.
+  template is rejected. AI cost limits are changed in place, so money already
+  spent still counts; ``0`` or ``null`` removes a limit. An AI cost limit must be
+  a number of at least ``0`` or ``null`` (``400`` ``errors.rest.invalidStudyField``).
   In both routes each ``stepDocuments`` entry is
   ``{ "id": <workflowStepId>, "documentId": <id or null>, "configuration": {} }``.
   Other keys are dropped. The caller must have access to every linked document,
@@ -280,8 +311,10 @@ with its own routes under ``/rest/v1/assignments``.
 
 One route covers what the dashboard does with ``assignmentCreateSingle``,
 ``assignmentCreateBulk``, and ``assignmentAdd``. It calls the REST-only function
-``createAssignments`` exported from ``sockets/assignment.js``. The socket
-methods are separate and unchanged.
+``createReviewAssignments`` in ``rest/reviewAssignments.js`` (planning and
+review studies are in ``rest/reviewAssignmentPlans.js`` and
+``rest/reviewAssignmentStudies.js``). The socket methods are separate and
+unchanged.
 
 The body carries ids only. The study template, the items, the reviewers, and
 the target study are loaded and access-checked on the server. Study fields in
@@ -353,7 +386,7 @@ documents for a role) are ``400`` with the ``errors.assignment.*`` key and its
 REST study sessions
 -------------------
 
-The functions are in ``sockets/study_session.js``. The socket methods are
+The functions are in ``rest/sessions.js``. The socket methods are
 separate and unchanged. A caller starts and finishes only their own sessions.
 
 Reading needs ``frontend.dashboard.my_sessions.view`` or
@@ -398,7 +431,7 @@ is ``404``. Someone else's session is ``403`` ``errors.rest.sessionNoAccess``.
   The sessions are the ones the caller may see, by the same rule as the session
   list. Scores saved for a session win; otherwise scores saved on the step's
   document are used. Same token rights as the session list. The function is
-  ``studyAssessmentScores`` in ``sockets/publish_assessment.js``.
+  ``studyAssessmentScores`` in ``rest/assessments.js``.
 
 REST templates
 --------------
@@ -406,7 +439,7 @@ REST templates
 Document, study, and prompt templates (the ``template`` table). These are not
 study templates, which are under ``/rest/v1/study-templates``. All routes need
 ``frontend.dashboard.templates.view``. The functions are in
-``sockets/template.js``.
+``rest/templates.js``.
 
 * ``GET /rest/v1/templates`` — the caller's own templates and public ones,
   without content.
@@ -440,7 +473,7 @@ the dashboard.
 REST submissions
 ----------------
 
-The functions are in ``sockets/submission.js``. All routes need
+The functions are in ``rest/submissions.js``. All routes need
 ``frontend.dashboard.submissions.view``.
 
 * ``GET /rest/v1/submissions`` — the caller's submissions, or all with
@@ -479,8 +512,8 @@ With ``frontend.dashboard.studies.fullAccess`` on the token every note of the
 document is returned. Otherwise the caller gets their own notes and the notes
 made in sessions of studies they own. Drafts are never returned. On an
 anonymous note that is not the caller's own, ``userId`` is ``null``. The
-functions are ``listDocumentAnnotations`` in ``sockets/annotation.js`` and
-``listDocumentComments`` in ``sockets/comment.js``. Creating or changing notes
+functions are ``listDocumentAnnotations`` and ``listDocumentComments`` in
+``rest/notes.js``. Creating or changing notes
 is not in REST.
 
 REST lookups
@@ -499,8 +532,8 @@ Read-only routes that return the ids other calls need.
 * ``GET /rest/v1/roles`` — role ids and names, for review-assignment mode ``byRole``.
   Any valid token.
 
-The functions are ``listStudyTemplates`` in ``sockets/study.js``, ``listRoles``
-in ``sockets/user.js``, and ``describeToken`` in ``utils/apiTokenAuth.js``.
+The functions are ``listStudyTemplates`` in ``rest/studies.js``, ``listRoles``
+in ``rest/users.js``, and ``describeToken`` in ``utils/apiTokenAuth.js``.
 
 REST assignments
 ----------------
@@ -508,7 +541,7 @@ REST assignments
 An assignment collects submissions (the ``assignment`` table, the dashboard's
 Assignments page). Review assignments are a different thing, under ``/review-assignments``.
 All routes need ``frontend.dashboard.assignments.view``. Functions are in
-``sockets/assignment.js``.
+``rest/assignments.js``.
 
 * ``GET /rest/v1/assignments`` and ``GET /rest/v1/assignments/:id`` — own
   assignments, those shared with the caller (by user or role), or all with
@@ -533,7 +566,7 @@ Changing, closing, and deleting work on own assignments, or any with
 REST projects
 -------------
 
-Functions are in ``sockets/project.js``.
+Functions are in ``rest/projects.js``.
 
 * ``GET /rest/v1/projects`` and ``GET /rest/v1/projects/:id`` — own and public
   projects. Needs ``frontend.dashboard.projects.view`` or
@@ -550,7 +583,7 @@ Assigning users to a project stays in the dashboard.
 REST tag sets
 -------------
 
-Functions are in ``sockets/tag.js``. Reading needs
+Functions are in ``rest/tags.js``. Reading needs
 ``frontend.dashboard.tags.view`` or ``frontend.dashboard.studies.view``; writing
 needs ``frontend.dashboard.tags.view`` and works on own tag sets only.
 
@@ -571,7 +604,7 @@ needs ``frontend.dashboard.tags.view`` and works on own tag sets only.
 REST workflows
 --------------
 
-Functions are in ``sockets/workflow.js``. Reading needs
+Functions are in ``rest/workflows.js``. Reading needs
 ``frontend.dashboard.workflows.view`` or ``frontend.dashboard.studies.view``;
 writing needs ``frontend.dashboard.workflows.view`` and works on own workflows.
 
@@ -599,7 +632,7 @@ REST configurations
 -------------------
 
 Assessment rubrics and criteria, validation schemas, and dialogue plans.
-Functions are in ``sockets/configuration.js``.
+Functions are in ``rest/configurations.js``.
 
 * ``GET /rest/v1/configurations`` and ``GET /rest/v1/configurations/:id`` —
   any valid token: configurations that are not hidden, and the caller's own.
@@ -611,8 +644,8 @@ Functions are in ``sockets/configuration.js``.
   or study step uses it.
 
 Writing needs ``frontend.dashboard.configurations.manage`` and works on own
-configurations. Only the REST API checks that right; the dashboard does not use
-it. Content is checked by type: an assessment needs ``rubrics``, each with a
+configurations. That right is granted to admins only, matching the dashboard,
+where creating configurations is admin-only; only the REST API checks it. Content is checked by type: an assessment needs ``rubrics``, each with a
 ``name`` and ``criteria``, each criterion with a ``name`` and ``minPoints`` not
 above ``maxPoints``; a validation needs a ``rules`` object; a dialogue plan any
 object. Other keys are kept, so files exported from the dashboard stay valid.
@@ -629,7 +662,7 @@ There is no route that lists all users. A request without ``email`` or
 ``extId`` is ``400``. A user is returned only when the token and its owner hold
 ``backend.socket.user.getUsers.<role>`` for one of that user's roles, or
 ``backend.socket.user.getUsers.all``. Users the caller may not see are left out
-without an error. The function is ``findUsers`` in ``sockets/user.js``.
+without an error. The function is ``findUsers`` in ``rest/users.js``.
 
 The token is rejected if the owner is guest-only, even if the key still exists.
 
