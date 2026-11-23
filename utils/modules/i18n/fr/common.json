@@ -159,6 +159,8 @@
     "apply": "Appliquer",
     "unknown": "Inconnu",
     "selectPlaceholder": "Sélectionner...",
+    "rangeFrom": "de",
+    "rangeTo": "à",
     "use": "Utiliser",
     "hideReplies": "Masquer les réponses ({count})",
     "showReplies": "Afficher les réponses ({count})",

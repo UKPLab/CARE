@@ -822,12 +822,43 @@ html .modal .input-group > .form-select {
   min-width: 0;
 }
 
+/* form/Select.vue wraps its .form-select in a div (.care-select or
+   .searchable-select). Bootstrap's input-group joins only direct children,
+   so the corners and the shared border are applied to the wrapper and
+   passed down to the control here. A standalone select is not affected. */
+html .input-group > .care-select,
+html .input-group > .searchable-select {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+html .input-group > .care-select:not(:first-child) > .form-select,
+html .input-group > .searchable-select:not(:first-child) > .form-select {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+
+html .input-group > .care-select:not(:last-child) > .form-select,
+html .input-group > .searchable-select:not(:last-child) > .form-select {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* Keep the focused / open control's border above the icon box */
+html .input-group > .care-select:focus-within,
+html .input-group > .care-select.is-open,
+html .input-group > .searchable-select:focus-within {
+  z-index: 5;
+}
+
 /* Wide controls (tables, editors, date picker, sliders) take the full row
    instead of sitting in the icon + control flex row. */
 html .modal .input-group:has(table),
 html .modal .input-group:has(.ql-toolbar),
 html .modal .input-group:has(.care-dp-trigger),
-html .modal .input-group:has(.form-range) {
+html .modal .input-group:has(.form-range),
+html .modal .input-group:has(.care-slider) {
   display: block;
 }
 
@@ -835,6 +866,7 @@ html .modal .input-group:has(table) > .form-control,
 html .modal .input-group:has(.ql-toolbar) > .form-control,
 html .modal .input-group:has(.care-dp-trigger) > .form-control,
 html .modal .input-group:has(.form-range) > .form-control,
+html .modal .input-group:has(.care-slider) > .form-control,
 html .modal .editor-wrapper {
   width: 100%;
   max-width: 100%;

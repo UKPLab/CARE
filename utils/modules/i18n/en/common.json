@@ -159,6 +159,8 @@
     "apply": "Apply",
     "unknown": "Unknown",
     "selectPlaceholder": "Select...",
+    "rangeFrom": "from",
+    "rangeTo": "to",
     "use": "Use",
     "hideReplies": "Hide replies ({count})",
     "showReplies": "Show replies ({count})",

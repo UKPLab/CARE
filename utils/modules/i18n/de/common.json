@@ -159,6 +159,8 @@
     "apply": "Anwenden",
     "unknown": "Unbekannt",
     "selectPlaceholder": "Auswählen...",
+    "rangeFrom": "von",
+    "rangeTo": "bis",
     "use": "Verwenden",
     "hideReplies": "Antworten verbergen ({count})",
     "showReplies": "Antworten anzeigen ({count})",
