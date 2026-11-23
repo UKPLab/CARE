@@ -170,6 +170,10 @@ class DocumentSocket extends Socket {
         if (!(await this.hasAccess("frontend.dashboard.documents.upload"))) {
             throw new TranslatableError("errors.documents.noUploadAccess");
         }
+        // Only admins may upload a document for another user
+        if (data.userId && data.userId !== this.userId && !(await this.checkUserAccess(data.userId))) {
+            throw new TranslatableError("errors.documents.noUploadAccess");
+        }
         return this.addDocument(data, options);
     }
 
@@ -202,10 +206,6 @@ class DocumentSocket extends Socket {
         const fileType = data['name'].substring(data['name'].lastIndexOf(".")).toLowerCase();
         if (![".pdf", ".delta", ".json", ".zip"].includes(fileType)) {
             throw new TranslatableError("errors.file.invalidFileType");
-        }
-
-        if ((data['userid'] && data['userid'] !== this.userId) && !(await this.checkUserAccess(data['userId']))) {
-            throw new TranslatableError("errors.documents.noUploadAccess");
         }
 
         if (fileType === ".delta") {
