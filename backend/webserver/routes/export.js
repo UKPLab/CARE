@@ -1,4 +1,3 @@
-const archiver = require('archiver');
 const path = require('path');
 const fs = require('fs');
 const Papa = require('papaparse');
@@ -70,10 +69,11 @@ module.exports = function (server) {
             const { userMapping, mappingCsv } = buildUserMapping(users, shouldGenerateAliases, hasPrivateInfoRight, fakerSeed, currentUser.salt);
 
             // archiver stream setup
+            const { ZipArchive } = await import('archiver');
             const timestamp = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14);
             const exportFolderName = `${timestamp}_${exportType}.zip`;
             res.attachment(exportFolderName);
-            const archive = archiver('zip', { zlib: { level: 5 } });
+            const archive = new ZipArchive({ zlib: { level: 5 } });
             archive.on('error', function(err) {
                 server.logger.error("Archiver Error:", err);
                 if (!res.headersSent) res.status(500).send({error: "An error occurred while preparing the export."});
