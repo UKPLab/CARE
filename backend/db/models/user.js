@@ -464,14 +464,10 @@ module.exports = (sequelize, DataTypes) => {
             const roleIds = updatedRoleRows.map((row) => row.userRoleId);
 
             // individualHooks so this update is queued on transaction.changes (for roles below).
-            await User.update(
-                {rolesUpdatedAt: new Date()},
-                {
-                    where: {id: userId},
-                    individualHooks: true,
-                    transaction: options.transaction,
-                }
-            );
+            await User.touchRolesUpdatedAt([userId], {
+                individualHooks: true,
+                transaction: options.transaction,
+            });
 
             if (options.transaction && Array.isArray(options.transaction.changes)) {
                 for (const entry of options.transaction.changes) {
@@ -480,14 +476,17 @@ module.exports = (sequelize, DataTypes) => {
                     }
                 }
             }
+        }
 
-            // Role rows live on user_role_matching; User.findAll (via getAll) is cached.
-            // Clear after commit so the next dashboard load cannot serve a pre-commit cache entry.
-            options.transaction.afterCommit(() => {
-                if (User.cache) {
-                    User.cache.clear();
-                }
-            });
+        /** Invalidate cached permissions for the affected users after their role changes commit. */
+        static async touchRolesUpdatedAt(userIds, options = {}) {
+            await User.update({rolesUpdatedAt: new Date()}, {...options, where: {id: userIds}});
+            const clearCache = () => User.cache?.clear();
+            if (options.transaction) {
+                options.transaction.afterCommit(clearCache);
+            } else {
+                clearCache();
+            }
         }
 
         /**
