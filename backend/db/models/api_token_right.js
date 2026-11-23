@@ -7,6 +7,11 @@ module.exports = (sequelize, DataTypes) => {
         static fields = [];
         static accessMap = [];
 
+        /**
+         * Helper method for defining associations.
+         * This method is not a part of Sequelize lifecycle.
+         * The `models/index` file will call this method automatically.
+         */
         static associate(models) {
             ApiTokenRight.belongsTo(models['api_token'], {
                 foreignKey: 'apiTokenId',

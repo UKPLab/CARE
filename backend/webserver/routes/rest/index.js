@@ -19,7 +19,10 @@ const {registerRestWorkflowRoutes} = require('./workflows');
 const {registerRestConfigurationRoutes} = require('./configurations');
 
 /**
- * Bearer-only REST. Cookie session is not used as identity here.
+ * Register the REST API under /rest/v1: its middleware, every route file, and the JSON 404.
+ * Bearer tokens only; the cookie session is not used as identity here.
+ *
+ * @param {Server} server main server instance
  */
 function registerRestRoutes(server) {
     // First, so every error below (auth, rights, rate limit, routes) carries the English text.

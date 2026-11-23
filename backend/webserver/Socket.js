@@ -243,9 +243,10 @@ module.exports = class Socket {
      * see utils/restBroadcast.js). Runs broadcastTransactionChanges on a bare instance, so each
      * browser still gets only the rows its user may see. Keep this working if the broadcast path
      * starts to need this.socket: today it only reads this.socket?.id.
-     * @param {Object} server the Server instance
+     *
+     * @param {Server} server main server instance
      * @param {number} userId the user who made the change
-     * @param {import("sequelize").Transaction} transaction a committed transaction with .changes
+     * @param {Object} transaction a committed transaction with .changes
      * @returns {Promise<void>}
      */
     static async broadcastChangesWithoutSocket(server, userId, transaction) {

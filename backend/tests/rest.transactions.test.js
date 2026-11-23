@@ -9,6 +9,12 @@ const TranslatableError = require('../utils/TranslatableError');
  * No database: the transaction is a stand-in whose commit succeeds or fails on demand.
  */
 describe('REST transactions', () => {
+    /**
+     * A server stand-in whose transaction commit succeeds or fails on demand.
+     *
+     * @param {Error} [commitError] the error COMMIT throws; none for a successful commit
+     * @returns {Object} the server, with `logged` collecting the logged errors
+     */
     function fakeServer(commitError) {
         const logged = [];
         return {

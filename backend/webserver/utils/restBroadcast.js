@@ -9,9 +9,9 @@ const Socket = require('../Socket.js');
  * see. The token owner counts as the author, so their own open tabs get the change immediately,
  * as with their own socket writes.
  *
- * @param {Object} server the Server instance
- * @param {number} userId the token owner
- * @param {import("sequelize").Transaction} transaction a committed transaction with .changes
+ * @param {Server} server main server instance
+ * @param {number} userId the token owner's user id
+ * @param {Object} transaction a committed transaction with .changes
  * @returns {Promise<void>}
  */
 async function broadcastRestChanges(server, userId, transaction) {
@@ -30,9 +30,9 @@ async function broadcastRestChanges(server, userId, transaction) {
  * `restCommitted`. When a queued step throws, commit() rejects with `restCommitted` already true,
  * so the caller knows the data is saved.
  *
- * @param {Object} server the Server instance
- * @param {function(import("sequelize").Transaction): Promise<void>} onCommitted runs first after COMMIT
- * @returns {Promise<import("sequelize").Transaction>}
+ * @param {Server} server main server instance
+ * @param {Function} onCommitted receives the transaction, runs first after COMMIT
+ * @returns {Promise<Object>} the Sequelize transaction
  */
 async function openRestTransaction(server, onCommitted) {
     const transaction = await server.db.sequelize.transaction();
@@ -57,9 +57,9 @@ async function openRestTransaction(server, onCommitted) {
  * its own after-commit steps run. A rollback (including a dry run) or a failed COMMIT broadcasts
  * nothing.
  *
- * @param {Object} server the Server instance
- * @param {number} userId the token owner
- * @returns {Promise<import("sequelize").Transaction>}
+ * @param {Server} server main server instance
+ * @param {number} userId the token owner's user id
+ * @returns {Promise<Object>} the Sequelize transaction
  */
 function startRestTransaction(server, userId) {
     return openRestTransaction(server, (transaction) => broadcastRestChanges(server, userId, transaction)
@@ -72,18 +72,29 @@ function startRestTransaction(server, userId) {
  * like the dashboard's own bulk actions (Socket.runBulkWithProgress). Rolled-back items and items
  * whose COMMIT failed add nothing.
  *
- * @param {Object} server the Server instance
- * @param {number} userId the token owner
- * @returns {{start: function(): Promise<import("sequelize").Transaction>, broadcast: function(): Promise<void>}}
+ * @param {Server} server main server instance
+ * @param {number} userId the token owner's user id
+ * @returns {Object} {start, broadcast}
  */
 function restChangeBatch(server, userId) {
     const changes = [];
     return {
+        /**
+         * Open one item's transaction; its changes join the batch when it commits.
+         *
+         * @returns {Promise<Object>} the Sequelize transaction
+         */
         start() {
             return openRestTransaction(server, async (transaction) => {
                 changes.push(...(transaction.changes || []));
             });
         },
+
+        /**
+         * Send all committed changes of the batch to open dashboards. Failures are logged.
+         *
+         * @returns {Promise<void>}
+         */
         broadcast() {
             return broadcastRestChanges(server, userId, {changes})
                 .catch((err) => server.logger.error('REST broadcast failed: ' + err));

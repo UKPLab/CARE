@@ -41,8 +41,9 @@ exports.getSocketClient = async function (server, port, username, password) {
 
 /**
  * Non-admin researcher. The user hook assigns the default `user` role.
- * @param {object} models
- * @returns {Promise<{user: object, password: string}>}
+ *
+ * @param {Object} models the database models
+ * @returns {Promise<Object>} {user, password}
  */
 exports.addResearcherUser = async function (models) {
     // Known password. Refuse outside Jest so it cannot land in a real database.
@@ -67,7 +68,9 @@ exports.addResearcherUser = async function (models) {
 /**
  * Turn the REST API on for a test suite and lift its rate limits, since a suite sends far more
  * requests per minute than a script would. The limits themselves are tested in rest.api_token.
- * @param {object} models
+ *
+ * @param {Object} models the database models
+ * @returns {Promise<void>}
  */
 exports.enableRestForTests = async function (models) {
     await models['setting'].set('system.auth.apiTokens.enabled', 'true');
@@ -78,9 +81,10 @@ exports.enableRestForTests = async function (models) {
 /**
  * Every right the logged-in user may put on a token, for tests that need a full token.
  * Creating a token requires a rights list; there is no implicit "everything".
- * @param {object} server
+ *
+ * @param {Server} server main server instance
  * @param {string|string[]} cookie session cookie of that user
- * @returns {Promise<string[]>}
+ * @returns {Promise<string[]>} the right names
  */
 exports.allTokenRights = async function (server, cookie) {
     const res = await request(server.http).get('/auth/api-tokens/rights').set('Cookie', cookie);

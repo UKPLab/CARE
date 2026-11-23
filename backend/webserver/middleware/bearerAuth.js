@@ -8,6 +8,10 @@ const {
 
 /**
  * Resolve Authorization: Bearer <secret> to the token owner. Does not call req.logIn.
+ * Sets req.apiToken, req.apiAccess (the rights this request may use), and req.apiUserId.
+ *
+ * @param {Server} server main server instance
+ * @returns {Function} express middleware
  */
 function createBearerAuthMiddleware(server) {
     return async function bearerAuth(req, res, next) {
@@ -64,11 +68,24 @@ function createBearerAuthMiddleware(server) {
     };
 }
 
-/** True when the token behind this request may use the right (loaded once by bearerAuth). */
+/**
+ * True when the token behind this request may use the right (loaded once by bearerAuth).
+ *
+ * @param {Object} req express request, after Bearer auth
+ * @param {string} right the right name
+ * @returns {boolean}
+ */
 function requestHasRight(req, right) {
     return Boolean(req.apiAccess && req.apiAccess.rights.has(right));
 }
 
+/**
+ * Pass only when the token has the right (and its owner still has it); otherwise answer 403.
+ *
+ * @param {Server} server main server instance
+ * @param {string} right the right name
+ * @returns {Function} express middleware
+ */
 function requireTokenRight(server, right) {
     return function (req, res, next) {
         if (!requestHasRight(req, right)) {
@@ -79,7 +96,11 @@ function requireTokenRight(server, right) {
 }
 
 /**
- * Pass when the token has at least one of the rights (and its owner still has it).
+ * Pass when the token has at least one of the rights (and its owner still has it); otherwise answer 403.
+ *
+ * @param {Server} server main server instance
+ * @param {string[]} rights the right names
+ * @returns {Function} express middleware
  */
 function requireAnyTokenRight(server, rights) {
     return function (req, res, next) {
@@ -94,12 +115,17 @@ function requireAnyTokenRight(server, rights) {
  * The right check REST functions receive as `options.can`. True only when the right is on the
  * token and the owner still has it. Being an admin gives a token no reach by itself.
  * Kept async so REST functions can await it like the socket checks.
+ *
+ * @param {Server} server main server instance
+ * @param {Object} req express request, after Bearer auth
+ * @returns {Function} takes a right name, resolves to a boolean
  */
 function tokenCan(server, req) {
     return async (right) => requestHasRight(req, right);
 }
 
 module.exports = {
+    requestHasRight,
     createBearerAuthMiddleware,
     requireTokenRight,
     requireAnyTokenRight,

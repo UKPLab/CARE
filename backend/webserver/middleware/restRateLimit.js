@@ -9,8 +9,13 @@ const GENERAL_DEFAULT = 120;
 const HEAVY_DEFAULT = 20;
 
 /**
- * Budgets count per user across all their tokens, so extra tokens do not mean extra budget.
- * Mounted after Bearer auth, so req.apiUserId is set.
+ * A rate limiter whose budget per minute comes from a setting. Budgets count per user across all
+ * their tokens, so extra tokens do not mean extra budget. Mounted after Bearer auth, so req.apiUserId is set.
+ *
+ * @param {Server} server main server instance
+ * @param {string} setting the setting key with the budget
+ * @param {number} fallback the budget when the setting is not a positive integer
+ * @returns {Function} express middleware
  */
 function createLimiter(server, setting, fallback) {
     return rateLimit({
@@ -31,6 +36,9 @@ function createLimiter(server, setting, fallback) {
 
 /**
  * Budget for every REST request. Mounted once for all of /rest/v1.
+ *
+ * @param {Server} server main server instance
+ * @returns {Function} express middleware
  */
 function createRestRateLimit(server) {
     return createLimiter(server, GENERAL_SETTING, GENERAL_DEFAULT);
@@ -42,6 +50,9 @@ const heavyLimiters = new WeakMap();
  * Smaller budget for expensive routes (uploads, bulk writes, imports, copies). A route that is
  * expensive adds heavyRateLimit(server) to its own definition, so the marking sits on the route.
  * All routes of one server share one counter.
+ *
+ * @param {Server} server main server instance
+ * @returns {Function} express middleware
  */
 function heavyRateLimit(server) {
     if (!heavyLimiters.has(server)) {
