@@ -7,7 +7,7 @@
  *
  */
 
-const {redactPersonalData} = require("../utils/helper/personalData.js");
+const {redactPersonalData} = require("../../utils/helper/personalData.js");
 
 const REDACTED = "[REDACTED]";
 

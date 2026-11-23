@@ -35,9 +35,9 @@ const {createI18n} = await import('vue-i18n')
 const {Modal: BootstrapModal} = createRequire(import.meta.url)('bootstrap')
 
 const MESSAGES = {
-    common: JSON.parse(readFileSync(new URL('../../utils/modules/i18n/en/common.json', import.meta.url), 'utf8')),
-    navigation: JSON.parse(readFileSync(new URL('../../utils/modules/i18n/en/navigation.json', import.meta.url), 'utf8')),
-    components: JSON.parse(readFileSync(new URL('../../utils/modules/i18n/en/components.json', import.meta.url), 'utf8')),
+    common: JSON.parse(readFileSync(new URL('../../../utils/modules/i18n/en/common.json', import.meta.url), 'utf8')),
+    navigation: JSON.parse(readFileSync(new URL('../../../utils/modules/i18n/en/navigation.json', import.meta.url), 'utf8')),
+    components: JSON.parse(readFileSync(new URL('../../../utils/modules/i18n/en/components.json', import.meta.url), 'utf8')),
     modals: {closeModal: 'Close modal'},
     studies: {
         study: 'Study',
@@ -57,7 +57,7 @@ const SETTLE_MS = 3 * DIALOG_TRANSITION_MS
 
 /** Evaluates the options object and the template of an SFC, replacing its imports with the given stubs. */
 function loadComponent(path, stubs = {}) {
-    const url = new URL(`../src/${path}`, import.meta.url)
+    const url = new URL(`../../src/${path}`, import.meta.url)
     const source = readFileSync(url, 'utf8')
     const options = loadOptions(url, stubs).default
     const template = source.match(/<template>([\s\S]*)<\/template>/)[1]
@@ -82,7 +82,7 @@ function loadOptions(url, stubs) {
             dependency = loadOptions(new URL(specifier, url), stubs)
         }
         if (!fullyStubbed && specifier.startsWith('@/basic/table/helpers/')) {
-            dependency = loadOptions(new URL(`../src/${specifier.slice(2)}`, import.meta.url), stubs)
+            dependency = loadOptions(new URL(`../../src/${specifier.slice(2)}`, import.meta.url), stubs)
         }
         if (specifier === 'vue') dependency = vueRuntime
         if (['deep-equal', 'lodash.debounce'].includes(specifier)) {
@@ -106,7 +106,7 @@ function loadOptions(url, stubs) {
 test('two-factor setup retains the server secret and generates its QR code', async () => {
     const requests = []
     const events = []
-    const options = loadOptions(new URL('../src/auth/TotpEnrollment.vue', import.meta.url), {
+    const options = loadOptions(new URL('../../src/auth/TotpEnrollment.vue', import.meta.url), {
         axios: {post: async (...args) => {
             requests.push(args)
             return {status: 200, data: {secretBase32: 'TESTSECRET', otpauthUrl: 'otpauth://totp/test'}}
@@ -128,7 +128,7 @@ test('two-factor setup retains the server secret and generates its QR code', asy
 })
 
 test('two-factor enrollment stays busy until its status refresh completes', async () => {
-    const options = loadOptions(new URL('../src/auth/TotpEnrollment.vue', import.meta.url), {
+    const options = loadOptions(new URL('../../src/auth/TotpEnrollment.vue', import.meta.url), {
         axios: {post: async () => ({status: 200})}, getServerURL: () => '',
     }).default
     const events = []
@@ -149,7 +149,7 @@ test('two-factor enrollment stays busy until its status refresh completes', asyn
 test('a rejected two-factor setup clears the pending state and reports the failure', async () => {
     const toasts = []
     const events = []
-    const options = loadOptions(new URL('../src/auth/TotpEnrollment.vue', import.meta.url), {
+    const options = loadOptions(new URL('../../src/auth/TotpEnrollment.vue', import.meta.url), {
         axios: {post: async () => ({status: 400, data: {message: 'Setup failed'}})},
         getServerURL: () => '',
         resolveApiMessage: response => response.message,
@@ -286,7 +286,7 @@ test('post-login prompts request consent before enforced two-factor setup', asyn
 })
 
 test('chat streaming accepts only the active request and clears its preview when it ends', async t => {
-    const messageTypes = await import('../src/assets/aiMessageTypes.js')
+    const messageTypes = await import('../../src/assets/aiMessageTypes.js')
     const component = loadComponent('components/aiAssistant/AiConversationTranscript.vue', {
         ...messageTypes,
         AiConversationBody: {render() {return h('div', this.$slots.default?.())}},
@@ -355,7 +355,7 @@ test('an edited comment saves and requests sentiment before its body unmounts', 
 })
 
 test('the extracted editor sidebar renders without reading undeclared state', async t => {
-    const lookBack = await import('../src/components/study/helpers/lookBack.js')
+    const lookBack = await import('../../src/components/study/helpers/lookBack.js')
     const leaf = {render: () => h('span')}
     const component = loadComponent('components/editor/sidebar/EditorSidebar.vue', {
         ...lookBack,
@@ -383,7 +383,7 @@ test('two-factor settings cannot disable the last required method', async () => 
         ['TotpTwoFactorSettings', 'totpEnabled', 'disableTotp2FA'],
     ]) {
         const requests = [], toasts = []
-        const options = loadOptions(new URL(`../src/auth/${file}.vue`, import.meta.url), {
+        const options = loadOptions(new URL(`../../src/auth/${file}.vue`, import.meta.url), {
             axios: {post: (...args) => requests.push(args)},
         }).default
         const state = {...options.data.call({enabled: true}), ...options.methods,
@@ -836,7 +836,7 @@ test('unmounting an open parent with an open nested modal leaves nothing behind'
 })
 
 function wizardState(file, props, stubs = {}) {
-    const options = loadOptions(new URL(`../src/components/wizard/${file}.vue`, import.meta.url), stubs).default
+    const options = loadOptions(new URL(`../../src/components/wizard/${file}.vue`, import.meta.url), stubs).default
     const state = {...props, ...options.data?.call(props)}
     for (const [name, method] of Object.entries(options.methods ?? {})) state[name] = method.bind(state)
     for (const [name, getter] of Object.entries(options.computed ?? {})) {
@@ -1145,11 +1145,11 @@ test('a mounted BasicSidebar switches tabs, emits actions and toggles from the t
 // snapshots, the confirmation step owns the create requests.
 
 const ASSIGNMENT_DIR = 'components/dashboard/study'
-const selectionModule = loadOptions(new URL('../src/basic/table/emptySelection.js', import.meta.url), {})
+const selectionModule = loadOptions(new URL('../../src/basic/table/emptySelection.js', import.meta.url), {})
 
 /** Options-API instance double: data, computed getters and bound methods over the given props. */
 function assignmentState(file, props, stubs = {}) {
-    const options = loadOptions(new URL(`../src/${ASSIGNMENT_DIR}/${file}.vue`, import.meta.url), stubs).default
+    const options = loadOptions(new URL(`../../src/${ASSIGNMENT_DIR}/${file}.vue`, import.meta.url), stubs).default
     const state = {$t: key => key, $options: options, ...props}
     Object.assign(state, options.data?.call(state), props)
     state.$data = state

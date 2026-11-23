@@ -15,6 +15,40 @@ env:
   GIT_SUBMODULE_STRATEGY: recursive
 
 jobs:
+  unit_tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install unit test dependencies
+        run: |
+          for package in utils/modules/editor-delta-conversion utils/modules/assessment-score utils/modules/placeholder-tokens frontend backend; do
+            npm install --prefix "$package" --ignore-scripts --no-audit --no-fund
+          done
+      - name: Run unit tests
+        if: always()
+        run: |
+          for module in editor-delta-conversion assessment-score placeholder-tokens; do
+            npm run test:module --prefix "utils/modules/$module" -- --ci --json --outputFile=coverage/test-results.json
+          done
+          npm run test:unit:ci --prefix frontend
+          npm run test:unit:ci --prefix backend
+      - name: Upload unit test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-reports
+          path: |
+            utils/modules/*/coverage/
+            frontend/coverage/unit/
+            backend/coverage/unit/
+
   build:
     runs-on: ubuntu-latest
     services:

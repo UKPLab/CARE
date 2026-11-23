@@ -99,8 +99,11 @@ commitThumbFraction() {
       if (target >= windowStart && target < windowEnd) {
         this.controller.pinnedRow = null;
         this.controller.windowHold = false;
-        this.controller.scrollToRowIndex(target);
-        this.controller.scheduleVirtualUpdate();
+        // Restore the spacers first, or the shorter drag preview clamps the scroll position.
+        this.$nextTick(() => {
+          this.controller.scrollToRowIndex(target);
+          this.controller.scheduleVirtualUpdate();
+        });
         return;
       }
       this.controller.windowHold = true;

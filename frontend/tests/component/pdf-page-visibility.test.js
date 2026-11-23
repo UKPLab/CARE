@@ -14,7 +14,7 @@ import {test} from 'node:test'
 import {setTimeout as wait} from 'node:timers/promises'
 import {compile, computed, createRenderer, h, reactive, toRaw} from 'vue'
 import debounce from 'lodash.debounce'
-import {PDF} from '../src/components/annotator/pdfViewer/pdfStore.js'
+import {PDF} from '../../src/components/annotator/pdfViewer/pdfStore.js'
 
 const DOCUMENT_ID = 7
 const SESSION_ID = 42
@@ -43,7 +43,7 @@ Object.defineProperty(globalThis, 'localStorage', {value: {getItem: () => null, 
 
 /** Evaluates real SFC options, replacing unrelated dependencies with the given stubs. */
 function loadComponent(path, stubs = {}) {
-    const url = new URL('../src/' + path, import.meta.url)
+    const url = new URL('../../src/' + path, import.meta.url)
     const source = readFileSync(url, 'utf8')
     const options = loadOptions(url, stubs).default
     return {...options, render: compile(source.match(/<template>([\s\S]*)<\/template>/)[1])}
@@ -376,7 +376,7 @@ test('a fresh viewer logs page 1 again after remount', async () => {
 test('a replaced page paint cannot mark the replacement ready or publish stale anchors', async () => {
     class RenderingCancelledException extends Error {}
     const events = []
-    const options = loadOptions(new URL('../src/components/annotator/pdfViewer/PDFPageCanvas.vue', import.meta.url), {
+    const options = loadOptions(new URL('../../src/components/annotator/pdfViewer/PDFPageCanvas.vue', import.meta.url), {
         toRaw,
         pdfjsLib: {
             RenderingCancelledException,
@@ -431,7 +431,7 @@ test('an annotation overlay preserves text and clears markers after its anchors 
     const layer = document.querySelector('.textLayer')
     const range = document.createRange()
     range.selectNodeContents(layer)
-    const options = loadOptions(new URL('../src/components/annotator/pdfViewer/PDFAnnotationHighlight.vue', import.meta.url), {
+    const options = loadOptions(new URL('../../src/components/annotator/pdfViewer/PDFAnnotationHighlight.vue', import.meta.url), {
         resolveAnchor: anchor => anchor.range,
         isNodeInRange: (selectedRange, node) => selectedRange.intersectsNode(node),
         isInPlaceholder: () => false,
