@@ -58,15 +58,11 @@ export default {
   },
   computed: {
     tabs() {
-      return this.tabDefs.map((tab) => {
-        const count = this.tabRows(tab.key).length;
-        const entry = {
-          key: tab.key,
-          label: this.$t(`ai.budgets.tabs.${tab.key}`),
-        };
-        if (count > 0) entry.count = count;
-        return entry;
-      });
+      return this.tabDefs.map((tab) => ({
+        key: tab.key,
+        label: this.$t(`ai.budgets.tabs.${tab.key}`),
+        count: this.tabRows(tab.key).length,
+      }));
     },
     budgets() {
       return this.$store.getters["table/ai_budget/getAll"] || [];
