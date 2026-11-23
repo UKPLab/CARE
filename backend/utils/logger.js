@@ -156,6 +156,12 @@ let fileTransports;
 let defaultLogger;
 const databaseLoggers = new WeakMap();
 
+/**
+ * Create the rotating file transports (error, complete, activity) once per process and reuse them.
+ * Sharing them keeps the number of open log files constant across socket connections.
+ *
+ * @returns {Array<object>} The three DailyRotateFile transports
+ */
 function getFileTransports() {
     if (fileTransports) {
         return fileTransports;
@@ -200,6 +206,13 @@ function getFileTransports() {
     return fileTransports;
 }
 
+/**
+ * Create a base logger with the shared file transports, a console transport and a database transport.
+ * One base logger exists per database connection; callers get child loggers of it.
+ *
+ * @param {object|null} db - Database connection for the SQL transport, or null for the default logger
+ * @returns {object} Winston logger
+ */
 function createBaseLogger(db) {
     const logger = winston.createLogger({
         level: process.env.LOGGING_LEVEL,
