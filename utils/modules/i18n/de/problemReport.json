@@ -85,7 +85,7 @@
         "attachmentFiles": "Anhangdateien",
         "exportFailed": "Berichte nicht exportiert",
         "title": "Problemberichte",
-        "description": "Berichte, die über die Fehler-Schaltfläche in der oberen Leiste gesendet wurden. Nur Administratoren können sie sehen.",
+        "description": "Berichte, die über die Fehler-Schaltfläche unten rechts gesendet wurden. Nur Administratoren können sie sehen.",
         "columns": {
             "blocked": "Blockiert",
             "id": "ID",

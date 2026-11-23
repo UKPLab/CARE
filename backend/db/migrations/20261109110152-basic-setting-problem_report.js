@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Settings for the topbar problem report popup. Form, attachment, diagnostics and
+ * Settings for the problem report popup. Form, attachment, diagnostics and
  * activity settings are readable by every user so the popup can render, sample and
  * pre-validate with the same values the backend enforces (clamped to fixed safety
  * caps). Database health settings are only needed on the server. None hold secrets.

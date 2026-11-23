@@ -29,6 +29,7 @@ import getServerURL from "@/assets/serverUrl";
 
 import BehaviorLogger from "@/assets/behaviorLogger";
 import { clearActivity, recordActivity } from "@/assets/activityTrail.js";
+import { clearDiagnostics } from "@/assets/diagnostics.js";
 import {computed} from "vue";
 import { i18n } from "@/main.js";
 import {
@@ -93,6 +94,12 @@ export default {
       this.loaded.tables = true;
     },
     appUser: function (data) {
+      // Logout and login keep the page, so drop the previous account's report details
+      const previousId = this.$store.getters["auth/getUser"]?.id;
+      if (previousId && previousId !== data.id) {
+        clearActivity();
+        clearDiagnostics();
+      }
       this.$store.commit("auth/SET_USER", data);
       this.loaded.users = true;
     },

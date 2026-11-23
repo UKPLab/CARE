@@ -85,7 +85,7 @@
         "attachmentFiles": "Attachment files",
         "exportFailed": "Reports not exported",
         "title": "Problem Reports",
-        "description": "Reports submitted with the bug button in the top bar. Only administrators can see them.",
+        "description": "Reports submitted with the bug button in the bottom-right corner. Only administrators can see them.",
         "columns": {
             "blocked": "Blocked",
             "id": "ID",

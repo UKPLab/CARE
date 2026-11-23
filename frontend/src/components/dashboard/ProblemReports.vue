@@ -46,7 +46,7 @@ import { resolveApiMessage } from "@/assets/utils";
 const DESCRIPTION_PREVIEW_LENGTH = 120;
 
 /**
- * Admin page listing problem reports submitted from the topbar Report button.
+ * Admin page listing problem reports submitted from the floating Report button.
  * Reports are loaded page by page from the backend, which allows administrators only.
  *
  * @author Akash Gundapuneni

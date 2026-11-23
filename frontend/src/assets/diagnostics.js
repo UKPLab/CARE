@@ -66,6 +66,15 @@ export function getDiagnostics() {
 }
 
 /**
+ * Drop all recorded events, e.g. when another user signs in on the same tab.
+ *
+ * @returns {void}
+ */
+export function clearDiagnostics() {
+    entries.length = 0;
+}
+
+/**
  * Wrap socket emits so failed acknowledgements are recorded with their correlation id.
  *
  * @param {Object} socket socket.io-client socket

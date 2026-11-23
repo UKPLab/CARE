@@ -72,7 +72,7 @@ const EXPIRY_MARGIN_MS = 30 * 1000;
 const DESCRIPTION_INPUT_ID = "problemReportDescription";
 
 /**
- * Report a problem popup opened from the topbar: a single step.
+ * Report a problem popup opened from the floating bottom-right button: a single step.
  *
  * The form stays at the top; below it, the report is shown as it will be saved.
  * The user's answers update there while typing. The automatic details (page,
@@ -129,7 +129,6 @@ export default {
     description() {
       return this.descriptionData[DESCRIPTION_INPUT_ID] || "";
     },
-
   },
   watch: {
     "form.problemTypes"(value) {
@@ -184,6 +183,8 @@ export default {
     },
     /**
      * Snapshot of the automatic details in the browser. Activity is only read with statistics consent.
+     *
+     * @returns {{context: Object, diagnostics: Object[], activity: Object[]}} Details as they will be sent
      */
     captureSnapshot() {
       return {
@@ -197,6 +198,8 @@ export default {
     /**
      * Capture the details and let the backend normalize them and take the database snapshot.
      * Only the response to the latest request for the current form is used.
+     *
+     * @returns {void} Stores the backend's normalized details in this.details when the response arrives
      */
     prepareDetails() {
       if (this.submitting) {
@@ -244,8 +247,7 @@ export default {
     },
     /**
      * The automatic details to send: the snapshot captured when Report was clicked.
-     */
-    /**
+     *
      * @returns {Object} Captured details with current consent applied.
      */
     submissionSnapshot() {

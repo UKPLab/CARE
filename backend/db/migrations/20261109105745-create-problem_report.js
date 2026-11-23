@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Create the "problem_report" table for reports submitted from the topbar Report button.
+ * Create the "problem_report" table for reports submitted from the floating Report button.
  * Reports are private: every user can submit, only administrators can read them.
  */
 

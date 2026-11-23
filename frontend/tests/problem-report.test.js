@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import { parse } from '@vue/compiler-sfc';
-import { installDiagnostics, getDiagnostics } from '../src/assets/diagnostics.js';
+import { installDiagnostics, getDiagnostics, clearDiagnostics } from '../src/assets/diagnostics.js';
 import { clearActivity, describeElement, getActivity, recordActivity } from '../src/assets/activityTrail.js';
 import BehaviorLogger from '../src/assets/behaviorLogger.js';
 
@@ -430,4 +430,64 @@ test('report details stay fixed at the moment Report is clicked, including retri
   assert.equal(last(modal, 'problemReportPrepare').payload.context, captured.context);
   assert.equal(modal.submissionSnapshot().context, captured.context);
   assert.equal(modal.calls.timer, undefined, 'no periodic update is scheduled');
+});
+
+/**
+ * Load a component's script options in a VM context. Every imported name becomes a stub
+ * unless the caller provides it.
+ */
+function loadOptions(file, provided = {}) {
+  const source = fs.readFileSync(new URL(`../src/${file}`, import.meta.url), 'utf8');
+  const { script, template, styles } = parse(source).descriptor;
+  const imports = /^import\s+([\s\S]+?)\s+from\s+['"][^'"]+['"];?[ \t]*\r?$/gm;
+  const names = [...script.content.matchAll(imports)]
+    .flatMap(([, clause]) => clause.replace(/[{}]/g, '').split(',').map((part) => part.trim().split(/\s+as\s+/).pop()))
+    .filter(Boolean);
+  const context = { ...Object.fromEntries(names.map((name) => [name, () => {}])), ...provided };
+  vm.createContext(context);
+  vm.runInContext(script.content.replace(imports, '').replace('export default', 'globalThis.component ='), context);
+  return { options: context.component, template: template.content, style: styles.map((style) => style.content).join('\n') };
+}
+
+test('clearDiagnostics empties the diagnostics buffer', () => {
+  // An existing handler keeps the recorded error out of the console
+  const app = { config: { errorHandler() {} } };
+  const socket = { emit() {}, on() {} };
+  withBrowser(() => installDiagnostics(app, socket, { afterEach() {} }));
+  app.config.errorHandler(new Error('x'), { $options: { name: 'SomeComponent' } }, 'render');
+  assert.ok(getDiagnostics().length > 0);
+  clearDiagnostics();
+  assert.deepEqual(getDiagnostics(), []);
+});
+
+test('signing in as a different user drops the previous account\'s report details', () => {
+  const cleared = [];
+  const { options } = loadOptions('App.vue', {
+    clearActivity: () => cleared.push('activity'),
+    clearDiagnostics: () => cleared.push('diagnostics'),
+  });
+  let user = {};
+  const app = { $store: { getters: { 'auth/getUser': user }, commit: (_name, data) => { user = data; app.$store.getters['auth/getUser'] = data; } }, loaded: {} };
+
+  options.sockets.appUser.call(app, { id: 1 });
+  assert.deepEqual(cleared, [], 'first sign-in on the page keeps its details');
+  options.sockets.appUser.call(app, { id: 1 });
+  assert.deepEqual(cleared, [], 'a reconnect of the same user keeps its details');
+  options.sockets.appUser.call(app, { id: 2 });
+  assert.deepEqual(cleared, ['activity', 'diagnostics']);
+});
+
+test('the report button floats bottom-right and follows the feature setting', () => {
+  let enabled = true;
+  const { options, template, style } = loadOptions('components/problem_report/ProblemReportLauncher.vue', {
+    readReportSettings: () => ({ enabled }),
+  });
+  const launcher = { $store: { getters: { 'settings/getValue': () => null } } };
+  assert.equal(options.computed.problemReportEnabled.call(launcher), true);
+  enabled = false;
+  assert.equal(options.computed.problemReportEnabled.call(launcher), false);
+
+  assert.match(template, /v-if="problemReportEnabled"/);
+  assert.match(template, /@click="\$refs\.problemReportModal\.open\(\)"/);
+  assert.match(style, /#problemReportButton\s*{[^}]*position:\s*fixed;[^}]*right:[^}]*bottom:/);
 });

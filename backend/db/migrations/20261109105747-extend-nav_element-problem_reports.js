@@ -2,7 +2,7 @@
 
 /**
  * Add the admin-only Problem Reports page to the Settings nav group,
- * where administrators read reports submitted from the topbar Report button.
+ * where administrators read reports submitted from the floating Report button.
  */
 
 const navElements = [
