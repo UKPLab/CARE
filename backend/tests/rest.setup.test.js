@@ -4,6 +4,27 @@ const {enableRestForTests, allTokenRights, addResearcherUser} = require('./utils
 
 const PORT = 3131;
 
+/**
+ * Make one model method fail on its nth call, then call through again: a stand-in for a crash or
+ * error halfway through a bulk write, after the first items are already written.
+ *
+ * @param {Object} model the model to spy on
+ * @param {string} method the method name
+ * @param {number} nth the call that throws
+ * @returns {Object} the Jest spy
+ */
+function failOnCall(model, method, nth) {
+    const original = model[method].bind(model);
+    let calls = 0;
+    return jest.spyOn(model, method).mockImplementation(async (...args) => {
+        calls += 1;
+        if (calls === nth) {
+            throw new Error('simulated failure halfway');
+        }
+        return original(...args);
+    });
+}
+
 /** Projects, tag sets, workflows, and configurations over REST. */
 describe('REST setup resources', () => {
     let server;
@@ -152,6 +173,29 @@ describe('REST setup resources', () => {
             {name: 'Read', stepType: 1, allowBackward: false, configuration: {}},
             {name: 'Write', stepType: 2, allowBackward: true, configuration: {}, documentFromStep: 1},
         ];
+
+        test('an import that fails after the first workflow keeps nothing, and a keyed retry imports both once', async () => {
+            const key = 'workflow-halfway-' + Date.now();
+            const items = [{name: 'REST halfway first', workflow_step: steps}, {name: 'REST halfway second', workflow_step: steps}];
+            const send = () => request(server.http).post('/rest/v1/workflows/import')
+                .set('Authorization', 'Bearer ' + full.secret).set('Idempotency-Key', key).send(items);
+            const count = () => models['workflow'].count({where: {name: ['REST halfway first', 'REST halfway second'], deleted: false}});
+            const spy = failOnCall(models['workflow'], 'add', 2);
+            try {
+                const failed = await send();
+                expect(failed.statusCode).toBe(500);
+                expect(await count()).toBe(0);
+            } finally {
+                spy.mockRestore();
+            }
+            const retry = await send();
+            expect(retry.statusCode).toBe(201);
+            expect(retry.body.workflows).toHaveLength(2);
+            expect(await count()).toBe(2);
+            for (const workflow of retry.body.workflows) {
+                await call('delete', '/rest/v1/workflows/' + workflow.id);
+            }
+        });
 
         test('import, copy, rename, replace steps while unused, delete', async () => {
             const imported = await call('post', '/rest/v1/workflows/import', [{name: 'REST workflow', workflow_step: steps}]);

@@ -3,6 +3,27 @@ const Server = require('../webserver/Server.js');
 const {addResearcherUser, enableRestForTests, allTokenRights} = require('./utils.js');
 
 const PORT = 3123;
+
+/**
+ * Make one model method fail on its nth call, then call through again: a stand-in for a crash or
+ * error halfway through a bulk write, after the first items are already written.
+ *
+ * @param {Object} model the model to spy on
+ * @param {string} method the method name
+ * @param {number} nth the call that throws
+ * @returns {Object} the Jest spy
+ */
+function failOnCall(model, method, nth) {
+    const original = model[method].bind(model);
+    let calls = 0;
+    return jest.spyOn(model, method).mockImplementation(async (...args) => {
+        calls += 1;
+        if (calls === nth) {
+            throw new Error('simulated failure halfway');
+        }
+        return original(...args);
+    });
+}
 const SETTING = 'system.auth.apiTokens.enabled';
 const ADD_SINGLE = 'frontend.dashboard.studies.addSingleAssignments';
 
@@ -210,6 +231,31 @@ describe('REST assignments', () => {
             const res = await post({templateId: template.id, items: [aliceDoc.id], mode: 'byRole', roles: [{role: 'nobody', items: 1}]});
             expect(res.statusCode).toBe(404);
             expect(res.body.message).toBe('errors.rest.roleNotFound');
+        });
+    });
+
+    describe('failing halfway', () => {
+        test('a bulk run that fails after the first study keeps nothing, and a keyed retry creates each study once', async () => {
+            const key = 'bulk-halfway-' + Date.now();
+            const send = () => request(server.http).post('/rest/v1/review-assignments')
+                .set('Authorization', 'Bearer ' + secret).set('Idempotency-Key', key)
+                .send({templateId: template.id, items: [aliceDoc.id, bobDoc.id], reviewers: [adminId]});
+            const count = () => models['study'].count({where: {workflowId: workflow.id, template: false, deleted: false}});
+            const before = await count();
+            // One reviewer per item: the second session belongs to the second study.
+            const spy = failOnCall(models['study_session'], 'add', 2);
+            try {
+                const failed = await send();
+                expect(failed.statusCode).toBe(500);
+                expect(await count()).toBe(before);
+            } finally {
+                spy.mockRestore();
+            }
+            const retry = await send();
+            expect(retry.statusCode).toBe(201);
+            expect(retry.headers['idempotent-replayed']).toBeUndefined();
+            expect(retry.body.studies).toHaveLength(2);
+            expect(await count()).toBe(before + 2);
         });
     });
 

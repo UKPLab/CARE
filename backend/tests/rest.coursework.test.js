@@ -3,6 +3,27 @@ const Server = require('../webserver/Server.js');
 const {enableRestForTests, allTokenRights, addResearcherUser} = require('./utils.js');
 
 const PORT = 3132;
+
+/**
+ * Make one model method fail on its nth call, then call through again: a stand-in for a crash or
+ * error halfway through a bulk write, after the first items are already written.
+ *
+ * @param {Object} model the model to spy on
+ * @param {string} method the method name
+ * @param {number} nth the call that throws
+ * @returns {Object} the Jest spy
+ */
+function failOnCall(model, method, nth) {
+    const original = model[method].bind(model);
+    let calls = 0;
+    return jest.spyOn(model, method).mockImplementation(async (...args) => {
+        calls += 1;
+        if (calls === nth) {
+            throw new Error('simulated failure halfway');
+        }
+        return original(...args);
+    });
+}
 // The smallest valid ZIP file: an empty archive.
 const EMPTY_ZIP = Buffer.from([0x50, 0x4b, 0x05, 0x06, ...new Array(18).fill(0)]);
 
@@ -182,6 +203,33 @@ describe('REST coursework', () => {
             expect(res.statusCode).toBe(201);
             expect(res.body.submission.documents).toHaveLength(10);
             await models['submission'].deleteById(res.body.submission.id);
+        });
+
+        test('a submission that fails after its first file keeps nothing, not even files on disk; a keyed retry then works', async () => {
+            const fs = require('fs');
+            const {UPLOAD_PATH} = require('../webserver/rest/documentUpload');
+            const key = 'submission-halfway-' + Date.now();
+            const send = () => request(server.http).post('/rest/v1/submissions')
+                .set('Authorization', 'Bearer ' + full.secret).set('Idempotency-Key', key)
+                .field('validationConfigurationId', String(validation.id))
+                .attach('files', EMPTY_ZIP, 'halfway-one.zip')
+                .attach('files', EMPTY_ZIP, 'halfway-two.zip');
+            const docs = () => models['document'].count({where: {name: ['halfway-one', 'halfway-two'], deleted: false}});
+            const filesBefore = fs.readdirSync(UPLOAD_PATH).length;
+            const spy = failOnCall(models['document'], 'add', 2);
+            try {
+                const failed = await send();
+                expect(failed.statusCode).toBe(500);
+                expect(await docs()).toBe(0);
+                // The first file was written before the failure and removed again on rollback.
+                expect(fs.readdirSync(UPLOAD_PATH).length).toBe(filesBefore);
+            } finally {
+                spy.mockRestore();
+            }
+            const retry = await send();
+            expect(retry.statusCode).toBe(201);
+            expect(retry.body.submission.documents).toHaveLength(2);
+            await models['submission'].deleteById(retry.body.submission.id);
         });
 
         test('no files, or a closed assignment, is refused', async () => {
