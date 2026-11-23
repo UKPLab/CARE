@@ -1,14 +1,15 @@
 <template>
   <div class="container">
-    <div class="d-flex justify-content-between align-items-center">
-      <h1 class="mb-0">{{ $t('assignments.dashboard.submissions.activeTitle') }}</h1>
-    </div>
-    <div v-if="activeAssignments.length === 0">
+    <NavTabs
+      v-model="activeTab"
+      :tabs="assignmentTabs"
+    />
+    <div v-if="activeTab === 'active' && activeAssignments.length === 0">
       <p class="fs-6">
         {{ $t('assignments.dashboard.submissions.noActive') }}
       </p>
     </div>
-    <div v-else>
+    <div v-else-if="activeTab === 'active'">
       <hr>
       <div
         v-for="assignment in activeAssignments"
@@ -51,11 +52,7 @@
         <hr>
       </div>
     </div>
-  </div>
-
-  <div class="container">
-    <h1>{{ $t('assignments.dashboard.submissions.closedTitle') }}</h1>
-    <div v-if="closedAssignments.length === 0">
+    <div v-else-if="closedAssignments.length === 0">
       <p class="fs-6">
         {{ $t('assignments.dashboard.submissions.noClosed') }}
       </p>
@@ -107,6 +104,7 @@
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
+import NavTabs from "@/components/dashboard/NavTabs.vue";
 import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
@@ -118,8 +116,27 @@ import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 export default {
   name: "DashboardSubmission",
   subscribeTable: ["assignment", "submission", "user", "document"],
-  components: { Card, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
+  components: { Card, NavTabs, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal },
+  data() {
+    return {
+      activeTab: "active",
+    };
+  },
   computed: {
+    assignmentTabs() {
+      return [
+        {
+          key: "active",
+          label: this.$t("assignments.dashboard.submissions.activeTitle"),
+          count: this.activeAssignments.length,
+        },
+        {
+          key: "closed",
+          label: this.$t("assignments.dashboard.submissions.closedTitle"),
+          count: this.closedAssignments.length,
+        },
+      ];
+    },
     canUploadForOthers() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
     },
