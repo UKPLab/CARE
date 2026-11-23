@@ -238,6 +238,9 @@ if a configured value is larger. An empty allowed-type list disables attachments
 * ``activity.enabled`` controls activity collection in addition to consent.
 * ``activity.maxEntries`` and ``activity.maxAgeMinutes`` bound the activity trail.
 * ``activity.mouseSampleMs`` sets the minimum interval for sampled mouse and scroll events.
+
+  By default a report keeps the last 3 minutes of diagnostics (up to 50 entries)
+  and activity (up to 500 entries).
 * ``databaseHealth.enabled`` controls server-side database snapshots.
 * ``databaseHealth.timeoutMs`` bounds the wait for database health.
 * ``databaseHealth.maxAgeMinutes`` limits how long a prepared snapshot can be submitted.
