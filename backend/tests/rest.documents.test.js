@@ -3,7 +3,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const Server = require('../webserver/Server.js');
-const DocumentSocket = require('../webserver/sockets/document');
+const {storedFilePath} = require('../webserver/rest/documentReplace');
 const {addResearcherUser, enableRestForTests, allTokenRights} = require('./utils.js');
 
 const PORT = 3121;
@@ -308,7 +308,7 @@ describe('REST documents', () => {
                 .attach('file', zipPath, 'missing.zip');
             expect(uploaded.statusCode).toBe(201);
             const doc = uploaded.body.document;
-            const filePath = DocumentSocket.storedFilePath(doc);
+            const filePath = storedFilePath(doc);
             expect(filePath).toBeTruthy();
             expect(fs.existsSync(filePath)).toBe(true);
             fs.unlinkSync(filePath);
@@ -433,7 +433,7 @@ describe('REST documents', () => {
                 .attach('file', writeTempZip('care-rest-rename-a.zip'), 'rename.zip');
             expect(uploaded.statusCode).toBe(201);
             const document = await server.db.models['document'].getById(uploaded.body.document.id);
-            const target = DocumentSocket.storedFilePath(document);
+            const target = storedFilePath(document);
             const tempPath = target + '.replace-tmp';
             // A directory where the file should go makes the rename after commit fail.
             fs.unlinkSync(target);
@@ -694,7 +694,7 @@ describe('REST documents', () => {
 
     describe('files after a failed upload', () => {
         test('a rolled-back upload leaves no file on disk', async () => {
-            const {UPLOAD_PATH} = require('../webserver/sockets/document');
+            const {UPLOAD_PATH} = require('../webserver/rest/documentUpload');
             const before = new Set(fs.readdirSync(UPLOAD_PATH));
             // A .delta upload writes its file first and then parses it; broken JSON fails after the write.
             const res = await request(server.http)

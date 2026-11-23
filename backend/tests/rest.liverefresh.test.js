@@ -28,13 +28,26 @@ describe('REST live refresh', () => {
         return new Promise((resolve) => socket.emit('subscribeAppData', {table}, resolve));
     }
 
-    /** Collect every `<table>Refresh` row the socket receives. */
+    /**
+     * Collect every `<table>Refresh` row the socket receives.
+     *
+     * @param {Object} socket the socket.io client
+     * @param {string} table the table name
+     * @returns {Array<Object>} the rows, filled as they arrive
+     */
     function collect(socket, table) {
         const rows = [];
         socket.on(table + 'Refresh', (payload) => rows.push(...(Array.isArray(payload) ? payload : [payload])));
         return rows;
     }
 
+    /**
+     * Wait until a check passes or the time runs out.
+     *
+     * @param {Function} check returns true when done
+     * @param {number} [ms] how long to wait, 4000 by default
+     * @returns {Promise<boolean>} the last result of the check
+     */
     async function waitFor(check, ms = 4000) {
         const end = Date.now() + ms;
         while (Date.now() < end) {
@@ -198,6 +211,17 @@ describe('REST live refresh', () => {
             }
             await models['workflow'].deleteById(workflow.id);
         }
+    });
+
+    test('the dashboard upload refuses a document in someone else\'s name, and still accepts an own one', async () => {
+        const upload = (data) => new Promise((resolve) => researcherSocket.emit('documentAdd', data, resolve));
+        const delta = Buffer.from(JSON.stringify({ops: [{insert: 'text\n'}]}));
+        const foreign = await upload({name: 'REST foreign.delta', file: delta, userId: tokenOwnerId});
+        expect(foreign.success).toBe(false);
+        expect(await models['document'].count({where: {name: 'REST foreign', deleted: false}})).toBe(0);
+        const own = await upload({name: 'REST own.delta', file: delta});
+        expect(own.success).toBe(true);
+        await models['document'].destroy({where: {name: 'REST own'}, force: true});
     });
 
     // One case per table created through the newer REST routes.
