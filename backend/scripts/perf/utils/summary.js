@@ -68,6 +68,32 @@ function levelMetrics(results, durationMs) {
     };
 }
 
+/**
+ * List which stop conditions one level met.
+ * @param {Object} m - The level's metrics from levelMetrics
+ * @param {number} poolWaitFull - Peak requests waiting for a DB connection while the pool was full, during the level
+ * @param {Object} cfg - Run configuration; reads maxFailures, failThreshold and latencyThreshold
+ * @returns {Array<string>} One description per condition met; empty when none
+ */
+function stopConditionsMet(m, poolWaitFull, cfg) {
+    const reasons = [];
+    const allowedFailures = cfg.maxFailures || 0;
+    if (m.failed > allowedFailures) {
+        reasons.push(`${m.failed} failed request(s), more than --max-failures ${allowedFailures}`);
+    }
+    const unansweredPct = m.sent > 0 ? ((m.failed + m.noAck) / m.sent) * 100 : 0;
+    if (unansweredPct > cfg.failThreshold) {
+        reasons.push(`${unansweredPct.toFixed(1)}% of requests failed or got no reply, more than --fail-threshold ${cfg.failThreshold}%`);
+    }
+    if (m.p95 > cfg.latencyThreshold) {
+        reasons.push(`p95 latency ${m.p95}ms, more than --latency-threshold ${cfg.latencyThreshold}ms`);
+    }
+    if (poolWaitFull > 0) {
+        reasons.push(`${poolWaitFull} request(s) waited for a DB connection while every pool connection was in use`);
+    }
+    return reasons;
+}
+
 // Column layout shared by the per-level / per-sample tables.
 const LEVEL_COLUMNS = [
     ['sessions', 8], ['sent', 6], ['ok', 6], ['failed', 6], ['noAck', 6], ['noAck%', 6],
@@ -195,6 +221,7 @@ function pad(v, w) {
 module.exports = {
     percentile,
     levelMetrics,
+    stopConditionsMet,
     printLevelHeader,
     printLevelRow,
     printRequestTotals,

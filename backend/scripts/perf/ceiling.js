@@ -6,7 +6,7 @@ const { MetricSampler } = require('./utils/metrics');
 const { printTraceStats } = require('./utils/trace-stats');
 const { saveResults, makeOutputCapture, saveReadableReport } = require('./utils/report');
 const {
-    levelMetrics, printLevelHeader, printLevelRow, printRequestTotals, printVitals, printReadingNotes,
+    levelMetrics, stopConditionsMet, printLevelHeader, printLevelRow, printRequestTotals, printVitals, printReadingNotes,
 } = require('./utils/summary');
 
 /**
@@ -153,32 +153,6 @@ async function runCeiling(cfg, ctx) {
         }
     }
     return { code: lostConnection ? 1 : 0, maxConcurrency: lastClear };
-}
-
-/**
- * List which stop conditions one level met.
- * @param {Object} m - The level's metrics from levelMetrics
- * @param {number} poolWaitFull - Peak requests waiting for a DB connection while the pool was full, during the level
- * @param {Object} cfg - Run configuration; reads maxFailures, failThreshold and latencyThreshold
- * @returns {Array<string>} One description per condition met; empty when none
- */
-function stopConditionsMet(m, poolWaitFull, cfg) {
-    const reasons = [];
-    const allowedFailures = cfg.maxFailures || 0;
-    if (m.failed > allowedFailures) {
-        reasons.push(`${m.failed} failed request(s), more than --max-failures ${allowedFailures}`);
-    }
-    const unansweredPct = m.sent > 0 ? ((m.failed + m.noAck) / m.sent) * 100 : 0;
-    if (unansweredPct > cfg.failThreshold) {
-        reasons.push(`${unansweredPct.toFixed(1)}% of requests failed or got no reply, more than --fail-threshold ${cfg.failThreshold}%`);
-    }
-    if (m.p95 > cfg.latencyThreshold) {
-        reasons.push(`p95 latency ${m.p95}ms, more than --latency-threshold ${cfg.latencyThreshold}ms`);
-    }
-    if (poolWaitFull > 0) {
-        reasons.push(`${poolWaitFull} request(s) waited for a DB connection while every pool connection was in use`);
-    }
-    return reasons;
 }
 
 module.exports = { runCeiling };
