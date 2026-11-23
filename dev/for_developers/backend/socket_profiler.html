@@ -299,13 +299,14 @@ database pool and Postgres statistics at each step.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>ramp<span class="w"> </span>--recordings<span class="w"> </span><span class="m">12</span>,15<span class="w"> </span>--max-iterations<span class="w"> </span><span class="m">30</span>
 </pre></div>
 </div>
-<p><strong>ceiling</strong> increases concurrency until a stop condition trips, then reports the highest concurrency
-the server sustained.</p>
+<p><strong>ceiling</strong> increases concurrency until a stop condition is met, then reports every level, which
+conditions stopped the climb, and the highest concurrency at which none of them was met.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>ceiling<span class="w"> </span>--recordings<span class="w"> </span><span class="m">12</span><span class="w"> </span>--step<span class="w"> </span><span class="m">5</span><span class="w"> </span>--latency-threshold<span class="w"> </span><span class="m">1000</span>
 </pre></div>
 </div>
-<p><strong>soak</strong> holds a fixed concurrency for a fixed duration and watches for drift: memory growth, pool
-exhaustion, rising latency.</p>
+<p><strong>soak</strong> holds a fixed concurrency for a fixed duration and reports how requests and server vitals
+change over time: the first third of the batches is compared with the last third for latency,
+failures, unanswered requests and throughput.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>npm<span class="w"> </span>run<span class="w"> </span>perf<span class="w"> </span>--<span class="w"> </span>--mode<span class="w"> </span>soak<span class="w"> </span>--recordings<span class="w"> </span><span class="m">12</span><span class="w"> </span>--concurrency<span class="w"> </span><span class="m">10</span><span class="w"> </span>--duration<span class="w"> </span>30m
 </pre></div>
 </div>
@@ -315,6 +316,9 @@ exhaustion, rising latency.</p>
 <p>The memory correlation is a lead, not proof. True per-trace memory attribution requires heap
 snapshots, which distort the measurement they are taken from.</p>
 </div>
+<p><em>ramp</em>, <em>ceiling</em> and <em>soak</em> only report. They reach no stable or failed verdict: they exit with
+<code class="docutils literal notranslate"><span class="pre">0</span></code> when the run completed and <code class="docutils literal notranslate"><span class="pre">1</span></code> when the tool could not run it or the server connection
+dropped. <em>regression</em> keeps its pass/fail exit code.</p>
 </section>
 <section id="option-reference">
 <h3>Option reference<a class="headerlink" href="#option-reference" title="Link to this heading"></a></h3>
@@ -400,7 +404,7 @@ snapshots, which distort the measurement they are taken from.</p>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--fail-threshold</span></code></p></td>
 <td><p><em>5</em></p></td>
 <td><p>ceiling</p></td>
-<td><p>Failure percentage tolerated per level</p></td>
+<td><p>Percentage of requests per level that may fail or get no reply</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--concurrency</span></code></p></td>
 <td><p><em>10</em></p></td>
@@ -426,17 +430,28 @@ snapshots, which distort the measurement they are taken from.</p>
 the first failure. This is deliberate and not configurable: a run that aborts early reports one
 broken story and says nothing about the rest.</p>
 </div>
-<p>Ceiling has two failure conditions that work together. <code class="docutils literal notranslate"><span class="pre">--max-failures</span></code> is an absolute count and
-<code class="docutils literal notranslate"><span class="pre">--fail-threshold</span></code> a percentage; a level trips if either is exceeded. With the default
-<code class="docutils literal notranslate"><span class="pre">--max-failures</span> <span class="pre">0</span></code> any failure stops the run, so the percentage never applies. The rate condition
-becomes meaningful once some failures are tolerated, for example <code class="docutils literal notranslate"><span class="pre">--max-failures</span> <span class="pre">5</span>
-<span class="pre">--fail-threshold</span> <span class="pre">2</span></code>, which allows up to five failures per level but stops early if more than two
-percent of traces fail.</p>
+<p>Ceiling stops after the first level that meets any of these conditions:</p>
+<ul class="simple">
+<li><p>more failed requests than <code class="docutils literal notranslate"><span class="pre">--max-failures</span></code></p></li>
+<li><p>failed and unanswered requests together above <code class="docutils literal notranslate"><span class="pre">--fail-threshold</span></code> percent of those sent</p></li>
+<li><p>p95 latency of answered requests above <code class="docutils literal notranslate"><span class="pre">--latency-threshold</span></code></p></li>
+<li><p>a request waiting for a database connection while every pool connection is in use</p></li>
+</ul>
+<p>Waiting while the pool is below its maximum is not a stop condition: the pool opens connections on
+demand, so a request can wait briefly while a new one is being opened.</p>
 </section>
 <section id="reading-the-output">
 <h3>Reading the output<a class="headerlink" href="#reading-the-output" title="Link to this heading"></a></h3>
-<p>Every run prints a per-action breakdown:</p>
-<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>action          count  fail  ok%  minMs  p50  avgMs  p95Ms  maxMs  totalMs  dbW
+<p>Every request ends in one of three states: <strong>ok</strong> (acknowledged with success), <strong>failed</strong>
+(acknowledged with an error, or the emit threw) or <strong>no reply</strong> (no acknowledgement within
+<code class="docutils literal notranslate"><span class="pre">--ack-timeout</span></code>). A backed-up database pool shows up as no reply, because the pool waits up to its
+acquire timeout while the tool gives up after <code class="docutils literal notranslate"><span class="pre">--ack-timeout</span></code>.</p>
+<p>The load modes print one row per level or batch:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>sessions  sent  ok  failed  noAck  noAck%  p50ms  p95ms  maxms  ans/s
+</pre></div>
+</div>
+<p>followed by the request totals, the server vitals and a per-action breakdown:</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>action  sent  ok  fail  noAck  p50ms  p95ms  maxms  totalMs  refresh
 </pre></div>
 </div>
 <table class="docutils align-default">
@@ -446,29 +461,24 @@ percent of traces fail.</p>
 </tr>
 </thead>
 <tbody>
-<tr class="row-even"><td><p><strong>action</strong></p></td>
-<td><p>Socket event name</p></td>
+<tr class="row-even"><td><p><strong>sent, ok, fail, noAck</strong></p></td>
+<td><p>Requests replayed, and how each one ended</p></td>
 </tr>
-<tr class="row-odd"><td><p><strong>count</strong></p></td>
-<td><p>Times this action was replayed</p></td>
+<tr class="row-odd"><td><p><strong>p50ms, p95ms, maxms</strong></p></td>
+<td><p>Latency of answered requests only</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>fail</strong></p></td>
-<td><p>How many of those failed</p></td>
-</tr>
-<tr class="row-odd"><td><p><strong>ok%</strong></p></td>
-<td><p>Success percentage</p></td>
-</tr>
-<tr class="row-even"><td><p><strong>minMs, p50, avgMs, p95Ms, maxMs</strong></p></td>
-<td><p>Latency distribution</p></td>
-</tr>
-<tr class="row-odd"><td><p><strong>totalMs</strong></p></td>
+<tr class="row-even"><td><p><strong>totalMs</strong></p></td>
 <td><p>Cumulative time spent in this action</p></td>
 </tr>
-<tr class="row-even"><td><p><strong>dbW</strong></p></td>
-<td><p>Database writes attributed to this action</p></td>
+<tr class="row-odd"><td><p><strong>refresh</strong></p></td>
+<td><p>Refresh broadcasts received after the request, reads included; not a count of database writes</p></td>
 </tr>
 </tbody>
 </table>
+<p>The vitals block is sampled every second while the run lasts. Health (memory, event-loop delay,
+open files, database pool counters) and Postgres statistics are polled independently, so a stalled
+statistics query cannot block the health samples. Every missed sample is counted under <em>monitor
+coverage</em> and saved with its reason in the JSON.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The 95th percentile is usually more informative than the average. An average hides a small number
@@ -479,7 +489,9 @@ of very slow calls, which are exactly the ones users notice.</p>
 <h3>Saved results<a class="headerlink" href="#saved-results" title="Link to this heading"></a></h3>
 <p>Each run writes two files to <code class="docutils literal notranslate"><span class="pre">backend/logs/perf/</span></code>: a timestamped <strong>.json</strong> file containing raw
 machine-readable data, and a <strong>.txt</strong> file containing the terminal output verbatim. The text file is
-byte-identical to what appeared on screen, so a run can be attached to an issue without repeating it.</p>
+byte-identical to what appeared on screen, so a run can be attached to an issue without repeating it.
+If the server connection drops mid-run, the load modes stop and still save the results collected up
+to that point.</p>
 </section>
 </section>
 <section id="the-regression-suite">
@@ -613,6 +625,9 @@ A story referencing a document by id only succeeds if that id exists at that poi
 participating socket disconnects, the recording stops and is flagged as disconnected.</p>
 <p><strong>Recording ownership is not tracked.</strong> The recording table stores the recorded user, not the
 administrator who started the capture.</p>
+<p><strong>The replay clients run inside the backend.</strong> The replayed sessions are opened by the server
+itself, so the reported memory, event-loop delay and open files include the load generator, and
+every session replays the same recorded user and data.</p>
 <p><strong>Some events are never acknowledged.</strong> A frontend event with no corresponding backend handler
 produces no acknowledgement and is reported in a separate category rather than as a failure.</p>
 <p><strong>Stories carrying dates have a limited lifetime.</strong> A story that sets a deadline embeds that date, and
