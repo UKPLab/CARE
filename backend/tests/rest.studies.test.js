@@ -805,6 +805,100 @@ describe('REST studies', () => {
             }
         });
 
+        test('a bulk close whose request died is taken over only after the 10-minute lease', async () => {
+            const models = server.db.models;
+            const studies = [];
+            for (const name of ['REST lease one', 'REST lease two', 'REST lease three']) {
+                studies.push(await createStudy(name));
+            }
+            const ids = studies.map((study) => study.id);
+            const key = 'lease-' + Date.now();
+            const close = () => request(server.http).post('/rest/v1/studies/close').set(auth())
+                .set('Idempotency-Key', key).send({ids});
+            const ageKey = (minutes) => server.db.sequelize.query(
+                `UPDATE "api_idempotency_key" SET "updatedAt" = NOW() - INTERVAL '${minutes} minutes' WHERE "idempotencyKey" = :key`,
+                {replacements: {key}});
+            try {
+                const first = await close();
+                expect(first.statusCode).toBe(200);
+                expect(first.body.closedCount).toBe(3);
+                // Pretend the request died after closing two studies, before storing its answer.
+                await models['api_idempotency_key'].update({statusCode: null, responseBody: null}, {where: {idempotencyKey: key}});
+                const reopened = await request(server.http).post(`/rest/v1/studies/${ids[2]}/open`).set(auth()).send({});
+                expect(reopened.statusCode).toBe(200);
+
+                await ageKey(2);
+                const tooSoon = await close();
+                expect(tooSoon.statusCode).toBe(409);
+                expect(tooSoon.body.message).toBe('errors.rest.idempotencyKeyInProgress');
+
+                await ageKey(11);
+                const retry = await close();
+                expect(retry.statusCode).toBe(200);
+                // Only the study the "crash" left open is closed again; the others are skipped.
+                expect(retry.body.closedCount).toBe(1);
+                for (const id of ids) {
+                    expect((await models['study'].getById(id)).closed).toBeTruthy();
+                }
+                // The retry stored its answer, so a further retry replays it.
+                const replay = await close();
+                expect(replay.headers['idempotent-replayed']).toBe('true');
+                expect(replay.body.closedCount).toBe(1);
+            } finally {
+                for (const id of ids) {
+                    await models['study'].deleteById(id);
+                }
+            }
+        });
+
+        test('AI cost limits: set on create, returned, changed in place, removed, and checked', async () => {
+            const models = server.db.models;
+            const study = await createStudy('REST AI limits', {aiCostLimitTotal: 5, aiCostLimitPerUser: 1.5});
+            try {
+                expect(study.aiCostLimitTotal).toBe(5);
+                expect(study.aiCostLimitPerUser).toBe(1.5);
+                expect(study.aiCostLimitPerSession).toBeNull();
+                const got = await request(server.http).get('/rest/v1/studies/' + study.id).set(auth());
+                expect(got.body.study.aiCostLimitTotal).toBe(5);
+                const before = await models['ai_budget'].findOne({where: {studyId: study.id, limitType: 0, deleted: false}, raw: true});
+
+                const changed = await request(server.http).patch('/rest/v1/studies/' + study.id).set(auth())
+                    .send({aiCostLimitTotal: 7, aiCostLimitPerUser: null});
+                expect(changed.statusCode).toBe(200);
+                expect(changed.body.study.aiCostLimitTotal).toBe(7);
+                expect(changed.body.study.aiCostLimitPerUser).toBeNull();
+                // Changed in place, so what was already spent still counts against the limit.
+                const after = await models['ai_budget'].findOne({where: {studyId: study.id, limitType: 0, deleted: false}, raw: true});
+                expect(after.id).toBe(before.id);
+
+                for (const bad of [-1, 'five']) {
+                    const res = await request(server.http).patch('/rest/v1/studies/' + study.id).set(auth())
+                        .send({aiCostLimitTotal: bad});
+                    expect({bad, status: res.statusCode}).toEqual({bad, status: 400});
+                }
+            } finally {
+                await models['study'].deleteById(study.id);
+            }
+        });
+
+        test('a study created from a template keeps the template\'s AI cost limits unless it sets its own', async () => {
+            const models = server.db.models;
+            const cap = await models['ai_budget'].create({studyId: template.id, limitType: 0, costLimit: 3, deleted: false},
+                {context: {currentUserId: ownerId}});
+            const created = [];
+            try {
+                created.push(await createStudy('REST inherits limit'));
+                expect(created[0].aiCostLimitTotal).toBe(3);
+                created.push(await createStudy('REST own limit', {aiCostLimitTotal: 9}));
+                expect(created[1].aiCostLimitTotal).toBe(9);
+            } finally {
+                for (const study of created) {
+                    await models['study'].deleteById(study.id);
+                }
+                await models['ai_budget'].destroy({where: {id: cap.id}, force: true});
+            }
+        });
+
         test('bulk routes take at most 100 ids', async () => {
             const ids = Array.from({length: 101}, (_, i) => i + 1);
             for (const route of ['close', 'open', 'delete']) {
