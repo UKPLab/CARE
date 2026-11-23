@@ -6,6 +6,9 @@ on:
       - dev
       - main
   pull_request:
+  # Lets the weekly dependency workflow start CI on its bot PRs: PRs opened with
+  # GITHUB_TOKEN do not trigger pull_request runs, workflow_dispatch is the exception.
+  workflow_dispatch:
 
 env:
   DOCKER_TLS_CERTDIR: ""
@@ -93,7 +96,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install dependencies
         run: |
           npm ci --prefix frontend --ignore-scripts
@@ -113,7 +116,7 @@ jobs:
           submodules: recursive
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Install frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts
       - name: Run linter

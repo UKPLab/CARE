@@ -196,7 +196,17 @@
             <div v-else class="d-grid gap-2 pt-1">
               <p class="mb-0">{{ $t('auth.registerImprove.intro') }}</p>
               <p class="register-optional-note mb-1">{{ $t('auth.registerImprove.optional') }}</p>
-              <div v-if="config['requestStats']" class="form-check">
+              <div v-if="combineResearchConsent" class="form-check">
+                <input
+                    id="acceptResearch"
+                    v-model="acceptResearch"
+                    class="form-check-input"
+                    name="acceptResearch"
+                    type="checkbox"
+                >
+                <label class="form-check-label" for="acceptResearch">{{ $t('auth.acceptResearch') }}</label>
+              </div>
+              <div v-if="config['requestStats'] && !combineResearchConsent" class="form-check">
                 <input
                     id="acceptStats"
                     v-model="formData['acceptStats']"
@@ -206,7 +216,7 @@
                 >
                 <label class="form-check-label" for="acceptStats">{{ $t('auth.acceptStats') }}</label>
               </div>
-              <div v-if="config['requestData']" class="form-check">
+              <div v-if="config['requestData'] && !combineResearchConsent" class="form-check">
                 <input
                     id="acceptDataSharing"
                     v-model="formData['acceptDataSharing']"
@@ -289,6 +299,19 @@ export default {
     }
   },
   computed: {
+    combineResearchConsent() {
+      return window.config["app.register.combineResearchConsent"] === "true"
+          && this.config.requestData && this.config.requestStats;
+    },
+    acceptResearch: {
+      get() {
+        return this.formData.acceptStats && this.formData.acceptDataSharing;
+      },
+      set(accepted) {
+        this.formData.acceptStats = accepted;
+        this.formData.acceptDataSharing = accepted;
+      },
+    },
     config() {
       return {
         requestName: JSON.parse(window.config["app.register.requestName"]),
@@ -369,10 +392,10 @@ export default {
       return;
     }
     // Sets initial values for acceptStats and acceptDataSharing
-    if (this.config.requestStats) {
+    if (this.config.requestStats && !this.combineResearchConsent) {
       this.formData.acceptStats = this.config.isTrackingAgreed;
     }
-    if (this.config.requestData) {
+    if (this.config.requestData && !this.combineResearchConsent) {
       this.formData.acceptDataSharing = this.config.isDataShared;
     }
     this.focusFirstField();

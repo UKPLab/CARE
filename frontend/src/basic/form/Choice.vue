@@ -136,14 +136,14 @@ export default {
         const validChoices = filteredChoices.filter((item) => {
           if (choicesConfig.disabled) {
             // If this step provides its own configuration, keep it visible/selectable
-            if (item && item.configuration && Object.keys(item.configuration || {}).length > 0) {
+            if (this.hasConfigurableOptions(item)) {
               return true;
             }
             return choicesConfig.disabled.every((rule) => {
               return !(rule.type === "disabledItems" && item[rule.key] !== rule.value);
             });
           }
-          return true; 
+          return true;
         });
 
         // Sort IDs in ascending order and calculate step numbers directly
@@ -151,18 +151,18 @@ export default {
         let previousId = null;
 
         return validChoices
-          .sort((a, b) => a.id - b.id) 
+          .sort((a, b) => a.id - b.id)
           .map((item) => {
             if (previousId !== null && item.id - previousId > 1) {
               stepCounter += item.id - previousId - 1;
             }
             const stepNumber = stepCounter;
-            stepCounter += 1; 
-            previousId = item.id; 
+            stepCounter += 1;
+            previousId = item.id;
             return {
               ...item,
-              stepNumber, 
-              hasConfiguration: !!item.configuration && Object.keys(item.configuration).length > 0,
+              stepNumber,
+              hasConfiguration: this.hasConfigurableOptions(item),
             };
           });
       }
@@ -227,6 +227,19 @@ export default {
     },
   },
   methods: {
+    /**
+     * Checks whether a workflow step exposes configuration controls.
+     *
+     * @param {Object} item - Workflow step.
+     * @returns {boolean} Whether the configuration modal has content.
+     */
+    hasConfigurableOptions(item) {
+      const configuration = item?.configuration;
+      if (!configuration || Object.keys(configuration).length === 0) return false;
+      return (configuration.settings?.fields || []).length > 0
+        || (configuration.services || []).length > 0
+        || configuration.placeholders !== false;
+    },
     getEffectiveDocumentId(workflowStepId) {
       const step = this.workflowSteps.find((s) => s.id === workflowStepId);
       if (step && step.workflowStepDocument) {
@@ -269,23 +282,23 @@ export default {
       if (this.isTemplateMode) {
         return true;
       }
-      
+
       const allValid = this.choices.every((item, index) => {
         return this.fields.every((field) => {
           const fieldKey = field.key;
           const value = this.currentData[index]?.[fieldKey];
-          
+
           if (fieldKey === 'documentId') {
             if (value === null) {
               const workflowStepId = this.currentData[index]?.id;
               const workflowStep = this.workflowSteps.find((s) => s.id === workflowStepId);
-              if (workflowStep && workflowStep.stepType === 2) {
+              if (workflowStep && [2, 4].includes(workflowStep.stepType)) {
                 return true;
               }
               return false;
             }
             return true;
-          }         
+          }
           return value !== null;
         });
       });

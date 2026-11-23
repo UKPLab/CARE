@@ -10,6 +10,7 @@
       <slot name="headerActions" />
     </template>
     <template #body>
+      <slot name="beforeTable" />
       <BasicTable
         :columns="columns"
         :data="data"

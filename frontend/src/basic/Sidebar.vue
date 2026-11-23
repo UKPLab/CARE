@@ -5,17 +5,37 @@
       class="sidebar-wrapper"
       :class="sidebarClasses"
       :style="sidebarStyle"
+      @mouseleave="endPeek"
   >
-    <div id="hoverHotZone"></div>
+    <SidebarToggle
+        :visible="isSidebarVisible"
+        :available="isToggleShown"
+        :show="isShown"
+        @toggle="toggleSidebar"
+        @narrow="onNarrow"
+    />
+    <SidebarPeekZone @peek="onPeek"/>
     <div id="sidebar" class="sidebar border-end d-flex flex-column">
-      <div id="hotZone" class="hot-zone"></div>
+      <SidebarResizeHandle
+          v-model:width="width"
+          :min="minWidth"
+          :max="maxWidth"
+          @drag-start="isDragging = true"
+          @drag-end="onResizeEnd"
+      />
       <div id="sidepane" ref="sidepane">
         <div id="spacer"></div>
         <div v-if="sidebarConfigs" class="sidebar-header">
           <h2
             v-if="isSingleConfig"
             class="sidebar-section-title"
+            :class="{ 'current-step': activeSlotConfig && activeSlotConfig.current }"
+            :aria-label="activeSlotConfig && activeSlotConfig.current ? $t('navigation.sidebar.currentStepTab', { title: activeSlotConfig.title }) : undefined"
           >
+            <span
+              v-if="activeSlotConfig && activeSlotConfig.number"
+              class="fw-semibold"
+            >{{ activeSlotConfig.number }}</span>
             <LoadIcon
               v-if="activeSlotConfig && activeSlotConfig.icon"
               :icon-name="activeSlotConfig.icon"
@@ -29,7 +49,7 @@
             class="nav nav-tabs"
           >
             <li
-                v-for="(config, slotName) in sidebarConfigs.tabs"
+                v-for="(config, slotName) in shownTabs"
                 :key="slotName"
                 class="nav-item"
             >
@@ -37,15 +57,17 @@
                   class="nav-link align-items-center"
                   :class="{
                   'active': resolvedActiveSlot === slotName,
+                  'current-step': config.current,
                 }"
                   :aria-current="resolvedActiveSlot === slotName ? 'page' : null"
                   :title="config.title || ''"
-                  :aria-label="config.title || $t('navigation.sidebar.sidebarSection')"
+                  :aria-label="config.current ? $t('navigation.sidebar.currentStepTab', { title: config.title }) : (config.title || $t('navigation.sidebar.sidebarSection'))"
                   :tabindex="isSingleConfig ? '-1' : '0'"
                   :aria-disabled="isSingleConfig ? 'true' : 'false'"
                   :disabled="isSingleConfig"
                   @click="changeView(slotName)"
               >
+                <span v-if="config.number" class="fw-semibold me-1">{{ config.number }}</span>
                 <LoadIcon
                     v-if="config.icon"
                     :icon-name="config.icon"
@@ -115,34 +137,18 @@
             </template>
           </div>
         </div>
-        <!-- Dynamic slot content -->
-        <div class="sidebar-content">
-          <template v-for="slotName in availableSlots" :key="slotName">
-            <keep-alive>
-              <div v-show="resolvedActiveSlot === slotName">
-                <slot :name="slotName"/>
-              </div>
-            </keep-alive>
+        <!-- Panes stay mounted; SidebarContent marks the slot and logs time on screen -->
+        <SidebarContent
+            :slot-names="availableSlots"
+            :active-slot="resolvedActiveSlot"
+            :viewed="isShown && isSidebarVisible"
+        >
+          <template v-for="slotName in availableSlots" :key="slotName" #[slotName]>
+            <slot :name="slotName"/>
           </template>
-        </div>
+        </SidebarContent>
       </div>
     </div>
-    <Teleport to="#topBarNavItems">
-      <li v-if="isToggleShown" class="nav-item">
-        <TopBarButton
-            :show="isShown"
-            :title="isSidebarVisible ? $t('navigation.sidebar.hideSidebar') : $t('navigation.sidebar.showSidebar')"
-            class="btn rounded-circle"
-            :class="{ 'sidebar-highlight': sidebarIconHighlight }"
-            @click="toggleSidebar"
-        >
-          <LoadIcon
-              :icon-name="isSidebarVisible ? 'layout-sidebar-inset-reverse' : 'layout-sidebar-reverse'"
-              :size="18"
-          />
-        </TopBarButton>
-      </li>
-    </Teleport>
   </div>
 </template>
 
@@ -151,7 +157,10 @@
 import { scrollElement } from "@/assets/anchoring/scroll";
 import LoadIcon from "@/basic/Icon.vue";
 import TopBarButton from "@/basic/navigation/TopBarButton.vue";
-import debounce from "lodash.debounce";
+import SidebarResizeHandle from "@/basic/sidebar/SidebarResizeHandle.vue";
+import SidebarToggle from "@/basic/sidebar/SidebarToggle.vue";
+import SidebarContent from "@/basic/sidebar/SidebarContent.vue";
+import SidebarPeekZone from "@/basic/sidebar/SidebarPeekZone.vue";
 
 /** BasicSidebar component
  *      sidebarWidth: 400,
@@ -163,37 +172,36 @@ import debounce from "lodash.debounce";
  */
 export default {
   name: "BasicSidebar",
-  components: {LoadIcon, TopBarButton},
+  components: {LoadIcon, TopBarButton, SidebarResizeHandle, SidebarToggle, SidebarContent, SidebarPeekZone},
+  provide() {
+    return {
+      showSidebarTabOf: this.showTabOf,
+      scrollSidebarTo: this.scrollTo,
+    };
+  },
   inject: {
-    studySessionId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    studyStepId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    documentId: {
-      type: Number,
-      required: false,
-      default: null
-    },
-    acceptStats: {
-      type: Boolean,
-      required: false,
-      default: false
-    },
-    currentStudyStep: {
-      type: Number,
-      required: false,
-      default: null
-    }
+    studySessionId: {default: null},
+    studyStepId: {default: null},
+    documentId: {default: null},
+    acceptStats: {default: false},
+    currentStudyStep: {default: null},
   },
   props: {
     activeSideBar: {
       type: String,
+      required: false,
+      default: null,
+    },
+    // Decides for each tab (by its slot name) whether it is shown; without it all tabs are shown
+    isTabShown: {
+      type: Function,
+      required: false,
+      default: null,
+    },
+    // Decides for each tab (by its slot name) whether it belongs to the study step the user is on;
+    // such a tab gets a ring and says so to screen readers
+    isTabCurrent: {
+      type: Function,
       required: false,
       default: null,
     },
@@ -209,12 +217,12 @@ export default {
     maxSidebarWidth: {
       type: Number,
       required: false,
-      default: 400
+      default: 600
     },
     minSidebarWidth: {
       type: Number,
       required: false,
-      default: 0
+      default: 250
     },
     showToggleButton: {
       type: Boolean,
@@ -236,12 +244,11 @@ export default {
       maxWidth: 800,
       sidebarWidth: 400,
       isSidebarVisible: this.defaultVisible,
-      sidebarIconHighlight: false,
-      numberOfVisibleButtons: 4, //controls how many buttons are shown before collapsing into dropdown
       isFixed: false,
       isDragging: false,
-      sidebarContainerDom: undefined,
-      originalWidth: undefined
+      peeking: false,
+      originalWidth: undefined,
+      numberOfVisibleButtons: 4, //controls how many buttons are shown before collapsing into dropdown
     };
   },
   computed: {
@@ -254,15 +261,18 @@ export default {
         const slot = this.$slots[slotName];
         if (slot) {
           const vnodes = slot();
-          const firstVNode = vnodes[0];
+          let firstVNode = vnodes[0];
+          // Forwarded slots can add several fragment wrappers around the tab.
+          while (firstVNode && !firstVNode.props?.title && Array.isArray(firstVNode.children)) {
+            firstVNode = firstVNode.children[0];
+          }
           if (firstVNode) {
-            let props = firstVNode.props || {};
-            if (slotName === "additionalSidebars" || !props.title) {
-              props = vnodes[0].children[0].props || {};
-            }
+            const props = firstVNode.props || {};
             configs.tabs[slotName] = {
               title: props.title,
               icon: props.icon,
+              number: props.number,
+              current: this.isTabCurrent ? this.isTabCurrent(slotName) : false,
               buttons: props.buttons || []
             };
           }
@@ -274,46 +284,48 @@ export default {
       }
       return configs;
     },
-    combinedButtons() {
-      let buttons = [];
-      // Add general buttons (not tied to a specific slot)
-      if (this.sidebarConfigs && this.sidebarConfigs.buttons) {
-        buttons = buttons.concat(this.sidebarConfigs.buttons);
+    shownTabs() {
+      if (!this.isTabShown) {
+        return this.sidebarConfigs.tabs;
       }
-      // Add buttons for the active slot
-      if (this.activeSlotConfig && this.activeSlotConfig.buttons) {
-        buttons = buttons.concat(this.activeSlotConfig.buttons);
-      }
-      return buttons;
-    },
-    visibleButtons() {
-      // If 3 or fewer buttons, show all
-      if (this.combinedButtons.length <= this.numberOfVisibleButtons) {
-        return this.combinedButtons;
-      }
-      // If more than 3, show only first 2
-      return this.combinedButtons.slice(0, this.numberOfVisibleButtons - 1);
-    },
-    hiddenButtons() {
-      // If 3 or fewer buttons, none are hidden
-      if (this.combinedButtons.length <= this.numberOfVisibleButtons) {
-        return [];
-      }
-      // If more than 3, hide everything after first 2
-      return this.combinedButtons.slice(this.numberOfVisibleButtons - 1);
+      return Object.fromEntries(Object.entries(this.sidebarConfigs.tabs).filter(([slotName]) => this.isTabShown(slotName)));
     },
     resolvedActiveSlot() {
-      return this.internalActiveSlot || this.availableSlots[0] || null;
+      // A hidden tab hands over to the first shown one, and comes back once it is shown again
+      const shown = Object.keys(this.shownTabs);
+      return shown.includes(this.internalActiveSlot) ? this.internalActiveSlot : shown[0] || null;
     },
     isToggleShown() {
       // Without an active slot the sidebar can never be displayed, so the toggle would do nothing
       return this.isShown && !!this.resolvedActiveSlot;
     },
     isSingleConfig() {
-      return Object.keys(this.sidebarConfigs.tabs).length === 1;
+      return Object.keys(this.shownTabs).length === 1;
     },
     activeSlotConfig() {
       return this.resolvedActiveSlot ? this.sidebarConfigs.tabs[this.resolvedActiveSlot] : null;
+    },
+    combinedButtons() {
+      let buttons = [];
+      if (this.sidebarConfigs && this.sidebarConfigs.buttons) {
+        buttons = buttons.concat(this.sidebarConfigs.buttons);
+      }
+      if (this.activeSlotConfig && this.activeSlotConfig.buttons) {
+        buttons = buttons.concat(this.activeSlotConfig.buttons);
+      }
+      return buttons;
+    },
+    visibleButtons() {
+      if (this.combinedButtons.length <= this.numberOfVisibleButtons) {
+        return this.combinedButtons;
+      }
+      return this.combinedButtons.slice(0, this.numberOfVisibleButtons - 1);
+    },
+    hiddenButtons() {
+      if (this.combinedButtons.length <= this.numberOfVisibleButtons) {
+        return [];
+      }
+      return this.combinedButtons.slice(this.numberOfVisibleButtons - 1);
     },
     sidebarStyle() {
       return {
@@ -334,6 +346,13 @@ export default {
     }
   },
   watch: {
+    // A new tab to open, for example when a study shows another step, switches to it
+    activeSideBar(newSlot) {
+      if (newSlot) {
+        this.internalActiveSlot = newSlot;
+        this.$emit('sidebar-change', newSlot);
+      }
+    },
     isSidebarVisible(newVal) {
       if (newVal) {
         this.width = this.originalWidth;
@@ -350,23 +369,29 @@ export default {
     this.originalWidth = this.width;
     this.internalActiveSlot = this.activeSideBar || null;
 
-    if (window.innerWidth <= 900) {
-      this.isSidebarVisible = false;
-    }
-
-    this.initDragController();
-    this.initHoverController();
-    window.addEventListener('resize', this.onResize);
-
     // Emit the current active sidebar view after mount
     this.$emit('sidebar-change', this.resolvedActiveSlot);
     this.visibilityChange();
-
-  },
-  beforeUnmount() {
-    window.removeEventListener('resize', this.onResize);
   },
   methods: {
+    /**
+     * Switches to the tab that holds the given element, e.g. the card of a clicked annotation
+     * @param {HTMLElement} element - an element inside one of the tabs
+     * @param {boolean} expand - whether to open a collapsed sidebar
+     * @returns {boolean} whether another tab is shown now
+     */
+    showTabOf(element, expand = false) {
+      const slotName = element?.closest("[data-sidebar-slot]")?.dataset.sidebarSlot;
+      if (!slotName) {
+        return false;
+      }
+      const previousSlot = this.resolvedActiveSlot;
+      this.changeView(slotName);
+      if (expand && this.resolvedActiveSlot === slotName && !this.isSidebarVisible) {
+        this.toggleSidebar();
+      }
+      return previousSlot !== this.resolvedActiveSlot && this.resolvedActiveSlot === slotName;
+    },
     changeView(slotName) {
       if (this.isSingleConfig || this.resolvedActiveSlot === slotName) return;
       const newSlot = slotName;
@@ -397,121 +422,33 @@ export default {
       });
     },
 
-    /**
-     * Initializes the drag controller for the sidebar
-     *
-     * When the mouse is pressed on the hot zone, the sidebar can be resized
-     *
-     * @author Zheyu Zhang
-     */
-    initDragController() {
-      const dom = document.querySelector('#hotZone');
-      const that = this;
-
-      let startX, startWidth;
-      const handleStart = (e) => {
-        that.isDragging = true;
-
-        e.preventDefault();
-        document.body.style.userSelect = 'none';
-
-        startWidth = this.width;
-        startX = e.clientX;
-        document.addEventListener('mousemove', handleMove);
-        document.addEventListener('mouseup', handleEnd);
-      }
-
-      const handleMove = (e) => {
-        e.preventDefault();
-        let newWidth = startWidth - (e.clientX - startX);
-        const maxWidthInPixels = window.innerWidth * this.maxWidth / 100;
-        newWidth = Math.max(newWidth, this.minWidth);
-        newWidth = Math.min(newWidth, maxWidthInPixels);
-        this.width = newWidth;
-      }
-
-      const handleEnd = () => {
-        that.isDragging = false;
-
-        document.removeEventListener('mousemove', handleMove);
-        document.removeEventListener('mouseup', handleEnd);
-        document.body.style.userSelect = '';
-
-        this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
-        this.originalWidth = this.width;
-      }
-
-      dom.addEventListener('mousedown', handleStart);
+    onResizeEnd() {
+      this.isDragging = false;
+      this.$socket.emit("appSettingSet", {key: "sidebar.width", value: this.width});
+      this.originalWidth = this.width;
+    },
+    /** The pointer rested on the right window edge (SidebarPeekZone): show the sidebar narrow until it leaves. */
+    onPeek() {
+      this.isFixed = true;
+      this.width = this.minWidth;
+      this.isHovering = true;
+      this.peeking = true;
+    },
+    endPeek() {
+      if (!this.peeking) return;
+      this.peeking = false;
+      this.width = this.originalWidth;
+      this.isFixed = false;
+      this.isHovering = false;
     },
     /**
-     * Initializes the hover controller for the sidebar
-     *
-     * When the mouse enters the hover zone, the sidebar will be fixed
-     *
-     * @author Zheyu Zhang
+     * The window crossed 900px (SidebarToggle): collapse or restore the sidebar
+     * @param {boolean} visible - whether the sidebar is open now
+     * @param {boolean} initial - on mount; the mount itself reports the visibility
      */
-    initHoverController() {
-      const hoverHotZoneDom = document.querySelector('#hoverHotZone');
-      this.sidebarContainerDom = document.querySelector('#sidebarContainer');
-      let hoverTimer;
-
-      hoverHotZoneDom.addEventListener('mouseenter', () => {
-        hoverTimer = setTimeout(() => {
-          this.isFixed = true;
-          this.width = this.minWidth;
-          this.isHovering = true;
-          this.sidebarContainerDom.addEventListener('mouseleave', handleMouseleave);
-        }, 500);
-      });
-
-      const handleMouseleave = () => {
-        clearTimeout(hoverTimer);
-        this.width = this.originalWidth;
-        this.isFixed = false;
-        this.isHovering = false;
-        this.sidebarContainerDom.removeEventListener('mouseleave', handleMouseleave);
-      };
-
-      hoverHotZoneDom.addEventListener('mouseleave', () => {
-        clearTimeout(hoverTimer);
-      });
-    },
-    /**
-     * Registers the sidebar blur event
-     *
-     * @author Zheyu Zhang
-     */
-    registerSidebarBlurEvent() {
-      const handleSidebarClick = (e) => {
-        e.stopPropagation();
-      };
-
-      const handleBodyClick = () => {
-        this.isFixed = false;
-        this.isHovering = false;
-        document.body.removeEventListener("click", handleBodyClick);
-      };
-
-      this.sidebarContainerDom.addEventListener("click", handleSidebarClick);
-      document.body.addEventListener("click", handleBodyClick);
-    },
-    onCopy(event) {
-      this.$emit('copy', event);
-    },
-    onResize() {
-      if (window.innerWidth <= 900) {
-        this.isSidebarVisible = false;
-        this.sidebarIconHighlight = true;
-        setTimeout(() => {
-          this.sidebarIconHighlight = false;
-        }, 1000);
-        this.visibilityChange();
-      } else if (window.innerWidth > 900) {
-        this.isSidebarVisible = true;
-      }
-
-      // Log resize event with debouncing
-      this.logResize();
+    onNarrow(visible, initial) {
+      this.isSidebarVisible = visible;
+      if (!initial) this.visibilityChange();
     },
     visibilityChange() {
       this.$emit('sidebar-visibility-change', this.isSidebarVisible);
@@ -519,6 +456,7 @@ export default {
         this.$socket.emit("stats", {
           action: "sidebar-visibility",
           data: {
+            ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
             isSidebarVisible: this.isSidebarVisible,
             documentId: this.documentId,
             studySessionId: this.studySessionId,
@@ -527,20 +465,6 @@ export default {
         });
       }
     },
-    logResize: debounce(function () {
-        if (this.acceptStats) {
-          this.$socket.emit("stats", {
-            action: "sidebarResize",
-            data: {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              windowWidth: window.innerWidth,
-              sidebarVisible: this.isSidebarVisible
-            }
-          });
-        }
-      }, 500)
   },
 };
 </script>
@@ -589,6 +513,8 @@ export default {
   padding-bottom: 4.5rem;
   scroll-padding-bottom: 1.5rem;
   box-sizing: border-box;
+  /* Containing block for full-height sidebar panels. */
+  position: relative;
 }
 
 #sidepane {
@@ -649,6 +575,13 @@ export default {
 
 [data-bs-theme="dark"] .sidebar-header .nav-tabs .nav-link.active {
   color: var(--care-accent);
+}
+
+/* The tab of the study step the user is on keeps a ring, like that step on the workflow bar */
+.sidebar-header .nav-tabs .nav-link.current-step,
+.sidebar-section-title.current-step {
+  outline: 2px solid var(--look-back-accent, var(--bs-primary));
+  outline-offset: -2px;
 }
 
 .sidebar-header .nav-tabs .nav-link.disabled {

@@ -49,20 +49,11 @@
                 />
                 {{ primaryLabel(card.primary) }}
               </BasicButton>
-              <div class="status-card-actions">
+              <div
+                v-if="card.showDeleteButton"
+                class="status-card-actions"
+              >
                 <BasicButton
-                  class="btn-icon"
-                  :title="$t('dashboard.study.copySession')"
-                  :aria-label="$t('dashboard.study.copySession')"
-                  @click="emitAction('copy', card)"
-                >
-                  <LoadIcon
-                    icon-name="clipboard"
-                    :size="15"
-                  />
-                </BasicButton>
-                <BasicButton
-                  v-if="card.showDeleteButton"
                   class="btn-icon btn-icon-danger"
                   :title="$t('dashboard.study.deleteSession')"
                   :aria-label="$t('dashboard.study.deleteSession')"
@@ -215,7 +206,7 @@ export default {
     emitAction(type, session) {
       this.$emit("action", { type, session, study: this.study });
     },
-    /** Reload the current page of sessions (e.g. after a copy). */
+    /** Reload the current page of sessions. */
     refetch() {
       this.$refs.sessionTable?.refetchCurrentWindow?.();
     },

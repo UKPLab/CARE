@@ -11,6 +11,7 @@
     <template #headerActions>
       <HeaderActions :actions="headerActions">
         <BasicButton
+            v-if="canUploadDocument"
             class="btn-primary btn-sm"
             :title="$t('documents.addDocument')"
             :text="$t('documents.uploadDocument')"
@@ -25,7 +26,7 @@
   </DashboardListPage>
   <PublishModal ref="publishModal"/>
   <ConfirmModal ref="deleteConf"/>
-  <UploadModal ref="uploadModal"/>
+  <UploadModal v-if="canUploadDocument" ref="uploadModal"/>
   <CreateModal ref="createModal"/>
   <EditModal ref="editModal"/>
   <DownloadPDFModal ref="pdfDownloadModal"/>
@@ -76,6 +77,9 @@ export default {
     };
   },
   computed: {
+    canUploadDocument() {
+      return this.$store.getters["auth/checkRight"]("frontend.dashboard.documents.upload");
+    },
     /** Secondary header buttons; collapse into "..." when the header is too narrow. */
     headerActions() {
       if (!this.showCreateButton) return [];
@@ -83,8 +87,9 @@ export default {
         {key: "createDocument", text: this.$t('documents.createDocument'), icon: "file-earmark-plus", onClick: () => this.$refs.createModal.open()},
       ];
     },
-    /** Same as the header create button; offered while the table is empty. */
+    /** Same as the header upload button; offered while the table is empty. */
     emptyAction() {
+      if (!this.canUploadDocument) return null;
       return {
         label: this.$t('documents.uploadDocument'),
         icon: "upload",

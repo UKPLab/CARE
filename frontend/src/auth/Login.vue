@@ -334,23 +334,11 @@ export default {
             return { completedLogin: false };
           }
 
-          // Single method, go directly to corresponding verification
-          if (method === "email") {
+          const verificationRoutes = { email: '2fa-verify-email', totp: '2fa-verify-totp' };
+          if (verificationRoutes[method]) {
             await this.$router.push({
-              name: "2fa-verify-email",
-              query: {
-                redirectedFrom: this.$route.query.redirectedFrom
-              }
-            });
-            return { completedLogin: false };
-          }
-
-          if (method === "totp") {
-            await this.$router.push({
-              name: "2fa-verify-totp",
-              query: {
-                redirectedFrom: this.$route.query.redirectedFrom
-              }
+              name: verificationRoutes[method],
+              query: { redirectedFrom: this.$route.query.redirectedFrom },
             });
             return { completedLogin: false };
           }
@@ -383,35 +371,8 @@ export default {
     showEmailVerificationModal(email) {
       this.$refs.emailVerificationModal.open(email);
     },
-    async verifyEmail(token) {
-      try {
-        const response = await axios.get(getServerURL() + '/verify-email?token=' + token,
-          {
-            validateStatus: function (status) {
-              return status === 200 || status === 400 || status === 500;
-            },
-          }
-        );
-        if (response.status === 200) {
-          this.eventBus.emit("toast", {
-            title: this.$t('auth.messages.emailVerified'),
-            message: resolveApiMessage(response.data, "auth.messages.emailVerifiedSuccess"),
-            variant: "success",
-          });
-        } else {
-          this.eventBus.emit("toast", {
-            title: this.$t('errors.auth.emailVerificationError'),
-            message: resolveApiMessage(response.data, "errors.auth.failedToVerifyEmail"),
-            variant: "danger",
-          });
-        }
-      } catch (_error) {
-        this.eventBus.emit("toast", {
-          title: this.$t('errors.auth.emailVerificationError'),
-          message: this.$t('errors.auth.failedToVerifyEmail'),
-          variant: "danger",
-        });
-      }
+    verifyEmail(token) {
+      return this.$refs.emailVerificationModal.verifyEmail(token);
     },
 
   }

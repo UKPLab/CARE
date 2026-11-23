@@ -8,17 +8,17 @@
         ref="page"
         class="sessions-page"
       >
+        <NavTabs
+          v-model="activeTab"
+          :tabs="sessionTabs"
+        />
+        <!-- Both lists stay mounted (v-show) so each tab count is the live server total. -->
         <section
           v-for="section in sections"
+          v-show="activeTab === section.key"
           :key="section.key"
           class="sessions-section"
         >
-          <header class="sessions-section-head">
-            <h2 class="sessions-section-title">
-              {{ section.title }}
-            </h2>
-          </header>
-
           <!-- Studies come page by page from the server (queryTable, scope mySessions); nothing
                is loaded into Vuex. -->
           <BackendTable
@@ -149,7 +149,6 @@
   </Card>
 
   <ConfirmModal ref="deleteConf" />
-  <AssignUserModal ref="assignUserModal" />
 
   <Timer
     autostart
@@ -164,7 +163,7 @@ import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import Timer from "@/basic/Timer.vue";
-import AssignUserModal from "@/components/dashboard/study/AssignUserStudySessionModal.vue";
+import NavTabs from "@/components/dashboard/NavTabs.vue";
 import StudySessionCards from "@/components/dashboard/study/StudySessionCards.vue";
 import StatusCard from "@/basic/dashboard/card/StatusCard.vue";
 import { confirmSoftDelete } from "@/basic/dashboard/actions.js";
@@ -221,10 +220,11 @@ function sectionOptions() {
  */
 export default {
   name: "DashboardStudySession",
-  components: { Card, BackendTable, BasicButton, LoadIcon, ConfirmModal, AssignUserModal, StudySessionCards, StatusCard, Timer },
+  components: { Card, BackendTable, BasicButton, LoadIcon, ConfirmModal, NavTabs, StudySessionCards, StatusCard, Timer },
   props: {},
   data() {
     return {
+      activeTab: "active",
       trigger: 0,
       // One sessions panel at a time, across both sections.
       openStudyId: null,
@@ -294,6 +294,13 @@ export default {
           options: this.closedOptions,
         },
       ];
+    },
+    sessionTabs() {
+      return this.sections.map((section) => ({
+        key: section.key,
+        label: section.title,
+        count: section.options.pagination.total,
+      }));
     },
   },
   mounted() {
@@ -570,9 +577,6 @@ export default {
           break;
         case "inspect":
           this.$router.push("/review/" + session.hash);
-          break;
-        case "copy":
-          this.$refs.assignUserModal.open(session);
           break;
         case "delete":
           this.confirmDelete(session);

@@ -1,6 +1,4 @@
 import "file-saver"; // DO NOT delete this import, required for window.saveAs to work
-import Papa from "papaparse";
-import yaml from "js-yaml";
 import { i18n } from '@/i18n.js';
 
 // Detects key-like messages such as "errors.server.notFound".
@@ -190,137 +188,6 @@ export function overrideObjectAttributes(obj_orig, obj_over) {
 }
 
 /**
- * Returns a CSV version of the provided object. Requires Papa parse formatting.
- *
- * @param objs
- * @returns {*}
- */
-export function objectsToCSV(objs) {
-    return Papa.unparse(objs);
-}
-
-/**
- * Returns a JSON string of the provided objects (including pretty printing).
- *
- * @param objs
- * @returns {string}
- */
-export function objectsToJSON(objs) {
-    return JSON.stringify(objs, null, 2);
-}
-
-/**
- * Returns a YAML string of the provided objects.
- *
- * @param objs
- * @returns {string}
- */
-export function objectsToYAML(objs) {
-    return yaml.dump(objs, {
-        indent: 2,
-        lineWidth: -1,
-        noRefs: true,
-        sortKeys: true
-    });
-}
-
-/**
- * Exports a list of objects into a single string, where nested objects are visualized by indentation.
- *
- * @param objs
- * @returns {String}
- */
-export function objectsToTXT(objs) {
-    return objs.map(o => Object.entries(o).map(([k, v]) => {
-            if (typeof v === "object" && v !== null) {
-                return `${k}\n${objectsToTXT([v])}`;
-            } else if (v === null) {
-                return `${k}:-`;
-            } else {
-                return `${k}:  ${v}`;
-            }
-        }).join("\n")
-    ).join("\n\n");
-}
-
-/**
- * Maps each supported export format to its serializer and MIME type.
- * This is the single source of truth for downloadObjectsAs and getSupportedExportFormats.
- */
-const EXPORT_FORMATS = {
-    csv: {
-        serialize:   objectsToCSV,
-        mimeType:    "text/csv",
-        label:       "modals.importExport.formats.csv.label",
-        icon:        "filetype-csv",
-        description: "modals.importExport.formats.csv.description",
-        extensions:  [".csv"],
-    },
-    json: {
-        serialize:   objectsToJSON,
-        mimeType:    "application/json",
-        label:       "modals.importExport.formats.json.label",
-        icon:        "filetype-json",
-        description: "modals.importExport.formats.json.description",
-        extensions:  [".json"],
-        parse:       (content) => JSON.parse(content),
-    },
-    txt: {
-        serialize:   objectsToTXT,
-        mimeType:    "text/plain",
-        label:       "modals.importExport.formats.txt.label",
-        icon:        "filetype-txt",
-        description: "modals.importExport.formats.txt.description",
-        extensions:  [".txt"],
-    },
-    yaml: {
-        serialize:   objectsToYAML,
-        mimeType:    "application/x-yaml",
-        label:       "modals.importExport.formats.yaml.label",
-        icon:        "filetype-yml",
-        description: "modals.importExport.formats.yaml.description",
-        extensions:  [".yaml", ".yml"],
-        parse:       (content) => yaml.load(content),
-    },
-};
-
-/**
- * Returns all supported export formats for downloadObjectsAs.
- *
- * @returns {string[]}
- */
-export function getSupportedExportFormats() {
-    return Object.entries(EXPORT_FORMATS).map(([key, { label, icon, description }]) => ({ key, label, icon, description }));
-}
-
-/**
- * Returns all formats that can be parsed back for import (i.e. those with a parse function).
- *
- * @returns {{ key: string, label: string, icon: string, description: string, extensions: string[], parse: function }[]}
- */
-export function getSupportedImportFormats() {
-    return Object.entries(EXPORT_FORMATS)
-        .filter(([, fmt]) => typeof fmt.parse === "function")
-        .map(([key, { label, icon, description, extensions, parse }]) => ({ key, label, icon, description, extensions, parse }));
-}
-
-/**
- * Downloads the provided objects by the given file type under the given file name.
- *
- * @param objs objects to be downloaded in the browser
- * @param name name of the resulting file
- * @param file_type the type of the file, either {"csv" | "json" | "txt" | "yaml"}
- */
-export function downloadObjectsAs(objs, name, file_type) {
-    const format = EXPORT_FORMATS[file_type];
-    if (!format) {
-        throw `Invalid argument '${file_type}' passed to downloadObjectsAs`;
-    }
-    const data = format.serialize(objs);
-    window.saveAs(new Blob([data], {type: `${format.mimeType};charset=utf-8`}), `${name}.${file_type}`);
-}
-
-/**
  * Checks whether two arrays are identical.
  * src: https://stackoverflow.com/questions/6229197/how-to-know-if-two-arrays-have-the-same-values/55614659#55614659
  *
@@ -485,7 +352,6 @@ export function downloadDocument(content, fileName, fileType = "") {
     document.body.removeChild(anchor);
 }
 
-
 /**
  * Navigates back to the dashboard the user came from.
  *
@@ -622,7 +488,6 @@ export function applyTheme(mode) {
     localStorage.setItem("care.theme", mode);
 }
 
-
 /**
  * Shifts a colour towards black or white, whichever gives a visible change.
  * Dark colours are lightened, light colours are darkened, so a hover state is
@@ -691,3 +556,5 @@ export function focusNextAnnotationCard(fromEl) {
     const header = target && (target.querySelector('.card-focusable') || target.querySelector('textarea, button'));
     if (header) header.focus();
 }
+
+export { objectsToCSV, objectsToJSON, objectsToYAML, objectsToTXT, getSupportedExportFormats, getSupportedImportFormats, downloadObjectsAs } from './data.js';

@@ -41,40 +41,47 @@
     </template>
     <template #footer>
       <template v-if="!$slots['error']">
-        <BasicButton
+        <div
           v-if="currentStep === 0 && showClose"
+          class="btn-group me-auto"
+        >
+          <BasicButton
+            :title="$t('common.close')"
+            class="btn btn-link"
+            @click="close"
+          />
+        </div>
+        <div class="btn-group">
+          <slot name="buttons"/>
+          <BasicButton
+            v-if="currentStep !== 0"
+            :title="$t('common.previous')"
+            class="btn btn-outline-secondary"
+            @click="currentStep--"
+          />
+          <BasicButton
+            v-if="currentStep < steps.length - 1"
+            :title="nextText || $t('common.nextText')"
+            :class="['btn', currentStep === 0 && nextText && nextText.toLowerCase().includes('cancel') ? 'btn-danger' : 'btn-primary']"
+            :disabled="disabled(currentStep)"
+            @click="currentStep++"
+          />
+          <BasicButton
+            v-if="currentStep === steps.length - 1"
+            :title="submitText || $t('common.submitText')"
+            class="btn btn-primary"
+            :disabled="disabled(currentStep)"
+            @click="submit"
+          />
+        </div>
+      </template>
+      <div v-else class="btn-group">
+        <BasicButton
           :title="$t('common.close')"
-          class="btn btn-link me-auto"
+          class="btn btn-primary"
           @click="close"
         />
-        <slot name="buttons"/>
-        <BasicButton
-          v-if="currentStep !== 0"
-          :title="$t('common.previous')"
-          class="btn btn-outline-secondary"
-          @click="currentStep--"
-        />
-        <BasicButton
-          v-if="currentStep < steps.length - 1"
-          :title="nextText || $t('common.nextText')"
-          :class="['btn', currentStep === 0 && nextText && nextText.toLowerCase().includes('cancel') ? 'btn-danger' : 'btn-primary']"
-          :disabled="disabled(currentStep)"
-          @click="currentStep++"
-        />
-        <BasicButton
-          v-if="currentStep === steps.length - 1"
-          :title="submitText || $t('common.submitText')"
-          class="btn btn-primary"
-          :disabled="disabled(currentStep)"
-          @click="submit"
-        />
-      </template>
-      <BasicButton
-        v-else
-        :title="$t('common.close')"
-        class="btn btn-primary"
-        @click="close"
-      />
+      </div>
     </template>
   </BasicModal>
 </template>

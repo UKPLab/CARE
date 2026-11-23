@@ -153,6 +153,7 @@ import {
  * - `dateOnly`: no time row, time is always 00:00 in the device zone
  * - `inline`: render the calendar directly instead of a field with a popup (used by the table search)
  * Optional `options.min` / `options.max` ("YYYY-MM-DD") limit the selectable days.
+ * `options.disablePast` also blocks past days and is checked by the parent BasicForm (`validateDateValue`).
  *
  * Times are wall-clock times in the user's chosen time zone (device zone by default; the choice
  * and the quick-time buttons are saved per user in the user_environment table, see datetimePrefs). The zone and its UTC
@@ -163,6 +164,11 @@ import {
 export default {
   name: "DatetimePicker",
   components: {FormElement, CalendarPanel, LoadIcon, BasicButton},
+  inject: {
+    validateDateValue: {
+      default: null,
+    },
+  },
   subscribeTable: [{table: ENV_TABLE, filter: [{key: "key", value: ENV_KEY}]}],
   props: {
     options: {
@@ -195,6 +201,8 @@ export default {
       popupStyle: {},
       teleportTarget: "body",
       uid: uniqueId(),
+      now: Date.now(),
+      clockTimer: null,
     }
   },
   computed: {
@@ -205,8 +213,18 @@ export default {
     popupId() {
       return `care-dp-popup-${this.uid}`;
     },
+    /** Today and the current time in the picker's zone ("YYYY-MM-DD" / "HH:MM"). */
+    today() {
+      return zonedParts(this.timeZoneId, this.now).ymd;
+    },
+    currentTime() {
+      return zonedParts(this.timeZoneId, this.now).hm;
+    },
+    /** `options.disablePast` blocks days before today on top of `options.min`. */
     minDate() {
-      return this.options.min || null;
+      const min = this.options.min || null;
+      if (!this.options.disablePast) return min;
+      return min && min > this.today ? min : this.today;
     },
     maxDate() {
       return this.options.max || null;
@@ -321,10 +339,21 @@ export default {
   mounted() {
     this.teleportTarget = popupTeleportTarget(this.$el);
     this.applyValue(this.modelValue);
+
+    // update the allowed date and time every 30 seconds while the form is open.
+    if (this.options.disablePast) {
+      this.clockTimer = setInterval(() => {
+        this.now = Date.now();
+      }, 30_000);
+    }
   },
   beforeUnmount() {
     this.unbindPopup?.();
+    if (this.clockTimer) {
+      clearInterval(this.clockTimer);
+    }
   },
+
   methods: {
     translateMaybeKey,
     applyValue(value) {
@@ -375,9 +404,16 @@ export default {
     },
     onSelectDate(ymd) {
       this.date = ymd;
-      if (this.time === null) this.time = "00:00";
+      if (this.time === null) {
+        this.now = Date.now();
+        // Picking today in a past-restricted picker starts at the current time, not at 00:00
+        this.time = !this.dateOnly && this.options.disablePast && ymd === this.today
+          ? this.currentTime
+          : "00:00";
+      }
       this.normalize();
       this.emitValue();
+      if (this.options.disablePast) this.validate();
       // Date-only popups are done after one click; with a time row the popup stays open
       if (this.dateOnly && !this.inline) this.close();
     },
@@ -387,6 +423,7 @@ export default {
       this.time = value;
       this.normalize(previous);
       this.emitValue();
+      if (this.options.disablePast) this.validate();
     },
     /** @param {string|null} zone Picked zone id, null = device. */
     onSelectZone(zone) {
@@ -457,11 +494,33 @@ export default {
       delete style.maxHeight;
       this.popupStyle = style;
     },
+    /**
+     * Validate the visible input using the parent form's shared date rule.
+     *
+     * @returns {boolean} Whether the input is valid.
+     */
     validate() {
-      return this.$refs.formElement.validate(this.currentIso);
-    }
-  }
-}
+      const element = this.$refs.formElement;
+
+      if (!element.validate(this.currentIso)) {
+        return false;
+      }
+
+      // Restricted pickers must be descendants of BasicForm.
+      const valid = this.validateDateValue
+        ? this.validateDateValue({
+            key: this.options.key,
+            value: this.currentIso,
+            disablePast: this.options.disablePast,
+            dateOnly: this.dateOnly,
+          })
+        : !this.options.disablePast;
+
+      element.setInvalid(!valid);
+      return valid;
+    },
+  },
+};
 </script>
 
 <style scoped>

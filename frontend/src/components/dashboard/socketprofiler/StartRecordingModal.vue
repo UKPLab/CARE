@@ -9,7 +9,7 @@
       {{ $t('socketProfiler.startRecording.title') }}
     </template>
     <template #body>
-      
+
       <div class="mb-3">
         <label class="form-label fw-bold">{{ $t('socketProfiler.startRecording.selectSessions') }}</label>
         <p class="text-muted small">
@@ -73,17 +73,19 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn-secondary"
-        :text="$t('common.cancel')"
-        @click="abort"
-      />
-      <BasicButton
-        class="btn-primary"
-        :text="startButtonText"
-        :disabled="selectedSessions.length === 0"
-        @click="confirm"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn-secondary"
+          :text="$t('common.cancel')"
+          @click="abort"
+        />
+        <BasicButton
+          class="btn-primary"
+          :text="startButtonText"
+          :disabled="selectedSessions.length === 0"
+          @click="confirm"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

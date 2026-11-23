@@ -28,11 +28,13 @@
       </BasicDetails>
     </template>
     <template #footer>
-      <BasicButton
-        :title="$t('ai.common.close')"
-        class="btn btn-secondary"
-        @click="$refs.overviewModal.close()"
-      />
+      <div class="btn-group">
+        <BasicButton
+          :title="$t('ai.common.close')"
+          class="btn btn-secondary"
+          @click="$refs.overviewModal.close()"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

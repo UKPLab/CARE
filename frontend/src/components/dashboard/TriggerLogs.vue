@@ -1,19 +1,11 @@
 <template>
-  <Card
-    class="dashboard-page"
+  <DashboardListPage
     :title="$t('triggers.logs.title')"
-  >
-    <template #body>
-      <BasicTable
-        :columns="columns"
-        :data="logs"
-        :options="tableOptions"
-        :buttons="buttons"
-        :max-table-height="'65vh'"
-        @action="onAction"
-      />
-    </template>
-  </Card>
+    :columns="columns"
+    :data="logs"
+    :buttons="buttons"
+    @action="onAction"
+  />
 
   <BasicModal
     ref="errorModal"
@@ -37,8 +29,8 @@
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { dashboardRowButton } from "@/basic/dashboard/actions.js";
 import BasicModal from "@/basic/Modal.vue";
 import BasicForm from "@/basic/Form.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
@@ -49,8 +41,7 @@ export default {
   name: "DashboardTriggerLogs",
   subscribeTable: ["trigger_queue", "trigger"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicModal,
     BasicForm,
     ConfirmModal,
@@ -58,11 +49,6 @@ export default {
   },
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-      },
       errorFormData: null,
     };
   },
@@ -78,13 +64,11 @@ export default {
     },
     manageActions() {
       return [
-        {
-          icon: "x-circle",
+        dashboardRowButton("x-circle", {
           title: this.$t("triggers.actions.cancel"),
           action: "cancel",
           handler: "confirmCancel",
           socketEvent: "triggerQueueCancel",
-          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
           filter: [{ key: "canCancel", value: true }],
           confirm: {
             title: this.$t("triggers.confirm.cancelTitle"),
@@ -92,25 +76,21 @@ export default {
           },
           successToast: { title: this.$t("triggers.messages.cancelledTitle"), message: this.$t("triggers.messages.cancelled") },
           errorToast: { title: this.$t("triggers.errors.cancelTitle") },
-        },
-        {
-          icon: "arrow-repeat",
+        }, "warning"),
+        dashboardRowButton("arrow-repeat", {
           title: this.$t("triggers.actions.retry"),
           action: "retry",
           handler: "socketCallback",
           socketEvent: "triggerQueueRetry",
-          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
           filter: [{ key: "canRetry", value: true }],
           successToast: { title: this.$t("triggers.messages.retryQueuedTitle"), message: this.$t("triggers.messages.retryQueued") },
           errorToast: { title: this.$t("triggers.errors.retryTitle") },
-        },
-        {
-          icon: "arrow-repeat",
+        }),
+        dashboardRowButton("arrow-repeat", {
           title: this.$t("triggers.actions.rerun"),
           action: "rerun",
           handler: "confirmSocket",
           socketEvent: "triggerQueueRerun",
-          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
           filter: [{ key: "canRerun", value: true }],
           confirm: {
             title: this.$t("triggers.confirm.rerunTitle"),
@@ -118,17 +98,15 @@ export default {
           },
           successToast: { title: this.$t("triggers.messages.rerunQueuedTitle"), message: this.$t("triggers.messages.rerunQueued") },
           errorToast: { title: this.$t("triggers.errors.rerunTitle") },
-        },
-        {
-          icon: "exclamation-triangle",
+        }),
+        dashboardRowButton("exclamation-triangle", {
           title: this.$t("triggers.actions.viewError"),
           action: "viewError",
           handler: "errorModal",
           socketEvent: "triggerQueueGetDetails",
-          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
           filter: [{ key: "hasError", value: true }],
           modal: "error",
-        },
+        }, "danger"),
       ];
     },
     errorModalTitle() {

@@ -19,15 +19,13 @@
 
       <SetupWizardAdminStep
         v-show="displaySteps[currentStep]?.key === 'admin'"
+        ref="adminStep"
         :form-data="formData"
-        :validity="validity"
-        :valid-user-name="validUserName"
-        :valid-email="validEmail"
-        :valid-password="validPassword"
         :show-error="showError"
         :error-message="errorMessage"
-        @check-val="checkVal"
-        @submit-admin="submitAdmin"
+        @submit-admin="onAdminNext"
+        @created="hasAdmin = true"
+        @error="setWizardError"
         @update-admin-field="setAdminField"
       />
 
@@ -56,15 +54,9 @@
         :show-error="showError"
         :error-message="errorMessage"
         :all-settings-loaded="allSettingsLoaded"
-        :test-mail-to="testMailTo"
-        :test-mail-sending="testMailSending"
-        :test-mail-message="testMailMessage"
-        :test-mail-error="testMailError"
         @download-template="downloadImportTemplate"
         @open-import-modal="openImportModal"
         @update:value="setWizardSettingValue"
-        @update-test-mail-to="testMailTo = $event"
-        @send-test-mail="sendSetupTestMail"
         @previous="onPrevious"
         @next="onStepNext"
       />
@@ -87,19 +79,20 @@
         v-show="displaySteps[currentStep]?.key === 'summary'"
         :all-settings-loaded="allSettingsLoaded"
         :has-admin="hasAdmin"
+        :create-admin="createAdmin"
+        :account-error="showError ? errorMessage : ''"
         :form-data="formData"
         :wizard-settings="wizardSettings"
         :form-settings="formSettings"
-        :summary-field-groups="summaryFieldGroups"
         :settings-from-file="settingsFromFile"
         :show-file-settings="showFileSettings"
         :current-step="currentStep"
-        :finishing="finishing"
+        @finish-start="settingsTouched = true"
+        @error="setWizardError"
         @download-template="downloadImportTemplate"
         @open-import-modal="openImportModal"
         @toggle-show-file-settings="showFileSettings = !showFileSettings"
         @previous="onPrevious"
-        @finish="finish"
       />
 
       <!-- Import JSON Modal -->
@@ -180,7 +173,6 @@ export default {
       wizardSettings: [],
       hasAdmin: false,
       formData: { userName: "admin", email: "", password: "" },
-      validity: null,
       formSettings: {},
       settingsFromFile: null,
       importFile: null,
@@ -190,12 +182,7 @@ export default {
       showFileSettings: false,
       showError: false,
       errorMessage: "",
-      finishing: false,
       allSettingsFromDb: null,
-      testMailTo: "",
-      testMailSending: false,
-      testMailMessage: "",
-      testMailError: false,
     };
   },
   computed: {
@@ -218,44 +205,6 @@ export default {
       }
       return filtered;
     },
-    summaryFieldGroups() {
-      const stepTitles = {
-        general: "General",
-        mail: "Mail",
-        registration: "Registration",
-        moodle: "Moodle",
-      };
-      const byStep = {};
-      for (const s of this.wizardSettings || []) {
-        const step = s.wizardStep || "general";
-        if (!byStep[step]) byStep[step] = [];
-        byStep[step].push(s);
-      }
-      const order = ["general", "mail", "registration", "moodle"];
-      return order.filter((step) => byStep[step]?.length).map((step) => ({
-        title: stepTitles[step],
-        settings: byStep[step],
-      }));
-    },
-    validUserName() {
-      return typeof this.formData.userName === "string" && this.formData.userName.trim() !== "";
-    },
-    validEmail() {
-      const e = this.formData.email;
-      if (!e || typeof e !== "string") return false;
-      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
-    },
-    validPassword() {
-      const p = this.formData.password || "";
-      return typeof p === "string"
-        && p.length >= 8
-        && !/^\s*$/.test(p)
-        && ![...p].some((c) => (c.codePointAt(0) || 0) < 32 || (c.codePointAt(0) || 0) === 127)
-        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
-    },
-    adminFormValid() {
-      return this.validUserName && this.validEmail && this.validPassword;
-    },
     currentStepKey() {
       return this.displaySteps[this.currentStep]?.key;
     },
@@ -275,9 +224,6 @@ export default {
         (s) => this.formSettings[s.key] != null && String(this.formSettings[s.key]).trim() !== ""
       );
     },
-  },
-  beforeMount() {
-    this.validity = Object.fromEntries(Object.keys(this.formData).map(key => [key, false]));
   },
   async mounted() {
     const check = await axios.get(getServerURL() + "/auth/check", { withCredentials: true });
@@ -319,6 +265,9 @@ export default {
     }
   },
   methods: {
+    async createAdmin() {return this.$refs.adminStep.createAccount();},
+    setWizardError(message) {this.showError = !!message; this.errorMessage = message;},
+    onAdminNext() {this.showError=false; this.errorMessage=''; this.currentStep++;},
     wizardValueToFormString(v) {
       if (v === null || v === undefined) return "";
       if (typeof v === "boolean") return v ? "true" : "false";
@@ -345,47 +294,6 @@ export default {
     },
     setAdminField(field, value) {
       this.formData[field] = value;
-    },
-    checkVal(key) {
-      this.validity[key] = true;
-    },
-    submitAdmin() {
-      Object.keys(this.validity).forEach(k => { this.validity[k] = true; });
-      if (!this.adminFormValid) return;
-      this.showError = false;
-      this.errorMessage = "";
-      this.currentStep++;
-    },
-    async doSubmitAdmin() {
-      this.showError = false;
-      try {
-        const res = await axios.post(
-          getServerURL() + "/auth/setup-admin",
-          {
-            userName: this.formData.userName.trim(),
-            email: this.formData.email.trim(),
-            password: this.formData.password,
-          },
-          {
-            withCredentials: true,
-            validateStatus: function (status) {
-              return status === 200 || (status >= 400 && status < 500);
-            },
-          }
-        );
-        if (res.status === 200) {
-          this.hasAdmin = true;
-          return true;
-        } else {
-          this.showError = true;
-          this.errorMessage = (res.data && res.data.message) || "Setup failed. Please try again.";
-          return false;
-        }
-      } catch (err) {
-        this.showError = true;
-        this.errorMessage = err.message || "Setup failed. Please try again.";
-        return false;
-      }
     },
     onPrevious() {
       if (this.displaySteps[this.currentStep]?.key === "summary") {
@@ -437,44 +345,6 @@ export default {
         flat[k] = serialize(v);
       }
       downloadObjectsAs(flat, "care-settings-template", "json");
-    },
-    mailSettingsPayloadFromForm() {
-      const settings = {};
-      for (const [k, v] of Object.entries(this.formSettings || {})) {
-        if (k.startsWith("system.mailService.")) {
-          settings[k] = v === null || v === undefined ? "" : String(v);
-        }
-      }
-      return settings;
-    },
-    async sendSetupTestMail() {
-      const to = (this.testMailTo || "").trim();
-      if (!to) return;
-      this.testMailSending = true;
-      this.testMailMessage = "";
-      this.testMailError = false;
-      try {
-        const res = await axios.post(
-          getServerURL() + "/setup/test-mail",
-          { to, settings: this.mailSettingsPayloadFromForm() },
-          {
-            withCredentials: true,
-            validateStatus: (status) => status === 200 || (status >= 400 && status < 500),
-          }
-        );
-        if (res.status === 200 && res.data && res.data.success) {
-          this.testMailMessage = res.data.message || "Test email sent.";
-          this.testMailError = false;
-        } else {
-          this.testMailError = true;
-          this.testMailMessage = (res.data && res.data.message) || "Failed to send test email.";
-        }
-      } catch (err) {
-        this.testMailError = true;
-        this.testMailMessage = err?.response?.data?.message || err.message || "Failed to send test email.";
-      } finally {
-        this.testMailSending = false;
-      }
     },
     onJsonFileChange(file) {
       this.importFile = file || null;
@@ -528,83 +398,7 @@ export default {
       this.settingsFromFile = null;
       this.$refs.jsonFileInput?.clear();
     },
-    /**
-     * Partition imported settings into known and unknown keys against /setup/config.
-     * Accepts all keys while validSettingKeys is still loading.
-     * @param {Record<string, string>} obj - Normalized imported settings
-     * @returns {{accepted: Record<string, string>, ignored: string[]}}
-     */
-    filterKnownSettings(obj) {
-      const valid = this.validSettingKeys;
-      const accepted = {};
-      const ignored = [];
-      for (const [k, v] of Object.entries(obj)) {
-        if (!valid || valid.has(k)) {
-          accepted[k] = v;
-        } else {
-          ignored.push(k);
-        }
-      }
-      return { accepted, ignored };
-    },
-    normalizeFileSettings(obj) {
-      const out = {};
-      for (const [k, v] of Object.entries(obj)) {
-        if (v === null || v === undefined) {
-          out[k] = "";
-        } else if (typeof v === "boolean") {
-          out[k] = v ? "true" : "false";
-        } else if (typeof v === "object") {
-          out[k] = JSON.stringify(v);
-        } else {
-          out[k] = String(v);
-        }
-      }
-      return out;
-    },
-    async finish() {
-      this.settingsTouched = true;
-      this.showError = false;
-      this.errorMessage = "";
 
-      if (!this.hasAdmin) {
-        const created = await this.doSubmitAdmin();
-        if (!created) return;
-      }
-
-      const merged = { ...this.formSettings, ...(this.settingsFromFile || {}) };
-      if (merged["system.mailService.enabled"] !== "true") {
-        merged["app.register.emailVerification"] = "false";
-      }
-      const payload = Object.entries(merged).map(([key, v]) => ({
-        key,
-        value: v === null || v === undefined ? "" : (typeof v === "boolean" ? (v ? "true" : "false") : (typeof v === "object" ? JSON.stringify(v) : String(v))),
-      }));
-      this.finishing = true;
-      this.showError = false;
-      try {
-        const res = await axios.post(
-          getServerURL() + "/setup/complete",
-          { settings: payload },
-          {
-            withCredentials: true,
-            validateStatus: (status) => status === 200 || (status >= 400 && status < 500),
-          }
-        );
-        if (res.status !== 200 || !res.data?.success) {
-          this.finishing = false;
-          this.showError = true;
-          this.errorMessage = res.data?.message || "Failed to save settings.";
-          return;
-        }
-        this.$router.push("/dashboard");
-        this.$router.go(0);
-      } catch (err) {
-        this.finishing = false;
-        this.showError = true;
-        this.errorMessage = err?.response?.data?.message || err?.message || "Failed to complete setup.";
-      }
-    },
   },
 };
 </script>

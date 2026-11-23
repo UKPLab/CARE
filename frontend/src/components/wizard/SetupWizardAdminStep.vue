@@ -8,7 +8,7 @@
         No administrator account exists. Enter credentials now; the account is created on Finish.
       </p>
       <p v-if="showError" class="text-danger text-center">{{ errorMessage }}</p>
-      <form @submit.prevent="$emit('submit-admin')">
+      <form @submit.prevent="submitAdmin()">
         <div class="row my-2">
           <label class="col-md-4 col-form-label text-md-end" for="setup-username">Username</label>
           <div class="col-md-6">
@@ -19,7 +19,7 @@
               class="form-control"
               placeholder="admin"
               type="text"
-              @blur="$emit('check-val', 'userName')"
+              @blur="validity['userName'] = true"
               @input="$emit('update-admin-field', 'userName', $event.target.value)"
             />
             <div class="feedback-invalid" :class="{invalid: validity['userName'] && !validUserName}">
@@ -37,7 +37,7 @@
               class="form-control"
               placeholder="admin@example.com"
               type="email"
-              @blur="$emit('check-val', 'email')"
+              @blur="validity['email'] = true"
               @input="$emit('update-admin-field', 'email', $event.target.value)"
             />
             <div class="feedback-invalid" :class="{invalid: validity['email'] && !validEmail}">
@@ -55,7 +55,7 @@
               class="form-control"
               placeholder="Min. 8 characters"
               type="password"
-              @blur="$emit('check-val', 'password')"
+              @blur="validity['password'] = true"
               @input="$emit('update-admin-field', 'password', $event.target.value)"
             />
             <div class="feedback-invalid" :class="{invalid: validity['password'] && !validPassword}">
@@ -64,7 +64,7 @@
           </div>
         </div>
         <div class="col-md-6 offset-md-4 my-4">
-          <BasicButton class="btn btn-primary" title="Next" @click="$emit('submit-admin')" />
+          <BasicButton class="btn btn-primary" title="Next" @click="submitAdmin()" />
         </div>
       </form>
     </div>
@@ -73,6 +73,8 @@
 
 <script>
 import BasicButton from "@/basic/Button.vue";
+import axios from "axios";
+import getServerURL from "@/assets/serverUrl";
 
 /**
  * Renders the first-time setup wizard admin account step: username, email, password, and
@@ -86,22 +88,6 @@ export default {
       type: Object,
       required: true,
     },
-    validity: {
-      type: Object,
-      required: true,
-    },
-    validUserName: {
-      type: Boolean,
-      required: true,
-    },
-    validEmail: {
-      type: Boolean,
-      required: true,
-    },
-    validPassword: {
-      type: Boolean,
-      required: true,
-    },
     showError: {
       type: Boolean,
       required: true,
@@ -111,6 +97,64 @@ export default {
       required: true,
     },
   },
-  emits: ["check-val", "submit-admin", "update-admin-field"],
+  emits: ["submit-admin", "update-admin-field", "created", "error"],
+  data() {return {validity: {userName: false, email: false, password: false}};},
+  computed: {
+    validUserName() {
+      return typeof this.formData.userName === "string" && this.formData.userName.trim() !== "";
+    },
+    validEmail() {
+      const e = this.formData.email;
+      if (!e || typeof e !== "string") return false;
+      return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e.trim());
+    },
+    validPassword() {
+      const p = this.formData.password || "";
+      return typeof p === "string"
+        && p.length >= 8
+        && !/^\s*$/.test(p)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) < 32 || (c.codePointAt(0) || 0) === 127)
+        && ![...p].some((c) => (c.codePointAt(0) || 0) > 0xFFFF);
+    },
+    adminFormValid() {
+      return this.validUserName && this.validEmail && this.validPassword;
+    },
+  },
+  methods: {
+    submitAdmin() {
+      Object.keys(this.validity).forEach(k => { this.validity[k] = true; });
+      if (!this.adminFormValid) return;
+      this.$emit("submit-admin");
+    },
+    async createAccount() {
+      this.$emit("error", "");
+      try {
+        const res = await axios.post(
+          getServerURL() + "/auth/setup-admin",
+          {
+            userName: this.formData.userName.trim(),
+            email: this.formData.email.trim(),
+            password: this.formData.password,
+          },
+          {
+            withCredentials: true,
+            validateStatus: function (status) {
+              return status === 200 || (status >= 400 && status < 500);
+            },
+          }
+        );
+        if (res.status === 200) {
+          this.$emit("created");
+          return true;
+        } else {
+          this.$emit("error", (res.data && res.data.message) || "Setup failed. Please try again.");
+          return false;
+        }
+      } catch (err) {
+        this.$emit("error", err.message || "Setup failed. Please try again.");
+        return false;
+      }
+    },
+  },
 };
 </script>

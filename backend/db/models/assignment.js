@@ -52,6 +52,8 @@ module.exports = (sequelize, DataTypes) => {
 				size: 6,
 				default: null,
 				required: false,
+				disablePast: true,
+				invalidText: "errors.element.pastDate",
 			},
 			{
 				key: "end",
@@ -60,6 +62,8 @@ module.exports = (sequelize, DataTypes) => {
 				size: 6,
 				default: null,
 				required: false,
+				disablePast: true,
+				invalidText: "errors.element.pastDate",
 			},
 			{
 				key: "validationConfigurationId",
@@ -95,7 +99,7 @@ module.exports = (sequelize, DataTypes) => {
 			{
 				key: "submissionWarning",
 				label: "assignments.fields.submissionWarning.label",
-				placeholder: "e.g. This assignment must be submitted in German.",
+				placeholder: "assignments.fields.submissionWarning.placeholder",
 				type: "textarea",
 				required: false,
 				default: "",

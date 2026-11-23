@@ -8,13 +8,10 @@
       {{ $t('documents.uploadNewDocument') }}
     </template>
     <template #body>
-      <div
+      <BasicLoading
         v-if="uploading"
-        class="spinner-border m-5"
-        role="status"
-      >
-        <span class="visually-hidden">{{ $t('common.loading') }}</span>
-      </div>
+        class="m-5"
+      />
       <div v-else>
         <BasicForm
           v-model="data"
@@ -58,6 +55,7 @@ import BasicForm from "@/basic/Form.vue";
 import { extractTextFromPDF, resolveApiMessage } from "@/assets/utils";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
+import BasicLoading from "@/basic/Loading.vue";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -74,7 +72,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  */
 export default {
   name: "DocumentUploadModal",
-  components: {BasicForm, Modal, BasicButton},
+  components: {BasicLoading, BasicForm, Modal, BasicButton},
   data() {
     return {
       uploading: false,

@@ -259,6 +259,7 @@
         "sendEmailNotificationToReviewer": "Send email notification to reviewer",
         "targetWorkflowSelection": "Target Workflow Selection",
         "selectTargetWorkflow": "Select Target Workflow:",
+        "assignmentOption": "{name} (#{id})",
         "workflowStepMapping": "Workflow Step Mapping",
         "mapWorkflowStepToTarget": "Map each source workflow step (from template) to a target workflow step:",
         "sourceStepTargetStep": "Source Step {index} ({stepType}) → Target Step:",
@@ -376,6 +377,17 @@
         "userCannotBeAdded": "User with external Id {extId} cannot be added: {message}",
         "uploadToMoodle": "Upload to Moodle",
         "downloadResultCsv": "Download Result CSV",
+        "moodleCredentialsTitle": "Send login credentials to Moodle",
+        "moodleCredentialsIntro": "CARE generated usernames and initial passwords for the imported users. Select the Moodle assignment where these credentials should be posted as feedback, or download them as a CSV file.",
+        "roleReplacementWarning": "The existing CARE roles of these users will be replaced by the basic User role and the mapped roles selected in the previous step.",
+        "roleMappingWarning": "Re-importing an existing user replaces their current CARE roles. Each user will receive the basic User role plus the CARE roles mapped below. Selecting “No extra CARE role” does not preserve previous roles.",
+        "roleMappingSourceRole": "{source} Role",
+        "roleMappingUsers": "Users",
+        "roleMappingCareRole": "CARE Role",
+        "roleMappingSelect": "Select mapping",
+        "roleMappingNoExtraRole": "No extra CARE role",
+        "roleMappingStep": "Role Mapping",
+        "roleMappingNoRoles": "No roles were found. Imported users will receive CARE's basic user role.",
         "moodle": "Moodle",
         "preview": "Preview",
         "result": "Result",
@@ -564,7 +576,7 @@
             }
         }
     },
-  "sessionOverview": {
+    "sessionOverview": {
         "title": "Study Sessions Overview",
         "showOnlyOpenStudies": "Show only open studies",
         "filterWorkflowType": "Filter Workflow type:",
@@ -576,9 +588,7 @@
             "numberOfSteps": "Number of Steps"
         }
     },
-    "ai": {
-        "loadModels": "Load Models"
-    },
+    "ai": {},
     "home": {
         "openStudies": "Open studies",
         "addedThisWeek": "{count} added this week",

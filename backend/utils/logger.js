@@ -151,24 +151,22 @@ function addCallerinfo() {
     })();
 }
 
+// File streams belong to the process, not to individual socket connections.
+let fileTransports;
+let defaultLogger;
+const databaseLoggers = new WeakMap();
+
 /**
- * This module logs everything into different formats
- * Use:
- * const logger = require("../utils/logger.js")("service");
- * logger.debug(), logger.info(), logger.error(), ...
- * More information: https://github.com/winstonjs/winston
+ * Create the rotating file transports (error, complete, activity) once per process and reuse them.
+ * Sharing them keeps the number of open log files constant across socket connections.
  *
- * You can also put user information into the log:
- * const new_logger = logger.child({user: <uid_from_table_user>});
- * or logger.info(..., {user: <uid_from_table_user>});
- *
- * @author: Dennis Zyska
- *
- * @param {string} service - Name of the service
- * @param {object} db - Database connection
- * @return {object} - Logger
+ * @returns {Array<object>} The three DailyRotateFile transports
  */
-exports = module.exports = function (service = "log", db = null) {
+function getFileTransports() {
+    if (fileTransports) {
+        return fileTransports;
+    }
+
     const errorTransport = new winston.transports.DailyRotateFile({
         filename: logging_dir + '/error-%DATE%.log',
         datePattern: 'YYYY-MM-DD',
@@ -204,26 +202,76 @@ exports = module.exports = function (service = "log", db = null) {
         });
     });
 
-    return winston.createLogger({
+    fileTransports = [errorTransport, completeTransport, activityTransport];
+    return fileTransports;
+}
+
+/**
+ * Create a base logger with the shared file transports, a console transport and a database transport.
+ * One base logger exists per database connection; callers get child loggers of it.
+ *
+ * @param {object|null} db - Database connection for the SQL transport, or null for the default logger
+ * @returns {object} Winston logger
+ */
+function createBaseLogger(db) {
+    const logger = winston.createLogger({
         level: process.env.LOGGING_LEVEL,
         format: winston.format.combine(
             winston.format.timestamp(),
             addCallerinfo(),
             winston.format.json(),
         ),
-        defaultMeta: {service: service},
         exitOnError: false,
         silent: (process.env.DISABLE_LOGGING === "true" || process.env.DISABLE_LOGGING === 1),
         transports:
             [
-                errorTransport,
-                completeTransport,
-                activityTransport,
+                ...getFileTransports(),
                 new winston.transports.Console({format: winston.format.simple()}),
                 new SQLTransport({level: process.env.LOGGING_LEVEL, db: db})
             ]
     });
 
+    // Winston forwards transport errors to the parent logger as well.
+    logger.on('error', error => {
+        console.error('Logger error:', error);
+    });
+    return logger;
 }
+
+/**
+ * This module logs everything into different formats
+ * Use:
+ * const logger = require("../utils/logger.js")("service");
+ * logger.debug(), logger.info(), logger.error(), ...
+ * More information: https://github.com/winstonjs/winston
+ *
+ * You can also put user information into the log:
+ * const new_logger = logger.child({user: <uid_from_table_user>});
+ * or logger.info(..., {user: <uid_from_table_user>});
+ *
+ * @author: Dennis Zyska
+ *
+ * @param {string} service - Name of the service
+ * @param {object} db - Database connection
+ * @return {object} - Logger
+ */
+exports = module.exports = function (service = "log", db = null) {
+    let logger;
+    if (db) {
+        logger = databaseLoggers.get(db);
+        if (!logger) {
+            logger = createBaseLogger(db);
+            databaseLoggers.set(db, logger);
+        }
+    } else {
+        if (!defaultLogger) {
+            defaultLogger = createBaseLogger(null);
+        }
+        logger = defaultLogger;
+    }
+
+    // Child loggers carry context without adding transports or stream listeners.
+    return logger.child({service});
+};
 
 module.exports.logSequelizeToFile = logSequelizeToFile;

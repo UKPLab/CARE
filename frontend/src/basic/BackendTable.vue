@@ -43,7 +43,6 @@
     v-show="!showCards"
     class="table-scroll-shell"
     :class="{ 'table-infinite-shell': isInfiniteMode }"
-    :style="infiniteShellStyle"
   >
   <div
     class="table-scroll-frame"
@@ -300,7 +299,7 @@
   />
   </div>
   <div
-    v-if="isInfiniteMode && total > 0"
+    v-if="isInfiniteMode && total > 0 && infiniteScrollbarVisible"
     ref="infiniteScrollbar"
     class="infinite-scrollbar"
     role="scrollbar"
@@ -346,7 +345,6 @@ import Pagination from "./table/Pagination.vue";
 import TableSearch from "./table/Search.vue";
 import Loader from "./Loading.vue";
 import deepEqual from "deep-equal";
-import { matchesTokenList } from "./table/searchTokens.js";
 import { resolveApiMessage } from "@/assets/utils";
 import {
   normalizeCssSize,
@@ -369,7 +367,7 @@ import {
   tableRowInteractionsData,
   tableRowInteractionsMethods,
 } from "@/basic/table/helpers/tableRowInteractions.js";
-import { filterRowButtons } from "@/basic/table/helpers/tableCellHelpers.js";
+import { filterRowButtons, matchesTokenList } from "@/basic/table/helpers/tableCellHelpers.js";
 import {
   tableScrollHintsData,
   tableScrollHintsMethods,
@@ -584,6 +582,7 @@ export default {
       viewportHeight: 0,
       scrollTop: 0,
       scrollHeight: 0,
+      infiniteScrollbarVisible: false,
       infiniteBlockSize: 50, // rows per fetch while scrolling
       infiniteMaxRows: 150, // loaded window cap; the far edge is dropped past this
       infiniteOverscan: 8, // rendered rows above/below the viewport
@@ -752,13 +751,6 @@ export default {
         top: `${Math.max(0, Math.min(maxTop, fraction * maxTop))}px`,
       };
     },
-    infiniteShellStyle() {
-      if (!this.isInfiniteMode) return null;
-      const height = this.maxTableHeight
-        ? normalizeCssSize(this.maxTableHeight)
-        : "65vh";
-      return height ? {height} : {height: "65vh"};
-    },
     windowFirstVisible() {
       if (!this.isInfiniteMode || this.total === 0) return 0;
       return Math.min(this.visibleFirstRow + 1, this.total);
@@ -783,9 +775,9 @@ export default {
     },
     tableWrapperStyle() {
       if (this.isInfiniteMode) {
-        // Fixed height lives on the shell so the custom scrollbar can match it.
+        // Cap the scroll area while allowing short result sets to keep the paginator close.
         return {
-          height: "100%",
+          maxHeight: normalizeCssSize(this.maxTableHeight) || "65vh",
           overflowY: "auto",
           overflowX: "auto",
           overflowAnchor: "none",
@@ -917,6 +909,11 @@ export default {
       }
     },
     loadedCount() {
+      if (this.isInfiniteMode) {
+        this.scheduleVirtualUpdate();
+      }
+    },
+    total() {
       if (this.isInfiniteMode) {
         this.scheduleVirtualUpdate();
       }
@@ -2219,6 +2216,7 @@ export default {
     // height of the rows that moved in or out.
 
     enterInfiniteMode() {
+      this.infiniteScrollbarVisible = false;
       this.rowsBefore = 0;
       this.virtualStart = 0;
       this.virtualEnd = this.queryItems.length;
@@ -2241,6 +2239,7 @@ export default {
     },
     exitInfiniteMode() {
       this.detachInfiniteScroll();
+      this.infiniteScrollbarVisible = false;
       clearTimeout(this._seekTimer);
       clearTimeout(this._windowRefetchTimer);
       this._seekTimer = null;
@@ -2272,7 +2271,7 @@ export default {
       };
       (this._scrollTarget || window).addEventListener("scroll", this._scrollHandler, {passive: true});
       window.addEventListener("resize", this._scrollHandler, {passive: true});
-      // First layout often has clientHeight 0 / a few rows; wait for the 65vh box to settle.
+      // First layout often has clientHeight 0 / a few rows; wait for the scroll area to settle.
       if (typeof ResizeObserver !== "undefined" && this.$refs.tableWrapper) {
         this._infiniteResizeObserver = new ResizeObserver(() => this.scheduleVirtualUpdate());
         this._infiniteResizeObserver.observe(this.$refs.tableWrapper);
@@ -2425,6 +2424,11 @@ export default {
       this.scrollHeight = target.scrollHeight;
       if (this.viewportHeight !== target.clientHeight) {
         this.viewportHeight = target.clientHeight;
+      }
+      // During a thumb jump the virtual spacers collapse briefly. Keep the track
+      // visible until the destination rows restore the table's full scroll height.
+      if (!this.thumbAwaitingRows) {
+        this.infiniteScrollbarVisible = this.scrollHeight > this.viewportHeight + 1;
       }
       if (this.rowHeight <= 0) this.measureRowHeight();
       const rowHeight = this.effectiveRowHeight;
@@ -3006,11 +3010,9 @@ export default {
   flex: 1 1 auto;
   min-width: 0;
   min-height: 0;
-  height: 100%;
 }
 
 .table-wrapper.table-infinite {
-  height: 100%;
   margin-bottom: 0;
   overflow-x: auto;
   overflow-y: auto;

@@ -5,15 +5,15 @@
   >
     <template #body>
       <div class="sessions-page">
+        <NavTabs
+          v-model="activeTab"
+          :tabs="assignmentTabs"
+        />
         <section
-          v-for="section in sections"
+          v-for="section in visibleSections"
           :key="section.key"
           class="sessions-section"
         >
-          <header class="sessions-section-head">
-            <h2 class="sessions-section-title">{{ section.title }}</h2>
-          </header>
-
           <div
             v-if="section.items.length === 0"
             class="sessions-empty"
@@ -96,6 +96,7 @@
 
 <script>
 import Card from "@/basic/dashboard/card/Card.vue";
+import NavTabs from "@/components/dashboard/NavTabs.vue";
 import BasicButton from "@/basic/Button.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import AssignmentUploadModal from "@/components/dashboard/assignments/AssignmentUploadModal.vue";
@@ -108,9 +109,10 @@ import { isAssignmentPastDeadline } from "@/assets/assignmentDeadline.js";
 export default {
   name: "DashboardSubmission",
   subscribeTable: ["assignment", "submission", "user", "document"],
-  components: { Card, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal, StatusCard },
+  components: { Card, NavTabs, BasicButton, LoadIcon, AssignmentUploadModal, AssignmentSubmissionsTable, ConfirmModal, StatusCard },
   data() {
     return {
+      activeTab: "active",
       openAssignmentIds: [],
     };
   },
@@ -132,6 +134,16 @@ export default {
           items: this.closedAssignments,
         },
       ];
+    },
+    assignmentTabs() {
+      return this.sections.map((section) => ({
+        key: section.key,
+        label: section.title,
+        count: section.items.length,
+      }));
+    },
+    visibleSections() {
+      return this.sections.filter((section) => section.key === this.activeTab);
     },
     canUploadForOthers() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");

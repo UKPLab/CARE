@@ -25,45 +25,24 @@
           @preview-mode-change="onTemplatePreviewModeChange"
         />
       </div>
-      <BasicSidebar
+      <EditorSidebar
           v-if="!sidebarDisabled"
           ref="sidebar"
+          :document="document"
+          :template-id="templateId"
+          :read-only="readOnly"
+          :without-history="withoutHistory"
           :is-shown="sidebarToggleShown"
-          :buttons="sidebarButtons"
-          :side-bar-width="350"
-          :active-side-bar="defaultActiveSidebar"
-          :default-visible="!!defaultActiveSidebar"
-          class="sidebar-container"
-          :show-toggle-button="true"
+          :show-template-configurator="showTemplateConfigurator"
+          v-bind="{lookBackTabs, shownLookBackStepId, ownTabsHidden, activeSidebar}"
           @sidebar-change="handleSidebarChange"
           @sidebar-visibility-change="handleSidebarVisibilityChange"
-          @sidebar-action="handleSidebarAction">
-        <template v-if="showHistory && !withoutHistory" #history>
-          <SidebarTemplate icon="clock-history" :title="$t('editor.history')">
-            <template #content>
-              <SidebarHistory/>
-            </template>
-          </SidebarTemplate>
-        </template>
-        <template v-if="document && document.type === 2" #configurator>
-          <SidebarTemplate icon="gear-fill" :title="$t('editor.configurator')">
-            <template #content>
-              <SidebarConfigurator/>
-            </template>
-          </SidebarTemplate>
-        </template>
-        <template v-if="showTemplateConfigurator" #templateConfigurator>
-          <SidebarTemplate icon="gear-fill" :title="$t('editor.placeholders')">
-            <template #content>
-              <TemplateConfigurator/>
-            </template>
-          </SidebarTemplate>
-        </template>
-        <!-- Pass through all additional slots directly to BasicSidebar -->
+          @sidebar-action="handleSidebarAction"
+      >
         <template v-for="(slot, slotName) in $slots" :key="slotName" #[slotName]>
           <slot v-if="slotName !== 'default'" :name="slotName"/>
         </template>
-      </BasicSidebar>
+      </EditorSidebar>
     </div>
   </div>
 </template>
@@ -77,35 +56,28 @@
  *
  * @author Dennis Zyska, Juliane Bechert, Linyin Huang
  */
-import BasicSidebar from "@/basic/Sidebar.vue";
+import EditorSidebar from "./sidebar/EditorSidebar.vue";
 import Editor from "@/components/editor/editor/Editor.vue";
-import SidebarHistory from "@/components/editor/sidebar/History.vue";
-import SidebarConfigurator from "@/components/editor/sidebar/Configurator.vue";
 import LoadIcon from "@/basic/Icon.vue";
 import {computed} from "vue";
-import SidebarTemplate from "@/basic/sidebar/SidebarTemplate.vue";
 import TemplateEditor from "@/components/editor/template/TemplateEditor.vue";
-import TemplateConfigurator from "@/components/editor/sidebar/TemplateConfigurator.vue";
 import { emailTemplateTypes } from "@/assets/templateTypes";
-import { resolveApiMessage } from "@/assets/utils";
+import {lookBackPaneProps} from "@/components/study/helpers/lookBack.js";
 
 export default {
   name: "EditorView",
   subscribeTable: ["template"],
   components: {
-    SidebarTemplate,
-    SidebarConfigurator,
-    SidebarHistory,
+    EditorSidebar,
     LoadIcon,
-    BasicSidebar,
     Editor,
     TemplateEditor,
-    TemplateConfigurator,
   },
   provide() {
     return {
       documentId: computed(() => this.documentId),
       studyStepId: computed(() => this.studyStepId),
+      isStepShown: computed(() => this.isShown),
       readOnly: computed(() => this.readOnlyOverwrite),
       templateId: computed(() => this.templateId),
     }
@@ -153,6 +125,7 @@ export default {
       required: false,
       default: null,
     },
+    ...lookBackPaneProps,
     withoutHistory: {
       type: Boolean,
       required: false,
@@ -163,31 +136,14 @@ export default {
   data() {
     return {
       isSidebarVisible: false,
-      hasHistory: false,
       sidebarContent: null,
       templatePreviewMode: false,
       sidebarOpenBeforePreview: false,
     };
   },
   computed: {
-    isAdmin() {
-      return this.$store.getters['auth/isAdmin'];
-    },
-    defaultActiveSidebar() {
-      // Determine the default active sidebar based on available tabs
-      if (this.document && this.document.type === 2) {
-        return 'configurator';
-      }
-      // Only show template configurator if template is loaded, not read-only, and has placeholders
-      // Document templates (types 4, 5) have no placeholders, so no sidebar needed
-      if (this.showTemplateConfigurator) {
-        return 'templateConfigurator';
-      }
-      if (this.$slots.additionalSidebars) {
-        return 'additionalSidebars';
-      }
-      return null;
-    },
+
+
     showTemplateConfigurator() {
       return (
         this.templateId &&
@@ -203,25 +159,8 @@ export default {
       }
       return this.isShown;
     },
-    sidebarButtons() {
-      // Don't show download button for templates
-      if (this.templateId) {
-        return [];
-      }
-      return [
-        {
-          id: 'download-html',
-          icon: 'download',
-          title: this.$t('editor.downloadDocument'),
-          action: 'downloadHTML',
-          isGeneral: true,
-          disabled: !this.showHTMLDownloadButton
-        }
-      ];
-    },
-    showHTMLDownloadButton() {
-      return this.$store.getters["settings/getValue"]("editor.toolbar.showHTMLDownload") === "true";
-    },
+
+
     template() {
       if (this.templateId && this.templateId > 0) {
         return this.$store.getters["table/template/get"](Number(this.templateId));
@@ -235,6 +174,9 @@ export default {
       return emailTemplateTypes.includes(this.template.type) || this.template.type === 8;
     },
     readOnlyOverwrite() {
+      if (this.forceReadOnly) {
+        return true;
+      }
       if (this.sidebarContent === 'history' ) {
         return this.isSidebarVisible;
       }
@@ -256,13 +198,7 @@ export default {
       }
       return this.readOnly;
     },
-    showHistory() {
-      if (this.readOnly || this.templateId) {
-        return false;
-      }
-      const showHistoryForUser = this.$store.getters["settings/getValue"]('editor.edits.showHistoryForUser') === "true";
-      return this.isAdmin || showHistoryForUser;
-    },
+
     document() {
       if (this.documentId && this.documentId > 0) {
         return this.$store.getters["table/document/get"](this.documentId);
@@ -271,6 +207,9 @@ export default {
     },
   },
   methods: {
+    // Methods, not props, so the sidebar gets the same function every time and does not re-render for nothing
+
+
     addText(text) {
       if (this.templateId) {
         this.$refs.templateEditor?.addText(text);
@@ -288,9 +227,6 @@ export default {
     handleSidebarChange(view) {
       // Update internal state to match sidebar selection
       this.sidebarContent = view;
-      if (view === 'history') {
-        this.toggleHistory();
-      }
     },
     handleSidebarAction(data) {
       switch (data.action) {
@@ -329,31 +265,7 @@ export default {
         this.sidebarOpenBeforePreview = false;
       }
     },
-    toggleHistory() {
-      if (this.hasHistory) {
-        this.hasHistory = false;
-      } else {
-        this.hasHistory = true;
-        this.$socket.emit(
-            "documentGet",
-            {
-              documentId: this.documentId,
-              studySessionId: this.studySessionId,
-              studyStepId: this.studyStepId,
-              history: true,
-            },
-            (res) => {
-              if (!res.success) {
-                this.eventBus.emit("toast", {
-                  title: this.$t('errors.editor.editHistoryRetrievalFailed'),
-                  message: resolveApiMessage(res),
-                  variant: "danger",
-                });
-              }
-            }
-        );
-      }
-    },
+
   },
 };
 </script>
@@ -378,9 +290,5 @@ export default {
   min-width: 0;
 }
 
-.sidebar-container {
-  margin-top: 60px;
-  min-height: 0;
-  align-self: stretch;
-}
+
 </style>

@@ -50,6 +50,7 @@ module.exports = (sequelize, DataTypes) => {
                 options: [
                     { name: "basic.configuration.types.assessment", value: 0 },
                     { name: "basic.configuration.types.validation", value: 1 },
+                    { name: "basic.configuration.types.dialoguePlan", value: 2 },
                 ],
                 required: true,
             },
@@ -89,5 +90,6 @@ module.exports = (sequelize, DataTypes) => {
 
     return Configuration;
 };
+
 
 

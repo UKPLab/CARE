@@ -1,3 +1,4 @@
+import deepEqual from "deep-equal";
 /**
  * Manages sticky/fixed-column positioning for Table.vue (BasicTable) and BackendTable.vue.
  *
@@ -91,7 +92,7 @@ export const tableFixedColumnsMethods = {
       this._stopFixedColumnsResize?.();
       // The table element can grow without the wrapper changing size (e.g. rows arriving)
       this._stopFixedColumnsResize = observeResize(
-        [this.$refs.tableWrapper, this.$refs.tableElement],
+        [(this.tableRefs || this.$refs).tableWrapper, (this.tableRefs || this.$refs).tableElement],
         this.debouncedComputeFixedColumns
       );
     });
@@ -129,7 +130,7 @@ export const tableFixedColumnsMethods = {
     };
   },
   getManageColumnWidth() {
-    const ref = this.$refs.manageHeader;
+    const ref = (this.tableRefs || this.$refs).manageHeader;
     const el = Array.isArray(ref) ? ref[0] : ref;
     return el?.offsetWidth || this.getManageColumnFallbackWidth();
   },
@@ -210,7 +211,7 @@ export const tableFixedColumnsMethods = {
     // Fall back to measuring DOM. `header-${column.key}` may resolve to either
     // a plain DOM element or a HeaderCell.vue component instance (its `$el` is
     // the rendered <th> root), so resolve the actual element before measuring.
-    const ref = this.$refs[`header-${column.key}`];
+    const ref = (this.tableRefs || this.$refs)[`header-${column.key}`];
     const refTarget = Array.isArray(ref) ? ref[0] : ref;
     const el = refTarget?.$el ?? refTarget;
     if (el?.offsetWidth) return el.offsetWidth;
@@ -219,11 +220,153 @@ export const tableFixedColumnsMethods = {
     return DEFAULT_COLUMN_WIDTH;
   },
   detectHorizontalOverflow() {
-    const wrapper = this.$refs.tableWrapper;
-    const table = this.$refs.tableElement;
+    const wrapper = (this.tableRefs || this.$refs).tableWrapper;
+    const table = (this.tableRefs || this.$refs).tableElement;
 
     if (!wrapper || !table) return false;
 
     return table.scrollWidth > wrapper.clientWidth;
   },
 };
+
+export const backendtableFixedColumnsMethods = {
+getManageColumnFallbackWidth() {
+      return Math.round((this.buttons.length || 1) * 32.8 + 16);
+    }
+};
+
+export const backendtableFixedColumnsComputed = {
+manageColumnActive() {
+      if (!this.buttons.length) return false;
+      // Reserve the column while the first block is still loading.
+      if (this.isInfiniteMode && this.loadedCount === 0) return true;
+      return this.queryItems.some((row) => this.rowButtons(row).length > 0);
+    },
+manageColumnMinWidth() {
+      const n = this.buttons.length;
+      if (!n) return null;
+      return `calc(${n} * 2.05rem + 1rem)`;
+    },
+manageColumnLayoutStyle() {
+      const minWidth = this.manageColumnMinWidth;
+      return {
+        ...(this.manageColumnStyle || {}),
+        ...(minWidth ? {minWidth} : {}),
+      };
+    }
+};
+
+export const backendTableWatch = {
+    currentData: {
+      handler() {
+        if (this.unmounting) return;
+        if (!deepEqual(this.currentData, this.modelValue)) {
+          this.$emit("update:modelValue", this.currentData);
+        }
+      },
+      deep: true,
+    },
+    modelValue: {
+      handler(value) {
+        if (deepEqual(this.currentData, value)) return;
+        this.currentData = this.updateValues(value);
+      },
+      deep: true,
+    },
+    pages(val) {
+      if (val === 0) {
+        this.currentPage = 1;
+      } else if (this.currentPage > val) {
+        this.currentPage = val;
+      }
+    },
+    manageColumnActive: {
+      handler(val) {
+        this.hasManageButtons = val;
+      },
+      immediate: true,
+    },
+    hasManageButtons(newVal) {
+      if(newVal) {
+        this.setupFixedColumns();
+      } else if(!this.hasFixedColumns) {
+        this.cleanupFixedColumns();
+        this.manageColumnStyle = {};
+      }
+    },
+    itemsPerPage(newVal) {
+      if (newVal === 0) {
+        this.currentPage = 1;
+        // The fetch itself comes from paginationUpdate() / setupQueryMode().
+        this.enterInfiniteMode();
+      } else {
+        this.exitInfiniteMode();
+      }
+    },
+    loadedCount() {
+      if (this.isInfiniteMode) {
+        this.scheduleVirtualUpdate();
+      }
+    },
+    total() {
+      if (this.isInfiniteMode) {
+        this.scheduleVirtualUpdate();
+      }
+    },
+    queryFilter: {
+      handler(value) {
+        const key = JSON.stringify(value ?? null);
+        if (key === this.filterKey) return;
+        this.filterKey = key;
+        this.currentPage = 1;
+        this.resetSelection();
+        this.fetchQueryPage();
+      },
+      deep: true,
+    },
+    queryScope: {
+      handler(value) {
+        const key = JSON.stringify(value ?? null);
+        if (key === this.scopeKey) return;
+        this.scopeKey = key;
+        this.currentPage = 1;
+        this.resetSelection();
+        this.fetchQueryPage();
+      },
+      deep: true,
+    },
+    searchQuery: {
+      handler(value) {
+        const next = this.searchQueryKey(value);
+        clearTimeout(this.searchDebounceTimer);
+        if (next === this.appliedSearchKey) return;
+        this.searchDebounceTimer = setTimeout(() => {
+          if (next === this.appliedSearchKey) return;
+          this.appliedSearchKey = next;
+          this.resetSelection();
+          this.currentPage = 1;
+          this.fetchQueryPage({nav: {}});
+        }, 300);
+      },
+      deep: true,
+    },
+    queryLoading(loading) {
+      clearTimeout(this.queryLoadingTimer);
+      this.queryLoadingTimer = null;
+      if (!loading) {
+        this.queryLoadingVisible = false;
+        return;
+      }
+      this.queryLoadingTimer = setTimeout(() => {
+        this.queryLoadingTimer = null;
+        if (this.queryLoading) this.queryLoadingVisible = true;
+      }, 600);
+    },
+    selectionState: {
+      handler(value) {
+        if (this.unmounting || !this.selectableRows) return;
+        this.$emit("selectionChange", value);
+      },
+      deep: true,
+    },
+  };

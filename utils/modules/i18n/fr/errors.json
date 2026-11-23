@@ -39,7 +39,6 @@
         "idRequiredNoPeriod": "L'ID de configuration est obligatoire",
         "contentRequiredNoPeriod": "Le contenu de la configuration est obligatoire",
         "notFound": "Configuration introuvable.",
-        "accessDenied": "Accès refusé",
         "createForOtherUsersDenied": "Vous n'avez pas l'autorisation de créer des configurations pour d'autres utilisateurs."
     },
     "validation": {
@@ -378,6 +377,7 @@
     },
     "element": {
         "invalidInput": "La saisie est invalide.",
+        "pastDate": "Choisissez une date et une heure qui ne sont pas dans le passé.",
         "fieldRequired": "Ce champ est obligatoire."
     },
     "collaboration": {
@@ -390,7 +390,6 @@
         "emptyValue": "Valeur vide trouvée pour {key} à l'index {index}",
         "duplicateId": "ID en double trouvé : {extId} à l'index {index}",
         "duplicateEmail": "Adresse e-mail en double trouvée : {email} à l'index {index}",
-        "rolesNotCommaSeparated": "Rôles non séparés par des virgules pour l'ID {id} à l'index {index}",
         "invalidEmailFormat": "Format d'adresse e-mail invalide pour l'ID {id} à l'index {index} : {email}",
         "parseError": "Erreur lors de l'analyse du fichier : {message}"
     },
@@ -432,6 +431,7 @@
         "studySessionOwnerNotSelectedReviewer": "Le propriétaire de la session d'étude (ID utilisateur : {reviewerId}) ne figure pas dans la liste des évaluateurs sélectionnés. Veuillez l'ajouter à la sélection des évaluateurs.",
         "invalidMode": "Mode invalide pour l'attribution des évaluations.",
         "firstStepNotSubmission": "La première étape sélectionnée ne correspond pas à un travail.",
+        "invalidWorkflowMapping": "Correspondance des étapes du workflow invalide.",
         "latestSubmissionNotFound": "La dernière version du travail choisi est introuvable.",
         "selectedNotResolved": "Le devoir sélectionné {assignmentId} n'a pas pu être résolu.",
         "startAfterEnd": "L'heure de début doit précéder l'heure de fin."

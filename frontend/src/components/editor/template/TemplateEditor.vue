@@ -34,10 +34,10 @@
                 <p class="template-preview-note">
                   {{ $t("templates.editor.viewMode.previewHelp") }}
                 </p>
-                <div
+                <TemplatePreviewHtml
                   class="ql-editor template-example-preview-inner"
-                  v-html="previewDisplayHtml"
-                ></div>
+                  :html="previewDisplayHtml"
+                />
               </div>
             </div>
             </div>
@@ -53,8 +53,7 @@
           {{ $t("templates.editor.newLanguage") }}
         </template>
         <template #body>
-          <!-- eslint-disable-next-line vue/no-v-html -->
-          <div v-html="newLanguageModalMessage" />
+          <TemplatePreviewHtml :html="newLanguageModalMessage" />
         </template>
         <template #footer>
           <div class="btn-group">
@@ -90,6 +89,7 @@
   import Loader from "@/basic/Loading.vue";
   import BasicModal from "@/basic/Modal.vue";
   import BasicButton from "@/basic/Button.vue";
+  import TemplatePreviewHtml from "@/components/editor/template/TemplatePreviewHtml.vue";
   import { quillTemplateToolbarData, quillTemplateToolbarComputed, quillTemplateToolbarMethods } from "@/components/editor/template/helpers/quillTemplateToolbar.js";
   import { templateLanguageSwitchingData, templateLanguageSwitchingComputed, templateLanguageSwitchingMethods } from "@/components/editor/template/helpers/templateLanguageSwitching.js";
   import { templateContentSyncData, templateContentSyncComputed, templateContentSyncMethods } from "@/components/editor/template/helpers/templateContentSync.js";
@@ -97,8 +97,12 @@
 
   export default {
     name: "TemplateEditor",
-    components: { Loader, BasicModal, BasicButton },
+    components: { Loader, BasicModal, BasicButton, TemplatePreviewHtml },
     inject: {
+      currentStudyStep: {type: Object, required: false, default: null},
+      studySessionId: {type: Number, required: false, default: null},
+      studyStepId: {type: Number, required: false, default: null},
+      documentId: {type: Number, required: false, default: null},
       templateId: {
         type: Number,
         required: true,
@@ -312,6 +316,10 @@
             this.$socket.emit("stats", {
               action: "textPasted",
               data: {
+                ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+                ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+                ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+                ...(this.documentId ? {documentId: this.documentId} : {}),
                 templateId: this.templateId,
                 pastedText: pastedText,
               }
@@ -326,6 +334,10 @@
             this.$socket.emit("stats", {
               action: "textCopied",
               data: {
+                ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep?.id} : {}),
+                ...(this.studySessionId ? {studySessionId: this.studySessionId} : {}),
+                ...(this.studyStepId ? {studyStepId: this.studyStepId} : {}),
+                ...(this.documentId ? {documentId: this.documentId} : {}),
                 from: "template-editor",
                 templateId: this.templateId,
                 copiedText: copiedText,

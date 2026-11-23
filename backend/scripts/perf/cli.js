@@ -183,15 +183,35 @@ function connectSocket(serverUrl, cookie) {
  * @param {Object} payload - Event payload sent as the emit's first argument; defaults to {} when omitted
  * @param {number} [timeoutMs=5000] - Ack timeout in ms; 0 disables the timeout
  * @returns {Promise<Object>} The acknowledgement payload
- * @throws {Error} If no acknowledgement arrives before the timeout
+ * @throws {Error} If no acknowledgement arrives before the timeout, or the connection drops first
  */
 function emitWithAck(socket, event, payload, timeoutMs = 5000) {
     return new Promise((resolve, reject) => {
-        const timer = timeoutMs > 0
-            ? setTimeout(() => reject(new Error('No ack for "' + event + '" within ' + timeoutMs + 'ms')), timeoutMs)
-            : null;
+        if (!socket.connected) {
+            reject(new Error('Not connected to the server, cannot send "' + event + '"'));
+            return;
+        }
+        let timer = null;
+        // Without this, a request sent with no timeout (replayRun) would wait
+        // forever if the backend dies mid-run.
+        const onDisconnect = (reason) => {
+            if (timer) {
+                clearTimeout(timer);
+            }
+            reject(new Error('Lost connection to the server during "' + event + '" (' + reason + ')'));
+        };
+        if (timeoutMs > 0) {
+            timer = setTimeout(() => {
+                socket.off('disconnect', onDisconnect);
+                reject(new Error('No ack for "' + event + '" within ' + timeoutMs + 'ms'));
+            }, timeoutMs);
+        }
+        socket.once('disconnect', onDisconnect);
         socket.emit(event, payload || {}, (res) => {
-            if (timer) clearTimeout(timer);
+            if (timer) {
+                clearTimeout(timer);
+            }
+            socket.off('disconnect', onDisconnect);
             resolve(res);
         });
     });

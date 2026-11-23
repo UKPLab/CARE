@@ -7,7 +7,8 @@
     "toggleSidebar": "Seitenleiste umschalten",
     "hideSidebar": "Seitenleiste ausblenden",
     "showSidebar": "Seitenleiste einblenden",
-    "sidebarSection": "Seitenleistenbereich"
+    "sidebarSection": "Seitenleistenbereich",
+    "currentStepTab": "{title} (aktueller Schritt)"
   },
   "topbar": {
     "goBack": "Zurück...",

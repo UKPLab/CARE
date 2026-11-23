@@ -34,19 +34,13 @@
       </template>
     </Card>
 
-    <Card
-      class="dashboard-page"
+    <DashboardListPage
       :title="$t('ai.log.requestsTitle')"
-    >
-      <template #body>
-        <BasicTable
-          :columns="columns"
-          :data="rows"
-          :options="tableOptions"
-          :max-table-height="'60vh'"
-        />
-      </template>
-    </Card>
+      :columns="columns"
+      :data="rows"
+      :table-options="tableOptions"
+      :max-table-height="'60vh'"
+    />
   </div>
 </template>
 
@@ -58,26 +52,19 @@
  */
 
 import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
 
 export default {
   name: "DashboardAILog",
   subscribeTable: ["ai_log", "ai_model"],
   components: {
     Card,
-    BasicTable,
+    DashboardListPage,
   },
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {

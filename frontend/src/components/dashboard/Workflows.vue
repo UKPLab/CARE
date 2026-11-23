@@ -287,7 +287,7 @@ export default {
 
     deleteWorkflow(params) {
       const workflow = this.workflows.find(w => w.id === params.id);
-      
+
       confirmSoftDelete(
         {
           confirmRef: this.$refs.confirmModal,
@@ -314,30 +314,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.graph-view {
-  min-height: 600px;
-}
-
-.graph-container {
-  height: 500px;
-  border: 1px solid var(--bs-border-color, #dee2e6);
-  border-radius: 0.375rem;
-  background-color: var(--bs-tertiary-bg, #f8f9fa);
-}
-
-.workflow-network-graph {
-  width: 100%;
-  height: 100%;
-}
-
-.workflow-selector {
-  max-width: 300px;
-}
-
-.graph-controls {
-  display: flex;
-  align-items: center;
-}
-</style>

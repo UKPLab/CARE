@@ -92,6 +92,9 @@ class DocumentSocket extends Socket {
 
     /**
      * Notes and comments with no study session, or from a closed study.
+     * Used by getData() when no study session is supplied, after document access is validated.
+     * Also see AnnotationSocket#getDownloadableAnnotations: PDF export additionally checks user roles.
+     * Review both methods when changing visibility; their policies are not yet unified.
      *
      * @param {number} documentId The ID of the document whose notes and comments are loaded.
      * @returns {Promise<Object>} A promise that resolves with annotations, comments, and allComments.
@@ -152,6 +155,22 @@ class DocumentSocket extends Socket {
             }
         }
         return document;
+    }
+
+    /**
+     * Upload a document from the dashboard. Keep this permission check separate
+     * from addDocument, which is also used by assignment and Moodle uploads.
+     *
+     * @param {Object} data - The document upload data (see addDocument for fields).
+     * @param {Object} options - The options object containing the transaction.
+     * @returns {Promise<Object>} The result of addDocument.
+     * @throws {TranslatableError} If the user lacks frontend.dashboard.documents.upload access.
+     */
+    async uploadDocument(data, options) {
+        if (!(await this.hasAccess("frontend.dashboard.documents.upload"))) {
+            throw new TranslatableError("errors.documents.noUploadAccess");
+        }
+        return this.addDocument(data, options);
     }
 
     /**
@@ -1953,7 +1972,7 @@ class DocumentSocket extends Socket {
         this.createSocket("documentGetData", this.getData, {}, false);
         this.createSocket("documentGet", this.getDocument, {}, false);
         this.createSocket("documentCreate", this.createDocument, {}, true);
-        this.createSocket("documentAdd", this.addDocument, {}, true);
+        this.createSocket("documentAdd", this.uploadDocument, {}, true);
         this.createSocket("documentReplaceFile", this.replaceDocumentFile, {}, true);
         this.createSocket("documentUpdate", this.updateDocument, {}, true);
         this.createSocket("documentGetMoodleSubmissions", this.documentGetMoodleSubmissions, {}, false);

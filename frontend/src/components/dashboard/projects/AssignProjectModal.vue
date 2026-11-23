@@ -53,7 +53,7 @@
           <div class="col-md-6">
             <h6 class="text-primary">{{ $t('dashboard.projects.selectedProjects') }}</h6>
             <div v-if="dataSelection.project" class="mb-1">
-              <i class="bi bi-folder me-1"></i>
+              <BasicIcon icon-name="folder" class="me-1" />
               {{ getProject(dataSelection.project)?.name }}
             </div>
           </div>
@@ -65,7 +65,7 @@
                 :key="user.id"
                 class="mb-1"
               >
-                <i class="bi bi-person me-1"></i>
+                <BasicIcon icon-name="person" class="me-1" />
                 {{ user.firstName }} {{ user.lastName }}
               </li>
             </ul>
@@ -80,10 +80,12 @@ import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicTable from "@/basic/Table.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicIcon from "@/basic/Icon.vue";
 
 export default {
   name: "AssignProjectModal",
   components: {
+    BasicIcon,
     StepperModal,
     BasicForm,
     BasicTable,

@@ -97,9 +97,7 @@ export default {
       errorMessage: "",
       showSuccess: false,
       successMessage: "",
-      formData: {
-        otp: "",
-      },
+      formData: {otp: ""},
       validity: null,
       isSubmitting: false,
       isResending: false,
@@ -110,9 +108,6 @@ export default {
   computed: {
     validOTP() {
       return /^[0-9]{6}$/.test(this.formData.otp);
-    },
-    validForm() {
-      return this.validOTP;
     },
     resendButtonText() {
       if (this.isResending) {
@@ -125,9 +120,7 @@ export default {
     },
   },
   beforeMount() {
-    this.validity = Object.fromEntries(
-      Object.keys(this.formData).map((key) => [key, false]),
-    );
+    this.validity = {otp: false};
   },
   mounted() {
     this.fetchResendStatus();
@@ -194,7 +187,7 @@ export default {
       Object.keys(this.validity).map((key) => {
         this.validity[key] = true;
       });
-      if (this.validForm) {
+      if (this.validOTP) {
         await this.verifyOTP();
       }
     },

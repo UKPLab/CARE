@@ -1,8 +1,6 @@
 {
     "yes": "Yes",
     "no": "No",
-    "guest": "Guest",
-    "other": "Other",
     "ok": "OK",
     "assignment": "Assignment",
     "save": "Save",
@@ -187,7 +185,6 @@
     "last": "Last",
     "paginationPrevious": "Prev",
     "paginationRange": "Showing {start}-{end} of {total}",
-    "paginationEntries": "{total} entries",
     "noGroupId": "No GroupID",
     "active": "Active",
     "inactive": "Inactive",

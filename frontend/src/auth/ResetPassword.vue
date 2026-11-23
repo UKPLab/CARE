@@ -2,9 +2,10 @@
   <AuthLayout :title="$t('auth.resetPassword')">
     <!-- Loading State -->
     <div v-if="validatingToken" class="text-center">
-      <div class="spinner-border text-primary" role="status">
+      <span class="text-primary" role="status">
+        <BasicIcon icon-name="loading" />
         <span class="visually-hidden">{{ $t('common.loading') }}</span>
-      </div>
+      </span>
       <p class="mt-3">{{ $t('auth.messages.validatingResetToken') }}</p>
     </div>
 
@@ -53,13 +54,14 @@
 import AuthLayout from "@/auth/AuthLayout.vue";
 import BasicForm from "@/basic/Form.vue";
 import BasicButton from "@/basic/Button.vue";
+import BasicIcon from "@/basic/Icon.vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "AuthResetPassword",
-  components: {AuthLayout, BasicForm, BasicButton},
+  components: {AuthLayout, BasicForm, BasicButton, BasicIcon},
   data() {
     return {
       showError: false,

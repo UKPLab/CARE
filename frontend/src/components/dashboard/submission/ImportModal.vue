@@ -50,39 +50,7 @@
     </template>
     <!-- Result Step -->
     <template #step-4>
-      <div class="result-container">
-        <div v-if="importResults && importResults.successCount != null">
-          <i18n-t keypath="dashboard.importModal.successfullyImported" tag="span">
-            <template #count>
-              <strong>{{ importResults.successCount }}</strong>
-            </template>
-          </i18n-t>
-          <div
-            v-if="importResults.errors && importResults.errors.length > 0"
-            class="error-container"
-          >
-            {{ $t('dashboard.importModal.failedToImport') }}
-            <ul
-              v-for="(error, index) in importResults.errors"
-              :key="index"
-            >
-              <li>
-                {{ $t('dashboard.importModal.userCannotBeImported', {
-                  userId: error.userId,
-                  message: formatImportError(error),
-                }) }}
-              </li>
-            </ul>
-          </div>
-          <div v-if="importResults?.errors?.length > 0" class="link-container">
-            <BasicButton
-              class="btn btn-outline-primary"
-              :title="$t('dashboard.importModal.downloadErrorCSV')"
-              @click="downloadFileAsCSV"
-            />
-          </div>
-        </div>
-      </div>
+      <ImportResultSummary :results="importResults" />
     </template>
   </StepperModal>
 </template>
@@ -90,9 +58,9 @@
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import BasicTable from "@/basic/Table.vue";
-import BasicButton from "@/basic/Button.vue";
 import MoodleOptions from "@/basic/form/MoodleOptions.vue";
-import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
+import ImportResultSummary from "./ImportResultSummary.vue";
+import { resolveApiMessage } from "@/assets/utils.js";
 
 /**
  * Modal for importing students' submission for a specific assignment from a Moodle course
@@ -100,7 +68,7 @@ import { downloadObjectsAs, resolveApiMessage } from "@/assets/utils.js";
  */
 export default {
   name: "ImportModal",
-  components: { MoodleOptions, BasicTable, BasicButton, StepperModal },
+  components: { MoodleOptions, BasicTable, ImportResultSummary, StepperModal },
   subscribeTable: [{ table: "user", filter: [{ type: "not", key: "extId", value: null }] }, {table: 'project'}, "assignment_share", "user_role_matching"],
   data() {
     return {
@@ -231,9 +199,6 @@ export default {
     },
   },
   methods: {
-    formatImportError(error) {
-      return resolveApiMessage(error);
-    },
     open(assignmentId = null) {
       this.assignmentId = assignmentId;
       this.reset();
@@ -245,17 +210,6 @@ export default {
       if (this.importedSubmissions.length > 0) {
         this.importedSubmissions = [];
       }
-    },
-    downloadFileAsCSV() {
-      const filename = `submissions_${Date.now()}`;
-      const rows = this.importResults.errors.map((err) => {
-        const { params: _params, ...rest } = err;
-        return {
-          ...rest,
-          message: resolveApiMessage(err),
-        };
-      });
-      downloadObjectsAs(rows, filename, "csv");
     },
     handleStepChange(step) {
       switch (step) {
@@ -325,38 +279,7 @@ export default {
 </script>
 
 <style scoped>
-/* Preview */
-.preview-table-container {
+.confirm-container {
   height: 100%;
-  white-space: nowrap;
-  overflow-x: scroll;
-}
-
-.confirm-container,
-.result-container {
-  height: 100%;
-}
-
-.link-container {
-  text-align: center;
-  margin-top: 15px;
-
-  button:first-child {
-    margin-right: 0.5rem;
-  }
-}
-
-.gap-1 > * {
-  margin-right: 0.25rem;
-  margin-bottom: 0.25rem;
-}
-
-.error-container {
-  margin: 0.25rem auto 0.5rem;
-  color: var(--bs-form-invalid-color);
-
-  ul {
-    margin-bottom: 0.25rem;
-  }
 }
 </style>

@@ -1,35 +1,16 @@
 <template>
   <div>
-    <BasicCard
-      class="dashboard-page mb-3"
-      :title="$t('ai.models.credentialsTitle')"
-    >
-      <template #headerElements>
-        <BasicButton
-          class="btn-primary btn-sm"
-          :title="$t('ai.models.addCredentialTitle')"
-          icon="plus"
-          :text="$t('ai.models.addCredential')"
-          @click="openCredentialModal()"
-        />
-      </template>
-      <template #body>
-        <BasicTable
-          :empty-action="emptyCredentialAction"
-          :columns="credentialColumns"
-          :data="credentialRows"
-          :options="tableOptions"
-          :buttons="credentialButtons"
-          @action="onCredentialAction"
-        />
-      </template>
-    </BasicCard>
+    <AICredentialList class="mb-3" />
 
-    <BasicCard
-      class="dashboard-page"
+    <DashboardListPage
       :title="$t('ai.models.modelsTitle')"
+      :empty-action="emptyModelAction"
+      :columns="modelColumns"
+      :data="modelRows"
+      :buttons="modelButtons"
+      @action="onModelAction"
     >
-      <template #headerElements>
+      <template #headerActions>
         <BasicButton
           class="btn-primary btn-sm"
           :title="$t('ai.models.addModelTitle')"
@@ -38,23 +19,11 @@
           @click="openModelModal()"
         />
       </template>
-      <template #body>
-        <BasicTable
-          :empty-action="emptyModelAction"
-          :columns="modelColumns"
-          :data="modelRows"
-          :options="tableOptions"
-          :buttons="modelButtons"
-          @action="onModelAction"
-        />
-      </template>
-    </BasicCard>
-
-    <AICredential ref="aiCredential" />
+    </DashboardListPage>
 
     <AIModel
       ref="aiModel"
-      :credential-rows="credentialRows"
+      :credential-rows="credentials"
     />
 
     <AIModelShareStepper
@@ -78,47 +47,29 @@
  * @author Akash Gundapuneni
  */
 
-import BasicCard from "@/basic/dashboard/card/Card.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import BasicButton from "@/basic/Button.vue";
-import BasicTable from "@/basic/Table.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
-import AICredential from "@/components/dashboard/ai/AICredential.vue";
+import AICredentialList from "@/components/dashboard/ai/AICredentialList.vue";
 import AIModel from "@/components/dashboard/ai/AIModel.vue";
 import AIModelShareStepper from "@/components/dashboard/ai/share/AIModelShareStepper.vue";
 import AIOverview from "@/components/dashboard/ai/AIOverview.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 export default {
   name: "DashboardAIModels",
   subscribeTable: ["ai_credential", "ai_model"],
   components: {
-    BasicCard,
+    DashboardListPage,
     BasicButton,
-    BasicTable,
     ConfirmModal,
-    AICredential,
+    AICredentialList,
     AIModel,
     AIModelShareStepper,
     AIOverview,
   },
-  data() {
-    return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-      },
-    };
-  },
   computed: {
-    /** Same as the header create button; offered while the table is empty. */
-    emptyCredentialAction() {
-      return {
-        label: this.$t('ai.models.addCredential'),
-        icon: "plus-lg",
-        handler: () => this.openCredentialModal(),
-      };
-    },
     /** Same as the header create button; offered while the table is empty. */
     emptyModelAction() {
       return {
@@ -126,17 +77,6 @@ export default {
         icon: "plus-lg",
         handler: () => this.openModelModal(),
       };
-    },
-    credentialColumns() {
-      return [
-        { name: this.$t("ai.common.name"), key: "name", sortable: true },
-        { name: this.$t("ai.common.provider"), key: "provider", sortable: true },
-        { name: this.$t("ai.models.baseUrl"), key: "apiBaseUrl", sortable: true },
-        { name: this.$t("ai.models.version"), key: "apiVersion", sortable: true },
-        { name: this.$t("ai.common.models"), key: "modelCount", type: "badge" },
-        { name: this.$t("ai.common.status"), key: "status", type: "badge" },
-        { name: this.$t("ai.common.created"), key: "createdAt", type: "datetime", sortable: true },
-      ];
     },
     modelColumns() {
       return [
@@ -168,19 +108,6 @@ export default {
         return acc;
       }, {});
     },
-    credentialRows() {
-      return this.credentials.map((credential) => ({
-        ...credential,
-        status: {
-          text: credential.enabled ? this.$t("ai.status.enabled") : this.$t("ai.status.disabled"),
-          class: credential.enabled ? "bg-success" : "bg-secondary",
-        },
-        modelCount: {
-          text: String(this.models.filter((m) => m.aiCredentialId === credential.id).length),
-          class: "bg-primary",
-        },
-      }));
-    },
     modelRows() {
       const credentialsById = this.credentials.reduce((acc, credential) => {
         acc[credential.id] = credential;
@@ -205,98 +132,43 @@ export default {
         };
       });
     },
-    credentialButtons() {
-      return [
-        {
-          icon: "pencil",
-          title: this.$t("ai.actions.editCredential"),
-          action: "editCredential",
-          options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
-        },
-        {
-          icon: "toggle2-on",
-          title: this.$t("ai.actions.disableCredential"),
-          action: "toggleCredential",
-          filter: [{ key: "enabled", value: true }],
-          options: { iconOnly: true, specifiers: { "btn-outline-success": true } },
-        },
-        {
-          icon: "toggle2-off",
-          title: this.$t("ai.actions.enableCredential"),
-          action: "toggleCredential",
-          filter: [{ key: "enabled", value: false }],
-          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
-        },
-        {
-          icon: "trash",
-          title: this.$t("ai.actions.deleteCredential"),
-          action: "deleteCredential",
-          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
-        },
-      ];
-    },
     modelButtons() {
       return [
-        {
-          icon: "pencil",
+        dashboardRowAction("edit", {
           title: this.$t("ai.actions.editModel"),
           action: "editModel",
           filter: [{ key: "userId", value: this.currentUserId }],
-          options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
-        },
-        {
-          icon: "info-circle",
+        }),
+        dashboardRowButton("info-circle", {
           title: this.$t("ai.actions.modelOverview"),
           action: "modelOverview",
-          options: { iconOnly: true, specifiers: { "btn-outline-info": true } },
-        },
-        {
-          icon: "toggle2-on",
+        }),
+        dashboardRowButton("toggle2-on", {
           title: this.$t("ai.actions.disableModel"),
           action: "toggleModel",
           filter: [{ key: "enabled", value: true }, { key: "userId", value: this.currentUserId }],
           filterMode: "and",
-          options: { iconOnly: true, specifiers: { "btn-outline-success": true } },
-        },
-        {
-          icon: "toggle2-off",
+        }),
+        dashboardRowButton("toggle2-off", {
           title: this.$t("ai.actions.enableModel"),
           action: "toggleModel",
           filter: [{ key: "enabled", value: false }, { key: "userId", value: this.currentUserId }],
           filterMode: "and",
-          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
-        },
-        {
-          icon: "share",
+        }, "warning"),
+        dashboardRowAction("share", {
           title: this.$t("ai.actions.shareModel"),
           action: "shareModel",
           filter: [{ key: "userId", value: this.currentUserId }],
-          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
-        },
-        {
-          icon: "trash",
+        }),
+        dashboardRowAction("delete", {
           title: this.$t("ai.actions.deleteModel"),
           action: "deleteModel",
           filter: [{ key: "userId", value: this.currentUserId }],
-          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
-        },
+        }),
       ];
     },
   },
   methods: {
-    onCredentialAction(data) {
-      switch (data.action) {
-        case "editCredential":
-          this.openCredentialModal(data.params);
-          break;
-        case "toggleCredential":
-          this.toggleCredential(data.params);
-          break;
-        case "deleteCredential":
-          this.deleteCredential(data.params);
-          break;
-      }
-    },
     onModelAction(data) {
       switch (data.action) {
         case "modelOverview":
@@ -315,45 +187,6 @@ export default {
           this.$refs.shareModelStepper.open(data.params);
           break;
       }
-    },
-    openCredentialModal(row = null) {
-      this.$refs.aiCredential.open(row);
-    },
-    toggleCredential(row) {
-      this.$socket.emit("appDataUpdate", {
-        table: "ai_credential",
-        data: {
-          id: row.id,
-          enabled: !row.enabled,
-        },
-      }, (result) => {
-        if (!result.success) {
-          this.toastError(resolveApiMessage(result, "ai.errors.updateCredential"));
-        }
-      });
-    },
-    deleteCredential(row) {
-      this.$refs.confirmModal.open(
-        this.$t("ai.confirm.deleteCredentialTitle"),
-        this.$t("ai.confirm.deleteCredential", { name: row.name }),
-        "",
-        (confirmed) => {
-          if (!confirmed) return;
-          this.$socket.emit("appDataUpdate", {
-            table: "ai_credential",
-            data: {
-              id: row.id,
-              deleted: true,
-            },
-          }, (result) => {
-            if (result.success) {
-              this.toastSuccess(this.$t("ai.messages.credentialDeleted"));
-            } else {
-              this.toastError(resolveApiMessage(result, "ai.errors.deleteCredential"));
-            }
-          });
-        }
-      );
     },
     openModelModal(row = null) {
       this.$refs.aiModel.open(row);

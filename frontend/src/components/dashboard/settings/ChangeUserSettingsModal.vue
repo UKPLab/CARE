@@ -75,52 +75,12 @@
 
     <!-- Step 3: Confirm -->
     <template #step-3>
-      <div class="mb-3">
-        <div class="alert alert-info">
-          <strong>{{$t('dashboard.projects.summary')}}</strong><br />
-          {{$t('dashboard.settings.settingLabel')}} <strong>{{ settingSelection.settingKey }}</strong><br />
-          {{$t('dashboard.settings.newValue')}}
-          <strong>
-            {{ previewValue }}
-          </strong><br />
-          {{$t('dashboard.settings.usersLabel')}} <strong>{{ userSelection.length }}</strong>
-        </div>
-
-        <div class="alert alert-warning">
-          <strong>{{$t('dashboard.projects.noteLabel')}}</strong>
-          {{$t('dashboard.settings.noteBody1')}}
-        </div>
-
-        <div class="row">
-          <div v-if="selectedSetting" class="col-md-6">
-            <h6 class="text-success">{{$t('dashboard.settings.setting')}}</h6>
-            <div class="mb-1">
-              <i class="bi bi-sliders me-1"></i>
-              {{ selectedSetting.key }}
-            </div>
-            <div class="text-muted small">
-              {{ selectedSetting.description }}
-            </div>
-           <div class="mt-2">
-             <span class="fw-bold">{{$t('dashboard.settings.newValue')}}</span> {{ previewValue }}
-           </div>
-          </div>
-          <div class="col-md-6">
-            <h6 class="text-success">{{$t('dashboard.settings.selectedUsers')}}</h6>
-            <ul class="list-unstyled">
-              <li
-                v-for="user in userSelection"
-                :key="user.id"
-                class="mb-1"
-              >
-                <i class="bi bi-person me-1"></i>
-                {{ user.firstName }} {{ user.lastName }}
-                <span class="text-muted small">({{ user.email }})</span>
-              </li>
-            </ul>
-          </div>
-        </div>
-      </div>
+      <SettingChangeSummary
+        :setting="selectedSetting"
+        :setting-key="settingSelection.settingKey"
+        :preview-value="previewValue"
+        :users="userSelection"
+      />
     </template>
   </StepperModal>
   </template>
@@ -139,10 +99,12 @@ import BasicTable from "@/basic/Table.vue";
 import EditorModal from "@/basic/editor/Modal.vue";
 import { resolveApiMessage } from "@/assets/utils";
 import { LOCALE_SETTING_KEY, SUPPORTED_LOCALES } from "@/assets/locale.js";
+import SettingChangeSummary from "./SettingChangeSummary.vue";
 
 export default {
   name: "ChangeUserSettingsModal",
   components: {
+    SettingChangeSummary,
     StepperModal,
     BasicForm,
     BasicTable,
@@ -335,5 +297,3 @@ export default {
 
 <style scoped>
 </style>
-
-

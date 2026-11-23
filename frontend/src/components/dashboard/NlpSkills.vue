@@ -16,9 +16,7 @@
         <span class="status-chip-dot" aria-hidden="true" />
         {{ onlineStatus ? $t('nlp.skills.status.online') : $t('nlp.skills.status.offline') }}
       </span>
-      <div v-else class="spinner-grow" role="status" style="width:12px; height:12px">
-        <span class="visually-hidden">{{ $t('common.loading') }}</span>
-      </div>
+      <BasicIcon v-else icon-name="loading" :size="12" />
       <span
         class="dashboard-header-sep"
         aria-hidden="true"
@@ -43,6 +41,7 @@ import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js"
 import {cloneDeep} from "lodash";
 import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 import { resolveApiMessage } from "@/assets/utils";
+import BasicIcon from "@/basic/Icon.vue";
 
 /**
  * Shows the list of available nlp skills to admins
@@ -54,7 +53,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "NlpSkills",
-  components: {DashboardListPage, BasicButton, NlpSkillModal},
+  components: {BasicIcon, DashboardListPage, BasicButton, NlpSkillModal},
   props: {
     'admin': {
       type: Boolean,

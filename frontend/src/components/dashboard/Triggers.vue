@@ -1,9 +1,13 @@
 <template>
-  <Card
-    class="dashboard-page"
+  <DashboardListPage
     :title="$t('triggers.dashboard.title')"
+    :empty-action="emptyAction"
+    :columns="columns"
+    :data="triggers"
+    :buttons="buttons"
+    @action="onAction"
   >
-    <template #headerElements>
+    <template #headerActions>
       <BasicButton
         class="btn-primary btn-sm"
         :text="$t('triggers.dashboard.create')"
@@ -12,49 +16,31 @@
         @click="openCreate"
       />
     </template>
-    <template #body>
-      <BasicTable
-        :empty-action="emptyAction"
-        :columns="columns"
-        :data="triggers"
-        :options="tableOptions"
-        :buttons="buttons"
-        :max-table-height="'65vh'"
-        @action="onAction"
-      />
-    </template>
-  </Card>
+  </DashboardListPage>
 
   <TriggerStepperModal ref="triggerStepper" />
+  <TriggerViewModal ref="triggerView" />
   <ConfirmModal ref="deleteModal" />
 </template>
 
 <script>
-import Card from "@/basic/dashboard/card/Card.vue";
-import BasicTable from "@/basic/Table.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
+import { dashboardRowAction } from "@/basic/dashboard/actions.js";
 import BasicButton from "@/basic/Button.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import TriggerStepperModal from "./triggers/TriggerStepperModal.vue";
+import TriggerViewModal from "./triggers/TriggerViewModal.vue";
 import { translateMaybeKey } from "@/assets/utils";
 
 export default {
   name: "DashboardTriggers",
   subscribeTable: ["trigger", "trigger_event", "trigger_action"],
   components: {
-    Card,
-    BasicTable,
+    DashboardListPage,
     BasicButton,
     ConfirmModal,
     TriggerStepperModal,
-  },
-  data() {
-    return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-      },
-    };
+    TriggerViewModal,
   },
   computed: {
     /** Same as the header create button; offered while the table is empty. */
@@ -75,32 +61,26 @@ export default {
     },
     manageActions() {
       return [
-        {
-          icon: "eye",
+        dashboardRowAction("view", {
           title: this.$t("triggers.actions.view"),
           action: "view",
           handler: "viewModal",
-          options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
-        },
-        {
-          icon: "pencil-square",
+        }),
+        dashboardRowAction("edit", {
           title: this.$t("triggers.actions.edit"),
           action: "edit",
           handler: "editStepper",
-          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
-        },
-        {
-          icon: "trash",
+        }),
+        dashboardRowAction("delete", {
           title: this.$t("triggers.actions.delete"),
           action: "delete",
           handler: "confirmDelete",
           socketEvent: "triggerDelete",
-          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
           confirm: {
             title: this.$t("triggers.confirm.deleteTitle"),
             message: this.$t("triggers.confirm.delete", { name: "{name}" }),
           },
-        },
+        }),
       ];
     },
     enabledToggle() {
@@ -165,7 +145,7 @@ export default {
       const actionDef = this.manageActionsByAction[data.action];
 
       if (actionDef.handler === "viewModal") {
-        this.$refs.triggerStepper.openView(row);
+        this.$refs.triggerView.open(row);
         return;
       }
 

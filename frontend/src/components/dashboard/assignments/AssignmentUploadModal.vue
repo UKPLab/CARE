@@ -25,13 +25,9 @@
 
     <!-- Step 2: Select user (admins without preselected user) or file upload (everyone else) -->
     <template #step-2>
-      <BasicTable
+      <SubmissionUserPicker
         v-if="canUploadForOthers && !userPreselected"
         v-model="selectedUser"
-        :columns="selectionTable"
-        :options="selectionTableOptions"
-        :data="users"
-        :max-table-height="400"
       />
       <BasicForm
         v-else
@@ -62,7 +58,7 @@
 
 <script>
 import StepperModal from "@/basic/modal/StepperModal.vue";
-import BasicTable from "@/basic/Table.vue";
+import SubmissionUserPicker from "./SubmissionUserPicker.vue";
 import BasicForm from "@/basic/Form.vue";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import { resolveApiMessage } from "@/assets/utils";
@@ -75,7 +71,7 @@ import { resolveApiMessage } from "@/assets/utils";
  */
 export default {
   name: "AssignmentUploadModal",
-  components: { BasicForm, BasicTable, StepperModal, ConfirmModal },
+  components: { BasicForm, SubmissionUserPicker, StepperModal, ConfirmModal },
   subscribeTable: ["user", "assignment", "configuration"],
   data() {
     return {
@@ -90,35 +86,11 @@ export default {
       assignmentId: null,
       replacementSubmissionId: null,
       userPreselected: false,
-      selectionTableOptions: {
-        striped: true,
-        hover: true,
-        bordered: false,
-        borderless: false,
-        small: false,
-        selectableRows: true,
-        scrollY: true,
-        scrollX: true,
-        singleSelect: true,
-        search: true,
-      },
     };
   },
   computed: {
-    selectionTable() {
-      return [
-        { name: this.$t("dashboard.uploadModal.columns.id"), key: "id", sortable: true },
-        { name: this.$t("dashboard.uploadModal.columns.extId"), key: "extId", sortable: true },
-        { name: this.$t("dashboard.uploadModal.columns.firstName"), key: "firstName", sortable: true },
-        { name: this.$t("dashboard.uploadModal.columns.lastName"), key: "lastName", sortable: true },
-        { name: this.$t("dashboard.uploadModal.columns.userName"), key: "userName", sortable: true },
-      ];
-    },
     canUploadForOthers() {
       return this.$store.getters["auth/checkRight"]("frontend.dashboard.assignments.uploadForOthers");
-    },
-    users() {
-      return this.$store.getters["table/user/getAll"];
     },
     currentUserId() {
       return this.$store.getters["auth/getUserId"];

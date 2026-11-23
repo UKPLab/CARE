@@ -1,17 +1,14 @@
 <template>
   <div
       v-if="showReplies"
-      class="anno-replies"
+      :class="{'anno-replies': level === 1}"
   >
     <div
         v-for="c in displayedComments"
         :key="c.id"
-        class="anno-reply"
+        :class="{'anno-reply': level === 1}"
     >
-      <Comment
-          :comment-id="c.id"
-          :level="1"
-      />
+      <slot :reply="c"/>
     </div>
     <div
       v-if="showExtenderButton || numChildComments > defaultNumComments"
@@ -36,24 +33,23 @@
 </template>
 
 <script>
-import Comment from "./Comment.vue";
 import BasicButton from "@/basic/Button.vue";
 
 /** Reply thread list
  *
- * Displays the reply thread for a comment with show more / show less / hide controls.
- * Extracted from AnnoCard.vue. showReplies/maxComments remain owned by the parent (the
- * footer's own reply-count toggle button and the summarize flow both need them too), so
- * this component receives them as props and emits update:showReplies/update:maxComments
- * for its own internal controls, plus exposes expandForNewReply() for the parent's reply
- * button wiring.
+ * Displays the replies to a comment, oldest first, with show more / show less controls. Used for the
+ * replies of an annotation card (level 1) and, recursively, for the replies to a reply (level 2 and deeper).
+ * Each reply is rendered through the default slot ({reply}), so the thread does not depend on the comment
+ * component that renders it. showReplies/maxComments stay with the parent, which also has controls for them
+ * (the card's reply count toggle, a reply's chevron); this component emits update:showReplies/update:maxComments
+ * and exposes expandForNewReply().
  *
  * @author Nils Dycke, Dennis Zyska
  *
  */
 export default {
   name: "AnnotationReplies",
-  components: {Comment, BasicButton},
+  components: {BasicButton},
   props: {
     'commentId': {
       type: Number,
@@ -67,11 +63,17 @@ export default {
       type: Number,
       required: true,
     },
+    // Level of the listed replies: 1 for the replies of an annotation card
+    'level': {
+      type: Number,
+      default: 1,
+    },
   },
   emits: ['update:showReplies', 'update:maxComments'],
   computed: {
     defaultNumComments() {
-      return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown.levelZero"));
+      const key = this.level > 1 ? "levelOneUp" : "levelZero";
+      return parseInt(this.$store.getters["settings/getValue"]("annotator.comments.defaultNumsShown." + key));
     },
     childComments() {
       return this.$store.getters["table/comment/getByKey"]("parentCommentId", this.commentId).sort(

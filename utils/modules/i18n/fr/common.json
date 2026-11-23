@@ -1,8 +1,6 @@
 {
     "yes": "Oui",
     "no": "Non",
-    "guest": "Invité",
-    "other": "Autre",
     "ok": "OK",
     "assignment": "Devoir",
     "save": "Enregistrer",
@@ -187,7 +185,6 @@
     "last": "Dernière",
     "paginationPrevious": "Précédente",
     "paginationRange": "Affichage de {start} à {end} sur {total}",
-    "paginationEntries": "{total} entrées",
     "noGroupId": "Aucun ID de groupe",
     "active": "Actif",
     "inactive": "Inactif",

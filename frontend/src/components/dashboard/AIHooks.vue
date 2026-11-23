@@ -1,9 +1,14 @@
 <template>
-  <BasicCard
-    class="dashboard-page"
+  <DashboardListPage
     :title="$t('ai.hooks.title')"
+    :empty-action="emptyAction"
+    :columns="columns"
+    :data="hookRows"
+    :table-options="tableOptions"
+    :buttons="buttons"
+    @action="onAction"
   >
-    <template #headerElements>
+    <template #headerActions>
       <BasicButton
         class="btn-primary btn-sm"
         :title="$t('ai.hooks.createTitle')"
@@ -12,17 +17,7 @@
         @click="openHookModal()"
       />
     </template>
-    <template #body>
-      <BasicTable
-        :empty-action="emptyAction"
-        :columns="columns"
-        :data="hookRows"
-        :options="tableOptions"
-        :buttons="buttons"
-        @action="onAction"
-      />
-    </template>
-  </BasicCard>
+  </DashboardListPage>
 
   <AIHookStepperModal
     ref="hookModal"
@@ -52,24 +47,24 @@
 </template>
 
 <script>
-import BasicCard from "@/basic/dashboard/card/Card.vue";
+import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import BasicButton from "@/basic/Button.vue";
-import BasicTable from "@/basic/Table.vue";
+import { withSearch } from "@/basic/dashboard/constants.js";
 import ConfirmModal from "@/basic/modal/ConfirmModal.vue";
 import AIHookModelModal from "@/components/dashboard/ai/hook/AIHookModelModal.vue";
 import AIHookStepperModal from "@/components/dashboard/ai/hook/AIHookStepperModal.vue";
 import AIOverview from "@/components/dashboard/ai/AIOverview.vue";
 import AIModelShareStepper from "@/components/dashboard/ai/share/AIModelShareStepper.vue";
 import { resolveApiMessage } from "@/assets/utils";
+import { dashboardRowAction, dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 
 export default {
   name: "DashboardAIHooks",
   subscribeTable: ["ai_hook", "ai_hook_models", "template", "ai_model"],
   components: {
-    BasicCard,
+    DashboardListPage,
     BasicButton,
-    BasicTable,
     ConfirmModal,
     AIHookModelModal,
     AIHookStepperModal,
@@ -78,12 +73,7 @@ export default {
   },
   data() {
     return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-        search: true,
-      },
+      tableOptions: withSearch(),
     };
   },
   computed: {
@@ -202,56 +192,42 @@ export default {
     },
     buttons() {
       return [
-        {
-          icon: "eye",
+        dashboardRowAction("view", {
           title: this.$t("ai.actions.viewHook"),
           action: "view",
-          options: { iconOnly: true, specifiers: { "btn-outline-info": true } },
-        },
-        {
-          icon: "pencil",
+        }),
+        dashboardRowAction("edit", {
           title: this.$t("ai.actions.editHook"),
           action: "edit",
           filter: [{ key: "userId", value: this.currentUserId }],
-          options: { iconOnly: true, specifiers: { "btn-outline-secondary": true } },
-        },
-        {
-          icon: "shuffle",
+        }),
+        dashboardRowButton("shuffle", {
           title: this.$t("ai.actions.manageHookModels"),
           action: "models",
           filter: [{ key: "userId", value: this.currentUserId }],
-          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
-        },
-        {
-          icon: "share",
+        }),
+        dashboardRowAction("share", {
           title: this.$t("ai.actions.shareHook"),
           action: "share",
           filter: [{ key: "userId", value: this.currentUserId }],
-          options: { iconOnly: true, specifiers: { "btn-outline-primary": true } },
-        },
-        {
-          icon: "toggle2-on",
+        }),
+        dashboardRowButton("toggle2-on", {
           title: this.$t("ai.actions.disableHook"),
           action: "toggle",
           filter: [{ key: "enabled", value: true }, { key: "userId", value: this.currentUserId }],
           filterMode: "and",
-          options: { iconOnly: true, specifiers: { "btn-outline-success": true } },
-        },
-        {
-          icon: "toggle2-off",
+        }),
+        dashboardRowButton("toggle2-off", {
           title: this.$t("ai.actions.enableHook"),
           action: "toggle",
           filter: [{ key: "enabled", value: false }, { key: "userId", value: this.currentUserId }],
           filterMode: "and",
-          options: { iconOnly: true, specifiers: { "btn-outline-warning": true } },
-        },
-        {
-          icon: "trash",
+        }, "warning"),
+        dashboardRowAction("delete", {
           title: this.$t("ai.actions.deleteHook"),
           action: "delete",
           filter: [{ key: "userId", value: this.currentUserId }],
-          options: { iconOnly: true, specifiers: { "btn-outline-danger": true } },
-        },
+        }),
       ];
     },
   },

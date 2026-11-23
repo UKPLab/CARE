@@ -1,10 +1,19 @@
 <template>
   <div
+    v-show="!readOnly"
     id="adder"
     ref="adder"
     :style="{visibility: isVisible ? 'visible':'hidden'}"
     :class="{ 'is-extended': isExtended }"
-  > 
+  >
+    <BasicButton
+      v-if="hasAiChat && !retagAnnotationId"
+      class="adder-ask-ai btn btn-sm btn-outline-primary w-100"
+      icon="chat-quote"
+      :text="$t('ai.chat.askAi')"
+      :tooltip="$t('ai.chat.quoteSelection')"
+      @click="askAi"
+    />
     <div
       v-if="isExtended" 
       class="menu-search-bar">
@@ -56,8 +65,7 @@
  *
  * @author Dennis Zyska, Nils Dycke, Jannik Holmer
  */
-import {TextPosition, TextRange} from "@/assets/anchoring/text-range";
-import {TextQuoteAnchor} from '@/assets/anchoring/types';
+import {getPDFTextLayerForRange, describePDFRange} from "@/assets/pdfViewer/anchor.js";
 import { resolveApiMessage, tagColorVar } from "@/assets/utils";
 import BasicButton from "@/basic/Button.vue";
 
@@ -79,6 +87,11 @@ export default {
       required: false,
       default: null,
     },
+    currentStudyStep: {
+      type: Object,
+      required: false,
+      default: null,
+    },
     pdf: {
       type: Object,
       required: true,
@@ -86,6 +99,9 @@ export default {
     acceptStats: {
       default: () => false
     },
+  },
+  props: {
+    readOnly: {type: Boolean, required: false, default: false},
   },
   data() {
     return {
@@ -185,8 +201,19 @@ export default {
         return false;
       }
       return this.study.anonymize;
-    }
+    },
+    hasAiChat() {
+      const services = this.currentStudyStep?.configuration?.services || [];
+      return services.some((service) => service.type === "aiChat");
+    },
 
+  },
+  watch: {
+    readOnly(readOnly) {
+      this._onClearSelection();
+      if (readOnly && this.recencySortingOn) this.saveUsageHistory();
+      if (!readOnly) this.$nextTick(this.checkOverflow);
+    },
   },
   created() {
     document.body.addEventListener('mouseup', this.checkSelection);
@@ -205,6 +232,7 @@ export default {
     document.body.addEventListener('resize', this.checkOverflow);
   },
   beforeUnmount() {
+    clearTimeout(this.pendingCallback);
     document.body.removeEventListener('mouseup', this.checkSelection);
     document.body.removeEventListener('dblclick', this.doubleClickHandler);
     document.body.removeEventListener('mousedown', this.positionTracker);
@@ -268,17 +296,18 @@ export default {
     checkSelection(event) {
       // stop any default behavior like the Edge built-in mini-menu 
       // which can visually block our Annotations Adder
-      this.stopDefaultOnSelection(event);
-      
+      if (!this.readOnly) this.stopDefaultOnSelection(event);
+
       // cancel pending callbacks
       if (this.pendingCallback) {
         clearTimeout(this.pendingCallback);
         this.pendingCallback = null;
       }
 
+      const context = this.studyContext();
       // delay for having the right data
       this.pendingCallback = setTimeout(() => {        
-        this._onSelection(event);
+        this._onSelection(event, context);
       }, 10);
     },
     stopDefaultOnSelection(event) {
@@ -286,6 +315,7 @@ export default {
       // and if something has been selected 
       const isLeftClick = event.button === 0;
       const selection = document.getSelection();
+      if (!this.$el.closest(".has-transparent-text-layer")?.contains(selection?.anchorNode)) return;
 
       //if not a doubleClick, check if the distance the selection was dragged
       let distanceMoved = 0;
@@ -367,29 +397,52 @@ export default {
       this.isVisible = false;
       document.getSelection()?.removeAllRanges();
     },
-    async _onSelection(event) {
-      if (this.assignableTags.length === 0) {
-        this.eventBus.emit('toast', {
-          title: this.$t('errors.tags.emptyTagset.title'),
-          message: this.$t('errors.tags.emptyTagset.message'),
-          variant: "danger"
-        });
-
-        this._onClearSelection();
-        return;
-      }
-
-      const existingHighlight = event.target?.closest?.("highlight, .svg-highlight");
-      if (existingHighlight && !(this.isDoubleClick && this.retagAnnotationId && this.canRetag(this.retagAnnotationId))) {
-        this.retagAnnotationId = null;
-        this._onClearSelection();
-        return;
-      }
-      if (this.isDoubleClick && this.retagAnnotationId && this.canRetag(this.retagAnnotationId)) {
-        document.getSelection()?.removeAllRanges();
-        this.selectedRanges = [];
-        this.show(event.clientX, event.clientY);
-        return;
+    /**
+     * Emits the current selection to this study step's AI chat.
+     *
+     * @returns {Promise<void>}
+     */
+    async askAi() {
+      const text = this.selectedRanges.map((range) => range.toString()).join(" ").trim();
+      if (!text) return;
+      const quote = {
+        text,
+        documentId: this.documentId,
+        studySessionId: this.studySessionId,
+        studyStepId: this.studyStepId,
+      };
+      this.eventBus.emit("aiChatQuote", quote);
+      this.eventBus.emit("toast", {
+        title: this.$t("ai.chat.quotedTitle"),
+        message: this.$t("ai.chat.quotedMessage"),
+        variant: "success",
+      });
+      this._onClearSelection();
+      document.getSelection()?.removeAllRanges();
+    },
+    async _onSelection(event, context = this.studyContext()) {
+      if (!this.readOnly) {
+        const existingHighlight = event.target?.closest?.("highlight, .svg-highlight");
+        if (existingHighlight && !(this.isDoubleClick && this.retagAnnotationId && this.canRetag(this.retagAnnotationId))) {
+          this.retagAnnotationId = null;
+          this._onClearSelection();
+          return;
+        }
+        if (this.isDoubleClick && this.retagAnnotationId && this.canRetag(this.retagAnnotationId)) {
+          if (this.assignableTags.length === 0) {
+            this.eventBus.emit('toast', {
+              title: this.$t('errors.tags.emptyTagset.title'),
+              message: this.$t('errors.tags.emptyTagset.message'),
+              variant: "danger"
+            });
+            this._onClearSelection();
+            return;
+          }
+          document.getSelection()?.removeAllRanges();
+          this.selectedRanges = [];
+          this.show(event.clientX, event.clientY);
+          return;
+        }
       }
       this.retagAnnotationId = null;
 
@@ -416,8 +469,19 @@ export default {
         return;
       }
 
+      if (!this.readOnly && this.assignableTags.length === 0) {
+        this.eventBus.emit('toast', {
+          title: this.$t('errors.tags.emptyTagset.title'),
+          message: this.$t('errors.tags.emptyTagset.message'),
+          variant: "danger"
+        });
+
+        this._onClearSelection();
+        return;
+      }
+
       this.selectedRanges = [range];
-      if (!this.isVisible || !this.areRangesEqual(this.selectedRanges[0], this.previousRanges[0])) {
+      if (!this.readOnly && (!this.isVisible || !this.areRangesEqual(this.selectedRanges[0], this.previousRanges[0]))) {
         this.show(event.clientX, event.clientY);
       }
       this.previousRanges = [range];
@@ -425,15 +489,20 @@ export default {
         this.$socket.emit("stats", {
           action: "onTextSelect",
           data: {
-            documentId: this.documentId,
-            studySessionId: this.studySessionId,
-            studyStepId: this.studyStepId,
+            ...context,
             eventClientX: event.clientX, eventClientY: event.clientY,
             text: range.toString(),
           }
         });
       }
 
+    },
+    /** Captures the study context before the selection delay. */
+    studyContext() {
+      return {
+        documentId: this.documentId, studySessionId: this.studySessionId, studyStepId: this.studyStepId,
+        ...(this.currentStudyStep?.id ? {currentStudyStepId: this.currentStudyStep.id} : {}),
+      };
     },
     areRangesEqual(range1, range2) {
       return (
@@ -461,9 +530,7 @@ export default {
       // get size of the box
       const adder = this.$refs.adder;
       const pdfContainerRect = /** @type {Element} */ (document.getElementById("pdfContainer-" + this.documentId)).getBoundingClientRect();
-      console.log("pdfContainerRect", document.getElementById("pdfContainer-" + this.documentId));
       const pdfToolbarRect = /** @type {Element} */ (document.getElementById("pdfToolbar-" + this.documentId)).getBoundingClientRect();
-      console.log("pdfToolbarRect", (document.getElementById("pdfToolbar-" + this.documentId)));
       const width = adder.getBoundingClientRect().width;
       const height = adder.getBoundingClientRect().height;
       const bottom = pdfToolbarRect.bottom;
@@ -518,86 +585,21 @@ export default {
         this.isVisible = false;
       }
     },
-    getNodeTextLayer(node) {
-      const el = 'closest' in node ? node : node.parentElement;
-      return el?.closest('.textLayer') ?? null;
+    viewerRoot() {
+      return this.$el.closest(".has-transparent-text-layer");
     },
     getTextLayerForRange(range) {
-      if ("classList" in range.endContainer && range.endContainer.classList.contains("canvasWrapper")) {
-        throw new Error('I\'m afraid we are not on the same page');
-      }
-      // "Shrink" the range so that the start and endpoints are at offsets within
-      // text nodes rather than any containing nodes.
-      try {
-        range = TextRange.fromRange(range).toRange();
-      } catch (_error) {
-        throw new Error('Selection does not contain text', { cause: _error });
-      }
-
-      const startTextLayer = this.getNodeTextLayer(range.startContainer);
-      const endTextLayer = this.getNodeTextLayer(range.endContainer);
-
-      if (!startTextLayer || !endTextLayer) {
-        throw new Error('Selection is outside page text');
-      }
-
-      if (startTextLayer !== endTextLayer) {
-        throw new Error('Selecting across page breaks is not supported');
-      }
-      const pageStart = parseInt(startTextLayer.id.match("[0-9]+")[0]);
-
-      return [range, startTextLayer, pageStart];
-
-
+      return getPDFTextLayerForRange(range, this.viewerRoot());
     },
     /**
      * Convert a DOM Range object into a set of selectors.
      *
-     * Converts a DOM `Range` object into a `[position, quote]` tuple of selectors
-     * which can be saved with an annotation and later passed to `anchor` to
-     * convert the selectors back to a `Range`.
-     *
      * @param {HTMLElement} root - The root element
      * @param {Range} range
      * @return {Promise<Selector[]>}
-     */ async describe(root, range) {
-
-      const [textRange, textLayer, page] = this.getTextLayerForRange(range);
-
-      const startPos = TextPosition.fromPoint(
-          textRange.startContainer,
-          textRange.startOffset
-      ).relativeTo(textLayer);
-
-      const endPos = TextPosition.fromPoint(
-          textRange.endContainer,
-          textRange.endOffset
-      ).relativeTo(textLayer);
-
-      const pageOffset = await this.getPageOffset(page - 1);
-
-      /** @type {TextPositionSelector} */
-      const position = {
-        type: 'TextPositionSelector',
-        start: pageOffset + startPos.offset,
-        end: pageOffset + endPos.offset,
-      };
-
-      const quote = TextQuoteAnchor.fromRange(root, textRange).toSelector();
-      const pageSelector = {
-        type: 'PagePositionSelector',
-        number: page,
-      }
-
-      return [position, quote, pageSelector];
-    },
-    async getPageOffset(pageIndex) {
-      let offset = 0;
-      for (let i = 0; i < pageIndex; i++) {
-        const text = await this.pdf.getPageTextContent(i);
-        offset += text.length;
-      }
-      return offset;
+     */
+    describe(root, range) {
+      return describePDFRange(this.pdf, root, range, this.viewerRoot());
     },
   }
 }
@@ -676,5 +678,8 @@ html[data-bs-theme="light"] #adder {
 }
 .menu-search-bar {
   width: 100%;
+}
+.adder-ask-ai {
+  margin-bottom: 4px;
 }
 </style>
