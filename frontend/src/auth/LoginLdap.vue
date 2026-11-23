@@ -85,7 +85,7 @@
             </div>
             <div class="text-center text-muted small">
               <p class="mb-0">
-                <i class="bi bi-shield-lock"></i>
+                <BasicIcon icon-name="shield-lock" />
                 {{ $t('auth.ldap.passwordNotStoredLine1') }} <br />
                 {{ $t('auth.ldap.passwordNotStoredLine2') }}
               </p>
@@ -108,9 +108,11 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 import { resolveApiMessage } from "@/assets/utils";
 
+import BasicIcon from "@/basic/Icon.vue";
+
 export default {
   name: "AuthLoginLdap",
-  components: { IconAsset, BasicButton },
+  components: { BasicIcon, IconAsset, BasicButton },
   data() {
     return {
       showError: false,

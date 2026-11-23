@@ -76,57 +76,237 @@ For details on how to configure and use placeholders, see :doc:`Step Modal <../.
 Current Available Workflows
 ---------------------------
 
-The following predefined workflows are currently available in CARE.  
-Each workflow is a template that specifies the order of steps a participant goes through.  
+The following predefined workflows specify the order of tasks in a study.
+You select the documents, assessment configurations, and services when creating the study.
+For information on copying or customizing a workflow, see :doc:`../workflow_management`.
 
-**Step types**:  
+**Step types**:
 
-- ``1 = Annotator`` (highlight or comment on a PDF)  
-- ``2 = Editor`` (revise or write text in the Quill editor)  
-- ``3 = Modal`` (a read-only view with dynamically filled placeholders, often used for NLP results)  
+- ``1 = Annotator``: read, highlight, or comment on a PDF.
+- ``2 = Editor``: write or revise text in the Quill editor.
+- ``3 = Modal``: read configured content, optionally including placeholders for service results.
 
-**Peer Review Workflow**  
+The state charts show the participant's progress, including loading, service failures,
+and finish confirmation. They assume the participant has access to an open study.
+Study deadlines, changes to access, and continuation after a finished session are not shown.
+Open the SVG download to inspect a chart at full size without losing image quality.
+
+.. note::
+
+   Assessment workflows require an assessment configuration for the relevant step.
+   **Forced Assessment** is disabled by default. When enabled, participants must save
+   a score and justification for each named criterion before moving forward from that step.
+   AI suggestions and scores copied from a previous step do not count as saved assessments
+   until the participant saves them.
+
+**Peer Review Workflow**
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Based on the EiWA Project: participants review a PDF document and then write free text feedback.*
+*Based on the EiWA Project: participants annotate a PDF and write a free-text review.*
 
-- **Step 1 — Annotator:** The participant reads and annotates a PDF.  
-- **Step 2 — Editor:** The participant writes their review in the text editor. They can move back to this step to revise their feedback if needed. The editor is linked to the same document annotated in Step 1.  
+- **Step 1 - Annotator:** Read and annotate the PDF.
+- **Step 2 - Editor:** Write the review in a separately selected editor document.
+  Participants can return to Step 1 using **Previous**, then continue to Step 2.
+
+This workflow has no predefined assessment or AI service. After writing the review,
+participants select **Finish** and confirm submission.
+
+.. figure:: workflow-charts/peer-review/chart.svg
+   :alt: Peer Review Workflow state chart, from PDF annotation through review writing and finish confirmation.
+   :width: 100%
+
+   Peer Review Workflow: annotation followed by review writing.
+
+:download:`SVG <workflow-charts/peer-review/chart.svg>`,
+:download:`PNG <workflow-charts/peer-review/chart.png>`,
+:download:`Mermaid source <workflow-charts/peer-review/chart.mmd>`
 
 -----
 
-**Ruhr-Uni Bochum Project**  
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-*Designed to study revision behavior over two editing rounds, with AI (NLP) feedback provided between them.*
-
-- **Step 1 — Editor:** The participant writes or revises the initial version of a text.  
-- **Step 2 — Modal:** AI-generated feedback is shown in a modal window. This includes comparisons (via the ``nlpEditComparison`` skill).  
-- **Step 3 — Editor:** The participant revises the text again, building on both their first version and the AI feedback.  
-- **Step 4 — Modal:** A second round of AI feedback is shown, again highlighting differences or suggestions.  
-
-For a detailed step-by-step example, see :ref:`Ruhr-Uni Bochum Project <ruhr-uni-bochum-project>`.
-
------
-
-**Ruhr-Uni Bochum Project (Control)**  
+**Peer Review Workflow (Assessment)**
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-*Same setup as the Ruhr-Uni Bochum Project, but without AI (NLP) feedback. Used as a control condition in experiments.*
+*Adds a structured assessment to the PDF annotation step.*
 
-- **Step 1 — Editor:** Participant writes or revises the text.  
-- **Step 2 — Modal:** A modal view is shown, but without any AI feedback.  
-- **Step 3 — Editor:** Participant revises the text again.  
-- **Step 4 — Modal:** Another empty modal view is shown, serving as a placeholder instead of NLP results.  
+- **Step 1 - Annotator and assessment:** Read and annotate the PDF, then enter scores
+  and justifications using the selected assessment configuration.
+- **Step 2 - Editor:** Write a free-text review in a separately selected editor document.
+  **Previous** returns to Step 1.
+
+When **Forced Assessment** is enabled for Step 1, all criteria must be saved before
+**Next** opens the editor. Step 2 has no predefined assessment or AI service.
+
+.. figure:: workflow-charts/peer-review-assessment/chart.svg
+   :alt: Peer Review Workflow with Assessment state chart, including the assessment condition before review writing.
+   :width: 100%
+
+   Peer Review Workflow (Assessment): assess the PDF before writing the review.
+
+:download:`SVG <workflow-charts/peer-review-assessment/chart.svg>`,
+:download:`PNG <workflow-charts/peer-review-assessment/chart.png>`,
+:download:`Mermaid source <workflow-charts/peer-review-assessment/chart.mmd>`
 
 -----
 
-**Annotation Workflow**  
+**Peer Review Workflow (Assessment with AI)**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Adds AI support to structured assessment and review writing.*
+
+- **Step 1 - Annotator and assessment:** The configured ``nlpAssessment`` service
+  provides support for assessing the PDF. Participants review its output, annotate
+  the PDF, and save their own assessment.
+- **Step 2 - Editor:** The configured ``textualFeedback`` service supports review writing.
+  **Previous** returns to Step 1. This step reuses the document selected for Step 1.
+
+Select the skills or AI hooks, input mappings, and output handling during study setup.
+If a service fails or times out, participants can retry it or skip service support.
+Skipping a service does not waive the assessment condition when **Forced Assessment** is enabled.
+For more information about AI configuration, see :doc:`../ai_features`.
+
+.. figure:: workflow-charts/peer-review-ai/chart.svg
+   :alt: AI-assisted peer review state chart, including assessment and feedback requests with retry and skip paths.
+   :width: 100%
+
+   Peer Review Workflow (Assessment with AI): service support at both steps.
+
+:download:`SVG <workflow-charts/peer-review-ai/chart.svg>`,
+:download:`PNG <workflow-charts/peer-review-ai/chart.png>`,
+:download:`Mermaid source <workflow-charts/peer-review-ai/chart.mmd>`
+
+-----
+
+**Annotation Workflow**
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-*A minimal workflow for pure annotation tasks.*
+*A single-step workflow for PDF annotation tasks.*
 
-- **Step 1 — Annotator:** Participant highlights and comments on a PDF. This is the only step in the workflow.  
+- **Step 1 - Annotator:** Read, highlight, and comment on the PDF, then select **Finish**
+  and confirm submission.
+
+There is no second step, backward navigation, predefined assessment, or predefined AI service.
+
+.. figure:: workflow-charts/annotation/chart.svg
+   :alt: Annotation Workflow state chart, showing one annotation step followed by finish confirmation.
+   :width: 100%
+
+   Annotation Workflow: one PDF annotation step.
+
+:download:`SVG <workflow-charts/annotation/chart.svg>`,
+:download:`PNG <workflow-charts/annotation/chart.png>`,
+:download:`Mermaid source <workflow-charts/annotation/chart.mmd>`
+
+-----
+
+**Review Assessment Workflow**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Supports assessment of an existing review or submitted study session.*
+
+- **Step 1 - Annotator, read-only:** Inspect the source PDF and its visible annotations
+  without changing them. **Show All Document Annotations** controls whether default
+  document annotations are included.
+- **Step 2 - Editor, read-only, with assessment:** Inspect the review content and save
+  scores and justifications in the assessment sidebar. The editor content remains read-only.
+  **Previous** returns to Step 1.
+
+The second step is linked to Step 1. Select its assessment configuration during study setup.
+When **Forced Assessment** is enabled for Step 2, all criteria must be saved before **Finish**.
+
+.. figure:: workflow-charts/review-assessment/chart.svg
+   :alt: Review Assessment Workflow state chart, showing read-only inspection followed by an editable assessment.
+   :width: 100%
+
+   Review Assessment Workflow: inspect existing content and assess it.
+
+:download:`SVG <workflow-charts/review-assessment/chart.svg>`,
+:download:`PNG <workflow-charts/review-assessment/chart.png>`,
+:download:`Mermaid source <workflow-charts/review-assessment/chart.mmd>`
+
+-----
+
+**Revision Workflow**
+~~~~~~~~~~~~~~~~~~~~~
+
+*Supports review of a previous submission followed by assessment of a revised submission.*
+
+- **Step 1 - Annotator and assessment, read-only:** Inspect the previous document,
+  annotations, and assessment without changing them.
+- **Step 2 - Annotator and assessment:** Annotate the revised document and save a new
+  assessment. Scores from Step 1 can prefill this assessment, but remain unsaved until
+  the participant saves them. **Previous** returns to Step 1.
+
+Select a document and assessment configuration for each step. Step 2 does not automatically
+reuse the first document. When **Forced Assessment** is enabled for Step 2, all criteria
+must be saved before **Finish**. The chart assumes the default optional assessment in
+read-only Step 1.
+
+.. figure:: workflow-charts/revision/chart.svg
+   :alt: Revision Workflow state chart, from read-only inspection of prior work to annotation and assessment of revised work.
+   :width: 100%
+
+   Revision Workflow: compare prior work with a separately selected revision.
+
+:download:`SVG <workflow-charts/revision/chart.svg>`,
+:download:`PNG <workflow-charts/revision/chart.png>`,
+:download:`Mermaid source <workflow-charts/revision/chart.mmd>`
+
+-----
+
+**Ruhr-Uni Bochum Project**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Studies revision behavior over two editing rounds with AI-supported feedback between them.*
+
+- **Step 1 - Editor:** Write or revise the initial text.
+- **Step 2 - Modal:** Run the configured ``nlpEditComparison`` service and display the
+  prepared modal content.
+- **Step 3 - Editor:** Revise the text again using the document and edits from Step 1.
+- **Step 4 - Modal:** Run ``nlpEditComparison`` again and display the final modal content,
+  then select **Finish** and confirm submission.
+
+Backward navigation is disabled for every step. Configure the service inputs, output handling,
+and modal placeholders to display comparisons or feedback. A successful service request alone
+does not determine what the modal displays. Failed or timed-out requests can be retried or skipped.
+
+For a detailed setup example, see :ref:`Ruhr-Uni Bochum Project <ruhr-uni-bochum-project>`.
+
+.. figure:: workflow-charts/bochum/chart.svg
+   :alt: Ruhr-Uni Bochum Project state chart, showing two editing rounds and two comparison services with retry and skip paths.
+   :width: 100%
+
+   Ruhr-Uni Bochum Project: two revisions with configured service support.
+
+:download:`SVG <workflow-charts/bochum/chart.svg>`,
+:download:`PNG <workflow-charts/bochum/chart.png>`,
+:download:`Mermaid source <workflow-charts/bochum/chart.mmd>`
+
+-----
+
+**Ruhr-Uni Bochum Project (Control)**
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+*Uses the same four-step structure as the Ruhr-Uni Bochum Project without predefined AI services.*
+
+- **Step 1 - Editor:** Write or revise the initial text.
+- **Step 2 - Modal:** Read the prepared modal content without an automatic AI request.
+- **Step 3 - Editor:** Revise the text again using the document and edits from Step 1.
+- **Step 4 - Modal:** Read the final prepared modal content, then select **Finish**
+  and confirm submission.
+
+Backward navigation is disabled for every step. The modals can contain instructions or other
+prepared content. They are not necessarily empty. This workflow provides a control condition
+without the predefined comparison services.
+
+.. figure:: workflow-charts/bochum-control/chart.svg
+   :alt: Ruhr-Uni Bochum Project control state chart, showing two editor and two modal steps without AI requests.
+   :width: 100%
+
+   Ruhr-Uni Bochum Project (Control): two revisions without predefined service support.
+
+:download:`SVG <workflow-charts/bochum-control/chart.svg>`,
+:download:`PNG <workflow-charts/bochum-control/chart.png>`,
+:download:`Mermaid source <workflow-charts/bochum-control/chart.mmd>`
 
 Creating a Study
 ----------------

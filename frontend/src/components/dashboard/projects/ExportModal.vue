@@ -20,41 +20,24 @@
     </template>
 
     <template #step-2>
-
-      <div v-if="dataSelection.exportType === 'reviewerList'">
-        <p>{{ $t('dashboard.projects.exportStudySessions') }}</p>
-        <p>
-          {{ $t('dashboard.projects.totalStudies') }} {{ studies.length }}<br>
-          {{ $t('dashboard.projects.totalStudySessions') }} {{ studySessions.length }}
-        </p>
-      </div>
-      <div v-else-if="wizardExportTypes.includes(dataSelection.exportType)">
+      <div v-if="wizardExportTypes.includes(dataSelection.exportType)">
         <StepSelectUsers
           v-if="dataSelection.projectId"
+          v-model="userSelection"
           :project-id="dataSelection.projectId"
           :export-type="dataSelection.exportType"
-          v-model="userSelection"
         />
         <!-- We send the project ID and get the selected users back -->
       </div>
-      <div v-else>
-        <p>{{ $t('dashboard.projects.exportingAllData') }}</p>
-        <p>
-          {{ $t('dashboard.projects.totalStudies') }} {{ studies.length }}<br>
-          {{ $t('dashboard.projects.totalStudySessions') }} {{ studySessions.length }}<br>
-          {{ $t('dashboard.projects.totalTags') }} {{ tags.length }}<br>
-          {{ $t('dashboard.projects.totalTagSets') }} {{ tagSets.length }}<br>
-          {{ $t('dashboard.projects.totalProjects') }} {{ projects.length }}<br>
-          {{ $t('dashboard.projects.totalDocuments') }} {{ documents.length }}<br>
-          {{ $t('dashboard.projects.totalAnnotations') }} {{ annotations.length }}<br>
-          {{ $t('dashboard.projects.totalComments') }} {{ comments.length }}<br>
-          {{ $t('dashboard.projects.totalCommentsVotes') }} {{ commentVotes.length }}<br>
-          {{ $t('dashboard.projects.totalEdits') }} {{ edits.length }}<br>
-        </p>
-      </div>
+      <StepProjectExport
+        v-else
+        ref="projectExport"
+        :project-id="dataSelection.projectId"
+        :export-type="dataSelection.exportType"
+      />
     </template>
 
-    
+
     <template #step-3>
       <StepOptions
         v-if="wizardExportTypes.includes(dataSelection.exportType)"
@@ -67,28 +50,28 @@
       <!-- We get the info back if user wants to generate aliases and the seed that should be used for this -->
       <div v-if="['documents'].includes(dataSelection.exportType)">
         <StepOptionsDocuments
-          v-model:selectedTypes="selectedDocumentTypes"
-          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
-          v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
+          v-model:selected-types="selectedDocumentTypes"
+          v-model:exclude-non-consenting-edits="excludeNonConsentingEdits"
+          v-model:exclude-non-consenting-annotations="excludeNonConsentingAnnotations"
         />
         <!-- We get the desired document types as well as if non consenting users' edits should be included  -->
       </div>
       <div v-else-if="['studies'].includes(dataSelection.exportType)">
         <StepOptionsStudies
+          v-model:selected-workflow-ids="selectedWorkflowIds"
+          v-model:include-empty-studies="includeEmptyStudies"
+          v-model:include-document-files="includeStudyDocumentFiles"
+          v-model:include-scores="includeStudyGrades"
+          v-model:include-ai-scores="includeStudyIncludeAiScores"
+          v-model:exclude-non-consenting-edits="excludeNonConsentingEdits"
+          v-model:exclude-non-consenting-annotations="excludeNonConsentingAnnotations"
           :project-id="dataSelection.projectId"
-          v-model:selectedWorkflowIds="selectedWorkflowIds"
-          v-model:includeEmptyStudies="includeEmptyStudies"
-          v-model:includeDocumentFiles="includeStudyDocumentFiles"
-          v-model:includeScores="includeStudyGrades"
-          v-model:includeAiScores="includeStudyIncludeAiScores"
-          v-model:excludeNonConsentingEdits="excludeNonConsentingEdits"
-          v-model:excludeNonConsentingAnnotations="excludeNonConsentingAnnotations"
         />
       </div>
       <div v-else-if="['userBehaviour'].includes(dataSelection.exportType)">
         <StepOptionsUserBehaviour
-          v-model:outputFormat="behaviourOutputFormat"
-          v-model:fileFormat="behaviourFileFormat"
+          v-model:output-format="behaviourOutputFormat"
+          v-model:file-format="behaviourFileFormat"
         />
       </div>
     </template>
@@ -98,7 +81,7 @@
       #step-4
     >
       <StepConfirmDownload
-        :wait="wait"
+        ref="confirmDownload"
         :generate-aliases="generateAliases"
         :user-selection="userSelection"
         :export-type="dataSelection.exportType"
@@ -111,22 +94,41 @@
 import BasicForm from "@/basic/Form.vue";
 import StepperModal from "@/basic/modal/StepperModal.vue";
 import {computed} from "vue";
-import {downloadObjectsAs} from "@/assets/utils";
-import JSZip from 'jszip';
-import FileSaver from 'file-saver';
-import Quill from "quill";
-import {dbToDelta} from "editor-delta-conversion";
 import StepSelectUsers from "@/components/dashboard/projects/export/StepSelectUsers.vue";
 import StepOptions from "@/components/dashboard/projects/export/StepOptions.vue";
 import StepOptionsDocuments from "@/components/dashboard/projects/export/StepOptionsDocuments.vue";
 import StepOptionsStudies from "@/components/dashboard/projects/export/StepOptionsStudies.vue";
 import StepOptionsUserBehaviour from "@/components/dashboard/projects/export/StepOptionsUserBehaviour.vue";
 import StepConfirmDownload from "@/components/dashboard/projects/export/StepConfirmDownload.vue";
-import getServerURL from "@/assets/serverUrl.js";
+import StepProjectExport from "@/components/dashboard/projects/export/StepProjectExport.vue";
 
 // Export types that go through the full wizard (select users, options, confirm download)
 // rather than the plain "select project" flow (reviewerList, all).
 const WIZARD_EXPORT_TYPES = ['submissions', 'grades', 'documents', 'studies', 'userBehaviour'];
+
+/**
+ * User selection and wizard options, reset whenever the project or export type changes.
+ * @returns {Object} Fresh default values (new arrays on every call)
+ */
+function exportOptionDefaults() {
+  return {
+    userSelection: [],
+    generateAliases: false,
+    fakerSeed: 846569412,
+    gradeFormat: "json",
+    mergeCsvFiles: false,
+    selectedDocumentTypes: [0, 1, 2, 4],
+    excludeNonConsentingEdits: false,
+    excludeNonConsentingAnnotations: false,
+    selectedWorkflowIds: [],
+    includeStudyDocumentFiles: true,
+    includeStudyGrades: true,
+    includeStudyIncludeAiScores: true,
+    includeEmptyStudies: true,
+    behaviourOutputFormat: 'single',
+    behaviourFileFormat: 'json',
+  };
+}
 
 /**
  * ProjectModal - modal component for adding and editing projects
@@ -135,7 +137,7 @@ const WIZARD_EXPORT_TYPES = ['submissions', 'grades', 'documents', 'studies', 'u
  */
 export default {
   name: "ExportProjectModal",
-  components: { StepperModal, BasicForm, StepSelectUsers, StepOptions, StepOptionsDocuments, StepOptionsStudies, StepOptionsUserBehaviour, StepConfirmDownload },
+  components: { StepperModal, BasicForm, StepSelectUsers, StepOptions, StepOptionsDocuments, StepOptionsStudies, StepOptionsUserBehaviour, StepConfirmDownload, StepProjectExport },
   subscribeTable: [{
     table: "document",
   }, {
@@ -180,61 +182,60 @@ export default {
         projectId: null,
         exportType: "reviewerList",
       },
-      filter: [],
-      wait: false,
-      // Data for Export Submissions
-      userSelection: [],
-      generateAliases:false,
-      fakerSeed: 846569412,
-      gradeFormat: "json",
-      mergeCsvFiles: false,
-      selectedDocumentTypes: [0, 1, 2, 4],
-      excludeNonConsentingEdits: false,
-      excludeNonConsentingAnnotations: false,
-      selectedWorkflowIds: [],
-      includeStudyDocumentFiles: true,
-      includeStudyGrades: true,
-      includeStudyIncludeAiScores: true,
-      includeEmptyStudies: true,
-      behaviourOutputFormat: 'single',
-      behaviourFileFormat: 'json',
+      ...exportOptionDefaults(),
     };
   },
   computed: {
     stepValid() {
-      if (["submissions", "grades"].includes(this.dataSelection.exportType)) {
-        return [
-          !!this.dataSelection.projectId && !!this.dataSelection.exportType, // must select a valid project and export type 
-          this.userSelection.length > 0, // must select at least one student
-          true,
-          true
-        ];
-      } else if (this.dataSelection.exportType === "documents") {
-        return [
-          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
-          this.userSelection.length > 0,
-          this.selectedDocumentTypes.length > 0,
-          true,
-        ];
-      } else if (this.dataSelection.exportType === 'studies') {
-        return [
-          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
-          this.userSelection.length > 0,
-          this.selectedWorkflowIds.length > 0,
-          true,
-        ];
-      } else if (this.dataSelection.exportType === 'userBehaviour') {
-        return [
-          !!this.dataSelection.projectId && !!this.dataSelection.exportType,
-          this.userSelection.length > 0,
-          true,
-          true,
-        ];
+      const settingsValid = !!this.dataSelection.projectId && !!this.dataSelection.exportType;
+      if (!this.wizardExportTypes.includes(this.dataSelection.exportType)) {
+        return [settingsValid, true];
       }
-      return [
-        !!this.dataSelection.projectId && !!this.dataSelection.exportType,
-        true
-      ];
+      // The options step only has required choices for documents and studies.
+      const optionsValid = {
+        documents: this.selectedDocumentTypes.length > 0,
+        studies: this.selectedWorkflowIds.length > 0,
+      }[this.dataSelection.exportType] ?? true;
+      return [settingsValid, this.userSelection.length > 0, optionsValid, true];
+    },
+    /**
+     * Form fields posted to /export/stream for the wizard export types: the common
+     * selection (project, users, aliases) plus the options of the chosen export type.
+     */
+    streamPayload() {
+      const exportType = this.dataSelection.exportType;
+      const typeOptions = {
+        grades: {
+          gradeFormat: this.gradeFormat,
+          mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
+        },
+        documents: {
+          documentTypes: this.selectedDocumentTypes,
+          excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
+        },
+        studies: {
+          workflowIds: this.selectedWorkflowIds,
+          includeEmptyStudies: this.includeEmptyStudies,
+          includeDocumentFiles: this.includeStudyDocumentFiles,
+          includeGrades: this.includeStudyGrades,
+          excludeNonConsentingEdits: this.excludeNonConsentingEdits,
+          excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
+          includeAiScores: this.includeStudyIncludeAiScores
+        },
+        userBehaviour: {
+          behaviourOutputFormat: this.behaviourOutputFormat,
+          behaviourFileFormat: this.behaviourFileFormat
+        },
+      }[exportType] || {};
+      return {
+        projectId: this.dataSelection.projectId,
+        exportType,
+        userIds: this.userSelection.map(row => row.userId),
+        generateAliases: this.generateAliases,
+        fakerSeed: this.generateAliases ? this.fakerSeed : null,
+        ...typeOptions
+      };
     },
     steps() {
       if (this.wizardExportTypes.includes(this.dataSelection.exportType)) {
@@ -280,54 +281,6 @@ export default {
         }
       ]
     },
-    studies() {
-      return this.$store.getters["table/study/getFiltered"]((s) => s.projectId === this.dataSelection.projectId);
-    },
-    tagSets() {
-      return this.$store.getters["table/tag_set/getFiltered"]((ts) => ts.projectId === this.dataSelection.projectId);
-    },
-    tags() {
-      return this.$store.getters["table/tag/getFiltered"](tag => this.tagSets.map(tagSet => tagSet.id).includes(tag.tagSetId));
-    },
-    studySteps() {
-      return this.$store.getters["table/study_step/getFiltered"]((s) => this.studies.map(study => study.id).includes(s.studyId));
-    },
-    studySessions() {
-      return this.$store.getters["table/study_session/getFiltered"]((s) => this.studies.map(study => study.id).includes(s.studyId));
-    },
-    edits() {
-      return this.$store.getters["table/document_edit/getFiltered"]((e) => e.text !== '\n\nDo you find the feedback helpful?');
-    },
-    documents() {
-      return this.$store.getters["table/document/getAll"];
-    },
-    annotations() {
-      return this.$store.getters["table/annotation/getAll"];
-    },
-    comments() {
-      return this.$store.getters["table/comment/getAll"];
-    },
-    commentVotes() {
-      return this.$store.getters["table/comment_vote/getAll"];
-    },
-    reviewerList() {
-      return this.studySessions.map(session => {
-
-        const study = this.$store.getters["table/study/get"](session.studyId);
-        const studyUser = this.$store.getters["table/user/get"](study.userId);
-        const studySessionUser = this.$store.getters["table/user/get"](session.userId);
-
-        return {
-          "studyUserName": studyUser.firstName + " " + studyUser.lastName,
-          "studyUserFirstName": studyUser.firstName,
-          "studyUserLastName": studyUser.lastName,
-          "studySessionUserName": studySessionUser.firstName + " " + studySessionUser.lastName,
-          "studySessionUserFirstName": studySessionUser.firstName,
-          "studySessionUserLastName": studySessionUser.lastName,
-          "studySessionHash": session.hash,
-        }
-      });
-    },
     projects() {
       return this.$store.getters["table/project/getAll"];
     },
@@ -342,22 +295,7 @@ export default {
   },
   methods: {
     resetOptions() {
-      this.filter = [];
-      this.userSelection = [];
-      this.generateAliases = false;
-      this.fakerSeed = 846569412;
-      this.gradeFormat = "json";
-      this.mergeCsvFiles = false;
-      this.selectedDocumentTypes = [0, 1, 2, 4];
-      this.excludeNonConsentingEdits = false;
-      this.excludeNonConsentingAnnotations = false;
-      this.selectedWorkflowIds = [];
-      this.includeStudyDocumentFiles = true;
-      this.includeStudyGrades = true;
-      this.includeStudyIncludeAiScores = true;
-      this.includeEmptyStudies = true;
-      this.behaviourOutputFormat = 'single';
-      this.behaviourFileFormat = 'json';
+      Object.assign(this, exportOptionDefaults());
     },
     open(projectId) {
       this.dataSelection.projectId = projectId;
@@ -365,264 +303,21 @@ export default {
     },
     hide() {
       this.resetOptions();
-      this.wait = false;
     },
-    downloadData() {
-      if (this.dataSelection.exportType === "reviewerList") {
-        this.downloadReviewerList();
-      } else if (this.dataSelection.exportType === "submissions") {
-        this.downloadSubmissions();
-      } else if (this.dataSelection.exportType === "grades") {
-        this.downloadGrades();
-      } else if (this.dataSelection.exportType === "documents") {
-        this.downloadDocuments();
-      } else if (this.dataSelection.exportType === 'studies') {
-        this.downloadStudies();
-      } else if (this.dataSelection.exportType === 'userBehaviour') {
-        this.downloadUserBehaviour();
-      } else {
-        this.downloadAllData();
+    async downloadData() {
+      if (!this.wizardExportTypes.includes(this.dataSelection.exportType)) {
+        await this.$refs.projectExport.download();
+        this.$refs.exportStepper.close();
+        return;
       }
-    },
-    downloadReviewerList() {
-      const filename = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 14) + '_session_list';
-      downloadObjectsAs(this.reviewerList, filename, "csv");
-      this.$refs.exportStepper.close();
-    },
-    async fetchAllDocumentData(maxConcurrent = 3) {
-      if (maxConcurrent < 1) {
-        maxConcurrent = 1;
-      }
-
-      // Build a flat list of tasks
-      const tasks = [];
-      this.studySessions.forEach(session => {
-        this.studySteps
-            .filter(step => step.studyId === session.studyId)
-            .forEach(step => {
-              tasks.push({session, step});
-            });
-      });
-
-      const emitWithAck = ({session, step}) => {
-        return new Promise((resolve) => {
-          this.$socket.emit(
-              "documentGetData",
-              {
-                documentId: step.documentId,
-                studySessionId: session.id,
-                studyStepId: step.id,
-                history: true,
-              },
-              (response) => {
-                resolve(response);
-              }
-          );
-        });
-      };
-
-      const results = new Array(tasks.length);
-      let index = 0;
-
-      const worker = async () => {
-        while (index < tasks.length) {
-          const current = index++;
-          const task = tasks[current];
-          const response = await emitWithAck(task);
-          results[current] = response;
-        }
-      };
-
-      const workerCount = Math.min(maxConcurrent, tasks.length);
-      const workers = Array.from({length: workerCount}, () => worker());
-
-      await Promise.all(workers);
-
-      return results;
-    },
-    // Shared by all download* methods below: builds the common payload (projectId,
-    // exportType, userIds, alias settings), merges in the export-type-specific fields,
-    // and handles the shared error/close behavior.
-    async downloadStream(exportType, extraPayload = {}) {
       try {
-        const selectedUserIds = this.userSelection.map(row => row.userId);
-        this.triggerStreamDownload({
-          projectId: this.dataSelection.projectId,
-          exportType,
-          userIds: selectedUserIds,
-          generateAliases: this.generateAliases,
-          fakerSeed: this.generateAliases ? this.fakerSeed : null,
-          ...extraPayload
-        });
+        this.$refs.confirmDownload.download(this.streamPayload);
         this.$refs.exportStepper.close();
       } catch (error) {
         console.error("Streaming error:", error);
         this.$toast.error(this.$t('dashboard.projects.export.streamError'));
       }
     },
-    async downloadSubmissions() {
-      await this.downloadStream('submissions');
-    },
-    async downloadGrades() {
-      await this.downloadStream('grades', {
-        gradeFormat: this.gradeFormat,
-        mergeCsvFiles: this.gradeFormat === "csv" ? this.mergeCsvFiles : false
-      });
-    },
-    async downloadDocuments() {
-      await this.downloadStream('documents', {
-        documentTypes: this.selectedDocumentTypes,
-        excludeNonConsentingEdits: this.excludeNonConsentingEdits,
-        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations
-      });
-    },
-    async downloadStudies() {
-      await this.downloadStream('studies', {
-        workflowIds: this.selectedWorkflowIds,
-        includeEmptyStudies: this.includeEmptyStudies,
-        includeDocumentFiles: this.includeStudyDocumentFiles,
-        includeGrades: this.includeStudyGrades,
-        excludeNonConsentingEdits: this.excludeNonConsentingEdits,
-        excludeNonConsentingAnnotations: this.excludeNonConsentingAnnotations,
-        includeAiScores: this.includeStudyIncludeAiScores
-      });
-    },
-    async downloadUserBehaviour() {
-      await this.downloadStream('userBehaviour', {
-        behaviourOutputFormat: this.behaviourOutputFormat,
-        behaviourFileFormat: this.behaviourFileFormat
-      });
-    },
-    async downloadAllData() {
-      this.wait = true;
-
-      const zip = new JSZip();
-
-      zip.file('tags.json', JSON.stringify(this.tags, null, 2));
-      zip.file('tag_sets.json', JSON.stringify(this.tagSets, null, 2));
-      zip.file('project.json', JSON.stringify(
-          this.projects.filter(project => project.id === this.dataSelection.projectId),
-          null,
-          2
-      ));
-      zip.file('studies.json', JSON.stringify(this.studies, null, 2));
-      zip.file("reviewers.json", JSON.stringify(this.reviewerList, null, 2));
-      zip.file("sessions.json", JSON.stringify(this.studySessions, null, 2));
-
-      //  fetch all document data with limited concurrency
-      await this.fetchAllDocumentData(3);
-
-      // keep the small delay to ensure all state is updated
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      console.log("Requests done!");
-
-      let quill = new Quill(document.createElement('div'));
-
-      // add folder with all sessions
-      const sessions = zip.folder("sessions");
-      this.studySessions.forEach(session => {
-        // add folder in documents for each session
-        const session_folder = sessions.folder(session.hash);
-        session_folder.file('session.json', JSON.stringify(session, null, 2));
-
-        const stepsForSession = this.studySteps.filter(step => step.studyId === session.studyId);
-        session_folder.file('steps.json', JSON.stringify(stepsForSession, null, 2));
-
-        stepsForSession.forEach((step, i) => {
-          const step_folder = session_folder.folder("step" + i);
-          step_folder.file('step.json', JSON.stringify(step, null, 2));
-          step_folder.file('document.json', JSON.stringify(
-              this.documents.find(doc => doc.id === step.documentId),
-              null,
-              2
-          ));
-
-          let deltas;
-          let relevantComments;
-
-          switch (step.stepType) {
-            case 1: // Annotator
-              // download inline annotations
-              step_folder.file(
-                  'annotations.json',
-                  JSON.stringify(
-                      this.annotations.filter(
-                          ann => ann.studyStepId === step.id && ann.studySessionId === session.id
-                      ),
-                      null,
-                      2
-                  )
-              );
-
-              relevantComments = this.comments.filter(
-                  comm => comm.studyStepId === step.id && comm.studySessionId === session.id
-              );
-              step_folder.file('comments.json', JSON.stringify(relevantComments, null, 2));
-
-              step_folder.file(
-                  'comment_votes.json',
-                  JSON.stringify(
-                      this.commentVotes.filter(vote =>
-                          relevantComments.map(comm => comm.id).includes(vote.commentId)
-                      ),
-                      null,
-                      2
-                  )
-              );
-              break;
-
-            case 2: { // Editor
-              // download edits + html
-              const edits = this.edits.filter(edit => (
-                  edit.documentId === step.documentId && edit.studyStepId === null && edit.studySessionId === null
-              ) || (
-                  edit.documentId === step.documentId && edit.studyStepId === step.id && edit.studySessionId === session.id
-              ));
-
-              step_folder.file('edits.json', JSON.stringify(edits, null, 2));
-
-              deltas = dbToDelta(edits);
-              quill.setContents(deltas);
-              step_folder.file('html.html', quill.getSemanticHTML());
-              step_folder.file('text.txt', quill.getText());
-              step_folder.file('document.delta', JSON.stringify(deltas, null, 2));
-              break;
-            }
-          }
-        });
-      });
-
-      zip.generateAsync({type: "blob"})
-          .then((content) => {
-            FileSaver.saveAs(content, "export.zip");
-          });
-
-      this.wait = false;
-      this.$refs.exportStepper.close();
-    },
-    triggerStreamDownload(payload) {
-      const serverUrl = getServerURL();
-    
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = `${serverUrl}/export/stream`;
-      form.style.display = 'none';
-      for (const [key, value] of Object.entries(payload)) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        
-        input.value = (typeof value === 'object' && value !== null) 
-          ? JSON.stringify(value) 
-          : value;
-          
-        form.appendChild(input);
-      }
-      document.body.appendChild(form);
-      form.submit();
-      document.body.removeChild(form);
-    }
   }
 }
 </script>

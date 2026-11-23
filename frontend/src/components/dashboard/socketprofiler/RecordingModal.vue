@@ -30,21 +30,25 @@
       </div>
     </template>
     <template #footer>
-      <BasicButton
-        class="btn-outline-danger me-auto"
-        :text="$t('socketProfiler.recording.discard')"
-        @click="discard"
-      />
-      <BasicButton
-        class="btn-secondary"
-        :text="$t('common.cancel')"
-        @click="abort"
-      />
-      <BasicButton
-        class="btn-primary"
-        :text="$t('socketProfiler.recording.save')"
-        @click="confirm"
-      />
+      <div class="btn-group me-auto">
+        <BasicButton
+          class="btn-outline-danger"
+          :text="$t('socketProfiler.recording.discard')"
+          @click="discard"
+        />
+      </div>
+      <div class="btn-group">
+        <BasicButton
+          class="btn-secondary"
+          :text="$t('common.cancel')"
+          @click="abort"
+        />
+        <BasicButton
+          class="btn-primary"
+          :text="$t('socketProfiler.recording.save')"
+          @click="confirm"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>
@@ -201,7 +205,7 @@ export default {
           failed = true;
           this.eventBus.emit("toast", {
             title: this.$t("socketProfiler.recording.toasts.saveFailed"),
-            message: `${opName}: ${resolveApiMessage(res)}`,
+            message: this.$t("socketProfiler.toasts.operationFailed", {operation: opName, message: resolveApiMessage(res)}),
             variant: "danger",
           });
         }

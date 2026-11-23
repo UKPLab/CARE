@@ -22,11 +22,13 @@
       <SessionTracesModal ref="tracesModal" />
     </template>
     <template #footer>
-      <BasicButton
-        class="btn-secondary"
-        :text="$t('common.close')"
-        @click="close"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn-secondary"
+          :text="$t('common.close')"
+          @click="close"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>
@@ -36,6 +38,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import SessionTracesModal from "./SessionTracesModal.vue";
+import { dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 /**
  * Child modal in the replay-results drill-down: one row per session-instance in
@@ -86,15 +89,10 @@ export default {
      */
     sessionButtons() {
       return [
-        {
-          icon: "arrow-right-circle",
-          options: {
-            iconOnly: true,
-            specifiers: { "btn-outline-primary": true },
-          },
+        dashboardRowButton("arrow-right-circle", {
           title: this.$t('socketProfiler.iterationSessions.viewTraces'),
           action: "viewSession",
-        },
+        }),
       ];
     },
     /**

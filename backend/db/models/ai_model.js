@@ -118,6 +118,8 @@ module.exports = (sequelize, DataTypes) => {
         model: DataTypes.STRING,
         description: DataTypes.TEXT,
         additionalParameters: DataTypes.JSONB,
+        // Model context window in tokens; the chat guard derives its soft/hard limits from it. Null = no cap.
+        contextWindowTokens: DataTypes.INTEGER,
         enabled: DataTypes.BOOLEAN,
         freeModel: DataTypes.BOOLEAN,
         deleted: DataTypes.BOOLEAN,

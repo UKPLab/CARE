@@ -1,3 +1,4 @@
+import {TextQuoteAnchor} from "../anchoring/types";
 import {TextPosition, TextRange} from "../anchoring/text-range";
 import {createPlaceholder} from "../anchoring/placeholder";
 import {matchQuote} from "../anchoring/match-quote";
@@ -296,3 +297,75 @@ export class Anchoring {
         throw new Error('Quote not found');
     }
 }
+
+
+function getNodeTextLayer(node) {
+      const el = 'closest' in node ? node : node.parentElement;
+      return el?.closest('.textLayer') ?? null;
+    }
+
+export function getPDFTextLayerForRange(range, viewerRoot) {
+      if ("classList" in range.endContainer && range.endContainer.classList.contains("canvasWrapper")) {
+        throw new Error('I\'m afraid we are not on the same page');
+      }
+      // "Shrink" the range so that the start and endpoints are at offsets within
+      // text nodes rather than any containing nodes.
+      try {
+        range = TextRange.fromRange(range).toRange();
+      } catch (_error) {
+        throw new Error('Selection does not contain text', { cause: _error });
+      }
+
+      const startTextLayer = getNodeTextLayer(range.startContainer);
+      const endTextLayer = getNodeTextLayer(range.endContainer);
+
+      if (!startTextLayer || !endTextLayer) {
+        throw new Error('Selection is outside page text');
+      }
+
+      const root = viewerRoot;
+      if (!root?.contains(startTextLayer) || !root.contains(endTextLayer)) {
+        throw new Error('Selection belongs to another PDF');
+      }
+
+      if (startTextLayer !== endTextLayer) {
+        throw new Error('Selecting across page breaks is not supported');
+      }
+      const pageStart = parseInt(startTextLayer.id.match("[0-9]+")[0]);
+
+      return [range, startTextLayer, pageStart];
+
+
+    }
+
+export async function describePDFRange(pdf, root, range, viewerRoot) {
+
+      const [textRange, textLayer, page] = getPDFTextLayerForRange(range, viewerRoot);
+
+      const startPos = TextPosition.fromPoint(
+          textRange.startContainer,
+          textRange.startOffset
+      ).relativeTo(textLayer);
+
+      const endPos = TextPosition.fromPoint(
+          textRange.endContainer,
+          textRange.endOffset
+      ).relativeTo(textLayer);
+
+      const pageOffset = await pdf.getPageOffset(page - 1);
+
+      /** @type {TextPositionSelector} */
+      const position = {
+        type: 'TextPositionSelector',
+        start: pageOffset + startPos.offset,
+        end: pageOffset + endPos.offset,
+      };
+
+      const quote = TextQuoteAnchor.fromRange(root, textRange).toSelector();
+      const pageSelector = {
+        type: 'PagePositionSelector',
+        number: page,
+      }
+
+      return [position, quote, pageSelector];
+    }

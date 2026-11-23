@@ -35,9 +35,8 @@
         v-model:primary-key-mapping="primaryKeyMapping"
         v-model:metadata-mappings="metadataMappings"
         :source-fields="sourceFields"
-        :mapping-validation-messages="mappingValidationMessages"
-        @add-mapping="addMappingRow"
-        @remove-mapping="removeMappingRow"
+        :rows="rows"
+        @validity="mappingValid = $event"
       />
     </template>
 
@@ -52,11 +51,7 @@
     </template>
 
     <template #step-5>
-      <StepResult
-        :has-result="hasResult"
-        :result="result"
-        :import-issues="importIssues"
-      />
+      <StepResult :result="result" />
     </template>
   </StepperModal>
 </template>
@@ -98,7 +93,8 @@ export default {
         targetField: "extId",
       },
       metadataMappings: [],
-      nextMappingId: 1,
+      // Reported by StepMapping, which owns the mapping validation.
+      mappingValid: false,
       fileName: "",
       parseError: "",
       preview: {
@@ -167,64 +163,6 @@ export default {
         .filter((mapping) => mapping.sourceField && mapping.metaKey)
         .map(({ sourceField, metaKey }) => ({ sourceField, metaKey }));
     },
-    hasDuplicateMetaKeys() {
-      const metaKeys = this.normalizedMetadataMappings
-        .map((mapping) => mapping.metaKey)
-        .filter(Boolean);
-      return new Set(metaKeys).size !== metaKeys.length;
-    },
-    hasDuplicatePrimaryKeyValues() {
-      if (!this.primaryKeyMapping.sourceField) {
-        return false;
-      }
-
-      const seen = new Set();
-      for (const row of this.rows) {
-        const value = row?.[this.primaryKeyMapping.sourceField];
-        const normalized = value == null ? "" : String(value).trim().toLowerCase();
-        if (!normalized) {
-          return true;
-        }
-        if (seen.has(normalized)) {
-          return true;
-        }
-        seen.add(normalized);
-      }
-      return false;
-    },
-    mappingValidationMessages() {
-      const messages = [];
-
-      if (!this.primaryKeyMapping.sourceField) {
-        messages.push(this.$t("assignments.metadata.validation.selectSourceKey"));
-      }
-
-      if (!this.primaryKeyMapping.targetField) {
-        messages.push(this.$t("assignments.metadata.validation.selectTargetField"));
-      }
-
-      if (this.metadataMappings.length === 0) {
-        messages.push(this.$t("assignments.metadata.validation.addMapping"));
-      }
-
-      if (this.normalizedMetadataMappings.some((mapping) => !mapping.sourceField)) {
-        messages.push(this.$t("assignments.metadata.validation.mappingNeedsSource"));
-      }
-
-      if (this.normalizedMetadataMappings.some((mapping) => !mapping.metaKey)) {
-        messages.push(this.$t("assignments.metadata.validation.mappingNeedsMetaKey"));
-      }
-
-      if (this.hasDuplicateMetaKeys) {
-        messages.push(this.$t("assignments.metadata.validation.uniqueMetaKeys"));
-      }
-
-      if (this.hasDuplicatePrimaryKeyValues) {
-        messages.push(this.$t("assignments.metadata.validation.uniquePrimaryKeys"));
-      }
-
-      return messages;
-    },
     importPayload() {
       return {
         targetType: this.targetType,
@@ -241,39 +179,11 @@ export default {
     payloadSignature() {
       return JSON.stringify(this.importPayload);
     },
-    hasResult() {
-      return Object.keys(this.result || {}).length > 0;
-    },
-    importIssues() {
-      const issues = [];
-      for (const entry of this.result.unmatched || []) {
-        const detail = resolveApiMessage(entry);
-        const value = entry.primaryKeyValue ?? this.$t("assignments.metadata.issues.unknownValue");
-        issues.push(this.$t("assignments.metadata.issues.unmatched", { value, detail }));
-      }
-      for (const entry of this.result.skipped || []) {
-        const detail = resolveApiMessage(entry);
-        if (entry.submissionId) {
-          issues.push(this.$t("assignments.metadata.issues.submission", { id: entry.submissionId, detail }));
-        } else {
-          issues.push(this.$t("assignments.metadata.issues.row", { detail }));
-        }
-      }
-      for (const entry of this.result.overwritten || []) {
-        const detail = resolveApiMessage(entry);
-        if (entry.submissionId) {
-          issues.push(this.$t("assignments.metadata.issues.submission", { id: entry.submissionId, detail }));
-        } else {
-          issues.push(this.$t("assignments.metadata.issues.import", { detail }));
-        }
-      }
-      return issues;
-    },
     stepValid() {
       return [
         this.rows.length > 0 && this.sourceFields.length > 0,
         this.targetType === "assignment" && Boolean(this.selectedAssignmentId),
-        this.mappingValidationMessages.length === 0,
+        this.mappingValid,
         true,
         true,
       ];
@@ -309,19 +219,11 @@ export default {
       this.resetMappings();
     },
     resetMappings() {
-      this.nextMappingId = 1;
       this.primaryKeyMapping = {
         sourceField: "",
         targetField: "extId",
       };
       this.metadataMappings = [];
-    },
-    createMappingRow(defaults = {}) {
-      return {
-        id: this.nextMappingId++,
-        sourceField: defaults.sourceField || "",
-        metaKey: defaults.metaKey || "",
-      };
     },
     initializeMappings(sourceFields) {
       const preferredPrimaryField = sourceFields.includes("id")
@@ -332,18 +234,7 @@ export default {
         sourceField: preferredPrimaryField,
         targetField: preferredPrimaryField === "email" ? "email" : "extId",
       };
-      this.metadataMappings = [
-        this.createMappingRow(),
-      ];
-    },
-    addMappingRow() {
-      this.metadataMappings.push(this.createMappingRow());
-    },
-    removeMappingRow(index) {
-      if (this.metadataMappings.length === 1) {
-        return;
-      }
-      this.metadataMappings.splice(index, 1);
+      this.metadataMappings = [{ id: 1, sourceField: "", metaKey: "" }];
     },
     resetPreview() {
       this.preview = {

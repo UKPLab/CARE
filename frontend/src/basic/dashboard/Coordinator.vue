@@ -24,6 +24,7 @@
           ref="form"
           v-model="data"
           :fields="fields"
+          :original-data="originalData"
           @update:config-status="handleConfigStatusChange"
         />
       </span>
@@ -114,32 +115,27 @@ export default {
     },
     defaultValue: {
       type: Object,
-      required: false,
-      default: () => {
-        return {};
-      },
+      default: () => ({}),
     },
     readOnlyFields: {
       type: Array,
-      required: false,
-      default: () => {
-        return [];
-      },
+      default: () => [],
     },
     customSubmit: {
       type: Boolean,
-      required: false,
       default: false,
     },
     fieldsOverride: {
       type: Array,
-      required: false,
       default: null,
     },
     noSuccessMessage: {
       type: Boolean,
-      required: false,
       default: false,
+    },
+    originalData: {
+      type: Object,
+      default: null,
     },
   },
   emits: ["submit", "success", "hide"],
@@ -213,7 +209,7 @@ export default {
     submit() {
       const isValidated = this.$refs.form.validate();
       const { hasIncompleteConfig, incompleteSteps } = this.configStatus;
-      
+
       if (!isValidated) return;
       if (hasIncompleteConfig) {
         const stepMessage = incompleteSteps.length === 1
@@ -321,7 +317,7 @@ export default {
               if (copyData.creator_name) {
                 copyData.creator_name = this.username;
               };
-            
+
               // If this entry has a documentId, fetch the parent document ID
               if (e.documentId) {
                 const document = this.$store.getters["table/document/get"](e.documentId);

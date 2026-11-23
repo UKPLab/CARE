@@ -1,40 +1,31 @@
 <template>
   <BasicDetails :items="reviewItems">
-    <BasicTable
-      :columns="columns"
-      :data="selectedRows"
-      :options="tableOptions"
-      :max-table-height="360"
+    <AIShareSelectStep
+      readonly
+      :mode="mode"
+      :current-user-id="currentUserId"
+      :selected-ids="selectedIds"
     />
   </BasicDetails>
 </template>
 
 <script>
-import BasicTable from "@/basic/Table.vue";
+import AIShareSelectStep from "./AIShareSelectStep.vue";
 import BasicDetails from "@/basic/Details.vue";
 import { formatLocalizedDate } from "@/assets/utils";
 
 export default {
   name: "AIShareReviewStep",
-  components: { BasicTable, BasicDetails },
+  components: { AIShareSelectStep, BasicDetails },
   props: {
     resourceLabel: { type: String, required: true },
     resourceName: { type: String, default: "" },
     audienceLabel: { type: String, required: true },
     expiryDate: { type: String, default: "" },
     costLimit: { type: [Number, String], default: null },
-    selectedCount: { type: Number, default: 0 },
-    columns: { type: Array, required: true },
-    selectedRows: { type: Array, required: true },
-  },
-  data() {
-    return {
-      tableOptions: {
-        striped: true,
-        hover: true,
-        pagination: 10,
-      },
-    };
+    mode: { type: String, default: "users" },
+    currentUserId: { type: Number, required: true },
+    selectedIds: { type: Array, required: true },
   },
   computed: {
     reviewItems() {
@@ -53,8 +44,8 @@ export default {
       const value = Number(this.costLimit);
       if (!Number.isFinite(value) || value <= 0) return this.$t("ai.common.noLimit");
       const perRecipient = `$${value.toFixed(2)}`;
-      if (this.selectedCount <= 1) return perRecipient;
-      return this.$t("ai.share.totalCost", { perRecipient, total: `$${(value * this.selectedCount).toFixed(2)}` });
+      if (this.selectedIds.length <= 1) return perRecipient;
+      return this.$t("ai.share.totalCost", { perRecipient, total: `$${(value * this.selectedIds.length).toFixed(2)}` });
     },
   },
 };

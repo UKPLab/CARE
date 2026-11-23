@@ -16,11 +16,13 @@
       </BasicDetails>
     </template>
     <template #footer>
-      <BasicButton
-        :title="$t('triggers.common.close')"
-        class="btn btn-secondary"
-        @click="$refs.modal.close()"
-      />
+      <div class="btn-group">
+        <BasicButton
+          :title="$t('triggers.common.close')"
+          class="btn btn-secondary"
+          @click="$refs.modal.close()"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>

@@ -60,7 +60,7 @@ export function normalizeLocale(locale) {
 export function getStoredLocale() {
     try {
         return normalizeLocale(localStorage.getItem(STORAGE_KEY));
-    } catch {
+    } catch (_error) {
         return null;
     }
 }

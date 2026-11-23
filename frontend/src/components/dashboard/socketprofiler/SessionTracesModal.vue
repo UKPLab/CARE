@@ -23,11 +23,13 @@
       <TraceDbChangesModal ref="dbChangesModal" />
     </template>
     <template #footer>
-      <BasicButton
-        class="btn-secondary"
-        :text="$t('common.close')"
-        @click="close"
-      />
+      <div class="btn-group">
+        <BasicButton
+          class="btn-secondary"
+          :text="$t('common.close')"
+          @click="close"
+        />
+      </div>
     </template>
   </BasicModal>
 </template>
@@ -37,6 +39,7 @@ import BasicModal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
 import BasicTable from "@/basic/Table.vue";
 import TraceDbChangesModal from "./TraceDbChangesModal.vue";
+import { dashboardRowButton } from "@/basic/dashboard/actions.js";
 
 /**
  * Grandchild modal in the replay-results drill-down: lists every trace of one
@@ -94,15 +97,10 @@ export default {
      */
     traceButtons() {
       return [
-        {
-          icon: "database",
-          options: {
-            iconOnly: true,
-            specifiers: { "btn-outline-info": true },
-          },
+        dashboardRowButton("database", {
           title: this.$t('socketProfiler.sessionTraces.viewDbChanges'),
           action: "viewDbChanges",
-        },
+        }),
       ];
     },
     /**

@@ -30,12 +30,7 @@
             </div>
           </div>
         </div>
-        <div v-else class="d-flex align-items-center">
-          <div class="spinner-border" role="status">
-            <span class="visually-hidden">{{ $t('common.loading') }}</span>
-          </div>
-          <span class="ms-3">{{ rotatingStatusText }}</span>
-        </div>
+        <StudyLoadingProgress v-show="!(documentData && anyRequestsFailed)"/>
 
         <div v-if="documentData && !readOnly">
           <div v-for="service in nlpServices" :key="service.name" class="mt-3">
@@ -68,6 +63,7 @@
  *
  * @author Dennis Zyska, Akash Gundapuneni
  */
+import StudyLoadingProgress from "./StudyLoadingProgress.vue";
 import BasicModal from "@/basic/Modal.vue";
 import NlpRequest from "@/basic/service/NlpRequest.vue";
 import BasicButton from "@/basic/Button.vue";
@@ -76,7 +72,7 @@ import { resolveApiMessage } from "@/assets/utils";
 
 export default {
   name: "StudyLoadingModal",
-  components: {NlpRequest, BasicModal, BasicButton},
+  components: {StudyLoadingProgress, NlpRequest, BasicModal, BasicButton},
   inject: {
     readOnly: {
       type: Boolean,
@@ -117,7 +113,6 @@ export default {
     return {
       error: false,
       errorMessage:'',
-      rotatingIndex: 0,
       documentData: null,
       nlpRequests: {},
     }
@@ -126,18 +121,6 @@ export default {
 
     studyStep() {
       return this.$store.getters["table/study_step/get"](this.studyStepId);
-    },
-    rotatingMessages() {
-      return this.$tm('studies.loading.messages');
-    },
-    rotatingTimerLong() {
-      return this.$store.getters["settings/getValue"]('modal.nlp.rotation_timer.long');
-    },
-    rotatingTimerShort() {
-      return this.$store.getters["settings/getValue"]('modal.nlp.rotation_timer.short');
-    },
-    rotatingStatusText() {
-      return this.rotatingMessages[this.rotatingIndex];
     },
     nlpServices() {
       return this.config.services?.filter(s => s.type === 'nlpRequest') || [];
@@ -234,16 +217,12 @@ export default {
     },
   },
   mounted() {
-    this.startRotatingMessages();
     if (this.show && this.$refs.modal) {
       this.$refs.modal.open();
     }
     if (this.canLoad) {
       this.startRequest();
     }
-  },
-  unmounted() {
-    this.stopRotatingMessages();
   },
   methods: {
     startRequest() {
@@ -270,7 +249,7 @@ export default {
                   this.close();
                 }
               });
-              
+
               this.$emit('error', {
                 code: response.code || 'UNKNOWN_ERROR',
                 message
@@ -279,23 +258,6 @@ export default {
             }
           }
       );
-    },
-    startRotatingMessages() {
-      this.rotatingIndex = Math.floor(Math.random() * this.rotatingMessages.length);
-      this.rotatingTimer = setInterval(() => {
-        this.rotatingIndex = (this.rotatingIndex + 1) % this.rotatingMessages.length;
-      }, this.rotatingTimerShort);
-
-      this.rotatingLongTimer = setTimeout(() => {
-        clearInterval(this.rotatingTimer);
-        this.rotatingTimer = setInterval(() => {
-          this.rotatingIndex = (this.rotatingIndex + 1) % this.rotatingMessages.length;
-        }, this.rotatingTimerLong);
-      }, this.rotatingTimerShort * this.rotatingMessages.length);
-    },
-    stopRotatingMessages() {
-      clearInterval(this.rotatingTimer);
-      clearTimeout(this.rotatingLongTimer);
     },
     documentDataRefresh(data) {
       const updatedData = {...(this.documentData || {})};
