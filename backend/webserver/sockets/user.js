@@ -538,6 +538,16 @@ class UserSocket extends Socket {
 
         return rights;
     }
+    /**
+     * Change a role's rights and refresh its members' open sessions after commit.
+     * @param {Object} data
+     * @param {number} data.roleId Role to update
+     * @param {string[]} [data.newRights] Right names to grant
+     * @param {string[]} [data.deletedRights] Right names to revoke
+     * @param {Object} options
+     * @param {Object} options.transaction Transaction for the role and member updates
+     * @returns {Promise<{newRights: string[], deletedRights: string[]}>} Requested changes
+     */
     async assignRoleRights(data, options) {
         if(!(await this.isAdmin())){
             throw new TranslatableError("errors.users.noPermissionAssignRoleRights");
@@ -568,6 +578,29 @@ class UserSocket extends Socket {
             });
         }
                
+        if (newRights.length || deletedRights.length) {
+            const {transaction} = options;
+            const members = await this.models.user_role_matching.findAll({
+                attributes: ["userId"],
+                where: {userRoleId: roleId, deleted: false},
+                raw: true,
+                transaction,
+            });
+            const userIds = new Set(members.map(member => member.userId));
+            if (userIds.size) {
+                await this.models.user.touchRolesUpdatedAt([...userIds], {transaction});
+                transaction.afterCommit(async () => {
+                    const refreshes = [];
+                    for (const socketId of this.io.sockets.sockets.keys()) {
+                        const app = this.server.availSockets[socketId]?.AppSocket;
+                        if (app && userIds.has(app.userId)) {
+                            refreshes.push(app.sendUser());
+                        }
+                    }
+                    await Promise.all(refreshes);
+                });
+            }
+        }
         return { newRights, deletedRights };
     }
 

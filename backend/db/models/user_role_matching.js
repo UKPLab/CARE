@@ -2,20 +2,9 @@
 const MetaModel = require("../MetaModel.js");
 
 module.exports = (sequelize, DataTypes) => {
-  // SequelizeSimpleCache keeps User rows indefinitely (ttl: false). Clear after
-  // commit so the next findByPk sees the new rolesUpdatedAt.
-  const clearUserCacheAfterCommit = (options) => {
-    const clear = () => {
-      if (sequelize.models.user.cache) {
-        sequelize.models.user.cache.clear();
-      }
-    };
-    if (options.transaction) {
-      options.transaction.afterCommit(clear);
-    } else {
-      clear();
-    }
-  };
+  const touchUser = (userRole, options) =>
+    sequelize.models.user.touchRolesUpdatedAt([userRole.userId], {transaction: options.transaction});
+
   class UserRoleMatching extends MetaModel {
     static autoTable = true;
     /**
@@ -122,34 +111,8 @@ module.exports = (sequelize, DataTypes) => {
       modelName: "user_role_matching",
       tableName: "user_role_matching",
       hooks: {
-        afterCreate: async (userRole, options) => {
-          try {
-            await sequelize.models.user.update(
-              { rolesUpdatedAt: new Date() },
-              {
-                where: { id: userRole.userId },
-                transaction: options.transaction,
-              }
-            );
-            clearUserCacheAfterCommit(options);
-          } catch (error) {
-            console.log(error);
-          }
-        },
-        afterDestroy: async (userRole, options) => {
-          try {
-            await sequelize.models.user.update(
-              { rolesUpdatedAt: new Date() },
-              {
-                where: { id: userRole.userId },
-                transaction: options.transaction,
-              }
-            );
-            clearUserCacheAfterCommit(options);
-          } catch (error) {
-            console.log(error);
-          }
-        },
+        afterCreate: touchUser,
+        afterDestroy: touchUser,
       },
     }
   );
