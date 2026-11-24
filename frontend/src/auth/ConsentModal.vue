@@ -17,7 +17,12 @@
           class="terms-container"
           @scroll="checkScrollPosition"
         >
-          <BasicEditor :model-value="terms" :read-only="true" />
+          <!-- Loaded async: measure again once the terms are actually in. -->
+          <BasicEditor
+            :model-value="terms"
+            :read-only="true"
+            @vue:updated="$nextTick(checkScrollPosition)"
+          />
         </div>
       </div>
       <div v-if="combineResearchConsent" class="consent-item">
