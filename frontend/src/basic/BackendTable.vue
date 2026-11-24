@@ -1267,6 +1267,8 @@ export default {
         this.shouldFixManageColumn,
         this.hasRightFixedColumns,
         viewport.compact,
+        // Date cells format with the current locale, which is not part of the row.
+        this.$i18n?.locale,
       ];
     },
     rowButtons(row) {

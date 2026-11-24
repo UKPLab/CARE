@@ -122,9 +122,11 @@
           </tr>
         </template>
         <template v-else>
+          <!-- v-memo: a row is only re-rendered when something it shows changed (rowMemo). -->
           <tr
             v-for="r in tableData"
             :key="r.id"
+            v-memo="rowMemo(r)"
             @click="selectRow(r)"
           >
           <td v-if="selectableRows">
@@ -225,6 +227,7 @@ import HeaderCell from "./table/HeaderCell.vue";
 import ScrollHints from "./table/ScrollHints.vue";
 import TableEmptyState from "./table/EmptyState.vue";
 import Loader from "./Loading.vue";
+import { viewport } from "@/assets/viewport.js";
 import BasicIcon from "@/basic/Icon.vue";
 import deepEqual from "deep-equal";
 import { tableLayoutData, tableLayoutComputed, tableLayoutMethods, visibleColumnsForRows } from "@/basic/table/helpers/tableLayout.js";
@@ -470,6 +473,32 @@ export default {
     this.cleanupScrollHints();
   },
   methods: {
+    /**
+     * Everything a body row reads, for its v-memo. Parents hand over their own row objects and
+     * some change them in place, so the row is compared by its values (shallow), not only by
+     * identity. A change inside a nested value object that is mutated in place (instead of being
+     * replaced) is not seen; parents build such objects in computeds, which replace them.
+     * Add an entry here when the row template starts reading new state.
+     * @param {Object} r Row
+     * @returns {Array}
+     */
+    rowMemo(r) {
+      return [
+        r,
+        ...Object.values(r),
+        this.selectableRows,
+        this.selectableRows && this.isRowSelected(r),
+        this.visibleColumns,
+        this.buttons,
+        this.options,
+        this.manageColumnStyle,
+        this.shouldFixManageColumn,
+        this.hasRightFixedColumns,
+        this.fixedColumnStyles,
+        viewport.compact,
+        this.$i18n?.locale,
+      ];
+    },
     // tableLayout.js
     ...tableLayoutMethods,
     // tableFixedColumns.js
