@@ -29,8 +29,8 @@
       name="cards"
       :rows="queryItems"
       :total="total"
-      :loading="resultsLoading"
-      :loading-visible="queryLoadingVisible"
+      :loading="resultsLoading || initialLoadPending"
+      :loading-visible="queryLoadingVisible || initialLoadPending"
       :row-buttons="rowButtons"
       :row-state="cardRowState"
       :on-action="actionEmitter"
@@ -124,7 +124,24 @@
             :style="{ height: topSpacerHeight + 'px' }"
           ></td>
         </tr>
-        <template v-if="!showPlaceholderRows && total > 0 && queryItems.length === 0">
+        <!-- First load: show the loader from the very first paint. It used to appear only after
+             600 ms (queryLoadingVisible), so a fast server answer followed by a slow render
+             (weak CPU) left an empty table until the rows finally painted. Kept until the
+             first result is applied, i.e. it is replaced by the rows in the same render. -->
+        <template v-if="initialLoadPending && !isInfiniteMode">
+          <tr class="table-initial-loading">
+            <td
+              :colspan="emptyColspan"
+              class="text-center"
+            >
+              <Loader
+                :loading="true"
+                :text="$t('common.loading')"
+              />
+            </td>
+          </tr>
+        </template>
+        <template v-else-if="!showPlaceholderRows && total > 0 && queryItems.length === 0">
           <tr>
             <td
               :colspan="emptyColspan"
@@ -166,9 +183,14 @@
         </template>
         <!-- v-else stays off the v-for. Sharing them made the first real row throw nextSibling. -->
         <template v-else>
+          <!-- v-memo: a row is only re-rendered when something it shows changed (rowMemo).
+               Rows live in this component's render, so without it every state change of the
+               table (each keystroke in the search, loading flags, pagination) re-rendered all
+               rows and all their cells. -->
           <tr
             v-for="(r, rowIndex) in tableData"
             :key="r.__sid || r.id"
+            v-memo="rowMemo(r, rowIndex)"
           data-row="1"
           :class="{
             'row-stripe-odd': isInfiniteMode && (infiniteSliceStart + rowIndex) % 2 === 1,
@@ -267,7 +289,7 @@
       </tbody>
     </table>
     <div
-      v-if="queryLoadingVisible && !isInfiniteMode"
+      v-if="queryLoadingVisible && !isInfiniteMode && !initialLoadPending"
       class="infinite-loading-overlay"
       role="status"
       aria-live="polite"
@@ -368,6 +390,7 @@ import {
   tableRowInteractionsMethods,
 } from "@/basic/table/helpers/tableRowInteractions.js";
 import { filterRowButtons, matchesTokenList } from "@/basic/table/helpers/tableCellHelpers.js";
+import { viewport } from "@/assets/viewport.js";
 import {
   tableScrollHintsData,
   tableScrollHintsMethods,
@@ -549,6 +572,8 @@ export default {
       searchDebounceTimer: null,
       searchPending: false, // search edited, debounced fetch not sent yet
       queryLoading: false,
+      // True until the first query result (or error) is applied: drives the first-load loader.
+      initialLoadPending: !!this.$socket,
       queryLoadingVisible: false,
       queryLoadingTimer: null,
       deltaHandler: null,
@@ -1212,6 +1237,36 @@ export default {
      * Buttons that apply to this row. Pure on purpose: it runs during render, so it must not
      * touch component state (that used to flip hasManageButtons mid-render).
      */
+    /**
+     * Everything a body row reads besides plain constants, for its v-memo. Rows are replaced,
+     * never mutated (replaceRow / applyQueryResult build new objects), so `r` itself covers the
+     * row data. Add an entry here when the row template starts reading new state.
+     * @param {Object} r Row
+     * @param {number} rowIndex Index in tableData
+     * @returns {Array}
+     */
+    rowMemo(r, rowIndex) {
+      return [
+        r,
+        this.isInfiniteMode && (this.infiniteSliceStart + rowIndex) % 2 === 1,
+        this.isDeletingRow(r.id),
+        this.isPlaceholderRow(r.id),
+        this.isUpdatedRow(r.id),
+        this.isEnteringRow(r.id),
+        this.isEnteringBottomRow(r.id),
+        this.selectableRows,
+        this.selectableRows && this.isRowSelected(r),
+        this.visibleColumns,
+        this.buttons,
+        this.options,
+        this.manageColumnActive,
+        this.manageColumnLayoutStyle,
+        this.fixedColumnStyles,
+        this.shouldFixManageColumn,
+        this.hasRightFixedColumns,
+        viewport.compact,
+      ];
+    },
     rowButtons(row) {
       return filterRowButtons(this.buttons, row);
     },
@@ -1465,7 +1520,13 @@ export default {
         this.emptyBlockKey = null;
         this.clearWindowLoadError();
         this.virtualStart = 0;
-        this.virtualEnd = items.length;
+        // A fresh window starts at the top: mount about one screen of rows, not the whole
+        // block (50). updateVirtualWindow below sets the exact slice after layout.
+        const freshTop = !requestedNav.offset && !requestedNav.fromEnd;
+        const screenRows = Math.max(24, Math.ceil((this.viewportHeight || 0) / this.effectiveRowHeight));
+        this.virtualEnd = freshTop
+          ? Math.min(items.length, screenRows + this.infiniteOverscan)
+          : items.length;
         this.syncWindowQuery();
         this.$nextTick(() => {
           if (!requestedNav.offset && !requestedNav.fromEnd) {
@@ -1520,6 +1581,7 @@ export default {
         }
         this.queryLoading = false;
         if (err || !response?.success) {
+          this.initialLoadPending = false;
           if (Number.isInteger(options.pageOnFailure)) {
             this.currentPage = options.pageOnFailure;
           }
@@ -1536,6 +1598,7 @@ export default {
             highlightNewFrom: options.highlightNewFrom || null,
             requestedNav: nav,
           });
+          this.initialLoadPending = false;
           if (typeof options.onApplied === "function") {
             options.onApplied(response.data);
           }
@@ -1544,6 +1607,7 @@ export default {
             this.currentPage = options.pageOnFailure;
           }
           if (this.isInfiniteMode) this.releaseSupersededWindow();
+          this.initialLoadPending = false;
           console.warn("queryTable applyQueryResult failed", applyErr);
           if (typeof options.onError === "function") options.onError(applyErr);
         }
@@ -3278,6 +3342,7 @@ export default {
   ) !important;
   background-size: 200% 100% !important;
   animation: skeleton-shimmer 1.1s ease-in-out infinite !important;
+  animation-play-state: var(--care-decor-state, running) !important;
   box-shadow: none !important;
 }
 
@@ -3292,6 +3357,7 @@ export default {
   ) !important;
   background-size: 200% 100% !important;
   animation: skeleton-shimmer 1.1s ease-in-out infinite !important;
+  animation-play-state: var(--care-decor-state, running) !important;
 }
 
 .row-placeholder td * {

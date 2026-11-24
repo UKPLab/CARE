@@ -96,6 +96,54 @@ function toValidDate(value) {
     return Number.isNaN(date.getTime()) ? null : date;
 }
 
+// Date.prototype.toLocale*String builds a new Intl.DateTimeFormat on every call, which is slow
+// (the table formats every date cell on each render; ~2 % of all main-thread time in a
+// throttled trace). One cached formatter per kind + locale + options instead. The defaults below
+// reproduce what toLocaleString / toLocaleDateString / toLocaleTimeString add when the options
+// name no date or time field (ECMA-402 ToDateTimeOptions), so the output stays identical.
+const DATE_FIELDS = ["weekday", "year", "month", "day"];
+const TIME_FIELDS = ["dayPeriod", "hour", "minute", "second", "fractionalSecondDigits"];
+const DATE_DEFAULTS = {year: "numeric", month: "numeric", day: "numeric"};
+const TIME_DEFAULTS = {hour: "numeric", minute: "numeric", second: "numeric"};
+const formatterCache = new Map();
+
+function withDefaults(kind, options) {
+    // toLocaleDateString rejects timeStyle, toLocaleTimeString rejects dateStyle: keep that error.
+    if (kind === "date" && options.timeStyle) return null;
+    if (kind === "time" && options.dateStyle) return null;
+    if (options.dateStyle || options.timeStyle) return options;
+    const hasDate = DATE_FIELDS.some((k) => options[k] !== undefined);
+    const hasTime = TIME_FIELDS.some((k) => options[k] !== undefined);
+    if (kind === "date") return hasDate ? options : {...options, ...DATE_DEFAULTS};
+    if (kind === "time") return hasTime ? options : {...options, ...TIME_DEFAULTS};
+    return hasDate || hasTime ? options : {...options, ...DATE_DEFAULTS, ...TIME_DEFAULTS};
+}
+
+function cachedFormatter(kind, locale, options) {
+    const key = `${kind}|${locale ?? ""}|${JSON.stringify(options)}`;
+    let formatter = formatterCache.get(key);
+    if (!formatter) {
+        try {
+            const resolved = withDefaults(kind, options);
+            formatter = resolved ? new Intl.DateTimeFormat(locale, resolved) : null;
+        } catch {
+            formatter = null; // invalid locale / options: fall back to the uncached call
+        }
+        if (formatterCache.size > 200) formatterCache.clear();
+        formatterCache.set(key, formatter);
+    }
+    return formatter;
+}
+
+function formatWith(kind, date, options) {
+    const locale = getCurrentLocale();
+    const formatter = cachedFormatter(kind, locale, options || {});
+    if (formatter) return formatter.format(date);
+    if (kind === "date") return date.toLocaleDateString(locale, options);
+    if (kind === "time") return date.toLocaleTimeString(locale, options);
+    return date.toLocaleString(locale, options);
+}
+
 /**
  * Formats a date using the current app locale (date only, no time).
  *
@@ -106,7 +154,7 @@ function toValidDate(value) {
 export function formatLocalizedDate(value, options = {}) {
     const date = toValidDate(value);
     if (!date) return "";
-    return date.toLocaleDateString(getCurrentLocale(), options);
+    return formatWith("date", date, options);
 }
 
 /**
@@ -119,7 +167,7 @@ export function formatLocalizedDate(value, options = {}) {
 export function formatLocalizedTime(value, options = {}) {
     const date = toValidDate(value);
     if (!date) return "";
-    return date.toLocaleTimeString(getCurrentLocale(), options);
+    return formatWith("time", date, options);
 }
 
 /**
@@ -132,7 +180,7 @@ export function formatLocalizedTime(value, options = {}) {
 export function formatLocalizedDateTime(value, options = {}) {
     const date = toValidDate(value);
     if (!date) return "";
-    return date.toLocaleString(getCurrentLocale(), options);
+    return formatWith("any", date, options);
 }
 
 /**
