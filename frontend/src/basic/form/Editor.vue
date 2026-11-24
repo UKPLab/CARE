@@ -12,8 +12,12 @@
 </template>
 
 <script>
+import { defineAsyncComponent } from "vue"
 import FormElement from "@/basic/form/Element.vue"
-import Editor from "@/basic/editor/Editor.vue"
+
+// Quill is ~200 KB and FormFields (so every form, also those in the always-present top bar
+// modals) imports this file. Load the editor only when an editor field is actually shown.
+const Editor = defineAsyncComponent(() => import("@/basic/editor/Editor.vue"))
 
 export default {
   name: "FormEditor",

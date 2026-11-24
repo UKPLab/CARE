@@ -82,10 +82,14 @@
  */
 import Modal from "@/basic/Modal.vue";
 import BasicButton from "@/basic/Button.vue";
+import { defineAsyncComponent } from "vue";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
-import BasicEditor from "@/basic/editor/Editor.vue";
 import { resolveApiMessage } from "@/assets/utils";
+
+// Quill is ~200 KB. This modal is part of every page, but the editor is only needed while the
+// terms are shown, so its chunk is fetched and parsed on first open, not on every page load.
+const BasicEditor = defineAsyncComponent(() => import("@/basic/editor/Editor.vue"));
 
 export default {
   name: "ConsentModal",
