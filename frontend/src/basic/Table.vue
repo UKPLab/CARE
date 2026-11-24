@@ -83,6 +83,21 @@
             </td>
           </tr>
         </template>
+        <!-- Data not there yet: loader, not the "Nothing here yet" empty state. -->
+        <template v-else-if="isLoading && (!data || data.length === 0)">
+          <tr>
+            <td
+              :colspan="emptyColspan"
+              class="text-center"
+            >
+              <Loader
+                :loading="true"
+                :size="2"
+                class="py-4"
+              />
+            </td>
+          </tr>
+        </template>
         <!-- No rows at all, or the plain search / column filters hid every row: fallback lens.
              The branch stays on <template>, not on the v-for: Vue drops nextSibling when a
              v-else and a v-for share one <tr> and the empty row is replaced by real rows. -->
@@ -209,6 +224,7 @@ import Pagination from "./table/Pagination.vue";
 import HeaderCell from "./table/HeaderCell.vue";
 import ScrollHints from "./table/ScrollHints.vue";
 import TableEmptyState from "./table/EmptyState.vue";
+import Loader from "./Loading.vue";
 import BasicIcon from "@/basic/Icon.vue";
 import deepEqual from "deep-equal";
 import { tableLayoutData, tableLayoutComputed, tableLayoutMethods, visibleColumnsForRows } from "@/basic/table/helpers/tableLayout.js";
@@ -257,6 +273,7 @@ export default {
     HeaderCell,
     ScrollHints,
     TableEmptyState,
+    Loader,
   },
   inject: {
     acceptStats: {
@@ -309,6 +326,16 @@ export default {
       required: false,
       default: null,
     },
+    /**
+     * Rows are still loading: show a loader instead of the empty state.
+     * Left unset, it follows the nearest parent with `subscribeTable` (true until the server
+     * has answered all its subscriptions, see plugins/subscribeTable.js).
+     */
+    loading: {
+      type: Boolean,
+      required: false,
+      default: null,
+    },
   },
   emits: ["action", "update:modelValue", "paginationUpdate"],
   data: function () {
@@ -330,6 +357,14 @@ export default {
     };
   },
   computed: {
+    /** See the `loading` prop. */
+    isLoading() {
+      if (this.loading !== null) return this.loading;
+      for (let p = this.$parent; p; p = p.$parent) {
+        if (p.$options.subscribeTable) return (p.$data.subscriptionsPending || 0) > 0;
+      }
+      return false;
+    },
     visibleColumns() {
       return visibleColumnsForRows(this.columns, this.data);
     },

@@ -162,12 +162,12 @@
                   name="empty"
                   :searching="hasActiveSearch"
                   :search-text="search.trim()"
-                  :loading="resultsLoading"
+                  :loading="resultsLoading || initialLoadPending"
                   :clear-search="clearSearch"
                 >
                   <!-- Hold the empty scene until the search results are in, so it does not flash. -->
                   <TableEmptyState
-                    v-if="!resultsLoading || hasActiveSearch"
+                    v-if="(!resultsLoading && !initialLoadPending) || hasActiveSearch"
                     :searching="hasActiveSearch"
                     :search-text="search.trim()"
                     :action-label="hasActiveSearch ? '' : emptyAction?.label"
@@ -303,7 +303,7 @@
   <!-- Classic CARE spinner over the skeleton: overlay is outside the scrolled content
        so it does not change scroll height or row-index maths. -->
   <div
-    v-if="isInfiniteMode && infiniteFetching"
+    v-if="isInfiniteMode && (infiniteFetching || initialLoadPending)"
     class="infinite-loading-overlay"
     role="status"
     aria-live="polite"
