@@ -59,16 +59,33 @@ app.use(VNetworkGraph);
 // Server URL for hot reload
 import getServerURL from '@/assets/serverUrl.js';
 
+/**
+ * Adds the browser time to every "stats" event at the moment it is emitted, so the time stays
+ * correct even if the event waits in the socket buffer during a reconnect.
+ * @param {Object} socket The socket.io client
+ * @returns {Object} The same socket
+ */
+function withStatsClientTime(socket) {
+    const emit = socket.emit.bind(socket);
+    socket.emit = (event, payload, ...rest) => {
+        if (event === "stats" && payload) {
+            payload = {...payload, data: {...payload.data, clientTimestamp: Date.now()}};
+        }
+        return emit(event, payload, ...rest);
+    };
+    return socket;
+}
+
 const socketio = new VueSocketIO({
      
     debug: (process.env.NODE_ENV !== 'production'),
-    connection: SocketIO(getServerURL(),
+    connection: withStatsClientTime(SocketIO(getServerURL(),
         {
             path: '',
             withCredentials: true,
             reconnect: !0,
             autoConnect: false
-        }),
+        })),
     vuex: {
         store,
         actionPrefix: 'SOCKET_',
