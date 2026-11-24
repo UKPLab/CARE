@@ -146,6 +146,7 @@ class BehaviorLogger {
     /**
      * Detects a window focus event.
      * Reports that the window regained focus, with the time spent outside the window.
+     * Only reported after a blur, so every return has exactly one matching loss of focus.
      * If a search is active, the search is assumed to be complete and reported to the backend.
      */
     handleWindowFocus() {
