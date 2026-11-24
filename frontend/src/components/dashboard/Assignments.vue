@@ -171,8 +171,16 @@ export default {
         acc[user.id] = user.userName || `${user.firstName} ${user.lastName}`.trim() || this.$t("assignments.dashboard.fallback.userLabel", { id: user.id });
         return acc;
       }, {});
+      // Group the shares once: a getFiltered per assignment scanned the whole share table for
+      // every row (assignments x shares).
+      const sharesByAssignment = new Map();
+      for (const share of this.$store.getters["table/assignment_share/getAll"] || []) {
+        const list = sharesByAssignment.get(share.assignmentId);
+        if (list) list.push(share);
+        else sharesByAssignment.set(share.assignmentId, [share]);
+      }
       return this.assignments.map((assignment) => {
-        const entries = this.$store.getters["table/assignment_share/getFiltered"]((e) => e.assignmentId === assignment.id) || [];
+        const entries = sharesByAssignment.get(assignment.id) || [];
         const assignedRoles = entries
           .map((e) => (e.roleId ? rolesById[e.roleId] : null) || (e.userId ? usersById[e.userId] : null))
           .filter(Boolean)

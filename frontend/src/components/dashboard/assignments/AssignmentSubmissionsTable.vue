@@ -90,13 +90,22 @@ export default {
         (submission) => submission.assignmentId === this.assignmentId && !submission.deleted
       ) || [];
       
+      // Documents grouped by submission in one pass: a getFiltered per submission scanned the
+      // whole document table for every row (submissions x documents).
+      const wanted = new Set(submissions.map((submission) => submission.id));
+      const documentsBySubmission = new Map();
+      for (const document of this.$store.getters["table/document/getAll"] || []) {
+        if (document.deleted || !wanted.has(document.submissionId)) continue;
+        const list = documentsBySubmission.get(document.submissionId);
+        if (list) list.push(document);
+        else documentsBySubmission.set(document.submissionId, [document]);
+      }
+
       return submissions
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .map((submission) => {
           const user = this.$store.getters["table/user/get"](submission.userId);
-          const submissionDocuments = this.$store.getters["table/document/getFiltered"](
-            (document) => document.submissionId === submission.id && !document.deleted
-          ) || [];
+          const submissionDocuments = documentsBySubmission.get(submission.id) || [];
         
           const studyUsageCount = submissionDocuments
             .reduce((total, document) => total + Number(document.studyUsageCount || 0), 0);
