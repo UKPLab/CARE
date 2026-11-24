@@ -5,6 +5,7 @@
       :data="data"
       :buttons="buttons"
       :table-options="options"
+      :loading="skillsLoading"
       @action="action"
   >
     <template #headerActions>
@@ -65,7 +66,9 @@ export default {
     return {
       options: {...DEFAULT_DASHBOARD_TABLE_OPTIONS},
       waitForStatus: true,
-      onlineStatus: false
+      onlineStatus: false,
+      // Skills come from the NLP service; give it a moment before showing "no skills".
+      skillsWait: true,
     }
   },
   computed: {
@@ -114,6 +117,10 @@ export default {
         return s;
       }) : [];
     },
+    /** Loader until the service sent its skills (or 10 s passed, e.g. service offline). */
+    skillsLoading() {
+      return this.skillsWait && !this.$store.getters["service/get"]("NLPService", "skillUpdate");
+    },
     lastServiceUpdate() {
       return this.$store.getters["service/getStatus"]("NLPService");
     },
@@ -129,6 +136,12 @@ export default {
   mounted() {
     this.load();
     this.checkServiceConnection();
+    this.skillsWaitTimer = setTimeout(() => {
+      this.skillsWait = false;
+    }, 10000);
+  },
+  beforeUnmount() {
+    clearTimeout(this.skillsWaitTimer);
   },
   methods: {
     action(data) {

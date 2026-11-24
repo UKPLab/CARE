@@ -9,6 +9,7 @@
         :columns="columns"
         :data="data"
         :options="options"
+        :loading="loading"
         :max-table-height="'65vh'"
         @pagination-update="paginationUpdate"
       />
@@ -31,6 +32,8 @@ export default {
   components: {Card, BasicTable},
   data() {
     return {
+      // Waiting for logAll: loader instead of "Nothing here yet".
+      loading: true,
       options: {
         striped: true,
         hover: true,
@@ -72,6 +75,7 @@ export default {
   },
   sockets: {
     logAll: function (data) {
+      this.loading = false;
       this.options.pagination.total = data.count;
       this.data = data.rows.map(d => {
         d.icon = {
@@ -88,6 +92,7 @@ export default {
   methods: {
     paginationUpdate(data) {
       this.data = [];
+      this.loading = true;
       this.$socket.emit("logGetAll", data);
     },
     getBugColor(level) {

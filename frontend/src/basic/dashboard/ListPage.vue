@@ -18,6 +18,7 @@
         :buttons="buttons"
         :max-table-height="maxTableHeight"
         :empty-action="emptyAction"
+        :loading="loading"
         @action="$emit('action', $event)"
       >
         <template
@@ -51,6 +52,7 @@ import {
  * @param {Object} tableOptions - Extra BasicTable options merged onto defaults
  * @param {String|Number} maxTableHeight - Max table height (defaults to DASHBOARD_TABLE_HEIGHT)
  * @param {Object} emptyAction - { label, icon?, handler } offered when the table has no rows
+ * @param {Boolean} loading - Rows still loading (loader instead of the empty state); unset: BasicTable decides
  *
  * @author Mohammad Elwan
  */
@@ -88,6 +90,12 @@ export default {
     /** Create action for the empty table, usually the same as the header "Add" button. */
     emptyAction: {
       type: Object,
+      required: false,
+      default: null,
+    },
+    /** See BasicTable `loading`; null lets BasicTable follow the page's subscriptions. */
+    loading: {
+      type: Boolean,
       required: false,
       default: null,
     },
