@@ -48,8 +48,9 @@ export default {
    The id selector outranks Bootstrap's .btn radius, border and padding. */
 #problemReportButton {
   position: fixed;
-  right: 1.25rem;
-  bottom: 1.25rem;
+  right: 0;
+  bottom: 0;
+  transform: translate(50%, 50%);
   z-index: 1040;
   width: 52px;
   height: 52px;
@@ -65,22 +66,34 @@ export default {
   transition: transform 0.15s ease-in-out, box-shadow 0.15s ease-in-out, filter 0.15s ease-in-out;
 }
 
-#problemReportButton:hover {
+#problemReportButton:hover,
+#problemReportButton:focus-visible {
   color: var(--care-on-primary);
   background: var(--care-primary);
   filter: brightness(0.92);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-  transform: translateY(-2px);
+  transform: translate(-8px, -8px);
 }
 
 #problemReportButton:active {
   filter: brightness(0.85);
-  transform: none;
 }
 
 #problemReportButton:focus-visible {
   outline: 2px solid var(--care-primary);
   outline-offset: 3px;
+}
+
+@media (hover: none) {
+  #problemReportButton {
+    transform: translate(-8px, -8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #problemReportButton {
+    transition: none;
+  }
 }
 
 @media print {
