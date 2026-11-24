@@ -1,0 +1,160 @@
+{
+    "button": "Signaler un problème",
+    "title": "Signaler un problème",
+    "form": {
+        "problemType": "De quel type de problème s'agit-il ?",
+        "blocked": "Êtes-vous bloqué pour continuer ?",
+        "frequency": "À quelle fréquence cela se produit-il ?",
+        "description": "Que s'est-il passé ?",
+        "attachments": "Captures d'écran ou vidéos",
+        "optional": "(facultatif)",
+        "required": "(obligatoire)",
+        "yes": "Oui",
+        "no": "Non",
+        "attachmentsHint": "Images ou vidéos. Jusqu'à {count} fichiers, {fileMb} Mo chacun, {totalMb} Mo au total.",
+        "selectedAttachments": "Pièces jointes sélectionnées",
+        "remove": "Retirer",
+        "removeAttachment": "Retirer {name}"
+    },
+    "types": {
+        "error": "Erreur",
+        "wrongOrMissing": "Incorrect ou manquant",
+        "slowOrStuck": "Lent ou bloqué",
+        "otherOrSuggestion": "Autre ou suggestion"
+    },
+    "frequencies": {
+        "firstTime": "Première fois",
+        "sometimes": "Parfois",
+        "everyTime": "À chaque fois",
+        "notSure": "Je ne sais pas"
+    },
+    "diagnosticTypes": {
+        "error": "Erreur de script",
+        "unhandledRejection": "Erreur non gérée",
+        "vueError": "Erreur d'interface",
+        "failedOperation": "Opération échouée",
+        "connection": "Connexion",
+        "navigation": "Changement de page"
+    },
+    "summary": {
+        "problemTypes": "Type de problème",
+        "blocked": "Bloqué",
+        "frequency": "Fréquence",
+        "description": "Ce qui s'est passé",
+        "attachments": "Pièces jointes",
+        "none": "Aucune",
+        "notAnswered": "Sans réponse",
+        "unknown": "Inconnu",
+        "page": "Page",
+        "reportedAt": "Détails recueillis",
+        "version": "Version de CARE",
+        "build": "Build",
+        "browser": "Navigateur",
+        "os": "Système d'exploitation",
+        "diagnostics": "Journaux de diagnostic récents ({count})",
+        "noDiagnostics": "Aucun journal de diagnostic n'a été enregistré. Le signalement peut tout de même être envoyé.",
+        "technical": "Détails techniques",
+        "submittedAt": "Envoyé",
+        "viewport": "Taille de la fenêtre",
+        "activity": "Activité récente ({count})",
+        "databaseHealth": "État de la base de données CARE",
+        "entry": "{time} · {type}"
+    },
+    "visibility": {
+        "label": "Qui peut voir ce signalement :",
+        "text": "Uniquement les administrateurs de CARE. Le signalement est enregistré de façon privée dans CARE et n'est publié nulle part."
+    },
+    "notice": {
+        "label": "Ce que nous enregistrons :",
+        "text": "Votre rapport, pièces jointes, compte, page, heure du rapport, informations du navigateur et de l’appareil et journaux d’erreurs récents.",
+        "activity": "Les clics, mouvements de souris et activités de page récents sont inclus avec votre accord.",
+        "noActivity": "Le suivi d’activité n’est pas inclus."
+    },
+    "actions": {
+        "submit": "Envoyer le signalement"
+    },
+    "messages": {
+        "submitFailed": "Signalement non envoyé",
+        "timeout": "Le serveur n'a pas répondu. Votre signalement est toujours là ; veuillez réessayer.",
+        "submitted": "Signalement envoyé",
+        "submittedText": "Merci. Le signalement n°{id} a été envoyé aux administrateurs de CARE.",
+        "loadFailed": "Formulaire de signalement indisponible"
+    },
+    "admin": {
+        "exportCsv": "Exporter",
+        "attachmentFiles": "Fichiers joints",
+        "exportFailed": "Rapports non export?s",
+        "title": "Signalements de problème",
+        "description": "Signalements envoyés avec le bouton de bogue en bas à droite. Seuls les administrateurs peuvent les voir.",
+        "columns": {
+            "blocked": "Bloqu?",
+            "id": "ID",
+            "reporter": "Auteur"
+        },
+        "view": "Voir le signalement",
+        "detailTitle": "Signalement de problème n°{id}",
+        "loadAttachment": "Afficher",
+        "loadAttachmentFor": "Afficher {name}",
+        "download": "Télécharger",
+        "loadFailed": "Signalements non chargés",
+        "attachmentFailed": "Pièce jointe non chargée",
+        "downloadFor": "Télécharger {name}"
+    },
+    "details": {
+        "title": "Détails envoyés avec ce signalement",
+        "loading": "Collecte des détails automatiques…",
+        "loadingShort": "Collecte…",
+        "unavailable": "Certaines informations techniques sont indisponibles. Votre rapport peut tout de même être envoyé.",
+        "collectedOnSubmit": "Recueilli lors de l’envoi",
+        "capturedAt": "Collecté à {time}, au clic sur Signaler.",
+        "expired": "Ces détails ont été recueillis il y a trop longtemps et ont été actualisés. Vérifiez-les puis envoyez à nouveau."
+    },
+    "activityTypes": {
+        "click": "Clic",
+        "mouseMove": "Position de la souris",
+        "scroll": "Défilement",
+        "windowFocus": "Focus de la fenêtre",
+        "visibility": "Visibilité de l’onglet",
+        "navigation": "Changement de page"
+    },
+    "activity": {
+        "scrollPosition": "défilé jusqu’à {x}, {y}",
+        "focused": "fenêtre active",
+        "blurred": "fenêtre quittée",
+        "hidden": "onglet masqué",
+        "visible": "onglet visible",
+        "noConsent": "Non inclus : vous n’avez pas accepté les statistiques d’utilisation. Vous pouvez modifier cela dans vos préférences.",
+        "disabled": "Non inclus : la collecte de l’activité est désactivée.",
+        "none": "Aucune activité n’a été enregistrée peu avant la collecte des détails.",
+        "notCollected": "Non recueilli pour ce signalement."
+    },
+    "databaseHealth": {
+        "capturedAt": "Recueilli",
+        "status": "Statut",
+        "ok": "Disponible",
+        "timeout": "Non disponible (délai dépassé)",
+        "unavailable": "Non disponible",
+        "pool": "Pool de connexions du serveur CARE",
+        "poolValue": "{using} utilisées, {available} libres, {size} ouvertes sur {max}, {waiting} en attente",
+        "connections": "Connexions à la base de données CARE",
+        "connectionsValue": "{total} au total, {active} actives, {idle} inactives, {idleInTransaction} inactives dans une transaction, {waitingOnLock} en attente d’un verrou",
+        "longestQuery": "Requête en cours la plus longue",
+        "longestTransaction": "Transaction ouverte la plus longue",
+        "milliseconds": "{ms} ms",
+        "locks": "Verrous",
+        "locksValue": "{total} détenus, {waiting} en attente",
+        "lockModes": "Verrous par mode",
+        "transactions": "Transactions",
+        "transactionsValue": "{commits} validées, {rollbacks} annulées ({rollbackPct} %)",
+        "cache": "Cache",
+        "cacheValue": "{hitPct} % de succès ({hits} succès, {reads} lectures disque)",
+        "problems": "Interblocages, conflits, fichiers temporaires",
+        "problemsValue": "{deadlocks} interblocages, {conflicts} conflits, {tempFiles} fichiers temporaires ({tempBytes} octets)",
+        "countersSince": "Compteurs depuis",
+        "countersSinceUnknown": "Début des statistiques de la base de données",
+        "disabled": "Non inclus : la collecte de l’état de la base de données est désactivée.",
+        "notCollected": "Non recueilli pour ce signalement.",
+        "details": "Détails",
+        "adminOnly": "Enregistrés avec votre rapport, visibles uniquement par les administrateurs."
+    }
+}

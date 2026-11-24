@@ -2,10 +2,11 @@
   <ConnectionStatus :disconnected="disconnected" />
   <div v-if="requireAuth">
     <TopBar v-if="!hideTopbar && appLoaded"/>
-    <ApplicationLoading v-if="!appLoaded" :text="appLoadText" />
+    <ApplicationLoading v-if="!appLoaded" :stages="loaded" :connected="$socket.connected" />
     <div v-else>
       <PostLoginPrompts />
       <router-view class="top-padding"/>
+      <ProblemReportLauncher />
     </div>
   </div>
   <div v-else>
@@ -18,6 +19,7 @@
 import PostLoginPrompts from './auth/PostLoginPrompts.vue';
 import Toast from "@/basic/Toast.vue";
 import TopBar from "@/basic/navigation/Topbar.vue";
+import ProblemReportLauncher from "@/components/problem_report/ProblemReportLauncher.vue";
 import { applyTheme, getContrastColor, resolveTheme, shadeColor } from "@/assets/utils";
 import ConnectionStatus from "@/basic/ConnectionStatus.vue";
 import ApplicationLoading from "@/basic/ApplicationLoading.vue";
@@ -26,6 +28,8 @@ import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
 import BehaviorLogger from "@/assets/behaviorLogger";
+import { clearActivity, recordActivity } from "@/assets/activityTrail.js";
+import { clearDiagnostics } from "@/assets/diagnostics.js";
 import {computed} from "vue";
 import { i18n } from "@/main.js";
 import {
@@ -44,7 +48,7 @@ import {
  */
 export default {
   name: "App",
-  components: {TopBar, Toast, ConnectionStatus, ApplicationLoading, PostLoginPrompts},
+  components: {TopBar, Toast, ConnectionStatus, ApplicationLoading, PostLoginPrompts, ProblemReportLauncher},
   provide() {
     return {
       acceptStats: computed(() => this.acceptStats),
@@ -62,7 +66,6 @@ export default {
       disconnected: false,
       behaviorLogger: null,
       statsContext: {},
-
     }
   },
   sockets: {
@@ -91,6 +94,12 @@ export default {
       this.loaded.tables = true;
     },
     appUser: function (data) {
+      // Logout and login keep the page, so drop the previous account's report details
+      const previousId = this.$store.getters["auth/getUser"]?.id;
+      if (previousId && previousId !== data.id) {
+        clearActivity();
+        clearDiagnostics();
+      }
       this.$store.commit("auth/SET_USER", data);
       this.loaded.users = true;
     },
@@ -115,26 +124,7 @@ export default {
       return this.$route.meta.hideTopbar !== undefined && this.$route.meta.hideTopbar;
     },
     appLoaded() {
-      return this.appLoadPercent === 100;
-    },
-    appLoadPercent() {
-      const stages = Object.values(this.loaded);
-      return stages.filter(Boolean).length / stages.length * 100;
-    },
-    appLoadStep() {
-      return Object.keys(this.loaded).find((k) => !this.loaded[k]);
-    },
-    appLoadText() {
-      if (!this.$socket.connected) {
-        return this.$t('common.connecting');
-      }
-      if (this.appLoadPercent < 100) {
-        return this.$t('common.loadingProgress', {
-          appLoadStep: this.appLoadStep,
-          percent: this.appLoadPercent,
-        });
-      }
-      return this.$t('common.loading');
+      return Object.values(this.loaded).every(Boolean);
     },
     acceptStats() {
       if (this.$store.getters["auth/isAuthenticated"]) {
@@ -149,7 +139,15 @@ export default {
     },
     mouseDebounceTime() {
       return parseInt(this.$store.getters["settings/getValue"]('statistics.tracking.mouseDebounceTime'), 10);
-    }
+    },
+    // Recent activity for problem reports; only recorded while the behavior logger runs (statistics consent)
+    activityTrailEnabled() {
+      const getValue = this.$store.getters["settings/getValue"];
+      return getValue("problemReport.enabled") === "true" && getValue("problemReport.activity.enabled") === "true";
+    },
+    activitySampleMs() {
+      return parseInt(this.$store.getters["settings/getValue"]("problemReport.activity.mouseSampleMs"), 10);
+    },
   },
   watch: {
     "$store.state.settings": {
@@ -196,9 +194,18 @@ export default {
     acceptStats(accepted) {
       if (accepted && this.loaded.settings) {
         this.initializeBehaviorLogger();
-      } else if (this.behaviorLogger) {
-        this.behaviorLogger.destroy();
-        this.behaviorLogger = null;
+      } else {
+        // Withdrawn consent also drops the activity already kept for problem reports
+        clearActivity();
+        if (this.behaviorLogger) {
+          this.behaviorLogger.destroy();
+          this.behaviorLogger = null;
+        }
+      }
+    },
+    activityTrailEnabled(enabled) {
+      if (!enabled) {
+        clearActivity();
       }
     },
     // Initialize logger after settings are loaded because we access the settings table
@@ -215,7 +222,7 @@ export default {
     this.connect();
   },
   async mounted() {
-    this.initTheme();
+    applyTheme(resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")));
     if (this.$route.meta.checkLogin) {
       await this.runCheckLoginFlow();
     }
@@ -224,11 +231,9 @@ export default {
     if (this.behaviorLogger) {
       this.behaviorLogger.destroy();
     }
+    clearActivity();
   },
   methods: {
-    initTheme() {
-      applyTheme(resolveTheme(this.$store.getters["settings/getValue"]("app.theme.mode")));
-    },
     async runCheckLoginFlow() {
       const response = await axios.get(getServerURL() + "/auth/check", {
         withCredentials: true,
@@ -265,6 +270,11 @@ export default {
       if (this.acceptStats && !this.behaviorLogger) {
         this.behaviorLogger = new BehaviorLogger(this.$socket, this.mouseDebounceTime, {
           getContext: () => this.statsContext,
+          onActivity: (type, event) => {
+            if (this.activityTrailEnabled) {
+              recordActivity(type, event, this.activitySampleMs);
+            }
+          },
         });
         this.behaviorLogger.init();
         // The $route watcher ran before the logger existed, so log the page the logger starts on
@@ -296,7 +306,6 @@ export default {
         applyLocale(i18n, getAuthPageLocale());
       }
     },
-
   },
 };
 </script>
@@ -309,18 +318,6 @@ html, body {
 
 .top-padding {
   padding-top: 52.5px;
-}
-
-.overlay {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  z-index: 1050;
-  top: 0;
-  left: 0;
-  opacity: 0.9;
-  filter: alpha(opacity=90);
-  background-color: #de1818;
 }
 
 </style>

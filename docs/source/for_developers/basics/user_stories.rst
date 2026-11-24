@@ -2272,3 +2272,47 @@ Debug NLP Skills
    }
    </style>
 
+
+
+Problem reporting
+~~~~~~~~~~~~~~~~~
+
+Submit a private problem report
+-------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As a participant, I want to describe a problem and attach evidence so that
+     administrators can investigate it with the relevant technical context.
+
+   :Acceptance:
+     When reporting is enabled, a floating bottom-right button, shown on every
+     signed-in page, opens an accessible translated form. Problem type and description are required. Blocked status, frequency
+     and image/video attachments are optional. The reporter can inspect captured
+     details and edit answers before submitting. Unsupported or oversized files
+     are rejected. Failed submissions keep the draft, retries do not duplicate
+     reports, and disabling the feature hides the action and rejects submissions.
+     Activity requires statistics consent; passwords, tokens and document content
+     are excluded from automatically collected details.
+
+   :Settings:
+     ``problemReport.enabled`` and the form, attachment, diagnostic and activity
+     settings documented in :doc:`../../for_researchers/basics`.
+
+Read and export private reports
+-------------------------------
+
+.. container:: user-story
+
+   :Story:
+     As an administrator, I want to inspect and export problem reports with their
+     attachments so that I can trace evidence back to the original report.
+
+   :Acceptance:
+     Only administrators can list reports or download attachments. Export creates
+     one ZIP with one CSV and all attachments. Each CSV attachment path matches
+     exactly one file in the ZIP, including duplicate original filenames. The
+     download extension matches the detected type. New submissions during export
+     do not shift pages or omit older reports. Any failed attachment download
+     prevents an incomplete archive from being saved.

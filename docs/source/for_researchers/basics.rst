@@ -190,3 +190,60 @@ timed out. If this is the case, your model might not run properly anymore.
 .. note::
     An easy-to-use plugin feature for the frontend is currently under development to make modifying the frontend
     for integrating new UI elements for an NLP model as easy as writing a simply configuration file.
+
+
+Problem reporting
+=================
+
+When enabled, a floating bug button in the bottom-right corner of every page
+opens **Report a problem**. The reporter selects at least one problem type and
+enters a description. Whether
+the problem blocks progress and how often it occurs are optional answers.
+Images and videos can be attached, previewed and removed before submission.
+The expandable details show the automatic snapshot captured when Report was
+clicked. The reporter can review it while editing the answers. Only CARE
+administrators can read submitted reports.
+
+A failed submission retains its draft for retry. Repeated submission of the
+same form does not create duplicate reports. Activity is included only with
+usage-statistics consent and when activity collection is enabled. Database
+health details are stored for administrators; reporters see availability and
+capture time only. Reports can still be submitted when diagnostics or database
+health are unavailable.
+
+Administrators open **Settings > Problem Reports** to read reports and retrieve
+attachments. **Export** downloads a single ZIP containing one CSV and all
+attachments. The CSV's attachment-file column lists the exact paths inside the
+ZIP. Downloads use extensions derived from detected file types. The export
+button stays busy while files are collected and shows an error if collection fails.
+
+Problem report settings
+-----------------------
+
+All keys below begin with ``problemReport.``. Administrators configure them in
+the Problem Report settings group. The server applies fixed safety caps even
+if a configured value is larger. An empty allowed-type list disables attachments.
+
+* ``enabled`` enables the report button and submissions.
+* ``problemTypes`` configures the selectable problem types.
+* ``askBlocked`` controls the optional blocked question.
+* ``frequencies`` configures frequency choices; an empty list hides that question.
+* ``description.maxLength`` limits description length.
+* ``reportsPerHour`` limits submissions per reporter.
+* ``attachments.allowedTypes`` narrows the permitted image and video MIME types.
+* ``attachments.maxCount`` limits files per report.
+* ``attachments.maxFileSizeMb`` and ``attachments.maxTotalSizeMb`` limit attachment size.
+* ``diagnostics.maxEntries``, ``diagnostics.maxAgeMinutes`` and
+  ``diagnostics.maxMessageLength`` bound recent diagnostic details.
+* ``activity.enabled`` controls activity collection in addition to consent.
+* ``activity.maxEntries`` and ``activity.maxAgeMinutes`` bound the activity trail.
+* ``activity.mouseSampleMs`` sets the minimum interval for sampled mouse and scroll events.
+
+  By default a report keeps the last 3 minutes of diagnostics (up to 50 entries)
+  and activity (up to 500 entries).
+* ``databaseHealth.enabled`` controls server-side database snapshots.
+* ``databaseHealth.timeoutMs`` bounds the wait for database health.
+* ``databaseHealth.maxAgeMinutes`` limits how long a prepared snapshot can be submitted.
+
+The database-health settings are administrator-only. Other form settings are
+readable by signed-in users so client validation can match server limits.

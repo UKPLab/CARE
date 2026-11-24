@@ -9,6 +9,7 @@ const {buildQueryTableSearch, MAX_SEARCH_LENGTH, viewSearchFields} = require("..
 const {buildQueryTableColumnFilters, columnFiltersNeedViewJoin} = require("../utils/helper/queryTableColumnFilters.js");
 const {SECRET_COLUMN_SET, hiddenColumns} = require("../utils/helper/sensitiveColumns.js");
 const {uniquePositiveInts} = require("../utils/helper/positiveInt.js");
+const {randomUUID} = require("crypto");
 
 // Upper bound for a query-scoped bulk ("select all matching")
 const MAX_BULK_SELECTION = 100000;
@@ -133,8 +134,10 @@ module.exports = class Socket {
                     }
                 }
 
+                // Correlation id: returned to the client (e.g. for problem reports) and kept in the server log
+                const errorId = randomUUID();
                 if (key) {
-                    this.logger.error(key, { i18nParams: params });
+                    this.logger.error(key, { i18nParams: params, errorId, event: eventName });
                     if (callback) {
                         // key/params → localized UI; message (EN) → legacy fallback
                         const response = {
@@ -142,6 +145,7 @@ module.exports = class Socket {
                             key,
                             params,
                             message: i18n.translateMaybeKey(key, params),
+                            errorId,
                         };
                         if (err.code) {
                             response.code = err.code;
@@ -154,6 +158,8 @@ module.exports = class Socket {
                         message: err.message,
                         stack: err.stack,
                         name: err.name,
+                        errorId,
+                        event: eventName,
                     });
                     if (callback) {
                         const unexpectedKey = "errors.server.unexpectedError";
@@ -162,6 +168,7 @@ module.exports = class Socket {
                             key: unexpectedKey,
                             params: {},
                             message: i18n.translateMaybeKey(unexpectedKey),
+                            errorId,
                         });
                     }
                 }

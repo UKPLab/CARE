@@ -1,0 +1,160 @@
+{
+    "button": "Report a problem",
+    "title": "Report a problem",
+    "form": {
+        "problemType": "What kind of problem is it?",
+        "blocked": "Are you blocked from continuing?",
+        "frequency": "How often does this happen?",
+        "description": "What happened?",
+        "attachments": "Screenshots or videos",
+        "optional": "(optional)",
+        "required": "(required)",
+        "yes": "Yes",
+        "no": "No",
+        "attachmentsHint": "Images or videos. Up to {count} files, {fileMb} MB each, {totalMb} MB in total.",
+        "selectedAttachments": "Selected attachments",
+        "remove": "Remove",
+        "removeAttachment": "Remove {name}"
+    },
+    "types": {
+        "error": "Error",
+        "wrongOrMissing": "Wrong or missing",
+        "slowOrStuck": "Slow or stuck",
+        "otherOrSuggestion": "Other or suggestion"
+    },
+    "frequencies": {
+        "firstTime": "First time",
+        "sometimes": "Sometimes",
+        "everyTime": "Every time",
+        "notSure": "Not sure"
+    },
+    "diagnosticTypes": {
+        "error": "Script error",
+        "unhandledRejection": "Unhandled error",
+        "vueError": "Interface error",
+        "failedOperation": "Failed operation",
+        "connection": "Connection",
+        "navigation": "Page change"
+    },
+    "summary": {
+        "problemTypes": "Problem type",
+        "blocked": "Blocked from continuing",
+        "frequency": "How often",
+        "description": "What happened",
+        "attachments": "Attachments",
+        "none": "None",
+        "notAnswered": "Not answered",
+        "unknown": "Unknown",
+        "page": "Page",
+        "reportedAt": "Details captured",
+        "version": "CARE version",
+        "build": "Build",
+        "browser": "Browser",
+        "os": "Operating system",
+        "diagnostics": "Recent diagnostic logs ({count})",
+        "noDiagnostics": "No diagnostic logs were recorded. The report can still be submitted.",
+        "technical": "Technical details",
+        "submittedAt": "Submitted",
+        "viewport": "Window size",
+        "activity": "Recent activity ({count})",
+        "databaseHealth": "CARE database health",
+        "entry": "{time} · {type}"
+    },
+    "visibility": {
+        "label": "Who can see this report:",
+        "text": "Only CARE administrators. The report is stored privately in CARE and is not published anywhere."
+    },
+    "notice": {
+        "label": "What we save:",
+        "text": "Your report, attachments, account, page, report time, browser/device details and recent error logs.",
+        "activity": "Recent clicks, mouse movements and page activity are included with your consent.",
+        "noActivity": "Activity tracking is not included."
+    },
+    "actions": {
+        "submit": "Submit report"
+    },
+    "messages": {
+        "submitFailed": "Report not submitted",
+        "timeout": "The server did not respond. Your report is still here; please try again.",
+        "submitted": "Report submitted",
+        "submittedText": "Thank you. Report #{id} was sent to the CARE administrators.",
+        "loadFailed": "Report form not available"
+    },
+    "admin": {
+        "exportCsv": "Export",
+        "attachmentFiles": "Attachment files",
+        "exportFailed": "Reports not exported",
+        "title": "Problem Reports",
+        "description": "Reports submitted with the bug button in the bottom-right corner. Only administrators can see them.",
+        "columns": {
+            "blocked": "Blocked",
+            "id": "ID",
+            "reporter": "Reporter"
+        },
+        "view": "View report",
+        "detailTitle": "Problem report #{id}",
+        "loadAttachment": "Show",
+        "loadAttachmentFor": "Show {name}",
+        "download": "Download",
+        "loadFailed": "Reports not loaded",
+        "attachmentFailed": "Attachment not loaded",
+        "downloadFor": "Download {name}"
+    },
+    "details": {
+        "title": "Details sent with this report",
+        "loading": "Collecting the automatic details…",
+        "loadingShort": "Collecting…",
+        "unavailable": "Some technical details are unavailable. Your report can still be submitted.",
+        "collectedOnSubmit": "Collected when you submit",
+        "capturedAt": "Captured at {time}, when you clicked Report.",
+        "expired": "These details were captured too long ago and have been refreshed. Please check them and submit again."
+    },
+    "activityTypes": {
+        "click": "Click",
+        "mouseMove": "Mouse position",
+        "scroll": "Scroll",
+        "windowFocus": "Window focus",
+        "visibility": "Tab visibility",
+        "navigation": "Page change"
+    },
+    "activity": {
+        "scrollPosition": "scrolled to {x}, {y}",
+        "focused": "window focused",
+        "blurred": "window left",
+        "hidden": "tab hidden",
+        "visible": "tab visible",
+        "noConsent": "Not included: you have not agreed to usage statistics. You can change this in your preferences.",
+        "disabled": "Not included: activity collection is turned off.",
+        "none": "No activity was recorded shortly before the details were captured.",
+        "notCollected": "Not collected for this report."
+    },
+    "databaseHealth": {
+        "capturedAt": "Captured",
+        "status": "Status",
+        "ok": "Available",
+        "timeout": "Not available (timed out)",
+        "unavailable": "Not available",
+        "pool": "CARE server connection pool",
+        "poolValue": "{using} in use, {available} free, {size} open of {max}, {waiting} waiting",
+        "connections": "Connections to the CARE database",
+        "connectionsValue": "{total} in total, {active} active, {idle} idle, {idleInTransaction} idle in a transaction, {waitingOnLock} waiting for a lock",
+        "longestQuery": "Longest running query",
+        "longestTransaction": "Longest open transaction",
+        "milliseconds": "{ms} ms",
+        "locks": "Locks",
+        "locksValue": "{total} held, {waiting} waiting",
+        "lockModes": "Locks by mode",
+        "transactions": "Transactions",
+        "transactionsValue": "{commits} committed, {rollbacks} rolled back ({rollbackPct} %)",
+        "cache": "Cache",
+        "cacheValue": "{hitPct} % hit rate ({hits} hits, {reads} disk reads)",
+        "problems": "Deadlocks, conflicts, temporary files",
+        "problemsValue": "{deadlocks} deadlocks, {conflicts} conflicts, {tempFiles} temporary files ({tempBytes} bytes)",
+        "countersSince": "Counters since",
+        "countersSinceUnknown": "Start of the database statistics",
+        "disabled": "Not included: database health collection is turned off.",
+        "notCollected": "Not collected for this report.",
+        "details": "Details",
+        "adminOnly": "Saved with your report for administrators only."
+    }
+}
