@@ -97,6 +97,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Pin npm version
+        run: npm install --global npm@11.21.3 --ignore-scripts --no-audit --no-fund
       - name: Install dependencies
         run: |
           npm ci --prefix frontend --ignore-scripts
@@ -117,6 +119,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Pin npm version
+        run: npm install --global npm@11.21.3 --ignore-scripts --no-audit --no-fund
       - name: Install frontend dependencies
         run: npm ci --prefix frontend --ignore-scripts
       - name: Run linter
