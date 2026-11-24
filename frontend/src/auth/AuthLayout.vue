@@ -330,6 +330,7 @@ html[data-bs-theme="dark"] .auth-card {
   border-radius: 50%;
   border: 1px dashed color-mix(in srgb, var(--care-primary) 28%, transparent);
   animation: auth-ring-spin 60s linear infinite;
+  animation-play-state: var(--care-decor-state, running);
   animation-delay: var(--auth-clock, 0s);
 }
 
@@ -395,6 +396,7 @@ html[data-bs-theme="dark"] .auth-brand-logo {
     auth-ring-spin 60s linear infinite,
     auth-ring-expand 1.1s var(--care-ease) both;
   animation-delay: var(--auth-clock, 0s), 0s;
+  animation-play-state: var(--care-decor-state, running), running;
 }
 
 /* ...and closes around the logo again when going back to the login */
@@ -403,6 +405,7 @@ html[data-auth-direction="back"] .auth-card-brand:not(.auth-card-brand--intro) .
     auth-ring-spin 60s linear infinite,
     auth-ring-settle .55s var(--care-ease) both;
   animation-delay: var(--auth-clock, 0s), 0s;
+  animation-play-state: var(--care-decor-state, running), running;
 }
 
 .auth-intro {

@@ -27,6 +27,22 @@ if (process.env.NODE_ENV !== 'production') {
     app.config.devtools = true;
 }
 
+// Performance tier (high / medium / low) for weak machines: sets <html data-perf> before the
+// first paint, then re-measures every 30 s. Components read it as `this.$perf.tier`.
+import { perf, startPerformanceMonitor } from '@/assets/performanceMonitor.js';
+
+startPerformanceMonitor();
+app.config.globalProperties.$perf = perf;
+
+// Translated "Loading..." for the CSS that replaces spinners with text on weak devices
+// (global.css, Performance tiers). Re-runs when the locale changes.
+Vue.watchEffect(() => {
+    document.documentElement.style.setProperty(
+        '--care-loading-label',
+        JSON.stringify(i18n.global.t('common.loading'))
+    );
+});
+
 // Bootstrap
 import 'bootstrap/dist/css/bootstrap.css'
 // import 'bootstrap/dist/js/bootstrap.bundle.js'

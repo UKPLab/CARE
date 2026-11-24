@@ -1708,3 +1708,112 @@ html .ql-snow a {
     transform: none;
   }
 }
+
+
+/* ===== 11. Performance tiers =====
+   <html data-perf="high|medium|low"> is set by assets/performanceMonitor.js (CPU benchmark every
+   30 s + hardware hints). On weaker machines the purely decorative work goes away; nothing here
+   changes layout or hides information.
+
+   --care-decor-state: play state for endless decorative animations (shimmer, glows, pulses).
+   Components add `animation-play-state: var(--care-decor-state, running)` after their
+   `animation` shorthand. Paused, such an animation costs nothing per frame. Several of them
+   (skeleton shimmer, breathing box-shadow) animate paint-only properties, so while they run the
+   browser repaints those areas on every frame. */
+:root {
+  --care-decor-state: running;
+}
+
+html[data-perf="medium"],
+html[data-perf="low"] {
+  --care-decor-state: paused;
+}
+
+/* Medium + low: no backdrop blur. It re-renders everything behind the element on each frame
+   that anything under it changes (table rows scrolling under the search menu). Solid fallback. */
+html[data-perf="medium"] .token-suggestions,
+html[data-perf="low"] .token-suggestions {
+  --_menu-bg: var(--bs-body-bg);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html[data-perf="medium"] .dashboard-drawer-backdrop,
+html[data-perf="low"] .dashboard-drawer-backdrop {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Low: no motion anywhere. Animations and transitions jump straight to their end state.
+   0.01ms instead of 0 so animationend / transitionend still fire: Bootstrap modals, Vue
+   <Transition> and our own code wait for those events. Endless animations run once and stop. */
+html[data-perf="low"] *,
+html[data-perf="low"] *::before,
+html[data-perf="low"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}
+
+/* Low: every Bootstrap spinner becomes a plain "Loading..." text, nothing animated.
+   Loading.vue drops its spinner itself (it already shows the text); this catches all the
+   others (IconLoading, Button, modals, editors). The label is the translated common.loading,
+   kept up to date in main.js. Inline width/height (IconLoading) need the !important.
+   The "/ ''" alt text keeps screen readers from reading it twice (the spinner already has a
+   visually-hidden label); browsers without that syntax use the first declaration. */
+html[data-perf="low"] .spinner-border,
+html[data-perf="low"] .spinner-grow {
+  width: auto !important;
+  height: auto !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  animation: none !important;
+  vertical-align: baseline;
+}
+
+html[data-perf="low"] .spinner-border::after,
+html[data-perf="low"] .spinner-grow::after {
+  content: var(--care-loading-label, "Loading...");
+  content: var(--care-loading-label, "Loading...") / "";
+  font-size: 0.875em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Login / register on low: drop the purely decorative layers. The desk objects and sparks
+   around the card (shadows on every frame of a resize), the masked dot grid behind the logo
+   (a mask is composited separately) and the blurred glows (below). */
+html[data-perf="low"] .auth-scene {
+  display: none;
+}
+
+html[data-perf="low"] .auth-card-brand::before {
+  display: none;
+}
+
+html[data-perf="low"] .auth-brand-ring,
+html[data-perf="low"] .auth-brand-ring::before {
+  box-shadow: none;
+}
+
+/* Large blurred / drop-shadow decorations are expensive to raster on weak GPUs. */
+html[data-perf="low"] .auth-brand-glow {
+  display: none;
+}
+
+html[data-perf="low"] .auth-brand-logo {
+  filter: none;
+}
+
+/* View transitions (auth pages) are skipped in JS on low; this ends any that still start. */
+html[data-perf="low"]::view-transition-group(*),
+html[data-perf="low"]::view-transition-old(*),
+html[data-perf="low"]::view-transition-new(*) {
+  animation-duration: 0.01ms !important;
+}

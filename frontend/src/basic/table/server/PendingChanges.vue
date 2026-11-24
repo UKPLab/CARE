@@ -14,6 +14,7 @@
 <script>
 
 import { resolveApiMessage } from "@/assets/utils";
+import { prefersLessMotion } from "@/assets/performanceMonitor.js";
 export default {
 name:"BackendPendingChanges",
 inject: { controller: { from: "backendTableController" } },
@@ -51,9 +52,7 @@ async loadPendingChanges() {
       this.controller.pendingStructural = false;
       this.controller.pendingLoadPhase = "out";
 
-      const reduceMotion =
-        typeof window !== "undefined" &&
-        window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      const reduceMotion = prefersLessMotion();
       const outMs = reduceMotion ? 0 : 180;
       const startedAt = Date.now();
 

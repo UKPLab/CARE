@@ -213,7 +213,8 @@ function sectionOptions() {
  * of the Studies dashboard. Opening a study shows the user's sessions as cards.
  *
  * Both lists and the sessions inside them come from BackendTable (server-side queryTable with
- * live Delta updates). The study list uses the `mySessions` scope of the study model; nothing is
+ * live Delta updates). The study list uses the `mySessions` scope of the study model;
+import { prefersLessMotion } from "@/assets/performanceMonitor.js"; nothing is
  * dumped into Vuex.
  *
  * @author: Nils Dycke, Dennis Zyska
@@ -452,7 +453,7 @@ export default {
       } else {
         const grid = el.parentElement;
         const prev = el.previousElementSibling;
-        const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+        const reduced = prefersLessMotion();
         if (!grid || !prev || reduced) {
           done();
           return;

@@ -108,6 +108,7 @@ methods: {
   ) !important;
   background-size: 200% 100% !important;
   animation: skeleton-shimmer 1.1s ease-in-out infinite !important;
+  animation-play-state: var(--care-decor-state, running) !important;
   box-shadow: none !important;
 }
 :deep(.row-placeholder td *) {

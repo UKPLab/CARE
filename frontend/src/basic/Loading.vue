@@ -3,7 +3,8 @@
       v-if="loading"
       class="d-flex flex-column align-items-center justify-content-center"
   >
-    <div class="row">
+    <!-- Weak device (performanceMonitor.js): text only, nothing animated. -->
+    <div v-if="!textOnly" class="row">
       <div
           class="spinner-border"
           :class="textClass"
@@ -57,6 +58,9 @@ export default {
     }
   },
   computed: {
+    textOnly() {
+      return this.$perf?.tier === "low";
+    },
     displayText() {
       return this.text ? this.text : this.$t('common.loading');
     }

@@ -1,3 +1,4 @@
+import { prefersLessMotion } from "@/assets/performanceMonitor.js";
 /**
  * Horizontal-scroll affordance for Table.vue (BasicTable) and BackendTable.vue.
  *
@@ -139,7 +140,7 @@ export const tableScrollHintsMethods = {
   scrollTableBy(direction) {
     const wrapper = this.$refs.tableWrapper;
     if (!wrapper) return;
-    const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const reduceMotion = prefersLessMotion();
     wrapper.scrollBy({
       left: direction * wrapper.clientWidth * SCROLL_STEP,
       behavior: reduceMotion ? "auto" : "smooth",

@@ -480,6 +480,7 @@ export default {
   border-radius: 50%;
   background: currentColor;
   animation: status-card-pulse 2.2s ease-out infinite;
+  animation-play-state: var(--care-decor-state, running);
 }
 
 .status-card-lock {
@@ -672,6 +673,7 @@ button.status-card-title:hover {
   --status-card-tl: var(--bs-warning);
   color: var(--care-card-text);
   animation: status-card-soon 2.8s ease-in-out infinite;
+  animation-play-state: var(--care-decor-state, running);
 }
 
 .status-card-timeline--soon .status-card-timeline-relative {
@@ -886,6 +888,7 @@ button.status-card-title:focus-visible,
   );
   background-size: 300% 100%;
   animation: status-card-shimmer 1.6s ease-in-out infinite;
+  animation-play-state: var(--care-decor-state, running);
 }
 
 .status-card-skeleton--pill { width: 34%; height: 1.15rem; border-radius: var(--care-radius-pill); }

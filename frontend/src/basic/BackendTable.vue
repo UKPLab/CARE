@@ -399,6 +399,7 @@ import {
 import ScrollHints from "./table/ScrollHints.vue";
 import TableEmptyState from "./table/EmptyState.vue";
 import { rowActionSlots } from "@/basic/table/helpers/rowActionsLayout.js";
+import { prefersLessMotion } from "@/assets/performanceMonitor.js";
 
 /** Pause before the infinite window loads again by itself after a failed request. */
 const WINDOW_RETRY_MS = 5000;
@@ -610,7 +611,8 @@ export default {
       infiniteScrollbarVisible: false,
       infiniteBlockSize: 50, // rows per fetch while scrolling
       infiniteMaxRows: 150, // loaded window cap; the far edge is dropped past this
-      infiniteOverscan: 8, // rendered rows above/below the viewport
+      // Rendered rows above/below the viewport; fewer on a weak machine (performanceMonitor.js).
+      infiniteOverscan: this.$perf?.tier === "low" ? 3 : 8,
       infinitePrefetchRows: 15, // distance to the window edge that triggers the next block
       scrollTarget: null,
       scrollHandler: null,
@@ -2197,9 +2199,7 @@ export default {
       this.pendingStructural = false;
       this.pendingLoadPhase = "out";
 
-      const reduceMotion =
-        typeof window !== "undefined" &&
-        window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
+      const reduceMotion = prefersLessMotion();
       const outMs = reduceMotion ? 0 : 180;
       const startedAt = Date.now();
 

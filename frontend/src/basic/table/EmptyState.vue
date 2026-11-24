@@ -742,6 +742,32 @@ export default {
   100% { transform: translateX(34px); opacity: 0; }
 }
 
+/* Weak machine (data-perf medium/low, see performanceMonitor.js): the same resting scene as
+   reduced motion. Seven endless SVG animations are a lot of per-frame work for a placeholder. */
+:is(html[data-perf="medium"], html[data-perf="low"]) .table-empty,
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-lens,
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-lens-mark,
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-wind,
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-tumble-track,
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-tumble-hop,
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-tumble,
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-tumble-shadow,
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-dust circle {
+  animation: none !important;
+}
+
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-lens {
+  transform: translate(140px, 66px);
+}
+
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-tumble-track {
+  transform: translateX(84px);
+}
+
+:is(html[data-perf="medium"], html[data-perf="low"]) .te-dust {
+  display: none;
+}
+
 /* Reduced motion: a resting lens, and the tumbleweed parked mid-scene. */
 @media (prefers-reduced-motion: reduce) {
   .table-empty,

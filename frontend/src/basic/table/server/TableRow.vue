@@ -139,6 +139,7 @@ export default {
   ) !important;
   background-size: 200% 100% !important;
   animation: skeleton-shimmer 1.1s ease-in-out infinite !important;
+  animation-play-state: var(--care-decor-state, running) !important;
 }
 @keyframes skeleton-shimmer {
   0% {

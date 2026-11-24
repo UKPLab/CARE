@@ -104,6 +104,7 @@
 <script>
 import LoadIcon from "@/basic/Icon.vue";
 import BasicButton from "@/basic/Button.vue";
+import { prefersLessMotion } from "@/assets/performanceMonitor.js";
 
 /**
  * Toast Component
@@ -302,7 +303,7 @@ export default {
     expandToast(toast) {
       if (toast.expanded) return;
       const el = this.clipEls.get(toast.id);
-      const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const reduce = prefersLessMotion();
       if (!el || reduce) {
         toast.expanded = true;
         return;

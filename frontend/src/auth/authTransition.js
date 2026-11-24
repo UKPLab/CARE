@@ -1,3 +1,4 @@
+import { prefersLessMotion } from "@/assets/performanceMonitor.js";
 /**
  * Navigation between the signed-out pages (login <-> register) with a View Transition.
  *
@@ -10,10 +11,6 @@
  * get a plain router navigation.
  */
 import { nextTick } from "vue";
-
-function prefersReducedMotion() {
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-}
 
 /**
  * Load the lazy route components of the target before the transition starts.
@@ -38,7 +35,9 @@ async function preloadRouteComponents(router, location) {
  * @returns {Promise<void>}
  */
 export async function navigateWithAuthTransition(router, location, direction = "forward") {
-  if (typeof document.startViewTransition !== "function" || prefersReducedMotion()) {
+  // Reduced motion or a weak machine (performanceMonitor.js): a view transition snapshots and
+  // animates the whole page, which stutters there; switch pages directly.
+  if (typeof document.startViewTransition !== "function" || prefersLessMotion()) {
     await router.push(location);
     return;
   }
