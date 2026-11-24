@@ -35,6 +35,22 @@ import NotFoundPage from "@/auth/NotFound.vue";
 
 const dashboardModules = import.meta.glob("./dashboard/*.vue");
 
+// One async wrapper per page module. currentComponent re-runs whenever the nav_element
+// table or the rights in the store change; a fresh defineAsyncComponent each time is a new
+// component type, so Vue unmounted and remounted the whole page (tables refetched, icons and
+// buttons rebuilt) on unrelated store updates.
+const asyncPageCache = new Map();
+function asyncPage(modulePath, loader) {
+  if (!asyncPageCache.has(modulePath)) {
+    asyncPageCache.set(modulePath, defineAsyncComponent({
+      loader,
+      loadingComponent: Loading,
+      errorComponent: NotFoundPage,
+    }));
+  }
+  return asyncPageCache.get(modulePath);
+}
+
 export default {
   name: "DashboardRoute",
   subscribeTable: ["nav_element"],
@@ -82,11 +98,7 @@ export default {
           return NotFoundPage;
         }
 
-        return defineAsyncComponent({
-          loader,
-          loadingComponent: Loading,
-          errorComponent: NotFoundPage,
-        });
+        return asyncPage(modulePath, loader);
       } else {
         return Loading;
       }

@@ -137,12 +137,14 @@ const emitAssistantCommand = (socket, command, data = {}, opts = {}) => {
 
 export default {
     install: (app) => {
-        app.mixin({
-            computed: {
-                // `this.$ai` binds the component's $socket to the AIService helpers.
+        // Built once and shared: $socket is one app-wide instance. This used to be a global
+        // mixin with two computeds, i.e. two extra reactive effects on every component
+        // instance (each icon, button and table cell), for something only a few components use.
+        const builders = {
+                // `this.$ai`: AIService helpers bound to the app socket.
                 // Defined as a computed so $socket is resolved per component.
                 $ai() {
-                    const socket = this.$socket;
+                    const socket = app.config.globalProperties.$socket;
                     return {
                         /**
                          * Send a chat completion request.
@@ -213,9 +215,9 @@ export default {
                         },
                     };
                 },
-                // `this.$aiAssistant` binds the component's $socket to assistant workflow commands.
+                // `this.$aiAssistant`: assistant workflow commands bound to the app socket.
                 $aiAssistant() {
-                    const socket = this.$socket;
+                    const socket = app.config.globalProperties.$socket;
                     return {
                         /**
                          * Creates a client-side request identifier for abortable assistant calls.
@@ -322,7 +324,22 @@ export default {
                         },
                     };
                 },
-            },
-        });
+        };
+        for (const [key, build] of Object.entries(builders)) {
+            let cached = null;
+            let cachedSocket = null;
+            Object.defineProperty(app.config.globalProperties, key, {
+                configurable: true,
+                enumerable: true,
+                get() {
+                    const socket = app.config.globalProperties.$socket;
+                    if (!cached || cachedSocket !== socket) {
+                        cached = build();
+                        cachedSocket = socket;
+                    }
+                    return cached;
+                },
+            });
+        }
     },
 };

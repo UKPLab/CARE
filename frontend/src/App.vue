@@ -21,7 +21,7 @@ import TopBar from "@/basic/navigation/Topbar.vue";
 import { applyTheme, getContrastColor, hexToRgbChannels, resolveTheme, shadeColor } from "@/assets/utils";
 import ConnectionStatus from "@/basic/ConnectionStatus.vue";
 import ApplicationLoading from "@/basic/ApplicationLoading.vue";
-import {createTable} from "@/store/utils";
+import {createTables} from "@/store/utils";
 import axios from "axios";
 import getServerURL from "@/assets/serverUrl";
 
@@ -85,9 +85,8 @@ export default {
       });
     },
     appTables: function (data) {
-      data.forEach((table) => {
-        createTable(this.$store, table);
-      });
+      // One registration for all tables instead of one per table (see createTables).
+      createTables(this.$store, data);
       this.loaded.tables = true;
     },
     appUser: function (data) {

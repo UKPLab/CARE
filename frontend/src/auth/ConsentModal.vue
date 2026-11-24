@@ -1,6 +1,7 @@
 <template>
   <Modal
     ref="modal"
+    lazy
     size="xl"
     name="terms"
     disable-keyboard

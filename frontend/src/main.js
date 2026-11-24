@@ -54,9 +54,18 @@ app.use(VNetworkGraph);
 // Server URL for hot reload
 import getServerURL from '@/assets/serverUrl.js';
 
+// Socket debug logging is opt-in (localStorage "care.debugSocket" = "1"). It used to be on for
+// every dev build and console.info'd every socket message with its full payload: with DevTools
+// open that formatting (and the payloads kept alive by the console) dominates a profile.
+let socketDebug = false;
+try {
+    socketDebug = process.env.NODE_ENV !== 'production' && localStorage.getItem('care.debugSocket') === '1';
+} catch {
+    socketDebug = false;
+}
+
 const socketio = new VueSocketIO({
-     
-    debug: (process.env.NODE_ENV !== 'production'),
+    debug: socketDebug,
     connection: SocketIO(getServerURL(),
         {
             path: '',

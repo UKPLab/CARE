@@ -14,8 +14,9 @@
         :size-class="sizeClass" :remove-close="removeClose" :scrollable-body="scrollableBody"
         :waiting="waiting" :progress="progress" :progress-percent="progressPercent" @close="handleCloseClick">
         <template #title><slot name="title" /></template>
-        <template #body><slot name="body" /></template>
-        <template #footer><slot name="footer" /></template>
+        <!-- lazy: body and footer are only built on the first open (and then kept). -->
+        <template v-if="!lazy || everOpened" #body><slot name="body" /></template>
+        <template v-if="!lazy || everOpened" #footer><slot name="footer" /></template>
       </ModalContent>
     </div>
   </teleport>
@@ -31,6 +32,9 @@
  * @props removeClose: Boolean Remove close button
  * @props props: Object Props for statistics (socket emit stats with data)
  * @props name: Name of the modal (for statistics)
+ * @props lazy: Boolean Render body and footer only on the first open. For modals that sit mounted on
+ *   every page (top bar, post-login prompts): they used to build their whole content, a Quill editor
+ *   included, on each page load although most users never open them.
  * @props scrollableBody: Boolean Make the body a flex column so a fixed header (e.g. a stepper) can stay put while only the body content scrolls
  * @emits show: Event triggered on show
  * @emits hide: Event triggered on hide
@@ -88,7 +92,8 @@ export default {
       type: String,
       required: true
     },
-    scrollableBody: {type: Boolean, default: false}
+    scrollableBody: {type: Boolean, default: false},
+    lazy: {type: Boolean, default: false},
   },
   emits: ['show', 'hide', 'close-requested'],
   data() {
@@ -103,6 +108,7 @@ export default {
       hideWaiting: false,
       isShown: false,
       pendingTransition: null,
+      everOpened: false,
     };
   },
   computed: {
@@ -267,6 +273,7 @@ export default {
       this.openModal();
     },
     openModal() {
+      this.everOpened = true;
       this.waiting = false;
       this.progress = false;
       this.suspendParentModal();

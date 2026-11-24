@@ -1,5 +1,5 @@
 <template>
-  <BasicModal ref="modal" name="PasswordModal" @hide="resetForm">
+  <BasicModal ref="modal" name="PasswordModal" lazy @hide="resetForm">
     <template #title>
       <span>{{ $t('auth.resetPassword') }}</span>
     </template>
@@ -120,6 +120,7 @@ export default {
       });
     },
     resetForm() {
+      if (!this.$refs.form) return;
       this.$refs.form.modelValue.password = '';
       this.$refs.form.modelValue.confirmPassword = '';
       this.$refs.form.modelValue.oldPassword = "";

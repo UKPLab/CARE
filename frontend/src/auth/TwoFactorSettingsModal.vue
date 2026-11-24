@@ -1,6 +1,7 @@
 <template>
   <BasicModal
     ref="modal"
+    lazy
     size="lg"
     name="TwoFactorSettingsModal"
     :remove-close="enforced && enabledMethods.length === 0"

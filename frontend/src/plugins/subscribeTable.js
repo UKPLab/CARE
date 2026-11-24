@@ -7,10 +7,10 @@
 export default {
     install: (app, _options = {namespace: "table"}) => {
         app.mixin({
+            // Only components that subscribe get the reactive list. This mixin is global, so a
+            // plain data() here added a reactive object + array to every component instance.
             data() {
-                return {
-                    subscriptionIds: []
-                }
+                return this.$options.subscribeTable ? {subscriptionIds: []} : {};
             },
             mounted() {
                 if (this.$options.subscribeTable) {

@@ -47,21 +47,14 @@ const TABLE_EXTRA_GETTERS = {
  * This file creates default data tables in vuex store for the backend database mapping
  *
  */
-export function createTable(store, table, namespace = 'table', websocketPrefix = 'SOCKET_') {
-
-    // make sure parent module exists
-    if (!store.hasModule(namespace)) {
-        store.registerModule(namespace, {
-            namespaced: true,
-            strict: false,
-            state: {},
-            getters: {},
-            mutations: {},
-            actions: {}
-        });
-    }
-
-    let newModule = {
+/**
+ * Vuex module for one backend table.
+ * @param {Object} table - table description from the server (name, fields)
+ * @param {String} websocketPrefix - mutation prefix the socket plugin commits to
+ * @returns {Object} module definition
+ */
+function buildTableModule(table, websocketPrefix = 'SOCKET_') {
+    const newModule = {
         namespaced: true,
         strict: false,
         state: () => {
@@ -214,10 +207,66 @@ export function createTable(store, table, namespace = 'table', websocketPrefix =
 
     Object.assign(newModule.getters, TABLE_EXTRA_GETTERS[table.name] || {});
 
+    return newModule;
+}
+
+export function createTable(store, table, namespace = 'table', websocketPrefix = 'SOCKET_') {
+
+    // make sure parent module exists
+    if (!store.hasModule(namespace)) {
+        store.registerModule(namespace, {
+            namespaced: true,
+            strict: false,
+            state: {},
+            getters: {},
+            mutations: {},
+            actions: {}
+        });
+    }
+
+    const newModule = buildTableModule(table, websocketPrefix);
+
     //remove old store if exists
     if (store.hasModule([namespace, table.name])) {
         store.unregisterModule([namespace, table.name]);
     }
     store.registerModule([namespace, table.name], newModule, {preserveState: false});
 
-};
+}
+
+/**
+ * Register all tables in one go.
+ *
+ * Every registerModule / unregisterModule call makes Vuex rebuild the getters of the WHOLE store,
+ * so registering N tables one by one costs O(N^2) (over a second on a throttled CPU, all inside
+ * the appTables socket handler). Here the namespace module is registered once with all tables as
+ * children. Tables registered before and missing from `tables` are kept (with fresh state).
+ * @param {Object} store - Vuex store
+ * @param {Array<Object>} tables - table descriptions from the server
+ * @param {String} namespace
+ * @param {String} websocketPrefix
+ */
+export function createTables(store, tables, namespace = 'table', websocketPrefix = 'SOCKET_') {
+    const modules = {};
+    const existing = store.hasModule(namespace) ? store._modules.get([namespace]) : null;
+    if (existing) {
+        existing.forEachChild((child, key) => {
+            modules[key] = child._rawModule;
+        });
+    }
+    for (const table of tables) {
+        modules[table.name] = buildTableModule(table, websocketPrefix);
+    }
+    if (existing) {
+        store.unregisterModule(namespace);
+    }
+    store.registerModule(namespace, {
+        namespaced: true,
+        strict: false,
+        state: {},
+        getters: {},
+        mutations: {},
+        actions: {},
+        modules,
+    });
+}

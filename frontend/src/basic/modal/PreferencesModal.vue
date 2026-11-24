@@ -1,6 +1,7 @@
 <template>
   <BasicModal
     ref="modal"
+    lazy
     size="lg"
     name="PreferencesModal"
     @hide="onHide"
