@@ -149,11 +149,14 @@ class BehaviorLogger {
      * If a search is active, the search is assumed to be complete and reported to the backend.
      */
     handleWindowFocus() {
-        this.emit("windowFocusChange", {
-            focused: true,
-            duration: this.blurStartTime ? Date.now() - this.blurStartTime : null,
-        });
-        this.blurStartTime = null;
+        // Safari fires focus twice when the user returns, so only the first focus after a blur is logged
+        if (this.blurStartTime !== null) {
+            this.emit("windowFocusChange", {
+                focused: true,
+                duration: Date.now() - this.blurStartTime,
+            });
+            this.blurStartTime = null;
+        }
 
         if (this.searchActive) {
             // Assume search is complete if window regains focus
