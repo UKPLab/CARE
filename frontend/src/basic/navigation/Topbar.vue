@@ -18,7 +18,6 @@
           />
         </button>
         <!-- Phones: the dashboard menu strip is replaced by this button and a drawer. -->
-        <!-- BasicButton's click event has no DOM event, so the native click is stopped in capture -->
         <BasicButton
           v-if="isInDashboard && viewport.compact"
           class="btn-icon topbar-burger"
@@ -27,7 +26,6 @@
           :aria-label="mobileNavOpen ? $t('navigation.topbar.closeMenu') : $t('navigation.topbar.openMenu')"
           :aria-expanded="mobileNavOpen ? 'true' : 'false'"
           aria-controls="dashboardDrawer"
-          @click.capture.stop
           @click="mobileNavOpen = !mobileNavOpen"
         >
           <span class="topbar-burger-lines" aria-hidden="true">
