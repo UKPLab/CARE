@@ -142,8 +142,30 @@ function buildTableModule(table, websocketPrefix = 'SOCKET_') {
              * @param state
              * @return {function(String): Object}
              */
-            getByHash: state => hash => {
-                return Object.values(state.data).find(row => 'hash' in row && row.hash === hash);
+            getByHash: (state, getters) => hash => {
+                const id = getters.hashIndex.get(hash);
+                return id === undefined ? undefined : state.data[id];
+            },
+
+            /**
+             * hash -> id for getByHash. Searching Object.values(state.data) made Vue track every
+             * row of the table on each call (seconds for the study table on a slow CPU, on every
+             * data batch). The index is built from the raw rows and depends only on refreshCount,
+             * which every change of the table bumps; getByHash then tracks just the one row.
+             * First match wins, as with the previous find().
+             *
+             * @param state
+             * @return {Map<String, String>}
+             */
+            hashIndex: state => {
+                state.refreshCount; // dependency: bumped by every Refresh of this table
+                const index = new Map();
+                for (const [id, row] of Object.entries(toRaw(state.data))) {
+                    if (row && 'hash' in row && !index.has(row.hash)) {
+                        index.set(row.hash, id);
+                    }
+                }
+                return index;
             },
 
             /**
