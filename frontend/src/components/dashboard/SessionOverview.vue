@@ -37,6 +37,17 @@ import BasicFilterDropdown from "@/basic/FilterDropdown.vue";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import { translateMaybeKey } from "@/assets/utils";
 
+// Same output as `new Date(value).toLocaleString()` (browser locale, date + time), but one
+// formatter for all rows instead of a new one per call.
+const BROWSER_DATE_TIME = new Intl.DateTimeFormat(undefined, {
+  year: "numeric", month: "numeric", day: "numeric",
+  hour: "numeric", minute: "numeric", second: "numeric",
+});
+function formatBrowserDateTime(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Invalid Date" : BROWSER_DATE_TIME.format(date);
+}
+
 /**
  * Dashboard page showing an overview of all study sessions
  *
@@ -100,29 +111,44 @@ export default {
         ...this.workflowTypes.map((wf) => ({ value: wf.id.toString(), label: wf.name })),
       ];
     },
+    /**
+     * One row per session. Lookups go through maps built once per recompute: the previous
+     * version ran studies.find() and a filter over all study steps for every session, i.e.
+     * sessions x studies work (tens of thousands of studies), each access tracked by Vue's
+     * reactivity, and redone on any change of the five subscribed tables. On a slow CPU that
+     * froze the page for tens of seconds.
+     */
     studySessions() {
       const sessions = this.$store.getters["table/study_session/getAll"] || [];
       const studies = this.$store.getters["table/study/getAll"] || [];
+      const steps = this.$store.getters["table/study_step/getAll"] || [];
+
+      const studyById = new Map();
+      for (const study of studies) studyById.set(study.id, study);
+      const stepNumberById = new Map();
+      const stepCountByStudy = new Map();
+      for (const step of steps) {
+        stepNumberById.set(step.id, step.stepNumber);
+        stepCountByStudy.set(step.studyId, (stepCountByStudy.get(step.studyId) || 0) + 1);
+      }
 
       return sessions.map((session) => {
-        const study = studies.find(s => s.id === session.studyId);
-        const currentStepIndex = this.$store.getters["table/study_step/get"](session.studyStepIdMax)?.stepNumber ?? null;
-        const studySteps = this.$store.getters["table/study_step/getFiltered"](
-          (step) => step.studyId === session.studyId
-        );
+        const study = studyById.get(session.studyId);
+        const currentStepIndex = stepNumberById.get(session.studyStepIdMax) ?? null;
+        const user = this.getUserName(session.userId);
 
         return {
           id: session.id,
           studyId: session.studyId,
-          studyName: study.name,
-          firstName: this.getUserName(session.userId).firstName,
-          lastName: this.getUserName(session.userId).lastName,
+          studyName: study?.name,
+          firstName: user.firstName,
+          lastName: user.lastName,
           currentStep: currentStepIndex !== null
             ? this.$t('dashboard.sessionOverview.step', { number: currentStepIndex })
             : this.$t('common.na'),
-          createdAt: new Date(session.createdAt).toLocaleString(),
-          updatedAt: new Date(session.updatedAt).toLocaleString(),
-          numSteps: studySteps.length,
+          createdAt: formatBrowserDateTime(session.createdAt),
+          updatedAt: formatBrowserDateTime(session.updatedAt),
+          numSteps: stepCountByStudy.get(session.studyId) || 0,
           status: session.end === null ? "Running" : "Finished",
           hash: session.hash,
         };
