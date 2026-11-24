@@ -1,3 +1,8 @@
+import {toRaw} from "vue";
+
+// From this many rows on, refreshState swaps the whole table object in one assignment.
+const BULK_REFRESH_ROWS = 200;
+
 /**
  * Refreshes the state of a store with the given data from socket refresh event
  *
@@ -12,7 +17,22 @@ export function refreshState(state, data, removeDeleted = true) {
     if (!Array.isArray(data)) {
         data = [data];
     }
-    data.map((entry) => {
+    if (data.length >= BULK_REFRESH_ROWS) {
+        // Initial load / large refresh: build the next object outside reactivity and swap it in
+        // with one assignment. Writing tens of thousands of keys into the reactive object one by
+        // one triggered Vue for each of them (seconds on a slow CPU for a big table).
+        const next = {...toRaw(state.data)};
+        for (const entry of data) {
+            if (!entry.deleted) {
+                next[entry.id] = {...next[entry.id], ...entry};
+            } else if (removeDeleted) {
+                delete next[entry.id];
+            }
+        }
+        state.data = next;
+        return;
+    }
+    data.forEach((entry) => {
         if (!entry.deleted) {
             state.data[entry.id] = { ...state.data[entry.id], ...entry };
         } else {
@@ -21,6 +41,29 @@ export function refreshState(state, data, removeDeleted = true) {
             }
         }
     });
+}
+
+/**
+ * Rows of a store table without tracking every row.
+ *
+ * `getters["table/x/getAll"]` is Object.values() over the reactive table: Vue tracks every key,
+ * which for a table of tens of thousands of rows costs seconds on a slow CPU, and it re-runs on
+ * every change. All changes of a table go through its Refresh mutation, which bumps
+ * `refreshCount`, so depending on that counter alone is enough to recompute when the table
+ * changes. The rows are returned raw (not reactive): read them, do not keep or mutate them.
+ *
+ * @param {Object} store Vuex store
+ * @param {string} table Table name, e.g. "study"
+ * @param {string} [namespace]
+ * @returns {Array<Object>}
+ */
+export function tableRowsSnapshot(store, table, namespace = 'table') {
+    // The one tracked read: changes with every Refresh of this table.
+    if (store.getters[`${namespace}/${table}/refreshCount`] === undefined) {
+        return [];
+    }
+    const data = toRaw(store.state[namespace]?.[table])?.data;
+    return data ? Object.values(toRaw(data)) : [];
 }
 
 /**

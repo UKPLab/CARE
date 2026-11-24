@@ -36,6 +36,7 @@ import DashboardListPage from "@/basic/dashboard/ListPage.vue";
 import BasicFilterDropdown from "@/basic/FilterDropdown.vue";
 import { DEFAULT_DASHBOARD_TABLE_OPTIONS } from "@/basic/dashboard/constants.js";
 import { translateMaybeKey } from "@/assets/utils";
+import { tableRowsSnapshot } from "@/store/utils";
 
 // Same output as `new Date(value).toLocaleString()` (browser locale, date + time), but one
 // formatter for all rows instead of a new one per call.
@@ -119,9 +120,11 @@ export default {
      * froze the page for tens of seconds.
      */
     studySessions() {
-      const sessions = this.$store.getters["table/study_session/getAll"] || [];
-      const studies = this.$store.getters["table/study/getAll"] || [];
-      const steps = this.$store.getters["table/study_step/getAll"] || [];
+      // Snapshots instead of getAll: the study table holds tens of thousands of rows, and
+      // getAll made Vue track every one of them (seconds per data batch on a slow CPU).
+      const sessions = tableRowsSnapshot(this.$store, "study_session");
+      const studies = tableRowsSnapshot(this.$store, "study");
+      const steps = tableRowsSnapshot(this.$store, "study_step");
 
       const studyById = new Map();
       for (const study of studies) studyById.set(study.id, study);
@@ -140,6 +143,9 @@ export default {
         return {
           id: session.id,
           studyId: session.studyId,
+          // For filteredStudySessions (kept out of the columns).
+          studyClosed: study ? study.closed : undefined,
+          studyWorkflowId: study?.workflowId,
           studyName: study?.name,
           firstName: user.firstName,
           lastName: user.lastName,
@@ -156,18 +162,18 @@ export default {
     },
     filteredStudySessions() {
       return this.studySessions.filter(session => {
-        const study = this.$store.getters["table/study/get"](session.studyId);
-        if (!study) return false;
+        // Study fields come with the row (studySessions); undefined = study not loaded.
+        if (session.studyClosed === undefined) return false;
 
-        if (this.filters.showOpenStudies && study.closed !== null) {
+        if (this.filters.showOpenStudies && session.studyClosed !== null) {
           return false;
         }
-        if (!this.filters.showOpenStudies && study.closed === null) {
+        if (!this.filters.showOpenStudies && session.studyClosed === null) {
           return false;
         }
 
         if (this.filters.workflowType !== "all" &&
-            study.workflowId.toString() !== this.filters.workflowType) {
+            String(session.studyWorkflowId) !== this.filters.workflowType) {
           return false;
         }
 
