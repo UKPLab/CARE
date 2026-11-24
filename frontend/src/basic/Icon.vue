@@ -1,26 +1,36 @@
 <template>
-  <component
-    :is="icon"
+  <IconLoading
+    v-if="trueIconName === 'loading'"
     :size="size"
-    :color="color"
-    :name="iconName"
-    :cursor="cursor"
     :style="rotateStyle"
   />
+  <!-- Rendered here directly instead of through IconBootstrap: one component per icon instead
+       of two. Tables render several icons per row, so the extra layer added up on every page. -->
+  <svg
+    v-else
+    class="bi"
+    fill="currentColor"
+    :height="size"
+    :width="size"
+    :cursor="cursor"
+    :style="[color ? { color } : null, rotateStyle]"
+  >
+    <use :xlink:href="href" />
+  </svg>
 </template>
 
 <script>
 /**
- * Dynamically load icons from bootstrap folder
+ * Render an icon from the bootstrap sprite (or the loading spinner for "loading")
  *
  * @author: Dennis Zyska, Nils Dycke
  */
-import {defineAsyncComponent} from "vue";
 import IconLoading from "./icon/IconLoading.vue";
-import IconBootstrap from "./icon/IconBootstrap.vue";
+import { iconHref } from "./icon/iconSprite.js";
 
 export default {
   name: "BasicIcon",
+  components: { IconLoading },
   props: {
     size: {
       type: Number,
@@ -55,18 +65,9 @@ export default {
     rotateStyle() {
       return this.rotate ? { transform: `rotate(${this.rotate}deg)` } : {};
     },
-    icon() {
-      if (this.trueIconName === "loading") {
-        return IconLoading;
-      }
-      return defineAsyncComponent(
-          {
-            loader: () => import("./icon/IconBootstrap.vue"),
-            loadingComponent: IconLoading,
-            errorComponent: IconBootstrap
-          });
-
-    }
+    href() {
+      return iconHref(this.trueIconName);
+    },
   },
 }
 </script>
