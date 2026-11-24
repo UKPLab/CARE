@@ -2,6 +2,18 @@ const TranslatableError = require("../../utils/TranslatableError");
 const Socket = require("../Socket.js");
 
 /**
+ * Actions that can be sent several times per second. They are buffered and written in batches.
+ * All other actions are written right away, so a crash, shutdown or reconnect cannot lose them.
+ */
+const BUFFERED_ACTIONS = new Set([
+    "mouseMove",
+    "annotatorScrollActivity",
+    "pdfPageVisibilityChange",
+    "pdfPageResizeChange",
+    "sidebarResize",
+]);
+
+/**
  * Add statistics about the website usage
  *
  * Therefore, use in frontend:
@@ -76,7 +88,8 @@ class StatisticSocket extends Socket {
     /**
      * Adds a new statistic entry to the database for the current user.
      * This function is only performed if the user has consented to statistics collection (`acceptStats` is true).
-     * Errors during the database operation are caught and logged internally.
+     * Actions in BUFFERED_ACTIONS are buffered and written in batches. All other actions are written right away,
+     * and the browser's callback (if given) is answered once the write is done.
      * 
      * @socketEvent stats
      * @param {Object} data The data object containing the userId
@@ -85,15 +98,24 @@ class StatisticSocket extends Socket {
      * @returns {Promise<void>} A promise that resolves (with no value) once the statistic has been processed.
      */
     async addStats(data, options) {
+        if (!this.user.acceptStats) return;
+        const entry = {
+            action: data.action,
+            data: JSON.stringify(data.data || {}),
+            userId: this.userId,
+            session: this.socket.id,
+            timestamp: new Date(),
+        };
+
+        if (!BUFFERED_ACTIONS.has(data.action)) {
+            // Rare actions are written right away, so a crash, shutdown or reconnect cannot lose them.
+            // A failed write reaches the browser's callback as {success: false}.
+            await this.models["statistic"].create(entry);
+            return;
+        }
+
         try {
-            if (!this.user.acceptStats) return;
-            this.statsBuffer.push({
-                action: data.action,
-                data: JSON.stringify(data.data || {}),
-                userId: this.userId,
-                session: this.socket.id,
-                timestamp: new Date(),
-            });
+            this.statsBuffer.push(entry);
             if (this.statsBuffer.length >= this.statsBatchSize && !this.statsFlushing) {
                 await this._flushStats();
             }
@@ -122,21 +144,25 @@ class StatisticSocket extends Socket {
             return;
         }
         this.statsFlushing = true;
+        // Take the current batch first, so events added while the insert runs stay in the new buffer
+        const batch = this.statsBuffer;
+        this.statsBuffer = [];
         try {
-            await this.models["statistic"].bulkCreate(this.statsBuffer);
+            await this.models["statistic"].bulkCreate(batch);
         } catch (e) {
             this.logger.error("Failed to flush statistics batch: " + e.toString());
         } finally {
             this.statsFlushing = false;
-            this.statsBuffer = [];
         }
     }
 
     async init() {
-        this.statsBatchSize = parseInt(await this.models['setting'].get("statistics.batch.size"), 10)
+        // Register the handlers before the first await: after a reconnect the browser sends its
+        // buffered events right away, and events that arrive before a handler exists are dropped
         this.createSocket("statsGet", this.getStats, {}, false);
         this.createSocket("stats", this.addStats, {}, false);
         this.createSocket("statsGetByUser", this.sendStatsByUser, {}, false);
+        this.statsBatchSize = parseInt(await this.models['setting'].get("statistics.batch.size"), 10)
     }
 }
 

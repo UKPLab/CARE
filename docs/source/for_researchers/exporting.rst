@@ -203,6 +203,12 @@ Each interaction is associated with a type ``action`` and metadata ``data`` that
 action at a point in time ``timestamp``. Based off of these traces, you can infer higher level event sequences and
 analyze usage timings.
 
+``timestamp`` is the time the server received the event. ``data.clientTimestamp`` is the time it happened in the
+browser, in milliseconds since 1 January 1970 (Unix time). Prefer it for timing, as events sent during a short
+connection drop arrive later. Frequent actions (``mouseMove``, ``annotatorScrollActivity``, ``pdfPageVisibilityChange``,
+``pdfPageResizeChange``, ``sidebarResize``) are written in batches, so a server crash can lose the last of them. All
+other actions are saved right away.
+
 The most important action types include:
 
     * ``routeStep``: indicating the user navigated to a different route in the app, e.g. accessing a document

@@ -162,6 +162,8 @@ the statistics table.
     2. Add new event listeners to both ``init()`` and ``destroy()`` methods.
     3. Send events with ``this.emit(action, data)``, not ``this.socket.emit``, so that the study context is added.
     4. Consider performance optimizations (like debouncing) for frequent events.
+    5. If an action can be sent several times per second, add it to ``BUFFERED_ACTIONS`` in
+       ``backend/webserver/sockets/statistic.js``. All other actions are written to the database right away.
 
 Usage in CARE
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
