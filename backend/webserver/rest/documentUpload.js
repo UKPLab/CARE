@@ -13,7 +13,6 @@ const TranslatableError = require("../../utils/TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 const i18n = require("../../utils/i18n.js");
 const {docTypes} = require('../../db/models/document.js');
-const {getTextPositions} = require('../../utils/helper/text.js');
 
 /**
  * Write a file during a REST request and remember it in options.writtenFiles, so the route can
@@ -54,16 +53,16 @@ function removeWrittenFiles(filePaths, logger) {
 
 /**
  * Mirrors DocumentSocket.addDocument (documentAdd), nearly line for line. Differs: the owner is always the
- * token's user (REST offers no upload in someone else's name), and there are no socket emits.
+ * token's user (REST offers no upload in someone else's name), there are no socket emits, and PDF annotations
+ * are not imported: that needs the PDF text the dashboard extracts in the browser.
  *
  * @param {Object} data
  * @param {number} data.actingUserId the token owner's user id
  * @param {Buffer} data.file the file content
  * @param {string} data.name the file name, with its extension
  * @param {number} [data.projectId] the project id
- * @param {boolean} [data.importAnnotations] import the PDF's annotations
  * @param {Object} options the REST options (models, transaction, server, logger, writtenFiles)
- * @returns {Promise<Object>} {doc, annotations, errors}
+ * @returns {Promise<Object>} {doc, errors}
  * @throws {TranslatableError} errors.file.noFileUploaded or errors.file.invalidFileType
  */
 async function addDocument(data, options) {
@@ -72,7 +71,6 @@ async function addDocument(data, options) {
     const logger = options.logger;
     const userId = data.actingUserId;
     let doc = null;
-    const annotations = [];
     const errors = [];
 
     if (!data['file']) {
@@ -164,105 +162,8 @@ async function addDocument(data, options) {
             }
             await writeTrackedFile(options, target, data.file);
         }
-
-        if (data["importAnnotations"]) {
-            try {
-                const annotationData = await server.rpcs["PDFRPC"].getAnnotations({
-                    file: data['file'],
-                    document: doc,
-                    fileType: fileType,
-                    wholeText: data.wholeText
-                });
-
-                if (annotationData.annotations.length !== 0) {
-                    for (const extracted of annotationData.annotations) {
-                        let textPositions;
-                        try {
-                            textPositions = getTextPositions(extracted.text, data.wholeText);
-                        } catch (error) {
-                            if (TranslatableError.is(error)) {
-                                errors.push({
-                                    message: error.key,
-                                    params: {text: extracted.text, ...(error.params || {})},
-                                });
-                                continue;
-                            }
-                            errors.push({
-                                message: "errors.documents.textPositionExtractionFailed",
-                                params: {text: extracted.text},
-                            });
-                            continue;
-                        }
-
-                        const selectors = {
-                            target: [{
-                                selector: [
-                                    {
-                                        type: "TextPositionSelector",
-                                        start: textPositions.start,
-                                        end: textPositions.end
-                                    },
-                                    {
-                                        type: "TextQuoteSelector",
-                                        exact: extracted.text || "",
-                                        prefix: textPositions.prefix || "",
-                                        suffix: textPositions.suffix || ""
-                                    },
-                                    {
-                                        type: "PagePositionSelector",
-                                        number: extracted.page + 1
-                                    }
-                                ]
-                            }]
-                        };
-
-                        try {
-                            const newAnnotation = {
-                                documentId: doc.id,
-                                selectors: selectors,
-                                tagId: 1,
-                                studySessionId: doc.studySessionId,
-                                studyStepId: doc.studyStepId,
-                                text: extracted.text || null,
-                                draft: false,
-                                userId: userId,
-                                anonymous: false,
-                            };
-                            const annotation = await models['annotation'].add(newAnnotation, {transaction: options.transaction});
-                            annotations.push(annotation);
-                            await models['comment'].add({
-                                documentId: annotation.documentId,
-                                studySessionId: annotation.studySessionId,
-                                studyStepId: annotation.studyStepId,
-                                annotationId: annotation.id,
-                                parentCommentId: data.parentCommentId !== undefined ? data.parentCommentId : null,
-                                anonymous: false,
-                                tags: "[]",
-                                draft: false,
-                                text: extracted.comment || null,
-                                userId: userId
-                            }, {transaction: options.transaction});
-
-                        } catch (annotationErr) {
-                            if (annotationErr.key) {
-                                errors.push({
-                                    message: annotationErr.key,
-                                    params: annotationErr.params,
-                                });
-                            } else if (typeof annotationErr.message === "string" && i18n.hasKey(annotationErr.message)) {
-                                errors.push({message: annotationErr.message});
-                            } else {
-                                errors.push({message: "errors.documents.annotationAddFailed"});
-                            }
-                        }
-                    }
-                }
-            } catch (_annotationRpcErr) {
-                errors.push({message: "errors.documents.automaticAnnotationExtractionFailed"});
-            }
-        }
     }
-    return {doc, annotations, errors};
+    return {doc, errors};
 }
 
 module.exports = {

@@ -687,6 +687,8 @@
         "validationConfigurationRequired": "Indiquez un assignmentId, ou un validationConfigurationId pour un travail sans devoir.",
         "filesRequired": "Joignez au moins un fichier dans le champ \"files\".",
         "invalidSubmissionField": "assignmentId, userId, validationConfigurationId et projectId doivent être des nombres entiers.",
-        "submissionProjectRequired": "Le travail a besoin d'un projet : indiquez projectId, ou utilisez un devoir qui en a un."
+        "submissionProjectRequired": "Le travail a besoin d'un projet : indiquez projectId, ou utilisez un devoir qui en a un.",
+        "importAnnotationsNotSupported": "L'importation des annotations PDF n'est disponible que lors du téléversement dans le tableau de bord, qui lit le texte du PDF dans le navigateur.",
+        "tagSetProjectNotSupported": "Un ensemble de tags est toujours placé dans votre projet actuel, comme dans le tableau de bord ; projectId ne peut donc pas être défini."
     }
 }

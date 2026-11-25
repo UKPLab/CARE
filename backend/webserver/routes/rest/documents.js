@@ -104,6 +104,12 @@ function registerRestDocumentRoutes(server) {
             if (!uploaded) {
                 throw new TranslatableError('errors.rest.fileRequired');
             }
+            // Importing PDF annotations needs the text the dashboard extracts in the browser, which a
+            // script does not send, so it is refused instead of silently importing nothing.
+            const importAnnotations = req.body?.importAnnotations;
+            if (present(importAnnotations) && importAnnotations !== 'false' && importAnnotations !== false) {
+                throw new TranslatableError('errors.rest.importAnnotationsNotSupported');
+            }
             // type only chooses HTML or modal for a .delta upload. Anything else is rejected.
             let type;
             if (present(req.body?.type)) {
@@ -125,11 +131,9 @@ function registerRestDocumentRoutes(server) {
                 name: uploaded.name,
                 type,
                 projectId,
-                importAnnotations: req.body?.importAnnotations === 'true' || req.body?.importAnnotations === true,
             }, options);
             return {
                 document: publicDocument(result.doc),
-                annotations: result.annotations,
                 errors: result.errors,
             };
         });

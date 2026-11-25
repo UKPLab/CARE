@@ -722,6 +722,8 @@
         "validationConfigurationRequired": "Give an assignmentId, or a validationConfigurationId for a submission without an assignment.",
         "filesRequired": "Attach at least one file in the field \"files\".",
         "invalidSubmissionField": "assignmentId, userId, validationConfigurationId, and projectId must be whole numbers.",
-        "submissionProjectRequired": "The submission needs a project: give projectId, or use an assignment that has one."
+        "submissionProjectRequired": "The submission needs a project: give projectId, or use an assignment that has one.",
+        "importAnnotationsNotSupported": "Importing PDF annotations is only available in the dashboard upload, which reads the PDF text in the browser.",
+        "tagSetProjectNotSupported": "A tag set always goes into your current project, as in the dashboard, so projectId cannot be set."
     }
 }
