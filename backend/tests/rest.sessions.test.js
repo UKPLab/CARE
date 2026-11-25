@@ -210,6 +210,34 @@ describe('REST study sessions', () => {
         expect((await call('delete', '/rest/v1/sessions/99999999')).statusCode).toBe(404);
     });
 
+    test('a new session is refused in a closed study and past the session limits', async () => {
+        const limited = await models['study'].add({
+            name: 'REST limited study',
+            workflowId: workflow.id,
+            userId: adminId,
+            template: false,
+            limitSessionsPerUser: 1,
+            enableEmailNotifications: false,
+        }, {context: {stepDocuments: []}});
+        try {
+            expect((await call('post', `/rest/v1/studies/${limited.id}/sessions`)).statusCode).toBe(201);
+            const second = await call('post', `/rest/v1/studies/${limited.id}/sessions`);
+            expect(second.statusCode).toBe(400);
+            expect(second.body.message).toBe('errors.studies.sessionLimitPerUserExceeded');
+
+            // Closed with an end date still in the future: the model's own check would let this through.
+            await models['study'].updateById(limited.id, {limitSessionsPerUser: null, closed: true, end: new Date(Date.now() + 86400000)});
+            const closed = await call('post', `/rest/v1/studies/${limited.id}/sessions`);
+            expect(closed.statusCode).toBe(400);
+            expect(closed.body.message).toBe('errors.studies.studyClosed');
+        } finally {
+            for (const session of await models['study_session'].getAllByKey('studyId', limited.id)) {
+                await models['study_session'].deleteById(session.id);
+            }
+            await models['study'].deleteById(limited.id);
+        }
+    });
+
     test('unknown study and session are 404', async () => {
         expect((await call('get', '/rest/v1/studies/99999999/sessions')).statusCode).toBe(404);
         expect((await call('post', '/rest/v1/studies/99999999/sessions')).statusCode).toBe(404);

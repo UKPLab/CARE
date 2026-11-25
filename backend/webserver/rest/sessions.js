@@ -185,7 +185,13 @@ async function startStudySession({userId, study, sessionId}, options) {
     if (study.template) {
         throw new TranslatableError('errors.rest.studyNotEditable');
     }
-    // The model checks the study is open and the session limits before it creates the row.
+    // Checked here, not left to the model: its beforeCreate skips the check for new sessions
+    // (parentStudySessionId is undefined there, not null), and its closed check also needs the end
+    // date to have passed. The dashboard only hides the Start button; a script has no button.
+    if (study.closed) {
+        throw new TranslatableError('errors.studies.studyClosed');
+    }
+    await models['study_session'].checkSessionAvailability(study.id, userId, {transaction});
     const session = await models['study_session'].add({studyId: study.id, userId, start: Date.now()}, {transaction});
     emailAfterCommit('sessionStart', session, options);
     return publicSession(session);
@@ -243,18 +249,9 @@ async function copyStudySession({userId, sessionId, userIds}, options) {
     if (!(await userCanManageStudy(canOf(options), userId, study))) {
         throw new TranslatableError('errors.rest.sessionNoAccess');
     }
+    const {loadUsersByIds} = require('./users');
     const targets = [...new Set(userIds)];
-    const users = await models['user'].findAll({
-        where: {id: targets, deleted: false},
-        attributes: ['id'],
-        raw: true,
-        transaction,
-    });
-    for (const id of targets) {
-        if (!users.some((user) => user.id === id)) {
-            throw new TranslatableError('errors.rest.reviewerNotFound', {id});
-        }
-    }
+    await loadUsersByIds(models, targets, transaction);
     const limits = {};
     if (study.limitSessionsPerUser !== null) {
         limits.limitSessionsPerUser = study.limitSessionsPerUser + 1;
