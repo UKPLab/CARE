@@ -9,8 +9,9 @@
 
 const TranslatableError = require("../../utils/TranslatableError");
 const _ = require("lodash");
-const {ASSIGNMENT_MODES, ASSIGNMENT_TYPES, loadAssignmentItems, loadReviewers, loadRoleGroups, loadTemplateForAssignment, planByReviewer, planByRole} = require('./reviewAssignmentPlans');
-const {canOf} = require('../utils/restHelpers');
+const {ASSIGNMENT_MODES, ASSIGNMENT_TYPES, loadAssignmentItems, loadRoleGroups, loadTemplateForAssignment, planByReviewer, planByRole} = require('./reviewAssignmentPlans');
+const {canOf, countActive} = require('../utils/restHelpers');
+const {loadUsersByIds} = require('./users');
 const {createAssignmentStudy, itemStepDocuments} = require('./reviewAssignmentStudies');
 const {getEmailContent} = require('../../utils/helper/email');
 
@@ -31,7 +32,7 @@ async function addReviewerSessions(study, reviewerIds, options, {fresh = false} 
     // 0 and null both mean unlimited, as in the session model's check. A study created in this
     // request was made with room for exactly these reviewers, so it needs no count.
     if (!fresh && study.limitSessions > 0) {
-        const existing = await models['study_session'].count({where: {studyId: study.id}, transaction});
+        const existing = await countActive(models['study_session'], {studyId: study.id}, {transaction});
         if (existing + reviewerIds.length > study.limitSessions) {
             await models['study'].updateById(study.id, {limitSessions: existing + reviewerIds.length}, {transaction});
         }
@@ -144,7 +145,7 @@ async function createReviewAssignments(data, options) {
         if (study.template || study.closed) {
             throw new TranslatableError('errors.rest.studyNotEditable');
         }
-        await loadReviewers(models, reviewerIds, transaction);
+        await loadUsersByIds(models, reviewerIds, transaction);
         if (dryRun) {
             return {dryRun: true, plan: [{studyId: study.id, reviewerIds}]};
         }
@@ -174,12 +175,12 @@ async function createReviewAssignments(data, options) {
     if (mode === 'byRole') {
         plan = planByRole(items, await loadRoleGroups(models, data.roles, reviewerIds, transaction, can));
     } else if (mode === 'byCount') {
-        await loadReviewers(models, Object.keys(data.counts).map(Number), transaction);
+        await loadUsersByIds(models, Object.keys(data.counts).map(Number), transaction);
         plan = planByReviewer(items, data.counts);
     } else if (mode === 'sessionOwner') {
         plan = items.map((item) => ({item, reviewerIds: [item.userId]}));
     } else {
-        await loadReviewers(models, reviewerIds, transaction);
+        await loadUsersByIds(models, reviewerIds, transaction);
         plan = items.map((item) => ({item, reviewerIds}));
     }
     if (dryRun) {

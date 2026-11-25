@@ -11,6 +11,7 @@ const {Op} = require('sequelize');
 const {assessmentResultKeys} = require('../sockets/publish_assessment');
 const {pickScoresFromGradeRows} = require('assessment-score');
 const {positiveInt} = require('../../utils/helper/positiveInt.js');
+const {findActive} = require('../utils/restHelpers');
 
 /**
  * Assessment scores of one study. The caller passes the sessions they may see; this only adds the scores.
@@ -41,11 +42,9 @@ async function studyAssessmentScores({study, sessions, configurationId}, options
     }
 
     const keys = assessmentResultKeys(step);
-    const readRows = (where) => models["document_data"].findAll({
-        where: {...where, key: {[Op.in]: keys}, deleted: false},
+    const readRows = (where) => findActive(models["document_data"], {...where, key: {[Op.in]: keys}}, {
         attributes: ["id", "documentId", "studySessionId", "studyStepId", "key", "value"],
         order: [["id", "ASC"]],
-        raw: true,
     });
     const sessionRows = await readRows({studySessionId: {[Op.in]: sessions.map((session) => session.id)}});
     // Scores saved without a session belong to the step's document and apply when a session has none.

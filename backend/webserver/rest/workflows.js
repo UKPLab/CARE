@@ -8,6 +8,7 @@
  */
 
 const TranslatableError = require('../../utils/TranslatableError');
+const {countActive, findActive} = require('../utils/restHelpers');
 
 const STEP_TYPES = [1, 2, 3, 4];
 
@@ -42,7 +43,7 @@ async function loadOwnWorkflow(models, userId, id, transaction) {
  * @returns {Promise<boolean>}
  */
 async function workflowInUse(models, workflowId, transaction) {
-    const count = await models['study'].count({where: {workflowId, deleted: false}, transaction});
+    const count = await countActive(models['study'], {workflowId}, {transaction});
     return count > 0;
 }
 
@@ -289,11 +290,9 @@ function sortWorkflowSteps(steps) {
  */
 async function listWorkflows(options, {id} = {}) {
     const models = options.models;
-    const workflows = await models['workflow'].findAll({
-        where: {deleted: false, ...(id !== undefined ? {id} : {})},
+    const workflows = await findActive(models['workflow'], id !== undefined ? {id} : {}, {
         attributes: ['id', 'name', 'description', 'userId', 'hideInFrontend', 'parentWorkflowId'],
         order: [['id', 'ASC']],
-        raw: true,
     });
     // All steps in one query, then grouped per workflow.
     const steps = workflows.length === 0 ? []

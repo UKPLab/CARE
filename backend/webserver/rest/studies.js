@@ -9,7 +9,7 @@
 
 const TranslatableError = require("../../utils/TranslatableError");
 const {Op} = require('sequelize');
-const {canOf, loadByIdOrHash, pickFields} = require('../utils/restHelpers');
+const {canOf, countActive, findActive, findOneActive, loadByIdOrHash, pickFields} = require('../utils/restHelpers');
 
 const STUDIES_FULL_ACCESS = 'frontend.dashboard.studies.fullAccess';
 
@@ -138,7 +138,7 @@ async function visibleStudiesWhere(models, userId, can) {
  */
 async function studyVisibleInList(models, userId, study, can) {
     const where = await visibleStudiesWhere(models, userId, can);
-    return (await models['study'].count({where: {[Op.and]: [where, {id: study.id}]}})) > 0;
+    return (await countActive(models['study'], {[Op.and]: [where, {id: study.id}]})) > 0;
 }
 
 /**
@@ -243,11 +243,7 @@ function pickStudyFields(source) {
  */
 async function listStudies({userId}, options) {
     const models = options.models;
-    return models['study'].findAll({
-        where: await visibleStudiesWhere(models, userId, canOf(options)),
-        order: [['createdAt', 'ASC']],
-        raw: true,
-    });
+    return findActive(models['study'], await visibleStudiesWhere(models, userId, canOf(options)), {order: [['createdAt', 'ASC']]});
 }
 
 /**
@@ -260,11 +256,9 @@ async function listStudies({userId}, options) {
  */
 async function listStudyTemplates({userId}, options) {
     const seeAll = await canOf(options)(STUDIES_FULL_ACCESS);
-    const templates = await options.models['study'].findAll({
-        where: {template: true, deleted: false},
+    const templates = await findActive(options.models['study'], {template: true}, {
         attributes: ['id', 'hash', 'name', 'description', 'workflowId', 'userId', 'createdByUserId'],
         order: [['id', 'ASC']],
-        raw: true,
     });
     return templates
         .filter((template) => seeAll || ownsStudyRecord(userId, template))
@@ -290,11 +284,7 @@ async function studyAiLimits(models, studyIds, transaction) {
     if (studyIds.length === 0) {
         return limits;
     }
-    const rows = await models['ai_budget'].findAll({
-        where: {studyId: studyIds, studyStepId: null, aiHookId: null, deleted: false},
-        raw: true,
-        transaction,
-    });
+    const rows = await findActive(models['ai_budget'], {studyId: studyIds, studyStepId: null, aiHookId: null}, {transaction});
     for (const row of rows) {
         if (keyOf[row.limitType] && limits.has(row.studyId)) {
             limits.get(row.studyId)[keyOf[row.limitType]] = Number(row.costLimit);
@@ -332,11 +322,8 @@ async function applyAiLimits(models, userId, studyId, aiLimits, transaction) {
     const typeOf = {aiCostLimitTotal: LT.TOTAL, aiCostLimitPerSession: LT.PER_SESSION, aiCostLimitPerUser: LT.PER_USER};
     const context = {currentUserId: userId};
     for (const [key, value] of Object.entries(aiLimits)) {
-        const existing = await models['ai_budget'].findOne({
-            where: {studyId, studyStepId: null, aiHookId: null, limitType: typeOf[key], deleted: false},
-            raw: true,
-            transaction,
-        });
+        const existing = await findOneActive(models['ai_budget'],
+            {studyId, studyStepId: null, aiHookId: null, limitType: typeOf[key]}, {transaction});
         if (value !== null && value > 0) {
             if (existing) {
                 await models['ai_budget'].updateById(existing.id, {costLimit: value}, {transaction, context});
@@ -441,11 +428,7 @@ async function updateStudyFields({userId, studyId, fields, stepDocuments, aiLimi
         return updated;
     }
 
-    const children = await models['study'].findAll({
-        where: {parentStudyId: study.id, deleted: false},
-        transaction: options.transaction,
-        raw: true,
-    });
+    const children = await findActive(models['study'], {parentStudyId: study.id}, {transaction: options.transaction});
     const newest = children.sort((a, b) => b.id - a.id)[0];
     return newest || updated;
 }

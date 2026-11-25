@@ -9,7 +9,7 @@
 
 const TranslatableError = require("../../utils/TranslatableError");
 const {Op} = require('sequelize');
-const {canOf} = require('../utils/restHelpers');
+const {canOf, countActive, findActive} = require('../utils/restHelpers');
 
 const ASSIGNMENTS_VIEW_ALL = 'frontend.dashboard.assignments.viewAll';
 const ASSIGNMENTS_EDIT_ALL = 'frontend.dashboard.assignments.edit';
@@ -28,12 +28,8 @@ const ASSIGNMENT_PUBLIC_FIELDS = ['id', 'userId', ...ASSIGNMENT_WRITABLE_FIELDS,
  * @returns {Promise<Map>} assignment id to {roles: role ids, users: user ids}
  */
 async function sharesByAssignment(models, assignmentIds, transaction) {
-    const rows = assignmentIds.length === 0 ? [] : await models['assignment_share'].findAll({
-        where: {assignmentId: assignmentIds, deleted: {[Op.not]: true}},
-        attributes: ['assignmentId', 'roleId', 'userId'],
-        raw: true,
-        transaction,
-    });
+    const rows = assignmentIds.length === 0 ? [] : await findActive(models['assignment_share'],
+        {assignmentId: assignmentIds}, {attributes: ['assignmentId', 'roleId', 'userId'], transaction});
     const shares = new Map(assignmentIds.map((id) => [id, {roles: [], users: []}]));
     for (const row of rows) {
         const entry = shares.get(row.assignmentId);
@@ -121,7 +117,8 @@ async function loadAssignmentForChange(options, userId, id) {
  * @throws {TranslatableError} errors.rest.roleNotFound or errors.rest.reviewerNotFound
  */
 async function resolveShares(models, shareWith, transaction) {
-    const roleRows = await models['user_role'].findAll({attributes: ['id', 'name'], raw: true, transaction});
+    const {listRoles, loadUsersByIds} = require('./users');
+    const roleRows = await listRoles({models, transaction});
     const roleIds = [];
     for (const key of shareWith.roles || []) {
         const role = roleRows.find((row) => row.id === key || row.name === key);
@@ -131,14 +128,7 @@ async function resolveShares(models, shareWith, transaction) {
         roleIds.push(role.id);
     }
     const userIds = [...new Set(shareWith.users || [])];
-    if (userIds.length > 0) {
-        const found = await models['user'].findAll({where: {id: userIds, deleted: false}, attributes: ['id'], raw: true, transaction});
-        for (const id of userIds) {
-            if (!found.some((row) => row.id === id)) {
-                throw new TranslatableError('errors.rest.reviewerNotFound', {id});
-            }
-        }
-    }
+    await loadUsersByIds(models, userIds, transaction);
     return {roleIds: [...new Set(roleIds)], userIds};
 }
 
@@ -154,11 +144,7 @@ async function resolveShares(models, shareWith, transaction) {
  */
 async function replaceShares(models, assignmentId, shareWith, transaction) {
     const {roleIds, userIds} = await resolveShares(models, shareWith, transaction);
-    const existing = await models['assignment_share'].findAll({
-        where: {assignmentId, deleted: {[Op.not]: true}},
-        raw: true,
-        transaction,
-    });
+    const existing = await findActive(models['assignment_share'], {assignmentId}, {transaction});
     for (const row of existing) {
         const keep = row.roleId ? roleIds.includes(row.roleId) : userIds.includes(row.userId);
         if (!keep) {
@@ -207,12 +193,12 @@ async function checkAssignmentReferences(models, userId, fields, transaction) {
  */
 async function listAssignments({userId}, options) {
     const models = options.models;
-    let where = {deleted: false};
+    let where = {};
     if (!(await canOf(options)(ASSIGNMENTS_VIEW_ALL))) {
         const filter = await models['assignment'].getUserFilter(userId);
-        where = {deleted: false, [Op.or]: [filter.owned, ...(filter.shared ? [filter.shared] : [])]};
+        where = {[Op.or]: [filter.owned, ...(filter.shared ? [filter.shared] : [])]};
     }
-    const rows = await models['assignment'].findAll({where, order: [['id', 'ASC']], raw: true});
+    const rows = await findActive(models['assignment'], where, {order: [['id', 'ASC']]});
     const shares = await sharesByAssignment(models, rows.map((row) => row.id));
     return rows.map((row) => assignmentWithShares(row, shares));
 }
@@ -331,7 +317,7 @@ async function deleteAssignment({userId, id}, options) {
     if (!assignment) {
         return null;
     }
-    const submissions = await models['submission'].count({where: {assignmentId: assignment.id, deleted: false}, transaction: options.transaction});
+    const submissions = await countActive(models['submission'], {assignmentId: assignment.id}, {transaction: options.transaction});
     if (submissions > 0) {
         throw new TranslatableError('errors.rest.assignmentHasSubmissions');
     }

@@ -232,6 +232,17 @@ describe('REST assignments', () => {
             expect(res.statusCode).toBe(404);
             expect(res.body.message).toBe('errors.rest.roleNotFound');
         });
+
+        test('a deleted role counts as unknown', async () => {
+            const role = await models['user_role'].create({name: 'rest deleted role', deleted: true});
+            try {
+                const res = await post({templateId: template.id, items: [aliceDoc.id], mode: 'byRole', roles: [{role: role.name, items: 1}]});
+                expect(res.statusCode).toBe(404);
+                expect(res.body.message).toBe('errors.rest.roleNotFound');
+            } finally {
+                await models['user_role'].destroy({where: {id: role.id}, force: true});
+            }
+        });
     });
 
     describe('failing halfway', () => {

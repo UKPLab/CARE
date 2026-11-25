@@ -9,7 +9,7 @@
 
 const TranslatableError = require("../../utils/TranslatableError");
 const {Op, literal, where: sqlWhere} = require('sequelize');
-const {canOf, pickFields} = require('../utils/restHelpers');
+const {canOf, countActive, findActive, pickFields} = require('../utils/restHelpers');
 
 const CONFIGURATIONS_MANAGE = "frontend.dashboard.configurations.manage";
 const CONFIGURATION_TYPES = {assessment: 0, validation: 1, dialoguePlan: 2};
@@ -84,11 +84,8 @@ function checkConfigurationContent(type, content) {
  * @returns {Promise<Array<Object>>} the configurations
  */
 async function listConfigurations({userId}, options) {
-    const rows = await options.models["configuration"].findAll({
-        where: {deleted: false, [Op.or]: [{hideInFrontend: {[Op.not]: true}}, {userId}]},
-        order: [["id", "ASC"]],
-        raw: true,
-    });
+    const rows = await findActive(options.models["configuration"],
+        {[Op.or]: [{hideInFrontend: {[Op.not]: true}}, {userId}]}, {order: [["id", "ASC"]]});
     return rows.map(publicConfiguration);
 }
 
@@ -210,15 +207,11 @@ async function deleteConfiguration({userId, id}, options) {
         return null;
     }
     const transaction = options.transaction;
-    const usedByAssignments = await models["assignment"].count({where: {validationConfigurationId: row.id, deleted: false}, transaction});
-    const usedBySubmissions = await models["submission"].count({where: {validationConfigurationId: row.id, deleted: false}, transaction});
-    const usedBySteps = await models["study_step"].count({
-        where: {
-            deleted: false,
-            [Op.and]: [sqlWhere(literal(models["study_step"].assessmentConfigurationSql("study_step")), String(row.id))],
-        },
-        transaction,
-    });
+    const usedByAssignments = await countActive(models["assignment"], {validationConfigurationId: row.id}, {transaction});
+    const usedBySubmissions = await countActive(models["submission"], {validationConfigurationId: row.id}, {transaction});
+    const usedBySteps = await countActive(models["study_step"], {
+        [Op.and]: [sqlWhere(literal(models["study_step"].assessmentConfigurationSql("study_step")), String(row.id))],
+    }, {transaction});
     if (usedByAssignments + usedBySubmissions + usedBySteps > 0) {
         throw new TranslatableError("errors.rest.configurationInUse");
     }

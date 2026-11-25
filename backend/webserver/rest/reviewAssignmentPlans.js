@@ -10,6 +10,7 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const _ = require("lodash");
 const {ASSIGNMENTS_VIEW_ALL} = require('./assignments');
+const {findActive} = require('../utils/restHelpers');
 
 const ASSIGNMENT_TYPES = ['document', 'submission', 'study_session'];
 const ASSIGNMENT_MODES = ['everyReviewer', 'byRole', 'byCount', 'sessionOwner'];
@@ -58,7 +59,7 @@ async function loadAssignmentItems(models, userId, type, itemIds, transaction, c
     const {userCanViewStudy} = require('./studies');
     const seeAll = await can(ASSIGNMENTS_VIEW_ALL);
     // One query for all items; the checks below still go in the order the caller sent them.
-    const rows = await models[ITEM_MODEL[type]].findAll({where: {id: itemIds, deleted: false}, raw: true, transaction});
+    const rows = await findActive(models[ITEM_MODEL[type]], {id: itemIds}, {transaction});
     const byId = new Map(rows.map((row) => [row.id, row]));
     const items = [];
     for (const id of itemIds) {
@@ -84,33 +85,6 @@ async function loadAssignmentItems(models, userId, type, itemIds, transaction, c
 }
 
 /**
- * Load the reviewers by id. Each one must exist and not be deleted.
- *
- * @param {Object} models the database models
- * @param {number[]} reviewerIds the reviewer user ids
- * @param {Object} [transaction] the Sequelize transaction
- * @returns {Promise<Array<Object>>} the reviewers (id, firstName, lastName)
- * @throws {TranslatableError} errors.rest.reviewerNotFound
- */
-async function loadReviewers(models, reviewerIds, transaction) {
-    if (reviewerIds.length === 0) {
-        return [];
-    }
-    const users = await models['user'].findAll({
-        where: {id: reviewerIds, deleted: false},
-        attributes: ['id', 'firstName', 'lastName'],
-        raw: true,
-        transaction,
-    });
-    for (const id of reviewerIds) {
-        if (!users.some((user) => user.id === id)) {
-            throw new TranslatableError('errors.rest.reviewerNotFound', {id});
-        }
-    }
-    return users;
-}
-
-/**
  * Resolve { roleIdOrName: reviewsPerUser } to the users of each role.
  * Listing a role's users needs the same right the dashboard user list needs.
  *
@@ -123,7 +97,8 @@ async function loadReviewers(models, reviewerIds, transaction) {
  * @throws {TranslatableError} errors.rest.roleNotFound or errors.rest.roleNoAccess
  */
 async function loadRoleGroups(models, roles, reviewerIds, transaction, can) {
-    const allRoles = await models['user_role'].findAll({attributes: ['id', 'name'], raw: true, transaction});
+    const {listRoles} = require('./users');
+    const allRoles = await listRoles({models, transaction});
     const groups = [];
     for (const [key, needed] of Object.entries(roles)) {
         if (needed === 0) {
@@ -138,22 +113,13 @@ async function loadRoleGroups(models, roles, reviewerIds, transaction, can) {
         if (!mayList) {
             throw new TranslatableError('errors.rest.roleNoAccess', {role: role.name});
         }
-        const matches = await models['user_role_matching'].findAll({
-            where: {userRoleId: role.id, deleted: false},
-            attributes: ['userId'],
-            raw: true,
-            transaction,
-        });
+        const matches = await findActive(models['user_role_matching'], {userRoleId: role.id}, {attributes: ['userId'], transaction});
         let memberIds = [...new Set(matches.map((row) => row.userId))];
         if (reviewerIds.length > 0) {
             memberIds = memberIds.filter((id) => reviewerIds.includes(id));
         }
-        const users = memberIds.length === 0 ? [] : await models['user'].findAll({
-            where: {id: memberIds, deleted: false},
-            attributes: ['id', 'firstName', 'lastName'],
-            raw: true,
-            transaction,
-        });
+        const users = memberIds.length === 0 ? []
+            : await findActive(models['user'], {id: memberIds}, {attributes: ['id', 'firstName', 'lastName'], transaction});
         groups.push({roleName: role.name, needed, users});
     }
     return groups;
@@ -293,7 +259,6 @@ module.exports = {
     ASSIGNMENT_MODES,
     ASSIGNMENT_TYPES,
     loadAssignmentItems,
-    loadReviewers,
     loadRoleGroups,
     loadTemplateForAssignment,
     planByReviewer,

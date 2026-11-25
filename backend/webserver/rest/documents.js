@@ -13,7 +13,7 @@ const Delta = require('quill-delta');
 const TranslatableError = require("../../utils/TranslatableError");
 const UPLOAD_PATH = `${__dirname}/../../../files`;
 const {applyTemplateToDocument} = require('../../utils/helper/documentTemplate.js');
-const {canOf, loadByIdOrHash, pickFields} = require('../utils/restHelpers');
+const {canOf, findActive, loadByIdOrHash, pickFields} = require('../utils/restHelpers');
 const {dbToDelta} = require('editor-delta-conversion');
 const {docTypes} = require('../../db/models/document.js');
 const {userCanUseProject} = require('./projects');
@@ -132,9 +132,8 @@ async function readDocumentContent({document}, options) {
     if (fs.existsSync(deltaPath)) {
         delta = new Delta(JSON.parse(fs.readFileSync(deltaPath, 'utf8')));
     }
-    const edits = await options.models['document_edit'].findAll({
-        where: {documentId: document.id, studySessionId: null, studyStepId: null, draft: true},
-    });
+    const edits = await findActive(options.models['document_edit'],
+        {documentId: document.id, studySessionId: null, studyStepId: null, draft: true}, {raw: false});
     delta = delta.compose(dbToDelta(edits));
     const text = delta.ops.map((op) => (typeof op.insert === 'string' ? op.insert : '')).join('');
     return {delta: {ops: delta.ops}, text};

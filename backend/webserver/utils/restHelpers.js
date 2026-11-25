@@ -5,6 +5,8 @@
  * Socket classes do not use them.
  */
 
+const {Op} = require('sequelize');
+
 const denyAll = async () => false;
 
 /**
@@ -101,4 +103,56 @@ function sendKnownError(res, err, map = {}) {
     return true;
 }
 
-module.exports = {canOf, parseIdOrHash, loadByIdOrHash, pickFields, errorKey, sendKnownError};
+/**
+ * A where clause that leaves out deleted rows, so no REST query can forget it. Rows whose deleted
+ * flag is null count as not deleted.
+ *
+ * @param {Object} [where] the conditions
+ * @returns {Object} the conditions plus "not deleted"
+ */
+function notDeleted(where = {}) {
+    return {...where, deleted: {[Op.not]: true}};
+}
+
+/**
+ * Rows of a model that are not deleted. For REST queries the MetaModel helpers cannot express
+ * (several conditions, OR, chosen columns, order, limit) or that must run inside a transaction:
+ * getAllByKey and getAllByKeyValues do not pass their options on, so they read outside it.
+ *
+ * @param {Object} model a MetaModel
+ * @param {Object} where the conditions; "not deleted" is added
+ * @param {Object} [options] more Sequelize options (transaction, attributes, order, limit, raw)
+ * @returns {Promise<Array<Object>>} the rows, plain objects unless options.raw is false
+ */
+function findActive(model, where, options = {}) {
+    return model.findAll({raw: true, ...options, where: notDeleted(where)});
+}
+
+/**
+ * The first row of a model that matches and is not deleted. See findActive.
+ *
+ * @param {Object} model a MetaModel
+ * @param {Object} where the conditions; "not deleted" is added
+ * @param {Object} [options] more Sequelize options (transaction, attributes, order, raw)
+ * @returns {Promise<Object|null>} the row, or null
+ */
+function findOneActive(model, where, options = {}) {
+    return model.findOne({raw: true, ...options, where: notDeleted(where)});
+}
+
+/**
+ * How many rows of a model match and are not deleted. See findActive.
+ *
+ * @param {Object} model a MetaModel
+ * @param {Object} where the conditions; "not deleted" is added
+ * @param {Object} [options] more Sequelize options (transaction)
+ * @returns {Promise<number>} the count
+ */
+function countActive(model, where, options = {}) {
+    return model.count({...options, where: notDeleted(where)});
+}
+
+module.exports = {
+    canOf, parseIdOrHash, loadByIdOrHash, pickFields, errorKey, sendKnownError,
+    notDeleted, findActive, findOneActive, countActive,
+};

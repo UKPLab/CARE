@@ -8,6 +8,7 @@
  */
 
 const TranslatableError = require("../../utils/TranslatableError");
+const {findActive, findOneActive} = require('../utils/restHelpers');
 
 /**
  * Add the item's id to every template marker in a study step configuration.
@@ -51,12 +52,7 @@ function fillTemplateMarkers(config, context) {
  * @returns {Promise<number|null>} the document id, or null when the submission has no PDF
  */
 async function primaryDocumentId(models, submission, transaction) {
-    const docs = await models['document'].findAll({
-        where: {submissionId: submission.id, deleted: false, type: 0},
-        order: [['id', 'ASC']],
-        raw: true,
-        transaction,
-    });
+    const docs = await findActive(models['document'], {submissionId: submission.id, type: 0}, {order: [['id', 'ASC']], transaction});
     if (docs.length === 0) {
         return null;
     }
@@ -87,13 +83,13 @@ async function duplicateSessionDocuments(models, userId, studySession, workflowM
             if (previousSubmissionId === null) {
                 throw new TranslatableError('errors.assignment.firstStepNotSubmission');
             }
-            const original = await models['submission'].findOne({where: {id: previousSubmissionId}, transaction});
+            const original = await models['submission'].getById(previousSubmissionId, {transaction});
             const root = await models['submission'].getRootSubmission(original);
-            const latest = await models['submission'].findOne({where: {previousSubmissionId: root?.id}, transaction});
+            const latest = root && await models['submission'].getByKey('previousSubmissionId', root.id, {transaction});
             if (!latest) {
                 throw new TranslatableError('errors.assignment.latestSubmissionNotFound');
             }
-            const document = await models['document'].findOne({where: {submissionId: latest.id, type: 0}, transaction});
+            const document = await findOneActive(models['document'], {submissionId: latest.id, type: 0}, {transaction});
             if (!document) {
                 throw new TranslatableError('errors.assignment.latestSubmissionNotFound');
             }
@@ -105,10 +101,8 @@ async function duplicateSessionDocuments(models, userId, studySession, workflowM
             continue;
         }
 
-        const sourceStep = await models['study_step'].findOne({
-            where: {workflowStepId: targetWorkflowStepId, studyId: studySession.studyId},
-            transaction,
-        });
+        const sourceStep = await findOneActive(models['study_step'],
+            {workflowStepId: targetWorkflowStepId, studyId: studySession.studyId}, {transaction});
         const original = sourceStep && await models['document'].getById(sourceStep.documentId, {transaction});
         if (!original) {
             throw new TranslatableError('errors.rest.invalidWorkflowMapping');

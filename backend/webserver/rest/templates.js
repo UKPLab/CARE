@@ -10,6 +10,7 @@
 const {getDuplicatePlaceholderIds, getDuplicatePlaceholderOptionTokens} = require('../../utils/helper/templateResolver');
 const TranslatableError = require("../../utils/TranslatableError");
 const {Op} = require('sequelize');
+const {findActive, findOneActive} = require('../utils/restHelpers');
 
 const REST_TEMPLATE_FIELDS = ["id", "name", "description", "type", "defaultLanguage", "public", "userId"];
 
@@ -23,16 +24,10 @@ const REST_TEMPLATE_FIELDS = ["id", "name", "description", "type", "defaultLangu
  */
 async function listTemplates({userId}, options) {
     const Template = options.models["template"];
-    return Template.findAll({
-        where: {
-            deleted: false,
-            type: {[Op.in]: Template.otherTemplateTypes},
-            [Op.or]: [{userId}, {public: true}],
-        },
-        attributes: REST_TEMPLATE_FIELDS,
-        order: [["id", "ASC"]],
-        raw: true,
-    });
+    return findActive(Template, {
+        type: {[Op.in]: Template.otherTemplateTypes},
+        [Op.or]: [{userId}, {public: true}],
+    }, {attributes: REST_TEMPLATE_FIELDS, order: [["id", "ASC"]]});
 }
 
 /**
@@ -192,11 +187,7 @@ async function setTemplateContent({userId, id, language, content}, options) {
         return null;
     }
     await checkTemplateContent(content, template.type, options);
-    const existing = await models["template_content"].findOne({
-        where: {templateId: template.id, language, deleted: false},
-        raw: true,
-        transaction,
-    });
+    const existing = await findOneActive(models["template_content"], {templateId: template.id, language}, {transaction});
     if (existing) {
         await models["template_content"].updateById(existing.id, {content: {ops: content.ops}}, {transaction});
     } else {
@@ -230,11 +221,7 @@ async function removeTemplateLanguage({userId, id, language}, options) {
     if (template.defaultLanguage === language) {
         throw new TranslatableError("errors.rest.cannotRemoveDefaultLanguage");
     }
-    const row = await models["template_content"].findOne({
-        where: {templateId: template.id, language, deleted: false},
-        raw: true,
-        transaction: options.transaction,
-    });
+    const row = await findOneActive(models["template_content"], {templateId: template.id, language}, {transaction: options.transaction});
     if (!row) {
         throw new TranslatableError("errors.rest.templateLanguageNotFound");
     }
