@@ -35,7 +35,16 @@ Where the code is
   them. Files are named in the plural, like the route file that calls them and
   its URL (``rest/documents.js`` for ``/rest/v1/documents``); a resource split
   into parts adds the part (``documentUpload.js``, ``studyActions.js``).
+  They read single rows with the model's ``getById`` / ``getByKey`` and everything
+  else with ``findActive``, ``findOneActive``, or ``countActive`` from
+  ``utils/restHelpers.js``, which always leave out deleted rows and pass the
+  transaction on. (The model's ``getAllByKey`` and ``getAllByKeyValues`` do not
+  pass their options on, so they would read outside a write's transaction.)
 * ``sockets/`` — the dashboard's socket methods, unchanged by the REST API.
+* ``rest/socketEvents.js`` — every socket event, listed as covered by REST (with
+  its route) or socket-only (with the reason). ``tests/rest.socketEvents.test.js``
+  fails when a socket event is missing from it, so a new socket feature cannot
+  skip the REST decision: add the event to one of the two lists.
 
 Rate limits
 -----------
@@ -52,12 +61,25 @@ creating more tokens does not give more budget:
   ``POST /sessions/:idOrHash/copy``, and the bulk ``POST /studies/close``,
   ``/studies/open``, and ``/studies/delete``.
 
-Admins change both under Settings, General, API tokens. Over budget is ``429``
+Before token auth, each IP address also has a budget for requests whose token is
+missing, wrong, expired, or revoked: ``system.auth.apiTokens.failedAuthPerMinute``
+(default 60). Only those ``401`` answers count, so working scripts never use it up;
+once it is used up, every request from that address is ``429`` for the rest of
+the minute. Behind a reverse proxy such as nginx, set ``TRUST_PROXY=1`` in
+``.env`` so CARE sees the client's address and not the proxy's; otherwise all
+clients share this budget.
+
+Admins change these under Settings, General, API tokens. Over budget is ``429``
 ``errors.rest.rateLimitExceeded`` until the minute is over. Every response
 carries ``RateLimit`` and ``RateLimit-Policy`` headers with the remaining count.
 Each expensive route adds ``heavyRateLimit(server)`` from
 ``middleware/restRateLimit.js`` in its own definition, so the marking sits on the
 route.
+
+The budgets and the ``system.auth.apiTokens.enabled`` switch are read on every
+request, so the backend keeps a copy for up to 30 seconds. Saving a setting in
+CARE clears the copy, so a change applies at once; only a change made directly in
+the database waits up to 30 seconds.
 
 Errors
 ------
@@ -208,10 +230,15 @@ methods in ``sockets/document.js`` are separate and unchanged.
   ``projectId`` follows the same rule. Optional ``type`` may only be 1 or 2 and
   only matters for a ``.delta`` file. One file per request. A request over
   100 MB in total, the same cap as socket uploads, is ``413``
-  ``errors.rest.fileTooLarge``. A multipart request without ``Content-Length``
+  ``errors.rest.fileTooLarge``. The size is checked from ``Content-Length`` before any
+  file is read, so a client that is still sending may see the connection close
+  instead of reading the ``413``; nothing is saved either way. A multipart request without ``Content-Length``
   (chunked) is ``411`` ``errors.rest.contentLengthRequired``, because its size
   cannot be checked first; this applies to every upload route. Other file types are ``400``
   ``errors.file.invalidFileType``. File names keep non-ASCII characters.
+  ``importAnnotations`` is ``400`` ``errors.rest.importAnnotationsNotSupported``:
+  importing a PDF's annotations needs the PDF text that the dashboard upload reads
+  in the browser, so it stays a dashboard action.
 * ``GET /rest/v1/documents/:idOrHash`` — one document as JSON.
 * ``PATCH /rest/v1/documents/:idOrHash`` — ``name`` and/or ``public`` (publish is
   ``{ "public": true }``).
@@ -400,8 +427,10 @@ on ownership. Starting and finishing need ``frontend.dashboard.my_sessions.view`
   who may see the study (owner, or ``frontend.dashboard.studies.fullAccess`` on
   the token) gets all of them; anyone else gets only their own.
 * ``POST /rest/v1/studies/:idOrHash/sessions`` — start a new session in that
-  study for the caller (``studySessionStart``). The study's open state and
-  session limits apply. ``201``.
+  study for the caller (``studySessionStart``). ``201``. A closed study is
+  ``400`` ``errors.studies.studyClosed``; the study's session limits and start
+  date apply too (``400``). REST checks these itself, because the dashboard only
+  hides its Start button.
 * ``POST /rest/v1/sessions/:idOrHash/start`` — set the start time of an own
   session that was assigned but not started.
 * ``POST /rest/v1/sessions/:idOrHash/finish`` — finish an own session. A
@@ -493,7 +522,9 @@ The functions are in ``rest/submissions.js``. All routes need
   total per request. The files are checked against the validation schema.
   With an assignment the caller must be able to see it, it must be open and not
   past its end, and the upload becomes the next revision within
-  ``maxRevisions``. After commit the assignment owner and the submitter get the
+  ``maxRevisions``. Without an assignment, an upload becomes the next version of
+  the caller's latest submission in the same project (the given one, else the
+  default project). After commit the assignment owner and the submitter get the
   usual emails, and the ``submission.uploaded`` trigger event fires. Counts as an
   expensive request. Same steps as the dashboard upload
   (``documentUploadSingleSubmission``); replacing an existing submission is not
@@ -524,7 +555,8 @@ Read-only routes that return the ids other calls need.
 * ``GET /rest/v1/me`` — any valid token. Returns
   ``{ "token": { "id", "name", "prefix", "createdAt", "lastUsedAt", "expiresAt" }, "user": { "id", "userName", "firstName", "lastName", "roles" }, "rights": [ ... ] }``.
   ``rights`` are the rights on the token that the owner still has, which is
-  exactly what the token can use.
+  exactly what the token can use. ``lastUsedAt`` is updated at most once a
+  minute per token.
 * ``GET /rest/v1/study-templates`` — study templates the caller may create
   studies and assignments from: their own, or all with
   ``frontend.dashboard.studies.fullAccess`` on the token. Needs
@@ -576,6 +608,15 @@ Functions are in ``rest/projects.js``.
   (publish; cannot be undone), ``closed: true|false``.
 * ``DELETE /rest/v1/projects/:id`` — soft-delete. As in the dashboard, this also
   deletes the project's documents and studies.
+* ``GET /rest/v1/me/project`` — the caller's current project, ``{ "project" }``:
+  the one picked in the dashboard's project picker (``projects.default``), else
+  the system default; ``null`` when there is none. New tag sets go there, and
+  documents, assignments, and submissions sent without a ``projectId``.
+* ``PUT /rest/v1/me/project`` — ``{ "projectId": 7 }`` makes that project current,
+  the same setting the dashboard's picker writes. It must be an own or public
+  project (``400`` ``errors.rest.invalidProjectId``); a missing or non-integer id
+  is ``400`` ``errors.rest.invalidProjectField``. An open dashboard shows the new
+  project after a reload. Both need the same right as reading projects.
 
 Writes need ``frontend.dashboard.projects.view`` and work on own projects only.
 Assigning users to a project stays in the dashboard.
@@ -589,12 +630,12 @@ needs ``frontend.dashboard.tags.view`` and works on own tag sets only.
 
 * ``GET /rest/v1/tag-sets`` and ``GET /rest/v1/tag-sets/:id`` — own and public
   tag sets, each with its ``tags``.
-* ``POST /rest/v1/tag-sets`` — ``{ "name", "description", "projectId", "tags": [ { "name", "colorCode", "description" } ] }``.
+* ``POST /rest/v1/tag-sets`` — ``{ "name", "description", "tags": [ { "name", "colorCode", "description" } ] }``.
   ``colorCode`` is one of ``success``, ``danger``, ``info``, ``dark``,
-  ``warning``, ``secondary``. Without ``projectId`` the set goes into the same
-  project the dashboard uses: the caller's own ``projects.default`` setting, else
-  the system ``projects.default``. A given ``projectId`` must be an own or public
-  project (``400`` ``errors.rest.invalidProjectId``).
+  ``warning``, ``secondary``. As in the dashboard, the set goes into the caller's
+  current project: their own ``projects.default`` setting (the project picked in
+  the dashboard), else the system ``projects.default``. A ``projectId`` in the
+  body is ``400`` ``errors.rest.tagSetProjectNotSupported``.
 * ``PATCH /rest/v1/tag-sets/:id`` — ``name``, ``description``, ``public: true``
   (publishes the set and its tags; cannot be undone), and ``tags``: entries with
   an ``id`` change that tag, entries without one are added, tags left out are
