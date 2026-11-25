@@ -215,7 +215,7 @@ module.exports = class MetaModel extends Model {
      * Get all db entries by key and multiple values
      * @param {string} key column name
      * @param {Array} values array of column values
-     * @param {Object} options - Sequelize query options
+     * @param {Object} options - Sequelize query options (e.g. transaction, attributes, order); the where clause stays this method's
      * @param {boolean} includeDraft include draft
      *
      */
@@ -224,14 +224,16 @@ module.exports = class MetaModel extends Model {
             try {
                 if (!includeDraft && "draft" in this.getAttributes()) {
                     return await this.findAll({
+                        raw: true,
+                        ...options,
                         where: {[key]: {[Op.in]: values}, deleted: false, draft: false},
-                        raw: true
-                    }, options);
+                    });
                 } else {
                     return await this.findAll({
+                        raw: true,
+                        ...options,
                         where: {[key]: {[Op.in]: values}, deleted: false},
-                        raw: true
-                    }, options);
+                    });
                 }
             } catch (err) {
                 console.log(err);
@@ -245,7 +247,7 @@ module.exports = class MetaModel extends Model {
      * Get all db entries by key
      * @param {string} key column name
      * @param {any} value column value
-     * @param {Object} options - Sequelize query options
+     * @param {Object} options - Sequelize query options (e.g. transaction, attributes, order); the where clause stays this method's
      * @param {boolean} includeDraft include draft
      */
     static async getAllByKey(key, value, options = {},  includeDraft = false) {
@@ -253,14 +255,16 @@ module.exports = class MetaModel extends Model {
             try {
                 if (!includeDraft && "draft" in this.getAttributes()) {
                     return await this.findAll({
+                        raw: true,
+                        ...options,
                         where: {[key]: value, deleted: false, draft: false},
-                        raw: true
-                    }, options);
+                    });
                 } else {
                     return await this.findAll({
+                        raw: true,
+                        ...options,
                         where: {[key]: value, deleted: false},
-                        raw: true
-                    }, options);
+                    });
                 }
             } catch (err) {
                 console.log(err);
