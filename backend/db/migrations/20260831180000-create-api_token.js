@@ -34,6 +34,12 @@ module.exports = {
                 type: Sequelize.DATE,
                 allowNull: true,
             },
+            // Null means the token does not expire.
+            expiresAt: {
+                type: Sequelize.DATE,
+                allowNull: true,
+                defaultValue: null,
+            },
             deleted: {
                 type: Sequelize.BOOLEAN,
                 defaultValue: false,
