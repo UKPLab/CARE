@@ -76,6 +76,7 @@ exports.enableRestForTests = async function (models) {
     await models['setting'].set('system.auth.apiTokens.enabled', 'true');
     await models['setting'].set('system.auth.apiTokens.rateLimitPerMinute', '100000');
     await models['setting'].set('system.auth.apiTokens.heavyRateLimitPerMinute', '100000');
+    await models['setting'].set('system.auth.apiTokens.failedAuthPerMinute', '100000');
 };
 
 /**

@@ -2,7 +2,7 @@ const request = require('supertest');
 const Server = require('../webserver/Server.js');
 const {addResearcherUser, enableRestForTests, allTokenRights} = require('./utils.js');
 const {listAttachableRights} = require('../webserver/utils/apiTokenAuth');
-const {GENERAL_SETTING, HEAVY_SETTING} = require('../webserver/middleware/restRateLimit');
+const {GENERAL_SETTING, HEAVY_SETTING, FAILED_AUTH_SETTING} = require('../webserver/middleware/restRateLimit');
 
 const PORT = 3120;
 const SETTING = 'system.auth.apiTokens.enabled';
@@ -553,6 +553,20 @@ describe('REST API tokens', () => {
             expect(again.statusCode).toBe(201);
             await server.db.models['user'].deleteById(researcher.user.id);
         });
+
+        test('parallel creates cannot go over the 25-token limit together', async () => {
+            const researcher = await freshResearcher();
+            const rights = ['frontend.dashboard.documents.view'];
+            for (let i = 0; i < 23; i++) {
+                await mint(researcher.cookie, {name: 'cap ' + i, rights});
+            }
+            const results = await Promise.all([1, 2, 3, 4].map((i) => request(server.http)
+                .post('/auth/api-tokens').set('Cookie', researcher.cookie).send({name: 'parallel ' + i, rights})));
+            expect(results.map((res) => res.statusCode).sort()).toEqual([201, 201, 400, 400]);
+            const active = await server.db.models['api_token'].count({where: {userId: researcher.user.id, deleted: false}});
+            expect(active).toBe(25);
+            await server.db.models['user'].deleteById(researcher.user.id);
+        });
     });
 
     describe('Bearer gate', () => {
@@ -600,6 +614,23 @@ describe('REST API tokens', () => {
                     await new Promise((resolve) => setTimeout(resolve, 50));
                 }
                 expect(row.lastUsedAt).toBeTruthy();
+
+                // Within a minute another request does not write it again; after a minute it does.
+                const first = new Date(row.lastUsedAt).getTime();
+                expect((await bearerGet('/rest/v1/documents', created.secret)).statusCode).toBe(200);
+                await new Promise((resolve) => setTimeout(resolve, 200));
+                row = await server.db.models['api_token'].findOne({where: {id: created.token.id}, raw: true});
+                expect(new Date(row.lastUsedAt).getTime()).toBe(first);
+
+                await server.db.models['api_token'].update({lastUsedAt: new Date(Date.now() - 61 * 1000)}, {where: {id: created.token.id}});
+                expect((await bearerGet('/rest/v1/documents', created.secret)).statusCode).toBe(200);
+                let updated = false;
+                for (let attempt = 0; attempt < 20 && !updated; attempt++) {
+                    await new Promise((resolve) => setTimeout(resolve, 50));
+                    row = await server.db.models['api_token'].findOne({where: {id: created.token.id}, raw: true});
+                    updated = Date.now() - new Date(row.lastUsedAt).getTime() < 10 * 1000;
+                }
+                expect(updated).toBe(true);
             } finally {
                 await revoke(cookie, created.token.id);
             }
@@ -651,6 +682,36 @@ describe('REST API tokens', () => {
                 expect((await bearerGet('/rest/v1/me', created.secret)).statusCode).toBe(200);
             } finally {
                 await server.db.models['setting'].set(HEAVY_SETTING, '100000');
+                await revoke(cookie, created.token.id);
+            }
+        });
+
+        test('bad tokens are limited per IP before auth; working requests do not count', async () => {
+            const {cookie} = await adminSession();
+            const created = await mint(cookie, {name: 'ip limit'});
+            // As behind nginx with TRUST_PROXY=1: the client address comes from X-Forwarded-For,
+            // so this test has its own address that no earlier request counted against.
+            server.app.set('trust proxy', 1);
+            const from = (ip, secret) => request(server.http).get('/rest/v1/me')
+                .set('X-Forwarded-For', ip).set('Authorization', 'Bearer ' + secret);
+            await server.db.models['setting'].set(FAILED_AUTH_SETTING, '3');
+            try {
+                for (let i = 0; i < 5; i++) {
+                    expect((await from('203.0.113.7', created.secret)).statusCode).toBe(200);
+                }
+                for (let i = 0; i < 3; i++) {
+                    expect((await from('203.0.113.7', 'care_wrong_' + i)).statusCode).toBe(401);
+                }
+                const blocked = await from('203.0.113.7', 'care_wrong_again');
+                expect(blocked.statusCode).toBe(429);
+                expect(blocked.body.message).toBe('errors.rest.rateLimitExceeded');
+                // The whole address waits for the rest of the minute, a valid token too.
+                expect((await from('203.0.113.7', created.secret)).statusCode).toBe(429);
+                // Another address is not affected.
+                expect((await from('198.51.100.9', created.secret)).statusCode).toBe(200);
+            } finally {
+                await server.db.models['setting'].set(FAILED_AUTH_SETTING, '100000');
+                server.app.set('trust proxy', false);
                 await revoke(cookie, created.token.id);
             }
         });

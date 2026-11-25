@@ -276,6 +276,10 @@ Once the A-record (:ref:`a_record_preparation`) has been registered and propagat
 
        docker compose restart
 
+Behind nginx, every request reaches CARE from nginx's address. Set ``TRUST_PROXY=1`` in ``.env`` so CARE
+reads the client's address from ``X-Forwarded-For`` instead; the REST API's per-IP limit for bad tokens needs it.
+Without it, all REST clients share one limit.
+
 Now the service should be available at your configured domain. If it doesn't appear to work in your browser, try accessing it in an incognito/private tab first.
 
 .. _common_errors:

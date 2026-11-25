@@ -40,6 +40,13 @@ module.exports = class Server {
         this.logger = require("../utils/logger")("webServer", this.db);
 
         this.app = express();
+        // Behind a reverse proxy such as nginx, every request comes from the proxy's address.
+        // TRUST_PROXY (e.g. 1 for one nginx hop) makes req.ip the client's address again, which
+        // the REST API's per-IP limit needs. Empty means no proxy is trusted.
+        if (process.env.TRUST_PROXY) {
+            const trust = process.env.TRUST_PROXY.trim();
+            this.app.set('trust proxy', /^\d+$/.test(trust) ? Number(trust) : (trust === 'true' ? true : trust));
+        }
         this.socket = null;
         this.cache = {};
         this.cache['userName'] = {};

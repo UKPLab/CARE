@@ -1,7 +1,7 @@
 'use strict';
 
 const {createBearerAuthMiddleware} = require('../../middleware/bearerAuth');
-const {createRestRateLimit} = require('../../middleware/restRateLimit');
+const {createRestRateLimit, createFailedAuthRateLimit} = require('../../middleware/restRateLimit');
 const {restErrorText, restBodyErrors} = require('../../middleware/restErrorText');
 const {createRestIdempotency} = require('../../middleware/restIdempotency');
 const {registerRestDocumentRoutes} = require('./documents');
@@ -27,6 +27,8 @@ const {registerRestConfigurationRoutes} = require('./configurations');
 function registerRestRoutes(server) {
     // First, so every error below (auth, rights, rate limit, routes) carries the English text.
     server.app.use('/rest/v1', restErrorText);
+    // Before auth, per IP: requests with a bad token are limited before they reach the database.
+    server.app.use('/rest/v1', createFailedAuthRateLimit(server));
     server.app.use('/rest/v1', createBearerAuthMiddleware(server));
     server.app.use('/rest/v1', createRestRateLimit(server));
     server.app.use('/rest/v1', createRestIdempotency(server));
