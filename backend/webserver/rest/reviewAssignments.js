@@ -14,6 +14,7 @@ const {canOf, countActive} = require('../utils/restHelpers');
 const {loadUsersByIds} = require('./users');
 const {createAssignmentStudy, itemStepDocuments} = require('./reviewAssignmentStudies');
 const {getEmailContent} = require('../../utils/helper/email');
+const {userCanViewStudy} = require('./studies');
 
 /**
  * One study session per reviewer. Raises the study's session limit when it would be exceeded.
@@ -134,7 +135,6 @@ async function createReviewAssignments(data, options) {
     const can = canOf(options);
 
     if (data.studyId != null) {
-        const {userCanViewStudy} = require('./studies');
         const study = await models['study'].getById(data.studyId, {transaction});
         if (!study) {
             throw new TranslatableError('errors.rest.studyNotFound');

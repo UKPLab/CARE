@@ -10,6 +10,8 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const {canOf} = require('../utils/restHelpers');
 const {getEmailContent} = require('../../utils/helper/email');
+const {userCanViewStudy, ownsStudyRecord, userCanManageStudy} = require('./studies');
+const {loadUsersByIds} = require('./users');
 
 const SESSION_FIELDS = ['id', 'hash', 'studyId', 'userId', 'studyStepId', 'numberSteps', 'start', 'end', 'createdAt'];
 
@@ -34,7 +36,6 @@ function publicSession(session) {
  * @returns {Promise<Array<Object>>} the sessions
  */
 async function listStudySessions({userId, study}, options) {
-    const {userCanViewStudy} = require('./studies');
     const models = options.models;
     if (!study) {
         return (await models['study_session'].getAllByKey('userId', userId)).map(publicSession);
@@ -55,7 +56,6 @@ async function listStudySessions({userId, study}, options) {
  * @throws {TranslatableError} errors.rest.sessionNoAccess
  */
 async function getStudySession({userId, session}, options) {
-    const {userCanViewStudy} = require('./studies');
     if (!session) {
         return null;
     }
@@ -80,7 +80,6 @@ async function getStudySession({userId, session}, options) {
  * @throws {TranslatableError} errors.rest.sessionNoAccess
  */
 async function deleteStudySession({userId, session}, options) {
-    const {ownsStudyRecord} = require('./studies');
     const study = await options.models['study'].getById(session.studyId, {transaction: options.transaction});
     if (!(study && ownsStudyRecord(userId, study)) && !(await canOf(options)('frontend.dashboard.studies.fullAccess'))) {
         throw new TranslatableError('errors.rest.sessionNoAccess');
@@ -238,7 +237,6 @@ async function finishStudySession({userId, sessionId}, options) {
  * @throws {TranslatableError} errors.rest.sessionNotFound, errors.rest.sessionNoAccess, or errors.rest.reviewerNotFound
  */
 async function copyStudySession({userId, sessionId, userIds}, options) {
-    const {userCanManageStudy} = require('./studies');
     const models = options.models;
     const transaction = options.transaction;
     const source = await models['study_session'].getById(sessionId, {transaction});
@@ -249,7 +247,6 @@ async function copyStudySession({userId, sessionId, userIds}, options) {
     if (!(await userCanManageStudy(canOf(options), userId, study))) {
         throw new TranslatableError('errors.rest.sessionNoAccess');
     }
-    const {loadUsersByIds} = require('./users');
     const targets = [...new Set(userIds)];
     await loadUsersByIds(models, targets, transaction);
     const limits = {};

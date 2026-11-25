@@ -10,6 +10,8 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const {Op} = require('sequelize');
 const {canOf, countActive, findActive, findOneActive, loadByIdOrHash, pickFields} = require('../utils/restHelpers');
+const {defaultProjectFor} = require('./projects');
+const {userHasDocumentAccess} = require('./documents');
 
 const STUDIES_FULL_ACCESS = 'frontend.dashboard.studies.fullAccess';
 
@@ -114,7 +116,6 @@ async function loadStudyByIdOrHash(models, idOrHash) {
  * @returns {Promise<Object>} the Sequelize where clause
  */
 async function visibleStudiesWhere(models, userId, can) {
-    const {defaultProjectFor} = require('./projects');
     const projectId = await defaultProjectFor(models, userId);
     const scope = await models['study'].getQueryTableScopeFilter({dashboard: true}, {userId, hasAccess: can});
     return {
@@ -191,7 +192,6 @@ async function stepDocumentsFromStudy(models, studyId) {
  * @throws {TranslatableError} errors.rest.stepDocumentNotFound or errors.rest.documentNoAccess
  */
 async function checkedStepDocuments(models, userId, stepDocuments, can) {
-    const {userHasDocumentAccess} = require('./documents');
     // All linked documents in one query; each document is access-checked once.
     const ids = [...new Set(stepDocuments.map((step) => step.documentId ?? null).filter((id) => id !== null))];
     const documents = ids.length === 0 ? [] : await models['document'].getAllByKeyValues('id', ids);

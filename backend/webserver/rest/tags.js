@@ -11,6 +11,7 @@ const TranslatableError = require('../../utils/TranslatableError');
 const {Op} = require('sequelize');
 const {TAG_COLORS} = require('tag-colors');
 const {findActive} = require('../utils/restHelpers');
+const {defaultProjectFor} = require('./projects');
 
 const TAG_FIELDS = ['name', 'description', 'colorCode'];
 
@@ -106,7 +107,6 @@ async function replaceTags(models, userId, tagSet, tags, transaction) {
  * @returns {Promise<Object>} the new tag set with its tags
  */
 async function createTagSet({userId, name, description, tags}, options) {
-    const {defaultProjectFor} = require('./projects');
     const models = options.models;
     // The tag_set model fills in the user's own default project; the system default covers users
     // without one, so the Tags page always shows the new set.

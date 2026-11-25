@@ -11,6 +11,9 @@ const TranslatableError = require("../../utils/TranslatableError");
 const _ = require("lodash");
 const {ASSIGNMENTS_VIEW_ALL} = require('./assignments');
 const {findActive} = require('../utils/restHelpers');
+const {userCanViewStudy} = require('./studies');
+const {userHasDocumentAccess} = require('./documents');
+const {listRoles} = require('./users');
 
 const ASSIGNMENT_TYPES = ['document', 'submission', 'study_session'];
 const ASSIGNMENT_MODES = ['everyReviewer', 'byRole', 'byCount', 'sessionOwner'];
@@ -28,7 +31,6 @@ const ITEM_MODEL = {document: 'document', submission: 'submission', study_sessio
  * @throws {TranslatableError} errors.rest.templateNotFound, errors.rest.studyNoAccess, or errors.rest.notAStudyTemplate
  */
 async function loadTemplateForAssignment(models, userId, templateId, transaction, can) {
-    const {userCanViewStudy} = require('./studies');
     const template = await models['study'].getById(templateId, {transaction});
     if (!template) {
         throw new TranslatableError('errors.rest.templateNotFound');
@@ -55,8 +57,6 @@ async function loadTemplateForAssignment(models, userId, templateId, transaction
  * @throws {TranslatableError} errors.rest.assignmentItemNotFound or errors.rest.assignmentItemNoAccess
  */
 async function loadAssignmentItems(models, userId, type, itemIds, transaction, can) {
-    const {userHasDocumentAccess} = require('./documents');
-    const {userCanViewStudy} = require('./studies');
     const seeAll = await can(ASSIGNMENTS_VIEW_ALL);
     // One query for all items; the checks below still go in the order the caller sent them.
     const rows = await findActive(models[ITEM_MODEL[type]], {id: itemIds}, {transaction});
@@ -97,7 +97,6 @@ async function loadAssignmentItems(models, userId, type, itemIds, transaction, c
  * @throws {TranslatableError} errors.rest.roleNotFound or errors.rest.roleNoAccess
  */
 async function loadRoleGroups(models, roles, reviewerIds, transaction, can) {
-    const {listRoles} = require('./users');
     const allRoles = await listRoles({models, transaction});
     const groups = [];
     for (const [key, needed] of Object.entries(roles)) {

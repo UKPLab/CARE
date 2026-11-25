@@ -11,6 +11,9 @@ const TranslatableError = require("../../utils/TranslatableError");
 const Validator = require('../../utils/Validator.js');
 const {canOf, findActive} = require('../utils/restHelpers');
 const {getEmailContent} = require('../../utils/helper/email');
+const {addDocument} = require('./documentUpload');
+const {canSeeAssignment} = require('./assignments');
+const {userCanUseProject, defaultProjectFor} = require('./projects');
 
 const SUBMISSIONS_SEE_ALL = 'frontend.dashboard.assignments.viewAll';
 const SUBMISSIONS_REPLACE_DELETE = 'frontend.dashboard.assignments.replaceDeleteSubmissions';
@@ -143,8 +146,6 @@ async function deleteSubmission({userId, id}, options) {
  * @throws {TranslatableError} when access, the assignment, the project, or validation fails
  */
 async function uploadSubmission(data, options) {
-    const {addDocument} = require('./documentUpload');
-    const {canSeeAssignment} = require('./assignments');
     const models = options.models;
     const transaction = options.transaction;
     const {userId, forUserId, files, assignmentId, name, description} = data;
@@ -164,7 +165,6 @@ async function uploadSubmission(data, options) {
     // A projectId the caller sent: same rule as documents and assignments, an own or public project.
     // Checked after the assignment, so an unknown assignment is still 404.
     const checkGivenProject = async () => {
-        const {userCanUseProject} = require('./projects');
         if (projectId !== null && !(await userCanUseProject(models, userId, projectId))) {
             throw new TranslatableError('errors.rest.invalidProjectId');
         }
@@ -204,7 +204,6 @@ async function uploadSubmission(data, options) {
         // Resolve the default project first, so the parent lookup uses the project the new
         // submission gets, and a second upload becomes the next version instead of a new chain.
         if (projectId == null) {
-            const {defaultProjectFor} = require('./projects');
             projectId = await defaultProjectFor(models, forUserId);
         }
         const parent = await models['submission'].getParentSubmission(forUserId, projectId, true, {transaction});
@@ -215,7 +214,6 @@ async function uploadSubmission(data, options) {
     }
     // A submission always belongs to a project: the given one, the assignment's, or the owner's default.
     if (projectId == null) {
-        const {defaultProjectFor} = require('./projects');
         projectId = await defaultProjectFor(models, forUserId);
     }
     if (projectId == null) {

@@ -10,6 +10,8 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const {Op} = require('sequelize');
 const {canOf, countActive, findActive} = require('../utils/restHelpers');
+const {listRoles, loadUsersByIds} = require('./users');
+const {userCanUseProject, defaultProjectFor} = require('./projects');
 
 const ASSIGNMENTS_VIEW_ALL = 'frontend.dashboard.assignments.viewAll';
 const ASSIGNMENTS_EDIT_ALL = 'frontend.dashboard.assignments.edit';
@@ -117,7 +119,6 @@ async function loadAssignmentForChange(options, userId, id) {
  * @throws {TranslatableError} errors.rest.roleNotFound or errors.rest.reviewerNotFound
  */
 async function resolveShares(models, shareWith, transaction) {
-    const {listRoles, loadUsersByIds} = require('./users');
     const roleRows = await listRoles({models, transaction});
     const roleIds = [];
     for (const key of shareWith.roles || []) {
@@ -170,7 +171,6 @@ async function replaceShares(models, assignmentId, shareWith, transaction) {
  * @throws {TranslatableError} errors.rest.invalidProjectId or errors.rest.invalidValidationConfiguration
  */
 async function checkAssignmentReferences(models, userId, fields, transaction) {
-    const {userCanUseProject} = require('./projects');
     if (fields.projectId != null && !(await userCanUseProject(models, userId, fields.projectId))) {
         throw new TranslatableError('errors.rest.invalidProjectId');
     }
@@ -239,7 +239,6 @@ async function addAssignment({userId, fields, shareWith}, options) {
     const models = options.models;
     // The dashboard creates an assignment inside the current project; REST uses the same default.
     if (fields.projectId === undefined) {
-        const {defaultProjectFor} = require('./projects');
         fields = {...fields, projectId: await defaultProjectFor(models, userId)};
     }
     await checkAssignmentReferences(models, userId, fields, options.transaction);
