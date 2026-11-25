@@ -256,7 +256,7 @@ async function listStudies({userId}, options) {
  */
 async function listStudyTemplates({userId}, options) {
     const seeAll = await canOf(options)(STUDIES_FULL_ACCESS);
-    const templates = await findActive(options.models['study'], {template: true}, {
+    const templates = await options.models['study'].getAllByKey('template', true, {
         attributes: ['id', 'hash', 'name', 'description', 'workflowId', 'userId', 'createdByUserId'],
         order: [['id', 'ASC']],
     });
@@ -428,7 +428,7 @@ async function updateStudyFields({userId, studyId, fields, stepDocuments, aiLimi
         return updated;
     }
 
-    const children = await findActive(models['study'], {parentStudyId: study.id}, {transaction: options.transaction});
+    const children = await models['study'].getAllByKey('parentStudyId', study.id, {transaction: options.transaction});
     const newest = children.sort((a, b) => b.id - a.id)[0];
     return newest || updated;
 }

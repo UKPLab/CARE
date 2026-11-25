@@ -35,11 +35,11 @@ Where the code is
   them. Files are named in the plural, like the route file that calls them and
   its URL (``rest/documents.js`` for ``/rest/v1/documents``); a resource split
   into parts adds the part (``documentUpload.js``, ``studyActions.js``).
-  They read single rows with the model's ``getById`` / ``getByKey`` and everything
-  else with ``findActive``, ``findOneActive``, or ``countActive`` from
-  ``utils/restHelpers.js``, which always leave out deleted rows and pass the
-  transaction on. (The model's ``getAllByKey`` and ``getAllByKeyValues`` do not
-  pass their options on, so they would read outside a write's transaction.)
+  They read through the model's own helpers (``getById``, ``getByKey``,
+  ``getAll``, ``getAllByKey``, ``getAllByKeyValues``) where a query is on one
+  column, and otherwise (several conditions, OR, counts) through ``findActive``,
+  ``findOneActive``, or ``countActive`` from ``utils/restHelpers.js``. Both leave
+  out deleted rows and pass the write's transaction on.
 * ``sockets/`` — the dashboard's socket methods, unchanged by the REST API.
 * ``rest/socketEvents.js`` — every socket event, listed as covered by REST (with
   its route) or socket-only (with the reason). ``tests/rest.socketEvents.test.js``

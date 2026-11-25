@@ -30,8 +30,8 @@ const ASSIGNMENT_PUBLIC_FIELDS = ['id', 'userId', ...ASSIGNMENT_WRITABLE_FIELDS,
  * @returns {Promise<Map>} assignment id to {roles: role ids, users: user ids}
  */
 async function sharesByAssignment(models, assignmentIds, transaction) {
-    const rows = assignmentIds.length === 0 ? [] : await findActive(models['assignment_share'],
-        {assignmentId: assignmentIds}, {attributes: ['assignmentId', 'roleId', 'userId'], transaction});
+    const rows = assignmentIds.length === 0 ? [] : await models['assignment_share'].getAllByKey('assignmentId',
+        assignmentIds, {attributes: ['assignmentId', 'roleId', 'userId'], transaction});
     const shares = new Map(assignmentIds.map((id) => [id, {roles: [], users: []}]));
     for (const row of rows) {
         const entry = shares.get(row.assignmentId);
@@ -145,7 +145,7 @@ async function resolveShares(models, shareWith, transaction) {
  */
 async function replaceShares(models, assignmentId, shareWith, transaction) {
     const {roleIds, userIds} = await resolveShares(models, shareWith, transaction);
-    const existing = await findActive(models['assignment_share'], {assignmentId}, {transaction});
+    const existing = await models['assignment_share'].getAllByKey('assignmentId', assignmentId, {transaction});
     for (const row of existing) {
         const keep = row.roleId ? roleIds.includes(row.roleId) : userIds.includes(row.userId);
         if (!keep) {

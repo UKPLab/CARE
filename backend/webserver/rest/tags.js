@@ -181,7 +181,7 @@ async function getTagSet(models, id, transaction) {
     if (!tagSet) {
         return null;
     }
-    const tags = await findActive(models['tag'], {tagSetId: id}, {attributes: ['id', 'name', 'description', 'colorCode'], order: [['id', 'ASC']], transaction});
+    const tags = await models['tag'].getAllByKey('tagSetId', id, {attributes: ['id', 'name', 'description', 'colorCode'], order: [['id', 'ASC']], transaction});
     return {...tagSet, tags};
 }
 

@@ -10,7 +10,6 @@
 const TranslatableError = require("../../utils/TranslatableError");
 const _ = require("lodash");
 const {ASSIGNMENTS_VIEW_ALL} = require('./assignments');
-const {findActive} = require('../utils/restHelpers');
 const {userCanViewStudy} = require('./studies');
 const {userHasDocumentAccess} = require('./documents');
 const {listRoles} = require('./users');
@@ -59,7 +58,7 @@ async function loadTemplateForAssignment(models, userId, templateId, transaction
 async function loadAssignmentItems(models, userId, type, itemIds, transaction, can) {
     const seeAll = await can(ASSIGNMENTS_VIEW_ALL);
     // One query for all items; the checks below still go in the order the caller sent them.
-    const rows = await findActive(models[ITEM_MODEL[type]], {id: itemIds}, {transaction});
+    const rows = await models[ITEM_MODEL[type]].getAllByKey('id', itemIds, {transaction});
     const byId = new Map(rows.map((row) => [row.id, row]));
     const items = [];
     for (const id of itemIds) {
@@ -112,13 +111,13 @@ async function loadRoleGroups(models, roles, reviewerIds, transaction, can) {
         if (!mayList) {
             throw new TranslatableError('errors.rest.roleNoAccess', {role: role.name});
         }
-        const matches = await findActive(models['user_role_matching'], {userRoleId: role.id}, {attributes: ['userId'], transaction});
+        const matches = await models['user_role_matching'].getAllByKey('userRoleId', role.id, {attributes: ['userId'], transaction});
         let memberIds = [...new Set(matches.map((row) => row.userId))];
         if (reviewerIds.length > 0) {
             memberIds = memberIds.filter((id) => reviewerIds.includes(id));
         }
         const users = memberIds.length === 0 ? []
-            : await findActive(models['user'], {id: memberIds}, {attributes: ['id', 'firstName', 'lastName'], transaction});
+            : await models['user'].getAllByKey('id', memberIds, {attributes: ['id', 'firstName', 'lastName'], transaction});
         groups.push({roleName: role.name, needed, users});
     }
     return groups;

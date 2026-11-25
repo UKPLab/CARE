@@ -115,9 +115,9 @@ function notDeleted(where = {}) {
 }
 
 /**
- * Rows of a model that are not deleted. For REST queries the MetaModel helpers cannot express
- * (several conditions, OR, chosen columns, order, limit) or that must run inside a transaction:
- * getAllByKey and getAllByKeyValues do not pass their options on, so they read outside it.
+ * Rows of a model that are not deleted, for REST queries the MetaModel helpers cannot express:
+ * several conditions at once, OR, or a limit. A query on one column uses the model's getAllByKey
+ * or getAllByKeyValues instead.
  *
  * @param {Object} model a MetaModel
  * @param {Object} where the conditions; "not deleted" is added

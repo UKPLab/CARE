@@ -21,7 +21,7 @@ const USER_LOOKUP_LIMIT = 100;
  * @returns {Promise<Array<Object>>} the roles (id, name)
  */
 async function listRoles(options) {
-    return findActive(options.models['user_role'], {}, {
+    return options.models['user_role'].getAll({
         attributes: ['id', 'name'],
         order: [['id', 'ASC']],
         transaction: options.transaction,
@@ -42,7 +42,7 @@ async function loadUsersByIds(models, ids, transaction) {
     if (ids.length === 0) {
         return [];
     }
-    const users = await findActive(models['user'], {id: ids}, {attributes: ['id', 'firstName', 'lastName'], transaction});
+    const users = await models['user'].getAllByKey('id', ids, {attributes: ['id', 'firstName', 'lastName'], transaction});
     for (const id of ids) {
         if (!users.some((user) => user.id === id)) {
             throw new TranslatableError('errors.rest.reviewerNotFound', {id});
@@ -83,8 +83,8 @@ async function findUsers({emails, extIds, canSeeRole}, options) {
 
     const roleNameById = Object.fromEntries((await listRoles({models})).map((role) => [role.id, role.name]));
     // Roles of all found users in one query (same filter as user_role_matching.getUserRolesById).
-    const matches = rows.length === 0 ? [] : await findActive(models['user_role_matching'],
-        {userId: rows.map((row) => row.id)}, {attributes: ['userId', 'userRoleId']});
+    const matches = rows.length === 0 ? [] : await models['user_role_matching'].getAllByKey('userId',
+        rows.map((row) => row.id), {attributes: ['userId', 'userRoleId']});
     const seeAll = await canSeeRole('all');
     const roleVisible = {};
     const users = [];

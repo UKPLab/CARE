@@ -31,8 +31,8 @@ const SUBMISSION_FIELDS = [
  * @returns {Promise<Array<Object>>} the submissions
  */
 async function withDocuments(models, submissions, transaction) {
-    const documents = submissions.length === 0 ? [] : await findActive(models['document'],
-        {submissionId: submissions.map((submission) => submission.id)},
+    const documents = submissions.length === 0 ? [] : await models['document'].getAllByKey('submissionId',
+        submissions.map((submission) => submission.id),
         {attributes: ['id', 'hash', 'name', 'type', 'submissionId'], order: [['id', 'ASC']], transaction});
     return submissions.map((submission) => ({
         ...Object.fromEntries(SUBMISSION_FIELDS.map((key) => [key, submission[key] ?? null])),
@@ -116,7 +116,7 @@ async function deleteSubmission({userId, id}, options) {
     }
     const assignment = await models['assignment'].getById(submission.assignmentId, {transaction});
     models['assignment'].assertSubmissionChangesAllowed(assignment, 'errors.submission.deleteAssignmentClosed');
-    const documents = await findActive(models['document'], {submissionId: id}, {transaction});
+    const documents = await models['document'].getAllByKey('submissionId', id, {transaction});
     if (documents.some((document) => Number(document.studyUsageCount || 0) > 0)) {
         throw new TranslatableError('errors.submission.deleteDocumentsUsedInStudies');
     }
