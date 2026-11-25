@@ -2,7 +2,7 @@
 
 const {requireTokenRight, requireAnyTokenRight} = require('../../middleware/bearerAuth');
 const {runWrite, runRead, readId, readFields, is} = require('./routeHelpers');
-const {listProjects, getProject, publicProject, createProject, updateProject, deleteProject} = require('../../rest/projects');
+const {listProjects, getProject, publicProject, createProject, updateProject, deleteProject, getCurrentProject, setCurrentProject} = require('../../rest/projects');
 
 const PROJECTS_VIEW = 'frontend.dashboard.projects.view';
 const ERRORS = {
@@ -34,6 +34,20 @@ function registerRestProjectRoutes(server) {
             const project = id && await getProject({userId: req.apiUserId, id}, options);
             return project ? {project: publicProject(project)} : null;
         }));
+
+    // The caller's current project: where new tag sets go, and documents, assignments, and
+    // submissions sent without a project. The same setting as the dashboard's project picker.
+    server.app.get('/rest/v1/me/project', needRead, (req, res) => runRead(server, req, res, spec('get current project'),
+        async (options) => ({project: await getCurrentProject({userId: req.apiUserId}, options)})));
+
+    server.app.put('/rest/v1/me/project', needRead, (req, res) => {
+        const projectId = req.body?.projectId;
+        if (!is.id(projectId)) {
+            return res.status(400).json({message: 'errors.rest.invalidProjectField'});
+        }
+        return runWrite(server, req, res, spec('set current project'), async (options) =>
+            ({project: await setCurrentProject({userId: req.apiUserId, projectId}, options)}));
+    });
 
     server.app.post('/rest/v1/projects', needView, (req, res) => {
         const parsed = readFields(req.body, {name: is.text, description: is.textOrEmpty});

@@ -9,7 +9,7 @@
 
 const TranslatableError = require('../../utils/TranslatableError');
 const {Op} = require('sequelize');
-const {pickFields} = require('../utils/restHelpers');
+const {findActive, pickFields} = require('../utils/restHelpers');
 
 const PROJECT_PUBLIC_FIELDS = ['id', 'name', 'description', 'userId', 'public', 'closed', 'createdAt', 'updatedAt'];
 
@@ -143,11 +143,9 @@ async function userCanUseProject(models, userId, projectId) {
  * @returns {Promise<Array<Object>>} the projects
  */
 async function listProjects({userId}, options) {
-    const projects = await options.models['project'].findAll({
-        where: {deleted: false, [Op.or]: [{userId}, {public: true}]},
+    const projects = await findActive(options.models['project'], {[Op.or]: [{userId}, {public: true}]}, {
         attributes: ['id', 'name', 'description', 'public', 'userId', 'closed', 'createdAt', 'updatedAt'],
         order: [['id', 'ASC']],
-        raw: true,
     });
     return projects;
 }
@@ -173,13 +171,52 @@ async function getProject({userId, id}, options) {
     return project;
 }
 
+/**
+ * The caller's current project: the one picked in the dashboard's project picker (their
+ * projects.default setting), else the system default. New tag sets go there, and documents,
+ * assignments, and submissions sent without a project.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {Object} options the REST options (models)
+ * @returns {Promise<Object|null>} the project, or null when none is set or it was deleted
+ */
+async function getCurrentProject({userId}, options) {
+    const projectId = await defaultProjectFor(options.models, userId);
+    const project = projectId === null ? null : await options.models['project'].getById(projectId);
+    return project ? publicProject(project) : null;
+}
+
+/**
+ * Mirrors the dashboard's project picker (appSettingSet with projects.default). Differs: the
+ * project must exist and be the caller's own or a public one, the same rule as everywhere else.
+ * An open dashboard shows the change after a reload, because user settings are not broadcast.
+ *
+ * @param {Object} data
+ * @param {number} data.userId the token owner's user id
+ * @param {number} data.projectId the project to make current
+ * @param {Object} options the REST options (models, transaction)
+ * @returns {Promise<Object>} the new current project
+ * @throws {TranslatableError} errors.rest.invalidProjectId
+ */
+async function setCurrentProject({userId, projectId}, options) {
+    const models = options.models;
+    if (!(await userCanUseProject(models, userId, projectId))) {
+        throw new TranslatableError('errors.rest.invalidProjectId');
+    }
+    await models['user_setting'].set('projects.default', projectId, userId, {transaction: options.transaction});
+    return publicProject(await models['project'].getById(projectId, {transaction: options.transaction}));
+}
+
 module.exports = {
     createProject,
     defaultProjectFor,
     deleteProject,
+    getCurrentProject,
     getProject,
     listProjects,
     publicProject,
+    setCurrentProject,
     updateProject,
     userCanUseProject,
 };

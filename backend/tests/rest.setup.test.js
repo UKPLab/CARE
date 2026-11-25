@@ -96,6 +96,38 @@ describe('REST setup resources', () => {
             }
         });
 
+        test('the current project can be read and changed, and new tag sets follow it', async () => {
+            const systemDefault = parseInt(await models['setting'].get('projects.default'), 10);
+            const userId = full.token.userId;
+            const own = (await call('post', '/rest/v1/projects', {name: 'REST current project'})).body.project;
+            const privateProject = await models['project'].add({name: 'REST not mine', userId: other.user.id, public: false});
+            try {
+                expect((await call('get', '/rest/v1/me/project')).body.project.id).toBe(systemDefault);
+
+                const changed = await call('put', '/rest/v1/me/project', {projectId: own.id});
+                expect(changed.statusCode).toBe(200);
+                expect(changed.body.project.id).toBe(own.id);
+                expect((await call('get', '/rest/v1/me/project')).body.project.id).toBe(own.id);
+                const tagSet = (await call('post', '/rest/v1/tag-sets', {name: 'REST follows current', tags: []})).body.tagSet;
+                expect(tagSet.projectId).toBe(own.id);
+                await call('delete', '/rest/v1/tag-sets/' + tagSet.id);
+
+                for (const projectId of [99999999, privateProject.id]) {
+                    const refused = await call('put', '/rest/v1/me/project', {projectId});
+                    expect({projectId, status: refused.statusCode, message: refused.body.message})
+                        .toEqual({projectId, status: 400, message: 'errors.rest.invalidProjectId'});
+                }
+                const malformed = await call('put', '/rest/v1/me/project', {projectId: 'seven'});
+                expect(malformed.statusCode).toBe(400);
+                expect(malformed.body.message).toBe('errors.rest.invalidProjectField');
+            } finally {
+                // Back to no own choice, so later tests see the system default again.
+                await models['user_setting'].destroy({where: {userId, key: 'projects.default'}, force: true});
+                await models['project'].deleteById(privateProject.id);
+                await call('delete', '/rest/v1/projects/' + own.id);
+            }
+        });
+
         test('another user cannot change or read a private project', async () => {
             const id = (await call('post', '/rest/v1/projects', {name: 'REST private project'})).body.project.id;
             try {
@@ -142,17 +174,10 @@ describe('REST setup resources', () => {
             await call('delete', '/rest/v1/tag-sets/' + res.body.tagSet.id);
         });
 
-        test('a tag set refuses an unknown project or another user\'s private project', async () => {
-            const privateProject = await models['project'].add({name: 'REST private for tags', userId: other.user.id, public: false});
-            try {
-                for (const projectId of [99999999, privateProject.id]) {
-                    const res = await call('post', '/rest/v1/tag-sets', {name: 'REST bad project', projectId, tags: []});
-                    expect({projectId, status: res.statusCode, message: res.body.message})
-                        .toEqual({projectId, status: 400, message: 'errors.rest.invalidProjectId'});
-                }
-            } finally {
-                await models['project'].deleteById(privateProject.id);
-            }
+        test('a tag set cannot choose its project, as in the dashboard', async () => {
+            const res = await call('post', '/rest/v1/tag-sets', {name: 'REST chosen project', projectId: 1, tags: []});
+            expect(res.statusCode).toBe(400);
+            expect(res.body.message).toBe('errors.rest.tagSetProjectNotSupported');
         });
 
         test('a tag needs a known colour, and a foreign tag id is refused', async () => {
