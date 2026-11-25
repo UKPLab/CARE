@@ -191,6 +191,26 @@ describe('REST coursework', () => {
             expect(res.body.message).toBe('errors.rest.assignmentNotFound');
         });
 
+        test('without an assignment or project, a second upload becomes the next version of the first', async () => {
+            const upload = (name) => request(server.http)
+                .post('/rest/v1/submissions')
+                .set('Authorization', 'Bearer ' + studentToken.secret)
+                .field('validationConfigurationId', String(validation.id))
+                .attach('files', EMPTY_ZIP, name);
+            const first = await upload('version-one.zip');
+            expect(first.statusCode).toBe(201);
+            const second = await upload('version-two.zip');
+            expect(second.statusCode).toBe(201);
+            try {
+                expect(second.body.submission.projectId).toBe(first.body.submission.projectId);
+                expect(second.body.submission.previousSubmissionId).toBe(first.body.submission.id);
+            } finally {
+                for (const res of [second, first]) {
+                    await models['submission'].deleteById(res.body.submission.id);
+                }
+            }
+        });
+
         test('a submission keeps at most 10 files; the rest are not read', async () => {
             let upload = request(server.http)
                 .post('/rest/v1/submissions')

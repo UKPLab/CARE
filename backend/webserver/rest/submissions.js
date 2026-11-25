@@ -9,7 +9,7 @@
 
 const TranslatableError = require("../../utils/TranslatableError");
 const Validator = require('../../utils/Validator.js');
-const {canOf} = require('../utils/restHelpers');
+const {canOf, findActive} = require('../utils/restHelpers');
 const {getEmailContent} = require('../../utils/helper/email');
 
 const SUBMISSIONS_SEE_ALL = 'frontend.dashboard.assignments.viewAll';
@@ -28,13 +28,9 @@ const SUBMISSION_FIELDS = [
  * @returns {Promise<Array<Object>>} the submissions
  */
 async function withDocuments(models, submissions, transaction) {
-    const documents = submissions.length === 0 ? [] : await models['document'].findAll({
-        where: {submissionId: submissions.map((submission) => submission.id), deleted: false},
-        attributes: ['id', 'hash', 'name', 'type', 'submissionId'],
-        order: [['id', 'ASC']],
-        raw: true,
-        transaction,
-    });
+    const documents = submissions.length === 0 ? [] : await findActive(models['document'],
+        {submissionId: submissions.map((submission) => submission.id)},
+        {attributes: ['id', 'hash', 'name', 'type', 'submissionId'], order: [['id', 'ASC']], transaction});
     return submissions.map((submission) => ({
         ...Object.fromEntries(SUBMISSION_FIELDS.map((key) => [key, submission[key] ?? null])),
         documents: documents
@@ -117,11 +113,7 @@ async function deleteSubmission({userId, id}, options) {
     }
     const assignment = await models['assignment'].getById(submission.assignmentId, {transaction});
     models['assignment'].assertSubmissionChangesAllowed(assignment, 'errors.submission.deleteAssignmentClosed');
-    const documents = await models['document'].findAll({
-        where: {submissionId: id, deleted: false},
-        raw: true,
-        transaction,
-    });
+    const documents = await findActive(models['document'], {submissionId: id}, {transaction});
     if (documents.some((document) => Number(document.studyUsageCount || 0) > 0)) {
         throw new TranslatableError('errors.submission.deleteDocumentsUsedInStudies');
     }
@@ -191,11 +183,7 @@ async function uploadSubmission(data, options) {
         validationConfigurationId = assignment.validationConfigurationId ?? validationConfigurationId;
         projectId = projectId ?? assignment.projectId ?? null;
 
-        const earlier = await models['submission'].findAll({
-            where: {assignmentId, userId: forUserId, deleted: false},
-            raw: true,
-            transaction,
-        });
+        const earlier = await findActive(models['submission'], {assignmentId, userId: forUserId}, {transaction});
         const parents = new Set(earlier.map((row) => row.previousSubmissionId).filter(Boolean));
         const tails = earlier.filter((row) => !parents.has(row.id)).map((row) => row.id);
         previousSubmissionId = tails.length ? Math.max(...tails) : null;
@@ -213,6 +201,12 @@ async function uploadSubmission(data, options) {
         }
     } else {
         await checkGivenProject();
+        // Resolve the default project first, so the parent lookup uses the project the new
+        // submission gets, and a second upload becomes the next version instead of a new chain.
+        if (projectId == null) {
+            const {defaultProjectFor} = require('./projects');
+            projectId = await defaultProjectFor(models, forUserId);
+        }
         const parent = await models['submission'].getParentSubmission(forUserId, projectId, true, {transaction});
         previousSubmissionId = parent ? parent.id : null;
     }
