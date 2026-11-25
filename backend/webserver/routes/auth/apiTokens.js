@@ -58,8 +58,9 @@ function registerApiTokenRoutes(server, helpers) {
      * @returns {Promise<boolean>} true when the request may go on
      */
     async function requireEnabled(req, res) {
+        // Same short-lived copy the REST token check uses (cleared when a setting is saved).
         const enabled = isApiTokensEnabled(
-            await models['setting'].get('system.auth.apiTokens.enabled')
+            await models['setting'].getCached('system.auth.apiTokens.enabled')
         );
         if (!enabled) {
             res.status(403).json({message: 'errors.rest.apiTokensDisabled'});

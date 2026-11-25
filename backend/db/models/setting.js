@@ -2,6 +2,10 @@
 const MetaModel = require("../MetaModel.js");
 const {Op} = require("sequelize");
 
+// Short-lived copies of settings read on every REST request (see getCached). Saving any setting
+// clears them, so a change made in CARE applies at once.
+const cachedSettings = new Map();
+
 module.exports = (sequelize, DataTypes) => {
     class Setting extends MetaModel {
         /**
@@ -33,6 +37,24 @@ module.exports = (sequelize, DataTypes) => {
             }
         }
 
+
+        /**
+         * Get a setting value by key, reusing a copy read less than maxAgeMs ago. For settings read
+         * on every request (REST token switch, rate limits). Saving a setting through the model
+         * clears the copies; only a change made directly in the database waits up to maxAgeMs.
+         * @param {string} key setting key
+         * @param {number} [maxAgeMs] how long a copy may be reused, 30 seconds by default
+         * @returns {Promise<string|null>} the setting value
+         */
+        static async getCached(key, maxAgeMs = 30 * 1000) {
+            const cached = cachedSettings.get(key);
+            if (cached && Date.now() - cached.readAt < maxAgeMs) {
+                return cached.value;
+            }
+            const value = await Setting.get(key);
+            cachedSettings.set(key, {value, readAt: Date.now()});
+            return value;
+        }
 
         /**
          * Get setting value by key
@@ -174,7 +196,14 @@ module.exports = (sequelize, DataTypes) => {
     }, {
         sequelize,
         modelName: 'setting',
-        tableName: 'setting'
+        tableName: 'setting',
+        hooks: {
+            afterUpsert: () => cachedSettings.clear(),
+            afterCreate: () => cachedSettings.clear(),
+            afterUpdate: () => cachedSettings.clear(),
+            afterBulkUpdate: () => cachedSettings.clear(),
+            afterDestroy: () => cachedSettings.clear(),
+        },
     });
 
     Setting.removeAttribute('id');

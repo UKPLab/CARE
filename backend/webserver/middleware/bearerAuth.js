@@ -6,6 +6,9 @@ const {
     loadTokenAccess,
 } = require('../utils/apiTokenAuth');
 
+// How often lastUsedAt is written for one token.
+const LAST_USED_EVERY_MS = 60 * 1000;
+
 /**
  * Resolve Authorization: Bearer <secret> to the token owner. Does not call req.logIn.
  * Sets req.apiToken, req.apiAccess (the rights this request may use), and req.apiUserId.
@@ -16,8 +19,9 @@ const {
 function createBearerAuthMiddleware(server) {
     return async function bearerAuth(req, res, next) {
         try {
+            // Read on every request, so a short-lived copy is used (cleared when a setting is saved).
             const enabled = isApiTokensEnabled(
-                await server.db.models['setting'].get('system.auth.apiTokens.enabled')
+                await server.db.models['setting'].getCached('system.auth.apiTokens.enabled')
             );
             if (!enabled) {
                 return res.status(403).json({message: 'errors.rest.apiTokensDisabled'});
@@ -57,9 +61,12 @@ function createBearerAuthMiddleware(server) {
             // The rights this request may use: on the token and still held by the owner.
             req.apiAccess = access;
             req.apiUserId = token.userId;
-            server.db.models['api_token'].updateById(token.id, {lastUsedAt: new Date()}).catch((err) => {
-                server.logger.error('Failed to update api_token lastUsedAt: ' + err);
-            });
+            // At most once a minute per token, so a busy script does not write on every request.
+            if (!token.lastUsedAt || Date.now() - new Date(token.lastUsedAt).getTime() >= LAST_USED_EVERY_MS) {
+                server.db.models['api_token'].updateById(token.id, {lastUsedAt: new Date()}).catch((err) => {
+                    server.logger.error('Failed to update api_token lastUsedAt: ' + err);
+                });
+            }
             return next();
         } catch (err) {
             server.logger.error('Bearer auth failed: ' + err);
