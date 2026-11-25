@@ -152,6 +152,9 @@ function registerApiTokenRoutes(server, helpers) {
                 }
             }
 
+            // Lock the user's row first, so parallel creates for one user count one after another
+            // and cannot together go over the limit.
+            await models['user'].findOne({where: {id: req.user.id}, attributes: ['id'], lock: t.LOCK.UPDATE, transaction: t});
             const active = await models['api_token'].count({
                 where: {userId: req.user.id, deleted: false, [Op.or]: [{expiresAt: null}, {expiresAt: {[Op.gt]: new Date()}}]},
                 transaction: t,
