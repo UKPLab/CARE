@@ -10,6 +10,7 @@ const { createSharedHelpers } = require('./shared');
 const { registerTwoFactorLoginFlowRoutes } = require('./twoFactor/loginFlow');
 const { createTwoFactorHelpers } = require('./twoFactor/shared');
 const { registerTwoFactorSettingsRoutes } = require('./twoFactor/settings');
+const { registerApiTokenRoutes } = require('./apiTokens');
 
 /**
  * Register all authentication-related route modules.
@@ -29,4 +30,5 @@ module.exports = function registerAuthRoutes(server) {
     registerVerificationRoutes(server, helpers);
     registerTwoFactorLoginFlowRoutes(server, helpers);
     registerTwoFactorSettingsRoutes(server, helpers);
+    registerApiTokenRoutes(server, helpers);
 };

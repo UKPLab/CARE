@@ -258,3 +258,5 @@ class PublishAssessmentSocket extends Socket {
 }
 
 module.exports = PublishAssessmentSocket;
+// Used by the REST assessment scores (rest/assessments.js).
+module.exports.assessmentResultKeys = assessmentResultKeys;

@@ -1,0 +1,242 @@
+'use strict';
+
+const {Op} = require('sequelize');
+
+const {
+    generateSecret,
+    hashSecret,
+    displayPrefixFromSecret,
+    isApiTokensEnabled,
+    hasOnlyGuestRole,
+    ownerIsAdmin,
+    listAttachableRights,
+    listTokenRightChoices,
+    userHasRight,
+} = require('../../utils/apiTokenAuth');
+
+// Active tokens one user may hold at a time.
+const MAX_TOKENS_PER_USER = 25;
+// The right of the API tokens page; every route below needs it.
+const API_TOKENS_VIEW = 'frontend.dashboard.api_tokens.view';
+
+/**
+ * A token row as the list and create answers show it: never the secret or its hash.
+ *
+ * @param {Object} token the api_token row
+ * @param {string[]} rights the rights stored on the token
+ * @returns {Object} {rights, id, userId, name, prefix, lastUsedAt, expiresAt, createdAt}
+ */
+function publicTokenRow(token, rights) {
+    return {
+        rights,
+        id: token.id,
+        userId: token.userId,
+        name: token.name,
+        prefix: token.prefix,
+        lastUsedAt: token.lastUsedAt,
+        expiresAt: token.expiresAt ?? null,
+        createdAt: token.createdAt,
+    };
+}
+
+/**
+ * Cookie-authenticated token list, rights, create, and revoke. Scripts never call these paths.
+ *
+ * @param {Server} server main server instance
+ * @param {Object} helpers route helpers from routes/auth (uses helpers.shared.ensureAuthenticated)
+ */
+function registerApiTokenRoutes(server, helpers) {
+    const {shared} = helpers;
+    const models = server.db.models;
+
+    /**
+     * Tokens on, and the user holds the API tokens page right: the same rule as the dashboard page,
+     * so the routes cannot be reached by someone who cannot see the page.
+     *
+     * @param {Object} req express request with req.user
+     * @param {Object} res express response, answered with 403 when not allowed
+     * @returns {Promise<boolean>} true when the request may go on
+     */
+    async function requireEnabled(req, res) {
+        // Same short-lived copy the REST token check uses (cleared when a setting is saved).
+        const enabled = isApiTokensEnabled(
+            await models['setting'].getCached('system.auth.apiTokens.enabled')
+        );
+        if (!enabled) {
+            res.status(403).json({message: 'errors.rest.apiTokensDisabled'});
+            return false;
+        }
+        if (!(await userHasRight(models, req.user.id, API_TOKENS_VIEW))) {
+            res.status(403).json({message: 'errors.rest.apiTokensNoAccess'});
+            return false;
+        }
+        return true;
+    }
+
+    server.app.get('/auth/api-tokens', shared.ensureAuthenticated, async (req, res) => {
+        try {
+            if (!(await requireEnabled(req, res))) {
+                return;
+            }
+            const admin = await ownerIsAdmin(models, req.user.id);
+            const where = {deleted: false};
+            if (!admin) {
+                where.userId = req.user.id;
+            }
+            const tokens = await models['api_token'].findAll({
+                where,
+                attributes: {exclude: ['keyHash']},
+                order: [['createdAt', 'DESC']],
+                raw: true,
+            });
+            const rightRows = tokens.length === 0 ? [] : await models['api_token_right'].findAll({
+                where: {apiTokenId: tokens.map((token) => token.id), deleted: false},
+                attributes: ['apiTokenId', 'userRightName'],
+                raw: true,
+            });
+            const rightsByToken = {};
+            for (const row of rightRows) {
+                (rightsByToken[row.apiTokenId] ||= []).push(row.userRightName);
+            }
+            return res.status(200).json({
+                tokens: tokens.map((token) => publicTokenRow(token, (rightsByToken[token.id] || []).sort())),
+            });
+        } catch (err) {
+            server.logger.error('List api tokens failed: ' + err);
+            return res.status(500).json({message: 'errors.server.unknownError'});
+        }
+    });
+
+    // What the create form may offer this user: attachable rights and role presets.
+    server.app.get('/auth/api-tokens/rights', shared.ensureAuthenticated, async (req, res) => {
+        try {
+            if (!(await requireEnabled(req, res))) {
+                return;
+            }
+            return res.status(200).json(await listTokenRightChoices(models, req.user.id));
+        } catch (err) {
+            server.logger.error('List api token right choices failed: ' + err);
+            return res.status(500).json({message: 'errors.server.unknownError'});
+        }
+    });
+
+    server.app.post('/auth/api-tokens', shared.ensureAuthenticated, async (req, res) => {
+        // JSON only: another site cannot send JSON with the user's cookie without a CORS preflight,
+        // which the server refuses, so a hidden form cannot create tokens in someone's account.
+        if (!req.is('application/json')) {
+            return res.status(415).json({message: 'errors.rest.jsonRequired'});
+        }
+        const t = await server.db.sequelize.transaction();
+        try {
+            if (!(await requireEnabled(req, res))) {
+                await t.rollback();
+                return;
+            }
+            if (await hasOnlyGuestRole(models, req.user.id)) {
+                await t.rollback();
+                return res.status(403).json({message: 'errors.rest.guestCannotCreateToken'});
+            }
+
+            const name = typeof req.body?.name === 'string' ? req.body.name.trim() : '';
+            if (!name) {
+                await t.rollback();
+                return res.status(400).json({message: 'errors.rest.tokenNameRequired'});
+            }
+
+            // Optional ISO date in the future. Leaving it out means no expiry.
+            let expiresAt = null;
+            if (req.body?.expiresAt !== undefined && req.body.expiresAt !== null) {
+                expiresAt = typeof req.body.expiresAt === 'string' ? new Date(req.body.expiresAt) : null;
+                if (!expiresAt || Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
+                    await t.rollback();
+                    return res.status(400).json({message: 'errors.rest.invalidTokenExpiry'});
+                }
+            }
+
+            // Lock the user's row first, so parallel creates for one user count one after another
+            // and cannot together go over the limit.
+            await models['user'].findOne({where: {id: req.user.id}, attributes: ['id'], lock: t.LOCK.UPDATE, transaction: t});
+            const active = await models['api_token'].count({
+                where: {userId: req.user.id, deleted: false, [Op.or]: [{expiresAt: null}, {expiresAt: {[Op.gt]: new Date()}}]},
+                transaction: t,
+            });
+            if (active >= MAX_TOKENS_PER_USER) {
+                await t.rollback();
+                return res.status(400).json({message: 'errors.rest.tooManyTokens', params: {max: MAX_TOKENS_PER_USER}});
+            }
+
+            const attachable = await listAttachableRights(models, req.user.id);
+            // The rights must be listed. There is no implicit "every right", same as the dashboard form.
+            const requested = Array.isArray(req.body?.rights)
+                ? [...new Set(req.body.rights.filter((item) => typeof item === 'string'))]
+                : [];
+            if (requested.length === 0) {
+                await t.rollback();
+                return res.status(400).json({message: 'errors.rest.tokenRightsRequired'});
+            }
+            if (requested.some((right) => !attachable.includes(right))) {
+                await t.rollback();
+                return res.status(403).json({message: 'errors.rest.cannotGrantMissingRight'});
+            }
+            const rights = requested;
+
+            const secret = generateSecret();
+            const token = await models['api_token'].add({
+                userId: req.user.id,
+                name,
+                keyHash: hashSecret(secret),
+                prefix: displayPrefixFromSecret(secret),
+                expiresAt,
+            }, {transaction: t});
+
+            for (const userRightName of rights) {
+                await models['api_token_right'].add({
+                    apiTokenId: token.id,
+                    userRightName,
+                    deleted: false,
+                }, {transaction: t});
+            }
+
+            await t.commit();
+            return res.status(201).json({
+                token: publicTokenRow(token, [...rights].sort()),
+                secret,
+            });
+        } catch (err) {
+            try {
+                await t.rollback();
+            } catch (_rollbackError) {
+                // already rolled back
+            }
+            server.logger.error('Create api token failed: ' + err);
+            return res.status(500).json({message: 'errors.server.unknownError'});
+        }
+    });
+
+    server.app.delete('/auth/api-tokens/:id', shared.ensureAuthenticated, async (req, res) => {
+        try {
+            if (!(await requireEnabled(req, res))) {
+                return;
+            }
+            const id = Number(req.params.id);
+            if (!Number.isInteger(id)) {
+                return res.status(400).json({message: 'errors.rest.invalidTokenId'});
+            }
+            const token = await models['api_token'].getById(id);
+            if (!token) {
+                return res.status(404).json({message: 'errors.rest.tokenNotFound'});
+            }
+            const admin = await ownerIsAdmin(models, req.user.id);
+            if (token.userId !== req.user.id && !admin) {
+                return res.status(403).json({message: 'errors.rest.cannotRevokeForeignToken'});
+            }
+            await models['api_token'].deleteById(id);
+            return res.status(200).json({success: true});
+        } catch (err) {
+            server.logger.error('Revoke api token failed: ' + err);
+            return res.status(500).json({message: 'errors.server.unknownError'});
+        }
+    });
+}
+
+module.exports = {registerApiTokenRoutes};

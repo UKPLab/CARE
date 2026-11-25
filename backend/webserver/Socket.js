@@ -19,6 +19,10 @@ const MAX_EXPLICIT_SELECTION = 10000;
 // Rows a single broadcast may animate row by row in query-mode; above this the client refetches.
 const MAX_DELTA_ROWS = 100;
 
+// Rights cache shared by REST broadcasts (see broadcastChangesWithoutSocket), per server.
+const restRightsCaches = new WeakMap();
+const REST_RIGHTS_CACHE_MS = 60 * 1000;
+
 /**
  * Defines as new Socket class
  *
@@ -232,6 +236,61 @@ module.exports = class Socket {
         }
 
         return count;
+    }
+
+    /**
+     * Broadcast a committed transaction's changes when no live socket is involved (REST writes,
+     * see utils/restBroadcast.js). Runs broadcastTransactionChanges on a bare instance, so each
+     * browser still gets only the rows its user may see. Keep this working if the broadcast path
+     * starts to need this.socket: today it only reads this.socket?.id.
+     *
+     * @param {Server} server main server instance
+     * @param {number} userId the user who made the change
+     * @param {Object} transaction a committed transaction with .changes
+     * @returns {Promise<void>}
+     */
+    static async broadcastChangesWithoutSocket(server, userId, transaction) {
+        // One rights cache per server for all REST broadcasts. A user's roles changing reloads their
+        // entry at once (isAdmin); entries older than a minute are reloaded too, so a change to a
+        // role's own rights reaches REST broadcasts within a minute.
+        let shared = restRightsCaches.get(server);
+        if (!shared) {
+            shared = {};
+            restRightsCaches.set(server, shared);
+        }
+        // Each broadcast works on its own copy and writes back only entries at least as new as the
+        // shared ones, so an answer computed from old roles never lands in an entry reloaded meanwhile.
+        // Expired entries are dropped, not copied: they reload on use, so the cache only holds users
+        // seen in the last minute and stays small.
+        const now = Date.now();
+        const userInfo = {};
+        for (const [id, info] of Object.entries(shared)) {
+            if (now - info.lastRolesUpdate.getTime() > REST_RIGHTS_CACHE_MS) {
+                delete shared[id];
+                continue;
+            }
+            userInfo[id] = {...info, rights: {...info.rights}};
+        }
+        const broadcaster = Object.create(Socket.prototype);
+        Object.assign(broadcaster, {
+            server,
+            io: server.io,
+            socket: null,
+            models: server.db.models,
+            logger: server.logger,
+            userId,
+            userInfo,
+        });
+        try {
+            await broadcaster.broadcastTransactionChanges(transaction);
+        } finally {
+            for (const [id, info] of Object.entries(userInfo)) {
+                const current = shared[id];
+                if (!current || info.lastRolesUpdate >= current.lastRolesUpdate) {
+                    shared[id] = info;
+                }
+            }
+        }
     }
 
     /**

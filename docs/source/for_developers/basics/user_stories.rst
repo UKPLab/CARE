@@ -376,6 +376,71 @@ Password Reset
 
 -----
 
+API Tokens for Scripts
+----------------------
+
+.. container:: user-story
+
+   :Story:
+     As a **Coordinator**, I want to create personal API tokens with only the rights a
+     script needs, so that my scripts can use CARE without the browser.
+
+   :Acceptance:
+     - Given an admin has turned on **Enable API tokens**, the sidebar shows **API Tokens**
+       under Home.
+     - When I create a token, I enter a name, tick rights from the rights I have, and pick an
+       expiry of 30, 90, or 365 days, or never. No right is ticked at the start and the
+       expiry starts at 90 days.
+     - **Start from** ticks all my rights, or the rights of one of my roles.
+     - After creating, the secret starting with ``care_`` is hidden behind dots, with buttons
+       to show it and to copy it. Closing before showing or copying it asks once. After
+       closing, it is never shown again.
+     - The token table shows name, prefix, number of rights, created, last used, and expiry,
+       never the secret.
+     - When I revoke a token, scripts using it stop working at once.
+
+     **Negative cases:**
+
+     - When **Enable API tokens** is off, the sidebar entry is hidden, the page shows not
+       found, and scripts are refused.
+     - **Create** stays disabled until the token has a name and at least one right.
+     - A guest account cannot create a token.
+     - I cannot revoke another user's token.
+     - A script using an expired or revoked token is refused.
+     - I can hold at most 25 unexpired tokens. Creating another is refused until I revoke
+       one or one expires.
+
+   :Settings:
+     - ``system.auth.apiTokens.enabled``
+
+-----
+
+Manage API Tokens
+-----------------
+
+.. container:: user-story
+
+   :Story:
+     As an **Admin**, I want to turn API tokens on or off and see and revoke every user's
+     token, so that I control script access to CARE.
+
+   :Acceptance:
+     - Under Settings, General, API tokens, I can switch **Enable API tokens** on and off.
+       It is off by default.
+     - The API Tokens table lists the tokens of all users with their user id.
+     - I can revoke any user's token.
+     - When I delete a user, their tokens are revoked and their scripts stop working at once.
+
+     **Negative cases:**
+
+     - A token I create has no admin reach by itself. It can only do what its ticked
+       rights allow.
+
+   :Settings:
+     - ``system.auth.apiTokens.enabled``
+
+-----
+
 Registration
 ~~~~~~~~~~~~
 

@@ -6,6 +6,7 @@ describe('Test Login', () => {
     beforeAll(async () => {
         this.server = new Server();
         this.http = this.server.start(3020);
+        await this.server.devAdminReady;
     });
 
     /**

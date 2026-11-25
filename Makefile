@@ -61,6 +61,7 @@ UTILS_MODULES_UPTODATE := \
 	utils/modules/placeholder-tokens/node_modules/.uptodate
 
 .PHONY: test
+test: DEV_SKIP_WIZARD=true
 test: backend/node_modules/.uptodate $(UTILS_MODULES_UPTODATE)
 	cd backend && npm run test 
 

@@ -385,3 +385,5 @@ class StudySocket extends Socket {
 }
 
 module.exports = StudySocket;
+// Used by the REST study import (rest/studyTransfer.js).
+module.exports.stepDocumentsFromStudySteps = stepDocumentsFromStudySteps;
