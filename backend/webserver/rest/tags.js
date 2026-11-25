@@ -10,6 +10,7 @@
 const TranslatableError = require('../../utils/TranslatableError');
 const {Op} = require('sequelize');
 const {TAG_COLORS} = require('tag-colors');
+const {findActive} = require('../utils/restHelpers');
 
 const TAG_FIELDS = ['name', 'description', 'colorCode'];
 
@@ -93,29 +94,25 @@ async function replaceTags(models, userId, tagSet, tags, transaction) {
 
 /**
  * Mirrors the dashboard's tag set form (appDataUpdate on tag_set and tag). Differs: owner from the
- * token. Without projectId the set goes into the user's default project, else the system default.
+ * token. As in the dashboard, the set goes into the user's current project (their projects.default
+ * setting, else the system default); there is no project choice.
  *
  * @param {Object} data
  * @param {number} data.userId the token owner's user id
  * @param {string} data.name the tag set name
  * @param {string} [data.description] the description
- * @param {number} [data.projectId] the project id
  * @param {Array<Object>} [data.tags] the tags
  * @param {Object} options the REST options (models, transaction)
  * @returns {Promise<Object>} the new tag set with its tags
- * @throws {TranslatableError} errors.rest.invalidProjectId
  */
-async function createTagSet({userId, name, description, projectId, tags}, options) {
-    const {defaultProjectFor, userCanUseProject} = require('./projects');
+async function createTagSet({userId, name, description, tags}, options) {
+    const {defaultProjectFor} = require('./projects');
     const models = options.models;
-    // Same rule as documents and assignments: an own or public project.
-    if (projectId != null && !(await userCanUseProject(models, userId, projectId))) {
-        throw new TranslatableError('errors.rest.invalidProjectId');
-    }
-    // Without a project the Tags page never shows the set, so fall back to the dashboard's project.
+    // The tag_set model fills in the user's own default project; the system default covers users
+    // without one, so the Tags page always shows the new set.
     const tagSet = await models['tag_set'].add({
         name, description: description ?? '', userId, public: false,
-        projectId: projectId ?? await defaultProjectFor(models, userId),
+        projectId: await defaultProjectFor(models, userId),
     }, {transaction: options.transaction});
     await replaceTags(models, userId, tagSet, tags || [], options.transaction);
     return getTagSet(models, tagSet.id, options.transaction);
@@ -180,22 +177,11 @@ async function deleteTagSet({userId, id}, options) {
  * @returns {Promise<Object|null>} the tag set, or null when it does not exist
  */
 async function getTagSet(models, id, transaction) {
-    const tagSet = await models['tag_set'].findOne({
-        where: {id, deleted: false},
-        attributes: ['id', 'name', 'description', 'public', 'userId', 'projectId'],
-        raw: true,
-        transaction,
-    });
+    const tagSet = await models['tag_set'].getById(id, {attributes: ['id', 'name', 'description', 'public', 'userId', 'projectId'], transaction});
     if (!tagSet) {
         return null;
     }
-    const tags = await models['tag'].findAll({
-        where: {tagSetId: id, deleted: false},
-        attributes: ['id', 'name', 'description', 'colorCode'],
-        order: [['id', 'ASC']],
-        raw: true,
-        transaction,
-    });
+    const tags = await findActive(models['tag'], {tagSetId: id}, {attributes: ['id', 'name', 'description', 'colorCode'], order: [['id', 'ASC']], transaction});
     return {...tagSet, tags};
 }
 
@@ -227,18 +213,14 @@ async function getVisibleTagSet({userId, id}, options) {
  */
 async function listTagSets({userId}, options) {
     const models = options.models;
-    const visible = {deleted: false, [Op.or]: [{userId}, {public: true}]};
-    const tagSets = await models['tag_set'].findAll({
-        where: visible,
+    const visible = {[Op.or]: [{userId}, {public: true}]};
+    const tagSets = await findActive(models['tag_set'], visible, {
         attributes: ['id', 'name', 'description', 'public', 'userId', 'projectId'],
         order: [['id', 'ASC']],
-        raw: true,
     });
-    const tags = tagSets.length === 0 ? [] : await models['tag'].findAll({
-        where: {...visible, tagSetId: tagSets.map((tagSet) => tagSet.id)},
+    const tags = tagSets.length === 0 ? [] : await findActive(models['tag'], {...visible, tagSetId: tagSets.map((tagSet) => tagSet.id)}, {
         attributes: ['id', 'name', 'description', 'colorCode', 'tagSetId'],
         order: [['id', 'ASC']],
-        raw: true,
     });
     return tagSets.map((tagSet) => ({
         ...tagSet,

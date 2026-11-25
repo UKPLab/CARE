@@ -50,7 +50,11 @@ function registerRestTagRoutes(server) {
         }));
 
     server.app.post('/rest/v1/tag-sets', needWrite, (req, res) => {
-        const parsed = readFields(req.body, {name: is.text, description: is.textOrEmpty, projectId: is.idOrNull});
+        // Like the dashboard, a tag set always goes into the caller's current project (projects.default).
+        if (req.body?.projectId !== undefined) {
+            return res.status(400).json({message: 'errors.rest.tagSetProjectNotSupported'});
+        }
+        const parsed = readFields(req.body, {name: is.text, description: is.textOrEmpty});
         const tags = readTags(req.body?.tags);
         if (parsed.error || tags.error || !parsed.fields.name) {
             return res.status(400).json({message: 'errors.rest.invalidTagSetField'});
