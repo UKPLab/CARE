@@ -150,11 +150,12 @@ async function chatCompletion(service, client, data, logOptions = {}, onDelta = 
     try {
         const providerParams = logOptions.providerParams
             || await loadModelProviderParams(service, aiModelId);
-        response = await rpc.chatCompletion({
-            ...completionParams,
-            ...providerParams,
-            __requestId: requestId,
-        }, handleDelta);
+        const params = {...completionParams, ...providerParams, __requestId: requestId};
+        const sessionId = Number(data?.studySessionId);
+        if (!logOptions.bypassChecks && Number.isInteger(sessionId) && sessionId > 0) {
+            params.extra_headers = {...params.extra_headers, "x-litellm-session-id": String(sessionId)};
+        }
+        response = await rpc.chatCompletion(params, handleDelta);
     } catch (error) {
         const failureOutput = logOptions.testLabel
             ? `${logOptions.testLabel}\n${error?.message || "Unknown error"}`
