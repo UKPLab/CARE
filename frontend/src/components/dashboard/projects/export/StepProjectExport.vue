@@ -30,6 +30,7 @@ import {downloadObjectsAs} from "@/assets/utils";
 import JSZip from 'jszip';
 import FileSaver from 'file-saver';
 import Quill from "quill";
+import DOMPurify from 'dompurify';
 import {dbToDelta} from "editor-delta-conversion";
 
 /**
@@ -258,7 +259,11 @@ export default {
 
               deltas = dbToDelta(edits);
               quill.setContents(deltas);
-              step_folder.file('html.html', quill.getSemanticHTML());
+              // Quill's HTML export can contain unescaped embed values (CVE-2025-15056).
+              const html = DOMPurify.sanitize(quill.getSemanticHTML(), {
+                USE_PROFILES: {html: true},
+              });
+              step_folder.file('html.html', html);
               step_folder.file('text.txt', quill.getText());
               step_folder.file('document.delta', JSON.stringify(deltas, null, 2));
               break;

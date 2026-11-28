@@ -4,7 +4,7 @@ ARG ENV
 ENV ENV=$ENV
 
 # Install requirements
-RUN npm install --global npm
+RUN npm install --global npm@11.21.3 --ignore-scripts --no-audit --no-fund
 
 # Install make
 RUN apk add make

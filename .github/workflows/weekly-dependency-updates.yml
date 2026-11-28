@@ -38,6 +38,9 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Pin npm version
+        run: npm install --global npm@11.21.3 --ignore-scripts --no-audit --no-fund
+
       - name: Update minor and patch versions
         run: |
           set -euo pipefail
@@ -103,6 +106,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Pin npm version
+        run: npm install --global npm@11.21.3 --ignore-scripts --no-audit --no-fund
 
       - name: Update major versions only
         run: |

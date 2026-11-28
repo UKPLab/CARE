@@ -72,7 +72,7 @@
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-vue": "^10.12.1",
-    "happy-dom": "^20.14.6",
+    "happy-dom": "21.0.4",
     "prosemirror-commands": "^1.7.2",
     "prosemirror-dropcursor": "1.8.4",
     "prosemirror-gapcursor": "^1.4.1",
@@ -92,10 +92,11 @@
     "quill": "2.0.3",
     "socket.io-client": "^4.8.4",
     "socket.io-parser": "^4.2.7",
-    "brace-expansion": "^2.0.4",
     "defu": "^6.1.5",
     "flatted": "^3.4.2",
     "picomatch": "^4.0.4",
-    "yaml": "^2.8.3"
+    "yaml": "^2.8.3",
+    "glob@>=9.0.0 <14.0.6": "14.0.6",
+    "minimatch@>=7.0.0 <11.0.1": "11.0.9"
   }
 }
